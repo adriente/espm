@@ -21,7 +21,3 @@ To obtain sparser solutions a regularization is available in the SNMF code. To f
 * Integrate xraylib to generate a more accurate `xrays.json`
 * Integrate a database to calculate absorption coefficients
 * Integrate detector artefacts 
-
-## Note
-
-The Results folder is not up to date.
