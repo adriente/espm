@@ -114,6 +114,7 @@ angles=find_min_angle(true_spectra,[mdl.get_phase_spectrum(0),mdl.get_phase_spec
 
 maps=find_min_MSE(true_maps,[mdl.get_phase_map(0),mdl.get_phase_map(1),mdl.get_phase_map(2)])
 
+print("mu = {}, epsilon = {}".format(mu_sparse,eps_sparse))
 print("Angle phase 0 :",angles[0])
 print("Angle phase 1 :",angles[1])
 print("Angle phase 2 :",angles[2])
