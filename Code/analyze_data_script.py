@@ -114,12 +114,9 @@ angles=find_min_angle(true_spectra,[mdl.get_phase_spectrum(0),mdl.get_phase_spec
 
 maps=find_min_MSE(true_maps,[mdl.get_phase_map(0),mdl.get_phase_map(1),mdl.get_phase_map(2)])
 
-savename="Results/aspim036_mu" + str(mu_sparse) + "_eps" + str(eps_sparse)
-
-with open(savename,"w") as f :
-    f.write("angles\n")
-    for item in angles:
-        f.write("{}\n".format(item))
-    f.write("MSE\n")
-    for item in maps:
-        f.write("{}\n".format(item))
+print("Angle phase 0 :",angles[0])
+print("Angle phase 1 :",angles[1])
+print("Angle phase 2 :",angles[2])
+print("MSE phase 0 :",maps[0])
+print("MSE phase 1 :",maps[1])
+print("MSE phase 2 :",maps[2])
