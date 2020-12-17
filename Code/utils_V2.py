@@ -30,8 +30,8 @@ class Gaussians:
 
         # The gaussian width is determined by the detector. This width follows a linear relationship with energy
         # These parameters were fitted using experimental data
-        self.width_slope = 0.01
-        self.width_intercept = 0.065
+        self.width_slope = width_slope
+        self.width_intercept = width_intercept
 
         # dict extracted from the X_rays database
         with open(Gaussians.XRAYS_FILE, "r") as f:

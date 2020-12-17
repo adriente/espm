@@ -19,7 +19,7 @@ class SNMF:
     When the regularization is activated, the algorithm is decomposed in two steps : a regularized step and a data fitting step.
     """
 
-    def __init__(self, max_iter = 10000, tol = 1e-4, b_tol = 1.0, step_a = True, step_p = True, mu_sparse=0., eps_sparse = 1.0, num_phases=2, g_matr=None, debug=False, bremsstrahlung=None, brstlg_pars = None, init_a = None, init_p = None, init_spectrum = None):
+    def __init__(self, max_iter = 10000, tol = 1e-4, b_tol = 1.0, step_a = True, step_p = True, mu_sparse=0., eps_sparse = 1.0, num_phases=2, edxs_model=None, debug=False, brstlg_pars = None, init_a = None, init_p = None, init_spectrum = None):
         """
         Create an instance of the SNMF algorithm. All the relevant parameters are defined here or through the set_hypars or set_init_pars functions.
         :num_phases: Number of phases to estimate (int)
@@ -30,8 +30,7 @@ class SNMF:
         :step_p: Allows steps in P to be taken (bool)
         :mu_sparse: strength of the particles regularisation (float > 0)
         :eps_sparse: Determines the slope at 0 of the particles regularisation (float > 0)
-        :g_matr: if None g_matr is constructed automatically using utils_V2.py. Otherwise the input g_matr is used. (np.ndarray)
-        :bremsstrahlung: If a bremsstrahlung spectrum is given, it is appended to g_matr and steps on B are not taken. (np.array)
+        :edxs_model: EDXS_Model object generated from tables, contains the g_matr. In the future it will contain the absorption coefficient. (EDXS_Model)
         :brstlg_pars: list of input parameters for initalisation of the bremsstrahlung. (list of float or np.array of float)
         :init_a: Input the initial values of a (np.ndarray)
         :init_p: Input the initial values of p (np.ndarray)
@@ -61,7 +60,6 @@ class SNMF:
         self.step_a = step_a
         self.step_p = step_p
         self.init_spectrum = init_spectrum
-        self.bremsstrahlung = bremsstrahlung
 
         # The same starting brstlg parameters are used for all the phases
         if brstlg_pars is None :
@@ -80,8 +78,6 @@ class SNMF:
         # internal variables #
         ######################
         
-        # Energy scale used to calculate B. Done poorly, needs to be changed.
-        self.E = Gaussians().x
         self.debug = debug
         # The mask and stop are used if mu_sparse!=0 in the data fitting step
         self.sparse_mask = None
@@ -103,15 +99,10 @@ class SNMF:
         # Lagrange multiplier to apply the simplex constraint
         self.lambda_s = None 
 
-        # If no G matrix is provided, load the default one from Data/xrays.json
-        if g_matr is None:
-            self.g_matr = Gaussians().create_matrix()
-            if not(bremsstrahlung is None) :
-                self.g_matr = np.hstack((self.g_matr, self.bremsstrahlung[:,np.newaxis]))
-        else:
-            self.g_matr = g_matr
-            if not(bremsstrahlung is None) :
-                print("WARNING : the input bremsstrahlung is not taken into account")
+        # EDXS model loading
+        self.g_matr = edxs_model.g_matr
+        self.bremsstrahlung = edxs_model.bremsstrahlung
+        self.E = edxs_model.x
 
         # the activations matrix
         self.a_matr = None
@@ -258,7 +249,7 @@ class SNMF:
         """
         # The function has exactly one root at the right of the first singularity (the singularity at min(denum))
         # So a and b are set to -min(denum) plus an offset.
-        f_div = np.min(denum,axis=0) # There are several min values in the case of particle regularization
+        f_div = np.min(np.where(num!=0,denum,np.inf),axis=0) # There are several min values in the case of particle regularization. In the case where there are exact 0 in num, the min of denum needs to be changed to the next nearest min.
         a_off = 100*np.ones(num.shape[1])
         b_off = 0.01*np.ones(num.shape[1])
         a=-f_div*np.ones(num.shape[1]) + a_off
@@ -619,36 +610,37 @@ class SNMF:
             self.a_matr = self.init_a
 
         # Initialization of B
-        if self.bremsstrahlung is None :
-            self.b_matr = self.calc_b()
-        else :
-            # B is removed from the model
+        if self.bremsstrahlung :
             self.b_matr = np.zeros((self.g_matr.shape[0],self.p_))
             self.b_tol = 0
+        else :
+            # B is removed from the model
+
+            self.b_matr = self.calc_b()
         
         #Initialization of p-matr
         # If the regularization is activated (mu_sparse != 0) it is important to correctly set the first phase so that the main phase is not penalized
         if self.init_p is None :
             # All phases are initialized at random and the first phase will be overwritten
             self.p_matr= np.random.rand(self.g_matr.shape[1],self.p_)
-            # If no bremsstrahlung spectrum is specified the b-matr is substracted from the linear regression to get correct values for p_matr (Linear regression on the gaussians only)
-            if self.bremsstrahlung is None :
-                # Average spectrum initialization with b_matr model
-                if self.init_spectrum is None :
-                    avg_sp = np.average(self.x_matr,axis=1)
-                    self.p_matr[:,0] = (np.linalg.inv(self.g_matr.T@self.g_matr)@self.g_matr.T@(avg_sp-self.b_matr[:,0])).clip(min=1e-8)
-                # init_spectrum initialization with b_matr model
-                else : 
-                    self.p_matr[:,0] = (np.linalg.inv(self.g_matr.T@self.g_matr)@self.g_matr.T@(self.init_spectrum - self.b_matr[:,0])).clip(min=1e-8)
             # If a bremsstrahlung is specified, it is added to the g_matr and therefore should not be subtracted for the linear regression
-            else :
-                # Average spectrum initialization without b_matr model 
+            if self.bremsstrahlung :
+                 # Average spectrum initialization without b_matr model 
                 if self.init_spectrum is None :
                     avg_sp = np.average(self.x_matr,axis=1)
                     self.p_matr[:,0] = (np.linalg.inv(self.g_matr.T@self.g_matr)@self.g_matr.T@avg_sp).clip(min=1e-8)
                 # init_spectrum initialization without b_matr model
                 else : 
                     self.p_matr[:,0] = (np.linalg.inv(self.g_matr.T@self.g_matr)@self.g_matr.T@self.init_spectrum).clip(min=1e-8)
+            # If no bremsstrahlung spectrum is specified the b-matr is substracted from the linear regression to get correct values for p_matr (Linear regression on the gaussians only)
+            else :
+               # Average spectrum initialization with b_matr model
+                if self.init_spectrum is None :
+                    avg_sp = np.average(self.x_matr,axis=1)
+                    self.p_matr[:,0] = (np.linalg.inv(self.g_matr.T@self.g_matr)@self.g_matr.T@(avg_sp-self.b_matr[:,0])).clip(min=1e-8)
+                # init_spectrum initialization with b_matr model
+                else : 
+                    self.p_matr[:,0] = (np.linalg.inv(self.g_matr.T@self.g_matr)@self.g_matr.T@(self.init_spectrum - self.b_matr[:,0])).clip(min=1e-8)
         else : 
             # If specified the p_matr is used
             self.p_matr = self.init_p

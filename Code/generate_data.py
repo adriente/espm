@@ -3,8 +3,6 @@ import json
 import os
 import hyperspy.api as hs
 
-from utils import Distributions
-
 class AritificialSpim :
     """
     This class is used to generate artificial spectrum image. It corresponds to the linear mixing of several spectroscopic signatures (phases) through spatial overlap. 
