@@ -1,3 +1,5 @@
+# This README needs an update
+
 # Simplex non-negative matrix factorization for Electron Microscopy
 This project contains the code to create artificial Energy dispersive X-ray spectroscopy (EDXS) data and to perform hyperspectral unmixing on EDXS spectrum images.
 
