@@ -31,7 +31,7 @@ class SNMF:
         :mu_sparse: strength of the particles regularisation (float > 0)
         :eps_sparse: Determines the slope at 0 of the particles regularisation (float > 0)
         :edxs_model: EDXS_Model object generated from tables, contains the g_matr. In the future it will contain the absorption coefficient. (EDXS_Model)
-        :brstlg_pars: list of input parameters for initalisation of the bremsstrahlung. (list of float or np.array of float)
+        :brstlg_pars: dict of input parameters for initalisation of the bremsstrahlung. (dict of float or np.array of float)
         :init_a: Input the initial values of a (np.ndarray)
         :init_p: Input the initial values of p (np.ndarray)
         :init_spectrum: initialize the first phase to the input spectrum. Useful to set the first phase as the matrix for the particles regularization.
@@ -63,16 +63,18 @@ class SNMF:
 
         # The same starting brstlg parameters are used for all the phases
         if brstlg_pars is None :
+            self.b0 = np.ones((self.p_))
             self.b1 = -np.ones((self.p_,))
             self.b2 = np.ones((self.p_,))
             self.c0 = np.ones((self.p_,))
             self.c1 = np.ones((self.p_,))
         else : 
-            self.b1 = brstlg_pars[0]*np.ones((self.p_,))
-            self.b2 = brstlg_pars[1]*np.ones((self.p_,))
-            self.c0 = brstlg_pars[2]*np.ones((self.p_,))
-            self.c1 = brstlg_pars[3]*np.ones((self.p_,))
-            self.c2 = brstlg_pars[4]*np.ones((self.p_,))
+            self.b0 = brstlg_pars["b0"]*np.ones((self.p_,))
+            self.b1 = brstlg_pars["b1"]*np.ones((self.p_,))/brstlg_pars["b0"]
+            self.b2 = brstlg_pars["b2"]*np.ones((self.p_,))/brstlg_pars["b0"]
+            self.c0 = brstlg_pars["c0"]*np.ones((self.p_,))
+            self.c1 = brstlg_pars["c1"]*np.ones((self.p_,))
+            self.c2 = brstlg_pars["c2"]*np.ones((self.p_,))
         
         ######################
         # internal variables #
@@ -167,7 +169,7 @@ class SNMF:
         else :
             self.max_iter = max_iter
 
-    def set_init_pars(self,init_a=None,init_p=None,b1 = None, b2 = None, c0 = None, c1 = None, c2 = None) :
+    def set_init_pars(self,init_a=None,init_p=None,b0 = None, b1 = None, b2 = None, c0 = None, c1 = None, c2 = None) :
         """
         Setter of the init parameters of the algorithm. It's main use is for the cross_validation class. It can be used to reduce the number of parameters in the __init__ function. 
         """
@@ -179,6 +181,10 @@ class SNMF:
             pass
         else :
             self.init_p = init_p
+        if b0 is None :
+            pass
+        else : 
+            self.b0 = b0
         if b1 is None :
             pass
         else : 
@@ -378,7 +384,6 @@ class SNMF:
         ################
         #  c0, c1 & c2 #
         ################
-
         # Gradients
         dLdB = self.dLdB()
         grad_c0 = np.einsum("i...,i...",dLdB,self.calc_dc0())
@@ -404,7 +409,6 @@ class SNMF:
             c2_tilde = (self.c2 - 1/self.eta_c2*grad_c2).clip(min=1e-8)
             d_tilde = self.g_matr@self.p_matr + self.calc_b(c0=c0_tilde,c1=c1_tilde,c2=c2_tilde)
             func_c = self._eval_function(d_matr=d_tilde)
-
         # To avoid being stuck with a too small step size 
         self.eta_c0/= self.beta
         self.eta_c1/= self.beta
@@ -431,6 +435,7 @@ class SNMF:
         self.lambda_b = 0.01*np.ones((self.p_,))
         b1 = self.b1 - 1/self.eta_b1*grad_b1
         b2 = self.b2 - 1/self.eta_b2*grad_b2
+
         # The positivity of the model is ensured when poly_const < 0
         # If all the new values follow the constraint, the new values are accepted.
         # Otherwise the equation leading to acceptable new values is solved using dichotomy
@@ -473,15 +478,19 @@ class SNMF:
         self.b_matr = self.calc_b()
         self.d_matr=self.g_matr@self.p_matr + self.b_matr
 
+        print("after b",cur_loss - self._eval_function())
+
     #########################
     # B modelling functions #
     #########################
 
-    def calc_b (self,b1=None,b2=None,c0=None,c1 = None, c2 = None) :
+    def calc_b (self,b0 = None, b1=None,b2=None,c0=None,c1 = None, c2 = None) :
         """
         Function to calculate the values of B according to the model. 
         This function takes arguments to allow calculation with temporary values of the parameters.
         """
+        if b0 is None : 
+            b0 = self.b0
         if b1 is None : 
             b1 = self.b1
         if b2 is None : 
@@ -492,19 +501,21 @@ class SNMF:
             c1 = self.c1
         if c2 is None :
             c2 = self.c2
-        return self.chapman_brstlg(b1,b2)*self.detector(c1,c2)*self.self_abs(c0)
+        return self.chapman_brstlg(b0,b1,b2)*self.detector(c1,c2)*self.self_abs(c0)
 
-    def chapman_brstlg ( self, b1 = None,b2 = None) :
+    def chapman_brstlg ( self, b0 = None, b1 = None,b2 = None) :
         """
         Bremsstrahlung modelling function.
         This function takes arguments to allow calculation with temporary values of the parameters.
         See Chapman et al., 1984, J. of microscopy, vol. 136, pp. 171
         """
+        if b0 is None : 
+            b0 = self.b0
         if b1 is None : 
             b1 = self.b1
         if b2 is None : 
             b2 = self.b2
-        return (1.0 / self.E[:,np.newaxis] + b1 + b2*self.E[:,np.newaxis])
+        return (1.0 / self.E[:,np.newaxis] + b1 + b2*self.E[:,np.newaxis])*b0
 
     def detector (self,c1 = None, c2= None) :
         """
@@ -532,13 +543,13 @@ class SNMF:
         """
         Partial derivative of B with respect to b1
         """
-        return self.detector()*self.self_abs()
+        return self.detector()*self.self_abs()*self.b0
 
     def calc_db2 (self) :
         """
         Partial derivative of B with respect to b2
         """
-        return self.E[:,np.newaxis]*self.detector()*self.self_abs()
+        return self.E[:,np.newaxis]*self.detector()*self.self_abs()*self.b0
 
     def calc_dc0(self) :
         """
