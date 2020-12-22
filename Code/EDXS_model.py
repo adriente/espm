@@ -8,7 +8,7 @@ import re
 
 class EDXS_Model () :
 
-    def __init__ (self, database_path, abs_db_path=None,brstlg_pars=None, e_offset=0.20805000000000007, e_size=1980, e_scale=.01,width_slope=0.01,width_intercept=0.065) :
+    def __init__ (self, database_path, abs_db_path=None,brstlg_pars={}, e_offset=0.20805000000000007, e_size=1980, e_scale=.01,width_slope=0.01,width_intercept=0.065) :
         """
         :database_path: file path to a database of x-ray data (energy and intensity ratios of the peaks)
         :abs_db_path: file path to a database of attenuation coefficients (Useful for artificial data only for the moment)
@@ -76,21 +76,21 @@ class EDXS_Model () :
         try : 
             B = u.Functions.bremsstrahlung(self.x,self.brstlg_pars["b0"],self.brstlg_pars["b1"],self.brstlg_pars["b2"])
         except KeyError :
-            B = 1
+            B = np.ones_like(self.x)
         # Both A and D are built to use the attenuation coefficien (self.abs). 
         # This needs to change because the attenuation coefficients in D should be different than the one in A.
         try : 
             A = u.Functions.self_abs(self.abs,self.brstlg_pars["c0"])
         except KeyError :
-            A = 1
+            A = np.ones_like(self.x)
         try : 
             D = u.Functions.detector(self.abs,self.brstlg_pars["c1"],self.brstlg_pars["c2"])
         except KeyError :
-            D = 1
+            D = np.ones_like(self.x)
         try : 
             S = u.Functions.shelf(self.x,self.brstlg_pars["h"],self.brstlg_pars["l"])
         except KeyError :
-            S = 0
+            S = np.zeros_like(self.x)
         return B*A*D + S
     
     def generate_spectrum(self,elements_dict,scale) :
