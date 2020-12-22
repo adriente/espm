@@ -109,7 +109,7 @@ init_matrix=np.loadtxt(json_dict["paths"]["init_spectrum"])
 
 # Creation of an SNMF object with the parameters above
 mdl = SNMF(max_iter = max_iter, tol = tol, b_tol = b_tol, mu_sparse=mu_sparse, eps_sparse = eps_sparse, num_phases=phases,edxs_model=em, brstlg_pars = brstlg_pars, init_spectrum = None)
-mdl.fit(X)
+mdl.fit(X,print = False)
 
 ################
 # Save results #
