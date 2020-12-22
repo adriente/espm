@@ -82,7 +82,7 @@ def find_min_MSE (list_true_maps,list_algo_maps) :
 ##############
 
 # SNMF parameters
-brstlg_pars = [json_dict["brstlg_pars"]["b1"],json_dict["brstlg_pars"]["b2"],json_dict["brstlg_pars"]["c0"],json_dict["brstlg_pars"]["c1"],json_dict["brstlg_pars"]["c2"]]
+brstlg_pars = json_dict["brstlg_pars"]
 tol = json_dict["tol"]
 max_iter = json_dict["max_iter"]
 b_tol = json_dict["b_tol"]
