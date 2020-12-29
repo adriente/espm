@@ -60,9 +60,11 @@ class EDXS_Model () :
                     peaks = np.zeros((self.x.shape[0],1))
                     for i,energy in enumerate(self.xrays[str(elt)][shell]["energies"]) :
                         # The actual detected width is calculated at each energy
-                        width = self.width_slope * energy + self.width_intercept
-                        peaks += self.xrays[str(elt)][shell]["ratios"][i]*u.Functions.gaussian(self.x,energy,width/2.3548)[np.newaxis].T
-                    self.g_matr = np.concatenate((self.g_matr, peaks), axis=1)
+                        if energy > np.min(self.x) :
+                            width = self.width_slope * energy + self.width_intercept
+                            peaks += self.xrays[str(elt)][shell]["ratios"][i]*u.Functions.gaussian(self.x,energy,width/2.3548)[np.newaxis].T
+                    if np.max(peaks) > 0.0 :
+                        self.g_matr = np.concatenate((self.g_matr, peaks), axis=1)
             # Appends a pure continuum spectrum is needed
             if self.bremsstrahlung :
                 brstlg_spectrum = self.continuum_xrays()[np.newaxis].T
