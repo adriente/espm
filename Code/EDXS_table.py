@@ -94,7 +94,7 @@ class EDXS_Table () :
 
                         energy = xr.LineEnergy(elt,trans_dict[line])
                         # There is no need to included the undetected lines
-                        if (energy < self.energy_range) and (ratio>1e-7) :
+                        if (energy < self.energy_range) and (ratio>1e-8) :
                             ratios.append(ratio)
                             energies.append(energy)
                     # if a shell line is rejected we go to the next one.

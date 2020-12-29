@@ -114,7 +114,12 @@ class EDXS_Model () :
         The way it was coded is probably over-complicated ...
         """
         temp = np.zeros_like(self.x)
-        
+        sum_Z = 0
+        sum_conc = 0
+        for elt in elements_dict.keys() :
+            sum_Z +=2*int(elt)
+            sum_conc += elements_dict[elt]
+
         for elt in elements_dict.keys() :
             H = np.ones_like(self.x)
             d = np.ones_like(self.x)
@@ -123,6 +128,8 @@ class EDXS_Model () :
             dk_tups = []
             list_L_shells = []
             list_M_shells = []
+            max_ind_L = 0
+            max_ind_M = 0
             for shell in self.abs_db[elt] :
                 regex = re.match(r"([K-M])([1-5]?)",shell)
                 if regex :
@@ -130,8 +137,10 @@ class EDXS_Model () :
                         list_L_shells.append(int(regex.group(2)))
                     if regex.group(1) == "M" :
                         list_M_shells.append(int(regex.group(2)))
-            max_ind_L = max(list_L_shells)
-            max_ind_M = max(list_M_shells)
+                if list_L_shells :
+                    max_ind_L = max(list_L_shells)
+                if list_M_shells :
+                    max_ind_M = max(list_M_shells)
             for shell in self.abs_db[elt] :
                 regex = re.match(r"([K-M])([1-5]?)",shell)
                 if regex :
@@ -168,6 +177,6 @@ class EDXS_Model () :
             for i in range(len(H_tups)-1) :
                 H[H_tups[i][0]:H_tups[i+1][0]] = H_tups[i][1]
 
-            temp += elements_dict[elt]*H*np.exp(d + k*np.log(self.x))
+            temp += elements_dict[elt]*2*int(elt)*H*np.exp(d + k*np.log(self.x))/(sum_conc*sum_Z)
 
         self.abs = temp

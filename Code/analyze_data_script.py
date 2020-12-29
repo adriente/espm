@@ -101,15 +101,15 @@ true_maps.append(np.load(json_dict["paths"]["data"]+"map_p1.npy"))
 true_maps.append(np.load(json_dict["paths"]["data"]+"map_p2.npy"))
 
 # If mu_sparse !=0 a good initialization of the first phase is required, it can be done using the spectrum below
-init_matrix=np.loadtxt(json_dict["paths"]["init_spectrum"])
+init_matrix=hs.load(json_dict["paths"]["init_spectrum"])
 
 ########
 # SNMF #
 ########
 
 # Creation of an SNMF object with the parameters above
-mdl = SNMF(max_iter = max_iter, tol = tol, b_tol = b_tol, mu_sparse=mu_sparse, eps_sparse = eps_sparse, num_phases=phases,edxs_model=em, brstlg_pars = brstlg_pars, init_spectrum = None)
-mdl.fit(X,print = False)
+mdl = SNMF(max_iter = max_iter, tol = tol, b_tol = b_tol, mu_sparse=mu_sparse, eps_sparse = eps_sparse, num_phases=phases,edxs_model=em, brstlg_pars = brstlg_pars, init_spectrum = init_matrix.data)
+mdl.fit(X,eval_print = False)
 
 ################
 # Save results #
