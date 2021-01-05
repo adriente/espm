@@ -15,7 +15,7 @@ class EDXS_Table () :
     LOW_OV_FILE = os.path.join(os.path.dirname(__file__),"Data","Bote2009_lowOV.txt")
     HIGH_OV_FILE = os.path.join(os.path.dirname(__file__),"Data","Bote2009_highOV.txt")
 
-    def __init__(self,energy_range=20,beam_energy = 200) :
+    def __init__(self,energy_range=20,beam_energy = 200,cs_threshold = 1e-8) :
         """
         :energy_range: Max energy of the detector in keV (float)
         :beam_energy: Energy of the electron beam in keV (float). Usual values 100 and 200.
@@ -37,6 +37,8 @@ class EDXS_Table () :
         self.high_OV_table = pd.read_fwf(EDXS_Table.HIGH_OV_FILE).fillna(method="ffill")
         # Heights of the attenuation coefficients from the paper of Wernisch(1984)
         self.wernisch_H = {"L1" : 1,"L2" : 0.862, "L3" : 0.611, "M1" : 1, "M2" : 0.935, "M3" : 0.842, "M4" : 0.638, "M5" : 0.443}
+        # cross section threshold for characteristic X-rays
+        self.cs_threshold = cs_threshold
 
     def create_shell_dict (self) :
         """
@@ -93,8 +95,8 @@ class EDXS_Table () :
                         ratio = self.CK_ionization(elt,shell)*xr.FluorYield(elt,self.shell_dict[shell])*xr.RadRate(elt,trans_dict[line])
 
                         energy = xr.LineEnergy(elt,trans_dict[line])
-                        # There is no need to included the undetected lines
-                        if (energy < self.energy_range) and (ratio>1e-8) :
+                        # There is no need to included the undetected lines as well as the minor ones
+                        if (energy < self.energy_range) and (ratio>self.cs_threshold) :
                             ratios.append(ratio)
                             energies.append(energy)
                     # if a shell line is rejected we go to the next one.

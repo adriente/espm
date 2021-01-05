@@ -1,15 +1,15 @@
 {
 "paths" : {"xray_db" : "/home/teurtrie/SNMF_EDXS/Code/Data/simple_xrays_threshold.json",
            "data" : "/home/teurtrie/SNMF_EDXS/Code/Data/aspim037_N100_2ptcls_brstlg",
-           "init_spectrum" : "/home/teurtrie/SNMF_EDXS/Code/Data/init_spectrum_aspim037.txt"
+           "init_spectrum" : "/home/teurtrie/SNMF_EDXS/Code/Data/init_spectrum_aspim037.hspy"
           },
 "brstlg_pars" : {
-                "c0"  :  4.8935e-05,
-                "c1"  :  1464.19810,
-                "c2"  :  0.04216872,
-                "b0"  :  0.15910789,
-                "b1"  :  -0.0077316,
-                "b2"  :  8.7417e-04
+                "c0"  :  9.3009e-05,
+                "c1"  :  1753.53861,
+                "c2"  :  0.01672911,
+                "b0"  :  0.13711205,
+                "b1"  :  -9.9218e-04,
+                "b2"  :  3.1981e-04
                 },
 "tol" : 1e-4,
 "max_iter" : 50000,
@@ -17,3 +17,4 @@
 "phases" : 3,
 "elements_list" : [8,13,14,12,26,29,31,72,71,62,60,92,20]
 }
+
