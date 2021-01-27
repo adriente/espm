@@ -478,7 +478,8 @@ class SNMF:
         self.b_matr = self.calc_b()
         self.d_matr=self.g_matr@self.p_matr + self.b_matr
 
-        print("after b",cur_loss - self._eval_function())
+        if self.debug:
+            print("after b",cur_loss - self._eval_function())
 
     #########################
     # B modelling functions #
@@ -685,7 +686,7 @@ class SNMF:
         self.num_iterations += 1
 
 
-    def fit(self, x_matr, eval_print=True):
+    def fit(self, x_matr, eval_print=100, flush=False):
         """
         Run the optimization algorithm to fit the input matrix, until either a maximum number of iterations is reached (max_iter) or the loss function has decreased by less than tol.
         If the particles regularization is activated, the algorithm runs a first time with a regularization (regularized step) and a second time with a mask on a_matr entries without regularization (data fitting step)
@@ -753,8 +754,8 @@ class SNMF:
             elif (eval_before-eval_after_p) < 0 :
                 print("\nexit because of negative decrease")
                 break
-            if eval_print :
-                print(f"\rFinished iteration {self.num_iterations} of maximal {self.max_iter} function value decreased by: {eval_before-eval_after_p} taking: {time.time()-start} seconds",end="", flush=True)
+            if eval_print>0 and np.mod(self.num_iterations, eval_print)==0 :
+                print(f"\rFinished iteration {self.num_iterations} of maximal {self.max_iter} function value decreased by: {eval_before-eval_after_p} taking: {time.time()-start} seconds",end="", flush=flush)
 
         # The loss function changes so it needs to be reevaluated to avoid pseudo negative decrease
         if self.sparse_stop :
@@ -799,7 +800,7 @@ class SNMF:
                 print("\nexit because of negative decrease")
                 break
             if eval_print :
-                print(f"\rFinished iteration {self.num_iterations} of maximal {self.max_iter} function value decreased by: {eval_before-eval_after_p} taking: {time.time()-start} seconds",end="", flush=True)
+                print(f"\rFinished iteration {self.num_iterations} of maximal {self.max_iter} function value decreased by: {eval_before-eval_after_p} taking: {time.time()-start} seconds",end="", flush=flush)
 
         algo_time = time.time() - algo_start
         print(f"\nStopped after {self.num_iterations} iterations in {algo_time//60} minutes "

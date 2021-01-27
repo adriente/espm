@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+cython = "*"
+numpy = "*"
+hyperspy = "*"
+jupyterlab = "*"
+
+[dev-packages]
+pylint = "*"
+jupyter = "*"
+notebook = "*"
+yapf = "*"
+isort = "*"
+jedi = "*"
+
+
+[requires]
+python_version = "3.8"

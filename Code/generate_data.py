@@ -32,7 +32,7 @@ class AritificialSpim :
         self.density_map=np.zeros(shape_2D)
         
         # Stored objects
-        self.generated_spim=np.zeros(shape_2D+phases[0].shape)
+        self.generated_spim=None
         self.stochastic_spim=np.zeros(shape_2D+phases[0].shape)
         
     def wedge(self,ind_origin,length,width,conc_min,conc_max,phase_id) :
@@ -89,7 +89,7 @@ class AritificialSpim :
         if np.all(test) :
             # Adds the sphere to the weights
             self.weights[:,:,phase_id]+=circle
-            return self.weights[:,:,phase_id]
+            # return self.weights[:,:,phase_id]
         else : 
             print("the phases concentrations add up to more than one")
 
@@ -144,23 +144,19 @@ class AritificialSpim :
         
         #This is too slow, it should be possible to improve it using numpy broadcasting
         #smth like np.ones(shape3D)*self.weights[:,:,i]*phase[i]
-        
+
+
+
         if matrix :
-            sum=self.weights.sum(axis=2)
-            # weight of the matrix
-            matrix_weight=1-sum
-            # Matrix spectra
-            broadcast_matrix=np.repeat(matrix_weight[:,:,None],self.spectral_len,axis=2)
-            self.generated_spim+=broadcast_matrix*self.phases[0]
-            # Other phases spectra
-            for i in range(1,len(self.phases)) :
-                broadcast=np.repeat(self.weights[:,:,i][:,:,None],self.phases[i].shape[0],axis=2)
-                self.generated_spim+=broadcast*self.phases[i]
+            self.weights[:,:,0] = 1 -self.weights[:,:,1:].sum(axis=2)
+            self.generated_spim =  (self.weights.reshape(-1, self.weights.shape[-1]) @ self.phases).reshape(*self.shape_2D, -1)
+
             # Normalization step
             a = self.generated_spim.sum(axis=2)
             self.generated_spim=self.generated_spim/self.generated_spim.sum(axis=2,keepdims=True)
 
         else :
+            self.generated_spim=np.zeros(self.weights.shape[:2] + self.phases[0].shape)
             # All the phases spectra
             for i in range(len(self.phases)) :
                 broadcast=np.repeat(self.weights[:,:,i][:,:,None],self.phases[i].shape[0],axis=2)
