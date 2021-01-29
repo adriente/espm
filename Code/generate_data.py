@@ -22,19 +22,22 @@ class AritificialSpim :
         # I don't use phases as Gaussians instances within this class for generality purposes.
         # Initialisation of the relevant quantities
         self.shape_2D=shape_2D
-        self.phases=phases
-        self.densities=densities
-        self.spectral_len=phases[0].shape[0]
+        # Normalize the phases
+
+        self.phases=phases/np.sum(phases, axis=1, keepdims=True)
+        self.densities = densities
+        self.spectral_len = phases.shape[1]
 
         # The weights correspond to the spatial distribution of the different phases.
-        self.weights=np.zeros(shape_2D+(len(phases),))
+        self.weights = np.zeros(shape_2D+(len(phases),))
         # The density map correspond to the spatial distribution of the density
-        self.density_map=np.zeros(shape_2D)
-        
+        self.density_map = None
+
         # Stored objects
-        self.generated_spim=None
-        self.stochastic_spim=np.zeros(shape_2D+phases[0].shape)
-        
+        self.generated_spim = None
+        self.stochastic_spim = None
+        self.continuous_spim = None
+
     def wedge(self,ind_origin,length,width,conc_min,conc_max,phase_id) :
         """
         Function to define a wedge of a defined phase (from phases). The concentration in the wedge range from conc_min to conc_max. The wedge start from the top left corner and the concentration ramps from left to right only.
@@ -48,17 +51,17 @@ class AritificialSpim :
         if (ind_origin[0]+length<self.shape_2D[0]) or (ind_origin[1]+width<self.shape_2D[1]) :
             # Constructs the wedge in 2D
             wedge=np.linspace((np.linspace(conc_min,conc_max,num=width)),(np.linspace(conc_min,conc_max,num=width)),num=length)
-            
+
             # Construct the sum of weigths of each phase to evaluate later if they add up to more than one
             sum=self.weights.sum(axis=2)
             sum[ind_origin[0]:ind_origin[0]+length,ind_origin[1]:ind_origin[1]+width]+=wedge
             test=sum<1
-            
+
             if np.all(test) :
                 # Adds the wedge to the weights
                 self.weights[ind_origin[0]:ind_origin[0]+length,ind_origin[1]:ind_origin[1]+width,phase_id]+=wedge
                 return self.weights[:,:,phase_id]
-            else : 
+            else :
                 print("the phases concentrations add up to more than one")
         else :
             print("Wedge has a too large width or length")
@@ -85,12 +88,12 @@ class AritificialSpim :
         sum=self.weights.sum(axis=2)
         sum+=circle
         test=sum<1
-        
+
         if np.all(test) :
             # Adds the sphere to the weights
             self.weights[:,:,phase_id]+=circle
             # return self.weights[:,:,phase_id]
-        else : 
+        else :
             print("the phases concentrations add up to more than one")
 
     def intensity_map(self,ind_origin,image,conc_max,phase_id) :
@@ -111,117 +114,132 @@ class AritificialSpim :
         if self.shape_2D[0]>(image.shape[0]+ind_origin[0] ) and self.shape_2D[1]>(image.shape[1]+ind_origin[1] ) :
             # No truncation
             canvas[ind_origin[0]:image.shape[0]+ind_origin[0],ind_origin[1]:image.shape[1]+ind_origin[1]] = n_image
-        elif self.shape_2D[0]<(image.shape[0]+ind_origin[0] ) and self.shape_2D[1]>(image.shape[1]+ind_origin[1] ) : 
+        elif self.shape_2D[0]<(image.shape[0]+ind_origin[0] ) and self.shape_2D[1]>(image.shape[1]+ind_origin[1] ) :
             #axis 0 truncation
             canvas[ind_origin[0]:,ind_origin[1]:image.shape[1]+ind_origin[1]] = n_image[:self.shape_2D[0]-ind_origin[0],:]
         elif self.shape_2D[0]>(image.shape[0]+ind_origin[0] ) and self.shape_2D[1]<(image.shape[1]+ind_origin[1] ) :
             #axis 1 truncation
             canvas[ind_origin[0]:image.shape[0]+ind_origin[0],ind_origin[1]:] = n_image[:,:self.shape_2D[1]-ind_origin[1]]
-        else : 
+        else :
             # Truncation
             canvas[ind_origin[0]:,ind_origin[1]:] = n_image[:self.shape_2D[0]-ind_origin[0],:self.shape_2D[1]-ind_origin[1]]
-        
+
         # Construct the sum of weigths of each phase to evaluate later if they add up to more than one
         sum=self.weights.sum(axis=2)
         sum+=canvas
         test=sum<1
-        
+
         if np.all(test) :
             # Adds the image to the weights
             self.weights[:,:,phase_id]=canvas
             return self.weights[:,:,phase_id]
-        else : 
+        else :
             print("the phases concentrations add up to more than one")
 
-        
 
-    def generate_spim_deterministic(self, matrix=True) :
+
+    def generate_spim_deterministic(self, matrix=True):
         """
-        Function to generate an ideal spectrum image based on weights and phases. The different phases are linearly mixed according to the local sum of weights. The first phase can be set as the matrix. With that option the concentration sums to one in every pixel.
-        Inputs : 
+        Function to generate an ideal spectrum image based on weights and phases. The different phases 
+        are linearly mixed according to the local sum of weights. The first phase can be set as the 
+        matrix. With that option the concentration sums to one in every pixel.
+
+        Inputs 
+        ------
             matrix : enable/disable the presence of the matrix (boolean)
         """
-        
-        #This is too slow, it should be possible to improve it using numpy broadcasting
-        #smth like np.ones(shape3D)*self.weights[:,:,i]*phase[i]
+        # I believe that matrix should always be true
+        if matrix:
+            self.weights[:, :, 0] = 1 - self.weights[:, :, 1:].sum(axis=2)
+
+        self.generated_spim = (self.weights.reshape(
+            -1, self.weights.shape[-1]) @ self.phases).reshape(
+                *self.shape_2D, -1)
 
 
 
-        if matrix :
-            self.weights[:,:,0] = 1 -self.weights[:,:,1:].sum(axis=2)
-            self.generated_spim =  (self.weights.reshape(-1, self.weights.shape[-1]) @ self.phases).reshape(*self.shape_2D, -1)
-
-            # Normalization step
-            a = self.generated_spim.sum(axis=2)
-            self.generated_spim=self.generated_spim/self.generated_spim.sum(axis=2,keepdims=True)
-
-        else :
-            self.generated_spim=np.zeros(self.weights.shape[:2] + self.phases[0].shape)
-            # All the phases spectra
-            for i in range(len(self.phases)) :
-                broadcast=np.repeat(self.weights[:,:,i][:,:,None],self.phases[i].shape[0],axis=2)
-                self.generated_spim+=broadcast*self.phases[i]
-        return a
 
 ###################################################
 # Quick and dirty way to add gaussian noise begin #
 ###################################################
 
-    # def generate_spim_gaussian (self, sigma, matrix=True,clip=True) :
-    #     self.generated_spim*=200
-    #     gauss_spim=np.random.normal(0,sigma,self.generated_spim.shape)+self.generated_spim
-    #     if clip :
-    #         self.stochastic_spim=gauss_spim.clip(min=0)
-    #     else :
-    #         self.stochastic_spim=gauss_spim
+# def generate_spim_gaussian (self, sigma, matrix=True,clip=True) :
+#     self.generated_spim*=200
+#     gauss_spim=np.random.normal(0,sigma,self.generated_spim.shape)+self.generated_spim
+#     if clip :
+#         self.stochastic_spim=gauss_spim.clip(min=0)
+#     else :
+#         self.stochastic_spim=gauss_spim
 
 #################################################
 # Quick and dirty way to add gaussian noise end #
 #################################################
 
-    def generate_spim_stochastic (self,N,matrix=True) :
+    def generate_spim_stochastic (self,N, old=False) :
         """
-        Function to generate a noisy spectrum image based on an ideal one. For each pixel, local_N random spectroscopic events are drown from the probabilities given by the ideal spectra. local_N is drawn from a poisson distribution with average N weighted by the local density. The density of the matrix is set similarly as for generate_spim_deterministic.
+        Function to generate a noisy spectrum image based on an ideal one. For each pixel, 
+        local_N random spectroscopic events are drown from the probabilities given by the 
+        ideal spectra. local_N is drawn from a poisson distribution with average N weighted 
+        by the local density. The density of the matrix is set similarly as for 
+        generate_spim_deterministic.
+
         Inputs : 
             N : average number of events (integer)
             matrix : enable/disable the presence of the matrix (boolean)
         """
-        
-        # creation of the density map based on weights and densities
-        if matrix :
-            sum=self.weights.sum(axis=2)
-            matrix_weight=1-sum
-            self.density_map+=matrix_weight*self.densities[0]
-            for i in range(1,len(self.phases)) :
-                self.density_map+=self.weights[:,:,i]*self.densities[i]
-        else :
-            for i in range(len(self.phases)) :
-                self.density_map+=self.weights[:,:,i]*self.densities[i]
-        
-        # generating the spectroscopic events
-        for i in range(self.shape_2D[0]) :
-            for j in range(self.shape_2D[1]) :
-                # Draw a local_N based on the local density
-                local_N=np.random.poisson(N*self.density_map[i,j])
-                # draw local_N events from the ideal spectrum
-                counts = np.random.choice(self.spectral_len,local_N,p=self.generated_spim[i,j])
-                # Generate the spectrum based on the drawn events
-                hist=np.bincount(counts,minlength=self.spectral_len)
-                self.stochastic_spim[i,j] = hist
+        if False:
+            self.density_map = np.sum(self.weights * np.expand_dims(self.densities, axis=(0,1)), axis=2)
 
-    def map_phase(self,phase_id,matrix=True) :
-        #matrix boolean should change to self.matrix
-        """
-        Function to access the spatial distribution of the chosen phase.
-        Input :
-            phase_id : index of the phase in self.phases (integer) 
-        """
-        if (matrix) and (phase_id==0) :
-            sum=self.weights.sum(axis=2)
-            matrix_weight=1-sum
-            return matrix_weight
-        else :
-            return self.weights[:,:,phase_id]
+            self.continuous_spim = N * self.generated_spim * np.expand_dims(self.density_map, axis=2)
+
+            self.stochastic_spim=np.zeros([*self.shape_2D, self.spectral_len])
+
+            # generating the spectroscopic events
+            for i in range(self.shape_2D[0]) :
+                for j in range(self.shape_2D[1]) :
+                    # Draw a local_N based on the local density
+                    local_N=np.random.poisson(N*self.density_map[i,j])
+                    # draw local_N events from the ideal spectrum
+                    counts = np.random.choice(self.spectral_len,local_N,p=self.generated_spim[i,j])
+                    # Generate the spectrum based on the drawn events
+                    hist=np.bincount(counts,minlength=self.spectral_len)
+                    self.stochastic_spim[i,j] = hist
+        else:
+            
+            # n D W A
+            self.continuous_spim = N *  (self.weights.reshape(-1, self.weights.shape[-1])  
+                                        @ (self.phases * np.expand_dims(self.densities, axis=1))
+                                        ).reshape(*self.shape_2D, -1)       
+
+            self.stochastic_spim=np.zeros([*self.shape_2D, self.spectral_len])
+            for k, w in enumerate(self.densities):
+                # generating the spectroscopic events
+                for i in range(self.shape_2D[0]) :
+                    for j in range(self.shape_2D[1]) :
+                        # Draw a local_N based on the local density
+                        local_N = np.random.poisson(N * w *self.weights[i,j,k])
+                        # draw local_N events from the ideal spectrum
+                        counts = np.random.choice(self.spectral_len, local_N, p=self.phases[k])
+                        # Generate the spectrum based on the drawn events
+                        hist=np.bincount(counts,minlength=self.spectral_len)
+                        self.stochastic_spim[i,j] += hist
+
+
+
+
+    # def map_phase(self,phase_id,matrix=True) :
+    #     #matrix boolean should change to self.matrix
+    #     """
+    #     Function to access the spatial distribution of the chosen phase.
+    #     Input :
+    #         phase_id : index of the phase in self.phases (integer) 
+    #     """
+    #     if (matrix) and (phase_id==0) :
+    #         sum=self.weights.sum(axis=2)
+    #         matrix_weight=1-sum
+    #         return matrix_weight
+    #     else :
+    #         return self.weights[:,:,phase_id]
 
     def save(self,filename) :
         """
@@ -230,12 +248,22 @@ class AritificialSpim :
             filename : name of the file you want to save (string)
         Note : You might want to change the scale and offset to suit your needs
         """
-        signal=hs.signals.Signal1D(self.stochastic_spim)
-        signal.axes_manager[2].name="Energy"
-        signal.axes_manager[2].scale=0.01
-        signal.axes_manager[2].offset=0.20805000000000007
-        signal.axes_manager[2].unit="keV"
-        signal.save(filename,extension="hspy")
-        for i in range(len(self.phases)) :
-            np.save(filename+"map_p{}".format(i),self.map_phase(i))
-            np.savetxt(filename+"spectrum_p{}".format(i),self.phases[i].T)
+        d = {} # dictionary of everything we would like to save
+
+        # signal=hs.signals.Signal1D(self.stochastic_spim)
+        # signal.axes_manager[2].name="Energy"
+        # signal.axes_manager[2].scale=0.01
+        # signal.axes_manager[2].offset=0.20805000000000007
+        # signal.axes_manager[2].unit="keV"
+        # d["signal"] = signal
+
+        # signal.save(filename,extension="hspy")
+        d["X"] = self.stochastic_spim
+        d["Xdot"] = self.continuous_spim
+        d["phases"] = self.phases
+        d["densities"] = self.densities
+        d["weights"] = self.weights
+        np.savez(filename, **d)
+        # for i in range(len(self.phases)) :
+        #     np.save(filename+"map_p{}".format(i),self.map_phase(i))
+        #     np.savetxt(filename+"spectrum_p{}".format(i),self.phases[i].T)
