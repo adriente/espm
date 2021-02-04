@@ -15,7 +15,7 @@ setuptools.setup(
     zip_safe=False,
     long_description=long_description,
     long_description_content_type="text/markdown",
-    extras_require={'testing': ['flake8', 'pytest', 'jupyterlab', 'twine', 'setuptools', 'wheel']},
+    extras_require={'testing': ['flake8', 'pytest', 'jupyterlab', 'twine', 'setuptools', 'wheel', 'PyQt5']},
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
