@@ -4,12 +4,22 @@ import numpy as np
 def spectral_angle(v1, v2):
     """
     Calculates the angle between two spectra. They have to have the same dimension.
-    :v1: first spectrum (np.array 1D)
-    :v2: second spectrum (np.array 1D)
+    :v1: (np.array 1D) first spectrum 
+    :v2: (np.array 1D) second spectrum 
     """
     v1_u = v1/np.linalg.norm(v1)
     v2_u = v2/np.linalg.norm(v2)
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))*180/np.pi
+
+
+def mse(map1,map2) :
+    """ Mean square error.
+
+    Calculates the mean squared error between two 2D arrays. They have to have the same dimension.
+    :map1: (np.array 2D) first array 
+    :map2: (np.array 2D) second array 
+    """
+    return np.sum((map1-map2)**2)
 
 # This function will find the best matching endmember for each true spectrum. 
 # This is useful since the A and P matrice are initialized at random. 
@@ -41,10 +51,10 @@ def find_min_MSE (list_true_maps,list_algo_maps) :
     for i in range(len(list_true_maps)) :
         list_maps=[]
         for j in range(len(list_algo_maps)) :
-            list_maps.append(MSE_map(list_true_maps[i],list_algo_maps[j]))
+            list_maps.append(mse(list_true_maps[i],list_algo_maps[j]))
         ind_min=np.argmin(np.array(list_maps))
         list_algo_maps[ind_min]=1e28*np.ones(size)
-        ordered_maps.append(MSE_map(list_true_maps[i],copy_algo_maps[ind_min]))
+        ordered_maps.append(mse(list_true_maps[i],copy_algo_maps[ind_min]))
     return ordered_maps
 
 # This function gives the residuals between the model determined by snmf and the data that were fitted
