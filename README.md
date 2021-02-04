@@ -23,6 +23,12 @@ You can then simply run the tests with
 pytest snmfem
 ```
 
+## Getting started with the repo
+Generate the synthetic dataset. Run the script:
+```
+python scripts/generate_synthetic_dataset.py
+```
+
 
 # TO BE UPDATED!
 

@@ -16,6 +16,17 @@ def MSE_map(map1, map2):
     return tr_m1_m1 - 2 * tr_m1_m2 + tr_m2_m2
 
 
+def spectral_angle(v1, v2):
+    """
+    Calculates the angle between two spectra. They have to have the same dimension.
+    :v1: first spectrum (np.array 1D)
+    :v2: second spectrum (np.array 1D)
+    """
+    v1_u = v1 / np.linalg.norm(v1)
+    v2_u = v2 / np.linalg.norm(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)) * 180 / np.pi
+
+
 def test_mse():
 
     a = np.random.randn(10, 34)

@@ -6,3 +6,4 @@ build
 **.npz
 **#
 **~
+generated_datasets
