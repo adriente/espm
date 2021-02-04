@@ -2,7 +2,7 @@ import numpy as np
 from snmfem import generate_data as gd
 from snmfem import EDXS_model as em
 from snmfem.conf import DB_PATH
-
+import os
 
 def test_generate():
     # To save the dataset
@@ -13,7 +13,8 @@ def test_generate():
     abs_elt_dict = None
 
     # Continuum X-rays parameters
-    # They were determine by fitting experimental data from 0.6 to 18 keV. Since low energies were incorporated, the model is only effective and not quantitative.
+    # They were determine by fitting experimental data from 0.6 to 18 keV. 
+    # Since low energies were incorporated, the model is only effective and not quantitative.
     brstlg_pars = {
         "c0": 0.094,
         "c1": 1417,
@@ -23,8 +24,6 @@ def test_generate():
         "b2": 0.00683,
     }
 
-    # brstlg_pars = {"c0" : 9.3144e-04,"c1" : 1.23453632, "c2" : 4.9488e-10, "b0" : 0.14986191, "b1" : -0.00188483, "b2" : 2.5428e-04}
-
     scale = 1
 
     # Average number of counts in one spectrum of the artificial data
@@ -32,7 +31,6 @@ def test_generate():
 
     # Creation of the pure spectra of the different phases.
     phase1 = em.EDXS_Model(DB_PATH, abs_db_path, brstlg_pars)
-    # phase1.generate_abs_coeff({"8":1.0,"12" : 0.51,"14":0.61,"13":0.07,"20":0.04,"62":0.02,"26":0.028,"60":0.002,"71":0.003,"72":0.003,"29" : 0.02})
     # Gaussians corresponding to elements
     phase1.generate_spectrum(
         {
@@ -52,7 +50,6 @@ def test_generate():
     )
 
     phase2 = em.EDXS_Model(DB_PATH, abs_db_path, brstlg_pars)
-    # phase2.generate_abs_coeff({"8":0.54,"26":0.15,"12" : 1.0,"29":0.038,"92":0.0052,"60":0.004,"31":0.03,"71":0.003})
     phase2.generate_spectrum(
         {
             "8": 0.54,
@@ -68,7 +65,6 @@ def test_generate():
     )
 
     phase3 = em.EDXS_Model(DB_PATH, abs_db_path, brstlg_pars)
-    # phase3.generate_abs_coeff({"8":1.0,"14":0.12,"13":0.18,"20":0.47,"62":0.04,"26":0.004,"60":0.008,"72":0.004,"29":0.01})
     phase3.generate_spectrum(
         {
             "8": 1.0,
@@ -115,3 +111,25 @@ def test_generate():
     Xdot = spim.continuous_spim.reshape(-1, 1980).T
     # n D W A
     np.testing.assert_allclose(N * D @ np.diag(w) @ A, Xdot)
+
+    filename = "test.npz"
+    spim.save(filename)
+
+    dat = np.load(filename)
+    X = dat["X"]
+    Xdot = dat["Xdot"]
+    phases = dat["phases"] 
+    densities = dat["densities"]
+    weights = dat["weights"]
+    N = dat["N"]
+    D = phases.T
+    A = weights.reshape(-1, 3).T  
+    w = densities
+    Xdot = Xdot.reshape(-1, 1980).T
+
+    np.testing.assert_allclose(N * D @ np.diag(w) @ A, Xdot)
+    del dat
+
+    os.remove(filename)
+
+

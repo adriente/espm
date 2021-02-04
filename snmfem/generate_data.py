@@ -39,6 +39,7 @@ class AritificialSpim:
         self.generated_spim = None
         self.stochastic_spim = None
         self.continuous_spim = None
+        self.N = None
 
     def wedge(self, ind_origin, length, width, conc_min, conc_max, phase_id):
         """
@@ -219,6 +220,7 @@ class AritificialSpim:
         """
         # Set the seed
         np.random.seed(seed)
+        self.N = N
         if old:
             self.generate_spim_deterministic()
 
@@ -303,6 +305,7 @@ class AritificialSpim:
         d["phases"] = self.phases
         d["densities"] = self.densities
         d["weights"] = self.weights
+        d["N"] = self.N
         np.savez(filename, **d)
         # for i in range(len(self.phases)) :
         #     np.save(filename+"map_p{}".format(i),self.map_phase(i))
