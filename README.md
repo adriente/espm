@@ -3,6 +3,29 @@
 # Simplex non-negative matrix factorization for Electron Microscopy
 This project contains the code to create artificial Energy dispersive X-ray spectroscopy (EDXS) data and to perform hyperspectral unmixing on EDXS spectrum images.
 
+
+## Installation
+You can install this package using
+```
+pip install cython
+pip install .
+```
+
+## Installation as a developer (What you should do Adrien)
+After setting up your virtual environnement, simply run 
+```
+pip install cython
+pip install -e ".[testing]"
+```
+
+You can then simply run the tests with 
+```
+pytest snmfem
+```
+
+
+# TO BE UPDATED!
+
 ## Repo structure
 * The implementation of the SNMF algorithm can be found in `Code/snmf.py`
 * If you want to use this you should have a look at the `Code/analyze_data.ipynb` notebook for some example code.
