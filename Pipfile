@@ -8,7 +8,7 @@ cython = "*"
 numpy = "*"
 hyperspy = "*"
 jupyterlab = "*"
-snmfem = {editable = true, path = "."}
+snmfem = {editable = true, extras = ["testing"], path = "."}
 
 [dev-packages]
 pylint = "*"
