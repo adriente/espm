@@ -11,7 +11,7 @@ setuptools.setup(
     author='Adrien Teurtie, Nathanael Perraudin',
     author_email='nathanael.perraudin@sdsc.ethz.ch',
     license='MIT',
-    packages=setuptools.find_packages(where="./Code"),
+    packages=setuptools.find_packages(),
     zip_safe=False,
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -175,7 +175,7 @@ class AritificialSpim :
 # Quick and dirty way to add gaussian noise end #
 #################################################
 
-    def generate_spim_stochastic (self,N, old=False) :
+    def generate_spim_stochastic (self,N, seed=0, old=False) :
         """
         Function to generate a noisy spectrum image based on an ideal one. For each pixel, 
         local_N random spectroscopic events are drown from the probabilities given by the 
@@ -184,10 +184,15 @@ class AritificialSpim :
         generate_spim_deterministic.
 
         Inputs : 
-            N : average number of events (integer)
-            matrix : enable/disable the presence of the matrix (boolean)
+            N : (integer) average number of events 
+            seed : (integer) the seed for reproducible result. Default: 0.
+            old : (boolean) use the old way to generate data. Default: False.
         """
-        if False:
+        # Set the seed
+        np.random.seed(seed)
+        if old:
+            self.generate_spim_deterministic()
+
             self.density_map = np.sum(self.weights * np.expand_dims(self.densities, axis=(0,1)), axis=2)
 
             self.continuous_spim = N * self.generated_spim * np.expand_dims(self.density_map, axis=2)

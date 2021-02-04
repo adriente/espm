@@ -1,7 +1,7 @@
 import numpy as np
 import json
 import os
-import utils as u
+import snmfem.utils as u
 import re
 
 # Class to model the EDXS spectra. This is a temporary version since there are some design issues.
