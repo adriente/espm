@@ -1,0 +1,6 @@
+include *.md
+include *.py
+include *.yaml
+include *.yml
+include *.json
+recursive-include notebooks *.ipynb
