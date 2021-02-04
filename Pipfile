@@ -8,6 +8,7 @@ cython = "*"
 numpy = "*"
 hyperspy = "*"
 jupyterlab = "*"
+snmfem = {editable = true, path = "."}
 
 [dev-packages]
 pylint = "*"
@@ -16,7 +17,6 @@ notebook = "*"
 yapf = "*"
 isort = "*"
 jedi = "*"
-
 
 [requires]
 python_version = "3.8"
