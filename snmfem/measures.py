@@ -4,12 +4,22 @@ import numpy as np
 def spectral_angle(v1, v2):
     """
     Calculates the angle between two spectra. They have to have the same dimension.
-    :v1: (np.array 1D) first spectrum
-    :v2: (np.array 1D) second spectrum
+    :v1: first spectrum (np.array 1D)
+    :v2: second spectrum (np.array 1D)
     """
-    v1_u = v1 / np.linalg.norm(v1)
-    v2_u = v2 / np.linalg.norm(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)) * 180 / np.pi
+
+    if len(v1.shape)==1:
+        if v1.shape != v2.shape:
+            raise ValueError("v1 and v2 should have the same shape.")
+        v1_u = v1 / np.linalg.norm(v1)
+        v2_u = v2 / np.linalg.norm(v2)
+        return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)) * 180 / np.pi
+    else:
+        if v1.shape[1] != v2.shape[1]:
+            raise ValueError("The second dimensions of v1 and v2 should be the same.")
+        v1_u = v1 / np.sqrt(np.sum((v1**2), axis=1, keepdims=True))
+        v2_u = v2 / np.sqrt(np.sum((v2**2), axis=1, keepdims=True))
+        return np.arccos(np.clip(v1_u @ v2_u.T, -1.0, 1.0)) * 180 / np.pi
 
 
 def mse(map1, map2):

@@ -95,17 +95,17 @@ def test_generate():
     spim.sphere((15, 12), 3.5, 3.5, 0.0, 0.5, 2)
 
     # Generates a noiseless version of the dataset
-    spim.generate_spim_deterministic()
-    assert spim.generated_spim.shape == (20, 20, 1980)
+    spim.generate_spim_stochastic(N)
 
-    np.testing.assert_allclose(np.sum(spim.generated_spim, axis=2), np.ones([20, 20]))
+
 
     D = spim.phases.T
     A = spim.weights.reshape(-1, 3).T
     X = spim.generated_spim.reshape(-1, 1980).T
     np.testing.assert_allclose(D @ A, X)
+    assert spim.generated_spim.shape == (20, 20, 1980)
 
-    spim.generate_spim_stochastic(N)
+    np.testing.assert_allclose(np.sum(spim.generated_spim, axis=2), np.ones([20, 20]))
 
     w = spim.densities
     Xdot = spim.continuous_spim.reshape(-1, 1980).T

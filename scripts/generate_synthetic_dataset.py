@@ -49,10 +49,11 @@ def generate_synthetic_dataset(seeds=[0], N=100):
 
     spim.sphere((25, 30), 3.5, 3.5, 0.0, 0.5, 1)
     spim.sphere((55, 30), 3.5, 3.5, 0.0, 0.5, 2)
+    folder = DATASETS_PATH / Path("aspim037_N{}_2ptcls_brstlg".format(N))
+    folder.mkdir(exist_ok=True, parents=True)
 
     for seed in tqdm(seeds):
-        filename = DATASETS_PATH / \
-            Path("aspim037_N{}_2ptcls_brstlg_seed{}".format(N, seed))
+        filename = folder / Path("sample_{}".format(seed))
         spim.generate_spim_stochastic(N, seed=seed)
         spim.save(filename=filename)
 

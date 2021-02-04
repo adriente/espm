@@ -221,8 +221,8 @@ class AritificialSpim:
         # Set the seed
         np.random.seed(seed)
         self.N = N
+        self.generate_spim_deterministic()
         if old:
-            self.generate_spim_deterministic()
 
             self.density_map = np.sum(
                 self.weights * np.expand_dims(self.densities, axis=(0, 1)), axis=2

@@ -5,9 +5,6 @@ name = "pypi"
 
 [packages]
 cython = "*"
-numpy = "*"
-hyperspy = "*"
-jupyterlab = "*"
 snmfem = {editable = true, extras = ["testing"], path = "."}
 
 [dev-packages]
