@@ -1,0 +1,725 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Gradient compuations
+\end_layout
+
+\begin_layout Section
+Optimization problem
+\end_layout
+
+\begin_layout Standard
+Let us consider the following optimization problem
+\begin_inset Formula 
+\begin{align*}
+\arg\min_{A\geq0,P\geq0} & \mathcal{L}(A,P)\\
+\text{where} & \mathcal{L}(A,P)=-\langle X,\log(GPA)\rangle+\langle\mathbf{1}^{\ell,p},GPA\rangle
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Gradient computations
+\end_layout
+
+\begin_layout Standard
+Let us first notice that for
+\begin_inset Formula 
+\[
+f(\Lambda)=\sum_{i,j}X_{ij}\log\left(\Lambda_{ij}\right)=\langle X,\log(\Lambda)\rangle
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\frac{\partial f}{\partial\Lambda_{i,j}}=\frac{X_{ij}}{\Lambda_{ij}}\hspace{1em}\nabla_{\Lambda}f_{2}=X\oslash\Lambda\neq X\Lambda^{-1}
+\]
+
+\end_inset
+
+Here the symbol 
+\begin_inset Formula $\oslash$
+\end_inset
+
+ means the elementwise division.
+ So finally we have:
+\begin_inset Formula 
+\[
+\mathcal{L}(A,P)=-\langle X,\log(GPA)\rangle+\langle\mathbf{1}^{\ell,p},GPA\rangle
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\nabla_{A}\mathcal{L}=-P^{T}G^{T}\left(X\oslash GPA\right)+P^{T}G^{T}\mathbf{\mathbf{1}^{\ell,p}}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\nabla_{P}\mathcal{L}=-G^{T}\left(X\oslash GPA\right)A^{T}+G^{T}\mathbf{1}^{\ell,p}A^{T}
+\]
+
+\end_inset
+
+Note that if we add a small term 
+\begin_inset Formula $\mathbb{\eta}$
+\end_inset
+
+ in the loss: 
+\begin_inset Formula $\mathcal{L}^{\prime}(A,P)=-\langle X,\log(GPA+\mathbb{\eta})\rangle+\langle\mathbf{1}^{\ell,p},GPA\rangle$
+\end_inset
+
+, we obtain
+\begin_inset Formula 
+\[
+\nabla_{A}\mathcal{L^{\prime}}=-P^{T}G^{T}\left(X\oslash\left(GPA+\mathbb{\eta}\right)\right)+P^{T}G^{T}\mathbf{1}^{\ell,p}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\nabla_{P}\mathcal{L}^{\prime}=-G^{T}\left(X\oslash\left(GPA+\mathbb{\eta}\right)\right)A^{T}+G^{T}\mathbf{1}^{\ell,p}A^{T}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+KKT conditions
+\end_layout
+
+\begin_layout Standard
+The lagragian is given by
+\begin_inset Formula 
+\[
+L(A,P,\mu)=-\langle X,\log(GPA)\rangle+\langle\mathbf{1}^{\ell,p},GPA\rangle+\mu\circ\left(-A\right)
+\]
+
+\end_inset
+
+The KKT conditions for 
+\begin_inset Formula $A$
+\end_inset
+
+ are
+\begin_inset Formula 
+\[
+\nabla_{A}L(A,P,\mu)=\nabla_{A}\mathcal{L}(A,P)-\mu=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+-A\leq\mathbf{0}^{k\times p}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\mu\geq\mathbf{0}^{k\times p}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+A\circ\mu=\mathbf{0}^{k\times p}
+\]
+
+\end_inset
+
+Using 
+\begin_inset Formula $\nabla_{A}\mathcal{L}(A,P)=\mu,$
+\end_inset
+
+ we can rewrite these equations as 
+\begin_inset Formula 
+\[
+\nabla_{A}\mathcal{L}(A,P)\geq\mathbf{0}^{k\times p}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+A\geq\mathbf{0}^{k\times p}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\nabla_{A}\mathcal{L}(A,P)\circ A=\mathbf{0}^{k\times p}
+\]
+
+\end_inset
+
+or simply
+\begin_inset Formula 
+\[
+\min\left(\nabla_{A}\mathcal{L}(A,P),A\right)=\mathbf{0}^{k\times p}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Link with divergence
+\end_layout
+
+\begin_layout Standard
+Let us consider the generalized KL divergence
+\begin_inset Formula 
+\[
+D(B\|A)=\sum_{ij}B_{ij}\log\left(\frac{B_{ij}}{A_{ij}}\right)-B_{ij}+A_{ij}
+\]
+
+\end_inset
+
+where we have by convention, we have 
+\begin_inset Formula $\frac{0}{0}=0$
+\end_inset
+
+ and 
+\begin_inset Formula $0\log0=0.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+D\left(X\|GPA\right) & =\sum_{i,j}X_{ij}\log\left(\frac{X_{ij}}{\left[GPA\right]_{ij}}\right)-X_{ij}+\left[GPA\right]_{ij}\\
+ & =\sum_{ij}X_{ij}\log\left(X_{ij}\right)-X_{ij}\log\left(\left[GPA\right]_{ij}\right)-X_{ij}+\left[GPA\right]_{ij}
+\end{align*}
+
+\end_inset
+
+We observe that if we minimize 
+\begin_inset Formula $D\left(X\|GPA\right)$
+\end_inset
+
+ with respect of 
+\begin_inset Formula $P$
+\end_inset
+
+ and 
+\begin_inset Formula $A,$
+\end_inset
+
+ we recover the loss: 
+\begin_inset Formula $\sum_{ij}-X_{ij}\log\left(\left[GPA\right]_{ij}\right)+\left[GPA\right]_{ij}$
+\end_inset
+
+ by droping the terms that do not depend of 
+\begin_inset Formula $P,A.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Subsection
+Toward an iterative algorithm
+\end_layout
+
+\begin_layout Standard
+Let us consider a gradient step of 
+\begin_inset Formula $A$
+\end_inset
+
+.
+ We have 
+\begin_inset Formula 
+\begin{align*}
+A_{t+1} & =A_{t}-\gamma\circ\nabla_{A}\mathcal{L}\vert_{A_{t},P_{t}}\\
+ & =A_{t}-\gamma\circ\left(-P_{t}^{T}G_{t}^{T}\left(X\oslash G_{t}P_{t}A_{t}\right)+P_{t}^{T}G_{t}^{T}\mathbf{\mathbf{1}^{\ell,p}}\right)\\
+ & =\left(A_{t}\oslash P_{t}^{T}G_{t}^{T}\mathbf{\mathbf{1}^{\ell,p}}\right)\circ\left(P_{t}^{T}G_{t}^{T}\left(X\oslash G_{t}P_{t}A_{t}\right)\right)
+\end{align*}
+
+\end_inset
+
+where we used 
+\begin_inset Formula $\gamma=A_{t}\oslash P_{t}^{T}G_{t}^{T}\mathbf{\mathbf{1}^{\ell,p}}$
+\end_inset
+
+.
+ Similarly, the gradient step for 
+\begin_inset Formula $P$
+\end_inset
+
+ is
+\begin_inset Formula 
+\begin{align*}
+P_{t+1} & =P_{t}-\gamma\circ\nabla_{P}\mathcal{L}\vert_{A_{t},P_{t}}\\
+ & =P_{t}-\gamma\circ\left(-G^{T}\left(X\oslash GPA\right)A^{T}+G^{T}\mathbf{1}^{\ell,p}A^{T}\right)\\
+ & =\left(P_{t}\oslash G^{T}\mathbf{1}^{\ell,p}A^{T}\right)\circ\left(G^{T}\left(X\oslash GPA\right)A^{T}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Adding the constraints and regularizers
+\end_layout
+
+\begin_layout Standard
+First we need to add the constraint that
+\begin_inset Formula $A\mathbf{1}^{p}=\mathbf{1}^{k}$
+\end_inset
+
+.
+ This force 
+\begin_inset Formula $A$
+\end_inset
+
+ to have the correct normalization.
+ Then we add the regularizer 
+\begin_inset Formula $m^{T}\log(A)\mathbf{1}^{p}$
+\end_inset
+
+, where 
+\begin_inset Formula $m$
+\end_inset
+
+ is a mask that select all the line of 
+\begin_inset Formula $A$
+\end_inset
+
+ except the first, i.e.
+ 
+\begin_inset Formula $m^{T}=[0,1,1,\dots,1]$
+\end_inset
+
+.
+ The problem becomes
+\begin_inset Formula 
+\begin{align*}
+\arg\min_{A\geq0,P\geq0,A,\mathbf{1}^{P}=\mathbf{1}^{k}} & \mathcal{L}(A,P)\\
+\text{where} & \mathcal{L}(A,P)=-\langle X,\log(GPA)\rangle+\langle\mathbf{1}^{\ell,p},GPA\rangle+\mu M\log(A+\epsilon)\mathbf{1}^{p}
+\end{align*}
+
+\end_inset
+
+Let us write the lagrangian 
+\begin_inset Formula 
+\[
+L(A,P,\lambda,\omega,\nu)=-\langle X,\log(GPA)\rangle+\langle\mathbf{1}^{\ell,p},GPA\rangle-\mu m^{T}\log(A+\epsilon)\mathbf{1}^{p}-\langle\lambda,A\rangle-\langle\omega,P\rangle+\nu^{T}\left(A\mathbf{1}^{p}-\mathbf{1}^{k}\right)
+\]
+
+\end_inset
+
+Let us leave the positivity constraint for now and we have
+\begin_inset Formula 
+\[
+\tilde{\mathcal{L}}(A,P,\nu)=-\langle X,\log(GPA)\rangle+\langle\mathbf{1}^{\ell,p},GPA\rangle+\mu m^{T}\log(A+\epsilon)\mathbf{1}^{p}+\nu^{T}\left(A\mathbf{1}^{p}-\mathbf{1}^{k}\right)
+\]
+
+\end_inset
+
+Using 
+\series bold
+
+\begin_inset Formula $GP=D^{\prime},$
+\end_inset
+
+
+\series default
+ we rewrite this 
+\begin_inset Formula $\tilde{\mathcal{L}}(A,P,\nu)$
+\end_inset
+
+ as
+\begin_inset Formula 
+\[
+\tilde{\mathcal{L}}(A,P,\nu)={\color{purple}-\sum_{\ell,p}X_{\ell,p}\log\left(\sum_{k}D_{\ell,k}^{\prime}A_{k,p}\right)}+\sum_{\ell,k,p}D_{\ell,k}^{\prime}A_{k,p}+\mu\sum_{k,p}m_{k}\log(A_{k,p}+\epsilon)+\sum_{k}\nu_{k}\left(\sum_{p}A_{kp}-1\right)
+\]
+
+\end_inset
+
+Inspired by 
+\backslash
+cite{}, we define an auxiliary function
+\begin_inset Formula 
+\begin{align*}
+G(A,A^{t}) & =\sum_{\ell,k,p}D_{\ell,k}^{\prime}A_{k,p}+\mu\sum_{k,p}m_{k}\log\left(A_{k,p}+\epsilon\right)+\sum_{k}\nu_{k}\left(\sum_{p}A_{kp}-1\right)\\
+ & {\color{purple}-\sum_{\ell,i,p}X_{\ell,p}\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}}\left(\log\left(D_{\ell,i}^{\prime}A_{i,p}\right)-\log\left(\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}}\right)\right)}
+\end{align*}
+
+\end_inset
+
+We make two observations.
+ First 
+\begin_inset Formula $\tilde{\mathcal{L}}(A,P,\nu)=G(A,A),$
+\end_inset
+
+ as 
+\begin_inset Formula 
+\begin{align*}
+\text{purpleG}(A,A)= & -\sum_{\ell,i,p}X_{\ell,p}\frac{D_{\ell,i}^{\prime}A_{i,p}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}}\left(\log\left(D_{\ell,i}^{\prime}A_{i,p}\right)-\log\left(\frac{D_{\ell,i}^{\prime}A_{i,p}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}}\right)\right)\\
+= & -\sum_{\ell,i,p}X_{\ell,p}\frac{D_{\ell,i}^{\prime}A_{i,p}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}}\log\left(\sum_{k}D_{\ell,k}^{\prime}A_{k,p}\right)\\
+= & -\sum_{\ell,p}X_{\ell,p}\log\left(\sum_{k}D_{\ell,k}^{\prime}A_{k,p}\right)\sum_{i}\frac{D_{\ell,i}^{\prime}A_{i,p}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}}\\
+= & -\sum_{\ell,p}X_{\ell,p}\log\left(\sum_{k}D_{\ell,k}^{\prime}A_{k,p}\right)=\text{purpleL(A)}.
+\end{align*}
+
+\end_inset
+
+Second 
+\begin_inset Formula $\tilde{\mathcal{L}}(A,P,\nu)\leq G(A,A^{t}),\forall A^{t}$
+\end_inset
+
+.
+ By convexity of the 
+\begin_inset Formula $-\log$
+\end_inset
+
+ function, 
+\begin_inset Formula 
+\begin{align*}
+\text{purpleL(A)}= & -\sum_{\ell,p}X_{\ell,p}\log\left(\sum_{i}D_{\ell,i}^{\prime}A_{i,p}\right)\\
+\leq & -\sum_{\ell,p}X_{\ell,p}\sum_{i}w_{\ell ip}^{t}\log\left(\frac{D_{\ell,i}^{\prime}A_{i,p}}{w_{\ell ip}^{t}}\right)
+\end{align*}
+
+\end_inset
+
+for all non negative 
+\begin_inset Formula $w_{\ell ip}^{t}$
+\end_inset
+
+ that sum to 
+\begin_inset Formula $1$
+\end_inset
+
+, i.e.
+ 
+\begin_inset Formula $\sum_{i}w_{\ell ip}^{t}=1$
+\end_inset
+
+.
+ Let us select 
+\begin_inset Formula $w_{\ell ip}^{t}=\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}},$
+\end_inset
+
+ we have 
+\begin_inset Formula 
+\[
+\text{purpleL(A)}\leq\text{purpleG}(A,A^{t})
+\]
+
+\end_inset
+
+This implies that 
+\begin_inset Formula $G(A,A^{t})$
+\end_inset
+
+ is an auxiliary function of 
+\begin_inset Formula $\tilde{\mathcal{L}}(A,P,\nu),$
+\end_inset
+
+ see 
+\backslash
+cite[Definition 1]{}.
+ Hence by minimizing 
+\begin_inset Formula $G(A,A^{t})$
+\end_inset
+
+ with respect of 
+\begin_inset Formula $A$
+\end_inset
+
+, we obtain an non-increasing update for 
+\begin_inset Formula $\tilde{\mathcal{L}}(A,P,\nu)$
+\end_inset
+
+, see 
+\backslash
+cite[Lemma 1]{}.
+ 
+\end_layout
+
+\begin_layout Subsection
+Finding the mimum of the auxiliary function
+\end_layout
+
+\begin_layout Standard
+Let us search for the 
+\begin_inset Formula $A$
+\end_inset
+
+ such that the gradient of 
+\begin_inset Formula $G(A,A^{t})$
+\end_inset
+
+ is 
+\begin_inset Formula $0$
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial G(A,A^{t})}{\partial A_{k_{0},p_{0}}} & =\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\mu m_{k_{0}}\frac{1}{A_{k_{0},p_{0}}+\epsilon}+\nu_{k_{0}}\\
+ & -\frac{1}{A_{k_{0},p_{0}}}\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}\\
+ & =0
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+The following is wrong because of the 
+\begin_inset Formula $\epsilon$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+So we find that
+\begin_inset Formula 
+\[
+\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\nu_{k_{0}}+-\frac{1}{A_{k_{0},p_{0}}}\left(\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}-\mu m_{k_{0}}\right)=0
+\]
+
+\end_inset
+
+And 
+\begin_inset Formula 
+\[
+A_{k_{0},p_{0}}=\frac{\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}-\mu m_{k_{0}}}{\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\nu_{k_{0}}}
+\]
+
+\end_inset
+
+To enforce positivity, we suggest to simply take 
+\begin_inset Formula 
+\[
+A_{k_{0},p_{0}}=\frac{\max\left(\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}-\mu m_{k_{0}},0\right)}{\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\nu_{k_{0}}}
+\]
+
+\end_inset
+
+I am not sure we can do this, alternatively, Adrien did linearize the log
+ function around 
+\begin_inset Formula $A_{k_{0},p_{0}}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\end_inset
+
+Let us linearize the log around 
+\begin_inset Formula $A_{k_{0},p_{0}}+\epsilon.$
+\end_inset
+
+ We have 
+\begin_inset Formula 
+\[
+\log(\epsilon+x)_{x\rightarrow a}\approx\log(\epsilon+a)+\frac{x-a}{\epsilon+a}
+\]
+
+\end_inset
+
+which as a derivative of 
+\begin_inset Formula $\frac{1}{\epsilon+a}$
+\end_inset
+
+ in 
+\begin_inset Formula $a$
+\end_inset
+
+.
+ If we assume that 
+\begin_inset Formula $A_{k_{0},p_{0}}^{t}\approx A_{k_{0},p_{0}}$
+\end_inset
+
+, which implies we update 
+\begin_inset Formula $A$
+\end_inset
+
+, slowly, we have for the derivative
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial G(A,A^{t})}{\partial A_{k_{0},p_{0}}} & =\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\mu m_{k_{0}}\frac{1}{A_{k_{0},p_{0}}^{t}+\epsilon}+\nu_{k_{0}}\\
+ & -\frac{1}{A_{k_{0},p_{0}}}\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}=0
+\end{align*}
+
+\end_inset
+
+which leads to 
+\begin_inset Formula 
+\[
+A_{k_{0},p_{0}}=A_{k_{0},p_{0}}^{t}\frac{\sum_{\ell}\frac{D_{\ell,k_{0}}^{\prime}X_{\ell,p_{0}}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}}{\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\nu_{k_{0}}+\mu m_{k_{0}}\frac{1}{A_{k_{0},p_{0}}^{t}+\epsilon}}
+\]
+
+\end_inset
+
+Eventually, we need to find the 
+\begin_inset Formula $\nu_{k_{0}}$
+\end_inset
+
+ such that 
+\begin_inset Formula $\sum_{p_{0}}A_{k_{0},p_{0}}=1.$
+\end_inset
+
+ Basically, we need to solve: 
+\begin_inset Formula 
+\begin{align*}
+\sum_{i}A_{i} & =\sum_{i}\frac{a_{i}}{b_{i}+\nu}=1
+\end{align*}
+
+\end_inset
+
+Assuming 
+\begin_inset Formula $a_{i}>0$
+\end_inset
+
+, 
+\begin_inset Formula $b_{i}\geq0$
+\end_inset
+
+ and 
+\begin_inset Formula $\nu\geq0.$
+\end_inset
+
+ This can be done using dichotomy as implemented by Adrien.
+\end_layout
+
+\begin_layout Subsection
+Alternative solution
+\end_layout
+
+\begin_layout Standard
+Since the problem is convex both in 
+\begin_inset Formula $A$
+\end_inset
+
+ and 
+\begin_inset Formula $P$
+\end_inset
+
+ (but not jointly), we can solve alternatively
+\begin_inset Formula 
+\[
+A_{t+1}=\arg\min_{A\geq0,A,\mathbf{1}^{P}=\mathbf{1}^{k}}-\langle X,\log(GP_{t}A)\rangle+\langle\mathbf{1}^{\ell,p},GP_{t}A\rangle
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+P_{t+1}=\arg\min_{P\geq0}-\langle X,\log(GPA_{t+1})\rangle+\langle\mathbf{1}^{\ell,p},GPA_{t+1}\rangle
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

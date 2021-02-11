@@ -11,4 +11,7 @@ DATASETS_PATH = BASE_PATH.parent / Path("generated_datasets")
 # Ensure that the folder DATASETS_PATH exists
 DATASETS_PATH.mkdir(exist_ok=True, parents=True)
 
+log_shift = 1e-14
+dicotomy_tol = 1e-4
+
 

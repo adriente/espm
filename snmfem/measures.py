@@ -1,5 +1,5 @@
 import numpy as np
-
+from snmfem.conf import log_shift
 
 def spectral_angle(v1, v2):
     """
@@ -83,3 +83,49 @@ def residuals(data, model):
         + model.get_phase_map(2).sum() * model.get_phase_spectrum(2)
     )
     return X_sum - model_sum
+
+
+def KLdiv(X, D, A, eps=log_shift, safe=True):
+    """
+    Compute the generalized KL divergence.
+
+    \sum_{ji} X_{ij} \log (X / D A)_{ij} + (D A - X)_{ij}
+    """
+    if safe:
+        # Allow for very small negative values!
+        assert(np.sum(A<-log_shift/2)==0)
+        assert(np.sum(D<-log_shift/2)==0)
+    
+    DA = D @ A
+    x_lin = np.sum(DA) - np.sum(X)
+    x_log = np.sum(X*np.log((X+ eps) / (DA + eps)))
+    return x_lin + x_log
+
+def KLdiv_loss(X, D, A, eps=log_shift, safe=True):
+    """
+    Compute the loss based on the generalized KL divergence.
+
+    \sum_{ji} X_{ij} \log (D A)_{ij} + (D A)_{ij}
+
+    This does not contains all the term of the KL divergence, only the ones
+    depending on D and A.
+    """
+    if safe:
+        # Allow for very small negative values!
+        assert(np.sum(A<-log_shift/2)==0)
+        assert(np.sum(D<-log_shift/2)==0)
+    
+    DA = D @ A
+    x_lin = np.sum(DA)
+    x_log = np.sum(X*np.log(DA + eps))
+    return x_lin - x_log
+
+def log_reg(A, mu, epsilon):
+    """
+    Compute the regularization loss: \sum_ij mu_i \log(A_{ij})
+    """
+    if not(np.isscalar(mu)):
+        mu = np.expand_dims(mu, axis=1)
+    return np.sum(mu* np.log(A+epsilon))
+
+

@@ -1,8 +1,17 @@
 import numpy as np
-from snmfem.measures import mse, spectral_angle
+from numpy.lib.function_base import kaiser
+from snmfem.measures import mse, spectral_angle, KLdiv_loss, KLdiv
+import pytest
+from snmfem.conf import log_shift
 
-import numpy as np
-
+def base_loss(x_matr, d_matr, a_matr, eps=log_shift):
+    """
+    Evaluates the data-fitting part of the loss function.
+    The d_matr argument is used for evaluation of temporary values of the d_matr that are not stored in self.d_matr
+    """
+    d_a = d_matr @ a_matr
+    x_log = np.einsum("ij,ij", x_matr, np.log(d_a+eps))
+    return d_a.sum() - x_log
 
 def MSE_map(map1, map2):
     """
@@ -67,4 +76,53 @@ def test_spectral_angle():
 
     np.testing.assert_allclose(spectral_angle(a, b), res)
 
+def test_base_loss():
+    l = 26
+    k = 5
+    p = 100
 
+    A = np.random.rand(k,p)
+    A = A/np.sum(A, axis=1, keepdims=1)
+    
+    D = np.random.rand(l,k)
+    
+    X = D @ A
+    
+    val = np.sum(X) - np.sum(X*np.log(X+log_shift))
+
+    val2 = KLdiv_loss(X, D, A)
+    val3 = base_loss(X, D, A)
+    np.testing.assert_almost_equal(val3, val2)
+    np.testing.assert_almost_equal(val, val2)
+
+    np.testing.assert_almost_equal(KLdiv(X, D, A), 0)
+
+    # with a different value, the divergence should be bigger
+    A = np.random.rand(k,p)
+    A = A/np.sum(A, axis=1, keepdims=1)
+    val2 = KLdiv_loss(X, D, A)
+    assert(val2>val)
+    val3 = KLdiv(X, D, A)
+    np.testing.assert_almost_equal(val2 -val, val3 )
+
+    A = np.random.rand(k,p)
+    val2 = KLdiv_loss(X, D, A)
+    assert(val2>val)
+
+    A = 0.00001*np.random.rand(k,p)
+    val2 = KLdiv_loss(X, D, A)
+    assert(val2>val)
+
+    A = np.zeros([k,p])
+    val2 = KLdiv_loss(X, D, A)
+    assert(val2>val)
+
+    with pytest.raises(Exception):
+        D = np.random.rand(l,k)
+        A = np.random.randn(k,p)
+        val2 = KLdiv_loss(X, D, A)
+
+    with pytest.raises(Exception):
+        A = np.random.rand(k,p)
+        D = np.random.randn(l,k)
+        val2 = KLdiv_loss(X, D, A)

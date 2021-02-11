@@ -21,6 +21,7 @@ pip install -e ".[testing]"
 You can then simply run the tests with 
 ```
 pytest snmfem
+flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 ```
 
 ## Getting started with the repo
