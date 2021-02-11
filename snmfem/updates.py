@@ -10,16 +10,26 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol):
     The second part applies the dichotomy algorithm to solve the equation.
     In the future a vectorized version of Dekker Brent could be implemented.
     """
-    # The function has exactly one root at the right of the first singularity (the singularity at min(denum))
-    # So a and b are set to -min(denum) plus an offset.
+    # # The function has exactly one root at the right of the first singularity (the singularity at min(denum))
+    # # So a and b are set to -min(denum) plus an offset.
     f_div = np.min(
         np.where(num != 0, denum, np.inf), axis=0
     )  # There are several min values in the case of particle regularization. In the case where there are exact 0 in num, the min of denum needs to be changed to the next nearest min.
+
     a_off = 100 * np.ones(num.shape[1])
     b_off = 0.01 * np.ones(num.shape[1])
     a = -f_div * np.ones(num.shape[1]) + a_off
     b = -f_div * np.ones(num.shape[1]) + b_off
 
+    # r = np.sum(num/denum, axis=0)
+    # ind_min = np.argmax(num/denum, axis=0)
+    # ind_min2 = np.argmin(denum, axis=0)
+    # ind = np.arange(len(ind_min))
+    # bmin1 = num[ind_min, ind]-denum[ind_min, ind]
+    # bmin2 = num[ind_min2, ind]-denum[ind_min2, ind]
+    # a = r
+    # b = np.maximum(bmin1, bmin2)
+        
     # Search for a elements which give positive value
     constr = np.sum(num / (a + denum), axis=0) - 1
     while np.any(constr <= 0):

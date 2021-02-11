@@ -653,7 +653,7 @@ which as a derivative of
 which leads to 
 \begin_inset Formula 
 \[
-A_{k_{0},p_{0}}=A_{k_{0},p_{0}}^{t}\frac{\sum_{\ell}\frac{D_{\ell,k_{0}}^{\prime}X_{\ell,p_{0}}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}}{\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\nu_{k_{0}}+\mu m_{k_{0}}\frac{1}{A_{k_{0},p_{0}}^{t}+\epsilon}}
+A_{k_{0},p_{0}}=A_{k_{0},p_{0}}^{t}\frac{\sum_{\ell}\frac{X_{\ell,p_{0}}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}D_{\ell,k_{0}}^{\prime}}{\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\nu_{k_{0}}+\mu m_{k_{0}}\frac{1}{A_{k_{0},p_{0}}^{t}+\epsilon}}
 \]
 
 \end_inset
@@ -687,6 +687,44 @@ Assuming
 \end_inset
 
  This can be done using dichotomy as implemented by Adrien.
+ 
+\end_layout
+
+\begin_layout Subsection
+Alteranative to dichotomy
+\end_layout
+
+\begin_layout Standard
+Problematically, the dicotomy might not lead the correct root.
+ Let us write the function
+\begin_inset Formula 
+\[
+f(\nu)=\sum_{i}\frac{a_{i}}{b_{i}+\nu}-1
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\frac{\partial f}{\partial\nu}=\sum_{i}\frac{a_{i}}{b_{i}+\nu}
+\]
+
+\end_inset
+
+If 
+\begin_inset Formula $f(0)\geq0,$
+\end_inset
+
+ then we would like to find the smallest 
+\begin_inset Formula $\nu$
+\end_inset
+
+such that Another approach would be to start with 
+\begin_inset Formula $\nu$
+\end_inset
+
+ eqal 0
 \end_layout
 
 \begin_layout Subsection

@@ -4,7 +4,7 @@ def create_toy_problem(l = 25, k = 3, p = 100, c = 10, n_poisson=200, force_simp
 
     A = np.random.rand(k,p)
     if force_simplex:
-        A = A/np.sum(A, axis=1, keepdims=True)
+        A = A/np.sum(A, axis=0, keepdims=True)
     
     G = np.random.rand(l,c)
     P = np.random.rand(c,k)

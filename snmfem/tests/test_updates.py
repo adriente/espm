@@ -117,6 +117,16 @@ def test_dichotomy_simmplex():
     v = np.sum(num/(denum + sol), axis=0)
     np.testing.assert_allclose(v, np.ones([6]), atol=tol)
 
+    num = np.random.rand(n, 1)
+    denum = np.random.rand(n, 1)
+    num = num/(np.sum(num/denum))
+    np.testing.assert_allclose(np.sum(num/(denum)), 1)
+
+    tol = 1e-6
+    sol = dichotomy_simplex(num, denum, tol )
+    np.sum(num/(denum + sol))
+    np.testing.assert_allclose(sol, 0, atol=tol)
+
 def test_multiplicative_step_p():
     l = 26
     k = 5
@@ -156,19 +166,21 @@ def test_multiplicative_step_a():
     c = 17
 
     A = np.random.rand(k,p)
-    A = A/np.sum(A, axis=1, keepdims=True)
+    A = A/np.sum(A, axis=0, keepdims=True)
     
     G = np.random.rand(l,c)
     P = np.random.rand(c,k)
     GP = G @ P
 
     X = GP @ A
+    np.testing.assert_allclose(np.sum(A, axis=0), np.ones([A.shape[1]]), atol=dicotomy_tol)
 
     Ap = multiplicative_step_a(X, G, P, A, force_simplex=False, mu=0, eps=0, epsilon_reg=1, safe=True)
     np.testing.assert_array_almost_equal(A, Ap)
+    np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
 
-    # Ap = multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=0, epsilon_reg=1, safe=True)
-    # np.testing.assert_array_almost_equal(A, Ap)
+    Ap = multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=0, epsilon_reg=1, safe=True)
+    np.testing.assert_array_almost_equal(A, Ap)        
 
     for _ in range(10):
         A = np.random.rand(k,p)
@@ -187,7 +199,7 @@ def test_multiplicative_step_a():
         val1 = KLdiv_loss(X, GP, A)
         val2 = KLdiv_loss(X, GP, Ap)
         np.testing.assert_array_less(0, Ap)
-        # assert(val1 > val2)
+        assert(val1 > val2)
 
         epsilon_reg = 1
         mu = np.ones(k)
@@ -207,7 +219,7 @@ def test_multiplicative_step_a():
         val1 = KLdiv_loss(X, GP, A) + log_reg(A, 3*mu, epsilon_reg)
         val2 = KLdiv_loss(X, GP, Ap) + log_reg(A, 3*mu, epsilon_reg)
         np.testing.assert_array_less(0, Ap)
-        # assert(val1 > val2)
+        assert(val1 > val2)
 
         # Ap =  multiplicative_step_a(X, G, P, A, force_simplex=True, mu=3, eps=log_shift, epsilon_reg=1, safe=True)
         # Ap2 =  make_step_a(X, G, P, A, mu_sparse=3, eps=log_shift, eps_sparse=1, mask=np.zeros([k])>0)
