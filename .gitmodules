@@ -1,0 +1,3 @@
+[submodule "pyunlocbox"]
+	path = pyunlocbox
+	url = git@github.com:epfl-lts2/pyunlocbox.git

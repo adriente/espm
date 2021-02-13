@@ -126,9 +126,9 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
     if P is None:
         if A is None:
             D, A = initialize_nmf(X, n_components=n_components, init=init, random_state=random_state)
-            if force_simplex:
-                scale = np.sum(A, axis=1, keepdims=True)
-                A = A/scale
+            # if force_simplex:
+            #     scale = np.sum(A, axis=1, keepdims=True)
+            #     A = A/scale
         
         D = np.linalg.lstsq(A.T, X.T)[0].T
         P = np.abs(np.linalg.lstsq(G, D)[0])
