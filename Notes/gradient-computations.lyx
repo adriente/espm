@@ -759,14 +759,35 @@ Let us first compute the proximal operator of the function
  We have 
 \begin_inset Formula 
 \[
-\text{prox}_{f}\left(Y,\lambda\right)=\arg\min_{Z}\frac{1}{2}\|Y-Z\|_{2}^{2}-\lambda\langle X,\log\left(Z\right)\rangle
+\text{prox}_{f}\left(Y,\lambda\right)=\arg\min_{Z}\frac{1}{2}\|Z-Y\|_{2}^{2}-\lambda\langle X,\log\left(Z\right)\rangle
 \]
 
 \end_inset
 
-To find the solution, we find the point with a zero gradient
+To find the solution, we find the point with a zero gradient: 
+\begin_inset Formula $Z-Y-\lambda X\oslash Z=\mathbf{0.}$
+\end_inset
+
+ Assuming that 
+\begin_inset Formula $Z>0,$
+\end_inset
+
+ We find the second order equation 
 \begin_inset Formula 
 \[
+Z\circ Z-YZ-\lambda X=\mathbf{0},
+\]
+
+\end_inset
+
+ which gives us 
+\begin_inset Formula $\frac{1}{2}\left(Y\pm\sqrt{Y\circ Y+4\lambda X}\right).$
+\end_inset
+
+ As the solution has to be positive, we have 
+\begin_inset Formula 
+\[
+\text{prox}_{f}\left(Y,\lambda\right)=\frac{1}{2}\left(Y+\sqrt{Y\circ Y+4\lambda X}\right).
 \]
 
 \end_inset
