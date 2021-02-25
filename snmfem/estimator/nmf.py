@@ -7,11 +7,10 @@ from snmfem.estimator.base import NMFEstimator
 
 class NMF(NMFEstimator):
 
-    def __init__(self, mu=0,
-                 epsilon_reg=1, dicotomy_tol=dicotomy_tol,
-                 **kwargs):
+    def __init__(self,*args, mu=0,
+                 epsilon_reg=1, dicotomy_tol=dicotomy_tol,**kwargs):
 
-        super().__init__(**kwargs)
+        super().__init__(*args,**kwargs)
         self.mu = mu
         self.epsilon_reg = epsilon_reg
         self.log_shift = log_shift

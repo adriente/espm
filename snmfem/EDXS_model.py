@@ -3,6 +3,8 @@ import json
 import os
 import snmfem.utils as u
 import re
+import snmfem.conf as conf
+from pathlib import Path
 
 # Class to model the EDXS spectra. This is a temporary version since there are some design issues.
 
@@ -17,7 +19,7 @@ class EDXS_Model:
         e_size=1980,
         e_scale=0.01,
         width_slope=0.01,
-        width_intercept=0.065,
+        width_intercept=0.065, **kwargs
     ):
         """
         :database_path: file path to a database of x-ray data (energy and intensity ratios of the peaks)
@@ -33,7 +35,8 @@ class EDXS_Model:
         self.width_slope = width_slope
         self.width_intercept = width_intercept
         self.brstlg_pars = brstlg_pars
-        with open(database_path, "r") as data_file:
+        full_db_path = conf.DB_PATH / Path(database_path)
+        with open(full_db_path, "r") as data_file:
             self.xrays = json.load(data_file)["table"]
         # In the absence of abs coeff database a basic attenuation coefficient is built
         # If a database is given, the absorption coeff needs to be built using the dedicated function

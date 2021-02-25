@@ -1,0 +1,70 @@
+{
+    "inputs": {
+        "data_file": "aspim038_toy.npz",
+        "estimator": "NMF",
+        "filename": "NMF_results",
+        "g_parameters": {
+            "brstlg": 1,
+            "element_list": [
+                8,
+                13,
+                14,
+                12,
+                26,
+                29,
+                31,
+                72,
+                71,
+                62,
+                60,
+                92,
+                20
+            ]
+        },
+        "hyperparameters": {
+            "debug": 1,
+            "eps": 1.0,
+            "force_simplex": 1,
+            "init": "warn",
+            "max_iter": 10000,
+            "mu": 1.0,
+            "n_components": 3,
+            "random_state": 1,
+            "tol": 0.0001
+        },
+        "model": "ToyModel",
+        "model_parameters": {
+            "brstg_parameters": {
+                "b0": 1.2,
+                "b1": -0.06,
+                "b2": 0.00683,
+                "c0": 0.094,
+                "c1": 1417,
+                "c2": 1e-06
+            },
+            "c": 10,
+            "database_file": "simple_xrays_threshold.json",
+            "e_offset": 0.2081,
+            "e_scale": 0.01,
+            "e_size": 1980,
+            "k": 3,
+            "l": 25,
+            "n_poisson": 200,
+            "p": 100,
+            "width_intercept": 0.065,
+            "width_slope": 0.01
+        }
+    },
+    "results": {
+        "angles": [
+            11.956742212335925,
+            11.87238510049533,
+            13.241062794459646
+        ],
+        "mse": [
+            21.728931170117228,
+            104.72821067830498,
+            221.86423096395936
+        ]
+    }
+}

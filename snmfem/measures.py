@@ -29,48 +29,45 @@ def mse(map1, map2):
     :map1: (np.array 2D) first array
     :map2: (np.array 2D) second array
     """
-    return np.sum((map1 - map2) ** 2)
+    summed_vec1 = map1@np.ones((map1.shape[1],))
+    summed_vec2 = map2@np.ones((map2.shape[1],))
+    diff_matr = (summed_vec1[:,np.newaxis] - summed_vec2[np.newaxis,:])**2
+    return diff_matr
 
 
 # This function will find the best matching endmember for each true spectrum.
 # This is useful since the A and P matrice are initialized at random.
 # This function works but can probably greatly improved
-def find_min_angle(list_true_vectors, list_algo_vectors):
+def find_min_angle(true_vectors, algo_vectors):
     # This function calculates all the possible angles between endmembers and true spectra
     # For each true spectrum a best matching endmember is found
     # The function returns the angles of the corresponding pairs
-    copy_algo_vectors = list_algo_vectors.copy()
-    size = list_algo_vectors[0].shape
-    ordered_angles = []
-    for i in range(len(list_true_vectors)):
-        list_angles = []
-        for j in range(len(list_algo_vectors)):
-            list_angles.append(
-                spectral_angle(list_true_vectors[i], list_algo_vectors[j])
-            )
-        ind_min = np.argmin(np.array(list_angles))
-        list_algo_vectors[ind_min] = 1e28 * np.ones(size)
-        ordered_angles.append(
-            spectral_angle(list_true_vectors[i], copy_algo_vectors[ind_min])
-        )
+    angle_matr = spectral_angle(true_vectors,algo_vectors)
+    ordered_angles = unique_min(angle_matr,[])
+    #unique minimum angles are ordered
     return ordered_angles
+    
+def unique_min (matr,angles) : 
+    # Recursive way to find the minimum values in a matrice, line by line.
+    # For each line, the column of the min is removed at every iteration. This ensures that a min is found for each column once.
+    # the input matrix should be n_comps*n_comps
+    if matr.size==0 :
+        return angles
+    else :
+        ind_min = np.argmin(matr[0,:])
+        angles.append(np.min(matr[0,:]))
+        reduced1 = np.delete(matr,ind_min,axis = 1)
+        reduced2 = np.delete(reduced1,0,axis = 0)
+        return unique_min(reduced2,angles)
 
 
 # This function works but can probably greatly improved
-def find_min_MSE(list_true_maps, list_algo_maps):
+def find_min_MSE(true_maps, algo_maps):
     # This function calculates all the possible MSE between abundances and true maps
     # For each true map a best matching abundance is found
     # The function returns the MSE of the corresponding pairs
-    copy_algo_maps = list_algo_maps.copy()
-    size = list_algo_maps[0].shape
-    ordered_maps = []
-    for i in range(len(list_true_maps)):
-        list_maps = []
-        for j in range(len(list_algo_maps)):
-            list_maps.append(mse(list_true_maps[i], list_algo_maps[j]))
-        ind_min = np.argmin(np.array(list_maps))
-        list_algo_maps[ind_min] = 1e28 * np.ones(size)
-        ordered_maps.append(mse(list_true_maps[i], copy_algo_maps[ind_min]))
+    mse_matr = mse(true_maps,algo_maps)
+    ordered_maps = unique_min(mse_matr,[])
     return ordered_maps
 
 

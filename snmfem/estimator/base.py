@@ -13,7 +13,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
     def __init__(self, G, n_components=None, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
-                 force_simplex=True,
+                 force_simplex=True,**kwargs
                  ):
         self.n_components = n_components
         self.init = init

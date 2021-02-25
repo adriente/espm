@@ -66,7 +66,6 @@ class SNMF:
         self.mu_sparse = mu_sparse
         self.eps_sparse = eps_sparse
 
-        ###############
         # init params #
         ###############
 
@@ -357,7 +356,7 @@ class SNMF:
     # Steps in A, P and B #
     #######################
 
-    def _make_step_a(self, mask=None):
+    def _make_step_a(self):
         """
         Multiplicative step in A.
         The main terms are calculated first.
@@ -375,7 +374,7 @@ class SNMF:
 
         if self.mu_sparse != 0:
             # Regularized part of the algorithm
-            if mask is None:
+            if self.sparse_mask is None : 
                 # In the linear approximation, the slope is constant. We modifiy this slope to approximate the log every 10 iterations.
                 # The number of iterations in between two slope changes is arbitrary.
                 if self.num_iterations % 10 == 0:
@@ -403,7 +402,7 @@ class SNMF:
                     self.a_matr * U, V[:, np.newaxis], 0.001
                 )
                 # Update the entry that did not meet the sparsity requirements
-                n_mask = np.invert(mask)
+                n_mask = np.invert(self.sparse_mask)
                 # A update (masked)
                 self.a_matr[n_mask] = (
                     self.a_matr[n_mask]
