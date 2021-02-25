@@ -704,14 +704,6 @@ f(\nu)=\sum_{i}\frac{a_{i}}{b_{i}+\nu}-1
 
 \end_inset
 
-
-\begin_inset Formula 
-\[
-\frac{\partial f}{\partial\nu}=\sum_{i}\frac{a_{i}}{b_{i}+\nu}
-\]
-
-\end_inset
-
 If 
 \begin_inset Formula $f(0)\geq0,$
 \end_inset
@@ -752,6 +744,50 @@ A_{t+1}=\arg\min_{A\geq0,A,\mathbf{1}^{P}=\mathbf{1}^{k}}-\langle X,\log(GP_{t}A
 \begin_inset Formula 
 \[
 P_{t+1}=\arg\min_{P\geq0}-\langle X,\log(GPA_{t+1})\rangle+\langle\mathbf{1}^{\ell,p},GPA_{t+1}\rangle
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let us first compute the proximal operator of the function 
+\begin_inset Formula $f(Z)=-\langle X,\log\left(Z\right)\rangle.$
+\end_inset
+
+ We have 
+\begin_inset Formula 
+\[
+\text{prox}_{f}\left(Y,\lambda\right)=\arg\min_{Z}\frac{1}{2}\|Z-Y\|_{2}^{2}-\lambda\langle X,\log\left(Z\right)\rangle
+\]
+
+\end_inset
+
+To find the solution, we find the point with a zero gradient: 
+\begin_inset Formula $Z-Y-\lambda X\oslash Z=\mathbf{0.}$
+\end_inset
+
+ Assuming that 
+\begin_inset Formula $Z>0,$
+\end_inset
+
+ We find the second order equation 
+\begin_inset Formula 
+\[
+Z\circ Z-YZ-\lambda X=\mathbf{0},
+\]
+
+\end_inset
+
+ which gives us 
+\begin_inset Formula $\frac{1}{2}\left(Y\pm\sqrt{Y\circ Y+4\lambda X}\right).$
+\end_inset
+
+ As the solution has to be positive, we have 
+\begin_inset Formula 
+\[
+\text{prox}_{f}\left(Y,\lambda\right)=\frac{1}{2}\left(Y+\sqrt{Y\circ Y+4\lambda X}\right).
 \]
 
 \end_inset
