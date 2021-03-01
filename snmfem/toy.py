@@ -32,23 +32,9 @@ class ToyModel () :
         d["N"] = self.n_poisson
         np.savez(conf.DATASETS_PATH / Path(filename), **d)
 
-if __name__ == "__main__" : 
-    t = ToyModel()
-    t.save("aspim038_toy.npz")
+# This should be done somewhere else I believe...
+# if __name__ == "__main__" : 
+#     t = ToyModel()
+#     t.save("aspim038_toy.npz")
 
         
-# def create_toy_problem(l = 25, k = 3, p = 100, c = 10, n_poisson=200, force_simplex=True,**kwargs):
-
-#     A = np.random.rand(k,p)
-#     if force_simplex:
-#         A = A/np.sum(A, axis=0, keepdims=True)
-    
-#     G = np.random.rand(l,c)
-#     P = np.random.rand(c,k)
-#     GP = G @ P
-
-#     X = GP @ A
-
-#     Xdot = 1/n_poisson * np.random.poisson(n_poisson * X)
-
-#     return G, P, A, X, Xdot
