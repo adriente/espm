@@ -5,21 +5,20 @@ import snmfem.utils as u
 import re
 import snmfem.conf as conf
 from pathlib import Path
+from snmfem.models.base_model import EMModel
+from snmfem.models.EDXS_function import continuum_xrays, gaussian, simple_abs_coeff
 
 # Class to model the EDXS spectra. This is a temporary version since there are some design issues.
 
 
-class EDXS_Model:
+class EDXS_Model(EMModel):
     def __init__(
-        self,
-        database_path,
-        abs_db_path=None,
-        brstlg_pars={},
-        e_offset=0.20805000000000007,
-        e_size=1980,
-        e_scale=0.01,
+        self, 
+        *args,
+        abs_db_path=None, 
         width_slope=0.01,
-        width_intercept=0.065, **kwargs
+        width_intercept=0.065,
+        **kwargs
     ):
         """
         :database_path: file path to a database of x-ray data (energy and intensity ratios of the peaks)
@@ -31,26 +30,21 @@ class EDXS_Model:
         :width_slope: The FWHM of the detector increases with energy which is modeled with an affine function. This is the slope of this affine function (float).
         :width_intercept: The FWHM of the detector increases with energy which is modeled with an affine function. This is the intercept of this affine function (float).
         """
-        self.x = np.arange(e_offset, e_offset + e_size * e_scale, e_scale)
+        super().__init__(*args,**kwargs)
         self.width_slope = width_slope
         self.width_intercept = width_intercept
-        self.brstlg_pars = brstlg_pars
-        full_db_path = conf.DB_PATH / Path(database_path)
-        with open(full_db_path, "r") as data_file:
-            self.xrays = json.load(data_file)["table"]
         # In the absence of abs coeff database a basic attenuation coefficient is built
         # If a database is given, the absorption coeff needs to be built using the dedicated function
         if abs_db_path is None:
-            self.abs = u.Functions.simple_abs_coeff(self.x)
+            self.abs = simple_abs_coeff(self.x)
         else:
             with open(abs_db_path, "r") as abs_file:
                 self.abs_db = json.load(abs_file)["table"]
             self.abs = np.zeros_like(self.x)
-        self.g_matr = None
-        # Boolean indicating whether the continuum X-ray is part of g_matr or not.
-        self.bremsstrahlung = False
-        # Variable used for the simulation of a single spectrum
-        self.spectrum = np.zeros_like(self.x)
+
+        # e_offset=0.20805000000000007,
+        # e_size=1980,
+        # e_scale=0.01,
 
     def generate_g_matr(self, elements_list=None, brstlg=False):
         """
@@ -60,64 +54,32 @@ class EDXS_Model:
         """
         # Diagonal g_matr
         if elements_list is None:
-            self.g_matr = np.diag(np.ones_like(self.x))
+            pass
         # model based on elements_list
         else:
-            self.bremsstrahlung = brstlg
+            self.bkgd_in_G = brstlg
             # The number of shells depend on the element, it is then not straightforward to pre-determine the size of g_matr
-            self.g_matr = np.zeros((self.x.shape[0], 0))
+            self.G = np.zeros((self.x.shape[0], 0))
             # For each element we unpack all shells and then unpack all lines of each shell.
             for elt in elements_list:
-                for shell in self.xrays[str(elt)]:
+                for shell in self.db_dict[str(elt)]:
                     peaks = np.zeros((self.x.shape[0], 1))
-                    for i, energy in enumerate(self.xrays[str(elt)][shell]["energies"]):
+                    for i, energy in enumerate(self.db_dict[str(elt)][shell]["energies"]):
                         # The actual detected width is calculated at each energy
                         if energy > np.min(self.x):
                             width = self.width_slope * energy + self.width_intercept
                             peaks += (
-                                self.xrays[str(elt)][shell]["ratios"][i]
-                                * u.Functions.gaussian(self.x, energy, width / 2.3548)[
+                                self.db_dict[str(elt)][shell]["ratios"][i]
+                                * gaussian(self.x, energy, width / 2.3548)[
                                     np.newaxis
                                 ].T
                             )
                     if np.max(peaks) > 0.0:
-                        self.g_matr = np.concatenate((self.g_matr, peaks), axis=1)
+                        self.G = np.concatenate((self.G, peaks), axis=1)
             # Appends a pure continuum spectrum is needed
-            if self.bremsstrahlung:
-                brstlg_spectrum = self.continuum_xrays()[np.newaxis].T
-                self.g_matr = np.concatenate((self.g_matr, brstlg_spectrum), axis=1)
-
-    def continuum_xrays(self):
-        """
-        Computes the continuum X-ray based on the brstlg_pars set during init.
-        The function is built in a way so that even an incomplete brstlg_pars dict is not a problem.
-        """
-        try:
-            B = u.Functions.bremsstrahlung(
-                self.x,
-                self.brstlg_pars["b0"],
-                self.brstlg_pars["b1"],
-                self.brstlg_pars["b2"],
-            )
-        except KeyError:
-            B = np.ones_like(self.x)
-        # Both A and D are built to use the attenuation coefficien (self.abs).
-        # This needs to change because the attenuation coefficients in D should be different than the one in A.
-        try:
-            A = u.Functions.self_abs(self.abs, self.brstlg_pars["c0"])
-        except KeyError:
-            A = np.ones_like(self.x)
-        try:
-            D = u.Functions.detector(
-                self.abs, self.brstlg_pars["c1"], self.brstlg_pars["c2"]
-            )
-        except KeyError:
-            D = np.ones_like(self.x)
-        try:
-            S = u.Functions.shelf(self.x, self.brstlg_pars["h"], self.brstlg_pars["l"])
-        except KeyError:
-            S = np.zeros_like(self.x)
-        return B * A * D + S
+            if self.bkgd_in_G:
+                brstlg_spectrum = continuum_xrays(self.x,self.params_dict,self.abs)[np.newaxis].T
+                self.G = np.concatenate((self.G, brstlg_spectrum), axis=1)
 
     def generate_spectrum(self, elements_dict, scale):
         """
@@ -127,15 +89,15 @@ class EDXS_Model:
         """
         temp = np.zeros_like(self.x)
         for elt in elements_dict.keys():
-            for shell in self.xrays[elt]:
-                for i, energy in enumerate(self.xrays[elt][shell]["energies"]):
+            for shell in self.db_dict[elt]:
+                for i, energy in enumerate(self.db_dict[elt][shell]["energies"]):
                     width = self.width_slope * energy + self.width_intercept
                     temp += (
                         elements_dict[elt]
-                        * self.xrays[elt][shell]["ratios"][i]
-                        * u.Functions.gaussian(self.x, energy, width / 2.3548)
+                        * self.db_dict[elt][shell]["ratios"][i]
+                        * gaussian(self.x, energy, width / 2.3548)
                     )
-        temp += self.continuum_xrays() * scale
+        temp += continuum_xrays(self.x,self.params_dict,self.abs) * scale
         self.spectrum = temp
 
     def generate_abs_coeff(self, elements_dict):

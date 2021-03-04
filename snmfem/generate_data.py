@@ -4,7 +4,7 @@ import os
 import hyperspy.api as hs
 
 
-class AritificialSpim:
+class ArtificialSpim:
     """
     This class is used to generate artificial spectrum image. It corresponds to the linear mixing of several spectroscopic signatures (phases) through spatial overlap.
     Using this class is done in 3 steps :
@@ -29,9 +29,10 @@ class AritificialSpim:
         self.phases = phases / np.sum(phases, axis=1, keepdims=True)
         self.densities = densities
         self.spectral_len = phases.shape[1]
+        self.num_phases = phases.shape[0]
 
         # The weights correspond to the spatial distribution of the different phases.
-        self.weights = np.zeros(shape_2D + (len(phases),))
+        self.weights = np.zeros(shape_2D + (self.num_phases,))
         # The density map correspond to the spatial distribution of the density
         self.density_map = None
 
@@ -170,6 +171,24 @@ class AritificialSpim:
             return self.weights[:, :, phase_id]
         else:
             print("the phases concentrations add up to more than one")
+
+    def random_weights(self,seed=0) :
+        np.random.seed(seed)
+        rnd_array = np.random.rand(self.shape_2D[0],self.shape_2D[1],len(self.phases))
+        self.weights = rnd_array/np.sum(rnd_array,axis=2,keepdims=True)
+
+    def flatten_weights (self) : 
+        return self.weights.T.reshape(self.num_phases,self.shape_2D[0]*self.shape_2D[1])
+
+    def flatten_Xdot (self) :
+        return self.continuous_spim.T.reshape(self.spectral_len,self.shape_2D[0]*self.shape_2D[1])
+
+    def flatten_X (self) :
+        return self.stochastic_spim.T.reshape(self.spectral_len,self.shape_2D[0]*self.shape_2D[1])
+
+    def flatten_gen_spim (self) :
+        return self.generated_spim.T.reshape(self.spectral_len,self.shape_2D[0]*self.shape_2D[1])
+
 
     def generate_spim_deterministic(self, matrix=True):
         """

@@ -19,5 +19,5 @@ SCRIPT_CONFIG_PATH = BASE_PATH.parent / Path("scripts/config/")
 
 log_shift = 1e-14
 dicotomy_tol = 1e-4
-
+seed_max = 4294967295
 

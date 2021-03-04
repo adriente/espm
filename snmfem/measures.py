@@ -29,10 +29,7 @@ def mse(map1, map2):
     :map1: (np.array 2D) first array
     :map2: (np.array 2D) second array
     """
-    summed_vec1 = map1@np.ones((map1.shape[1],))
-    summed_vec2 = map2@np.ones((map2.shape[1],))
-    diff_matr = (summed_vec1[:,np.newaxis] - summed_vec2[np.newaxis,:])**2
-    return diff_matr
+    return np.sum((map1-map2)**2)
 
 
 # This function will find the best matching endmember for each true spectrum.
@@ -66,7 +63,7 @@ def find_min_MSE(true_maps, algo_maps):
     # This function calculates all the possible MSE between abundances and true maps
     # For each true map a best matching abundance is found
     # The function returns the MSE of the corresponding pairs
-    mse_matr = mse(true_maps,algo_maps)
+    mse_matr = square_distance(true_maps,algo_maps)
     ordered_maps = unique_min(mse_matr,[])
     return ordered_maps
 
@@ -124,5 +121,48 @@ def log_reg(A, mu, epsilon):
     if not(np.isscalar(mu)):
         mu = np.expand_dims(mu, axis=1)
     return np.sum(mu* np.log(A+epsilon))
+
+
+def square_distance(x, y=None):
+    r"""
+    Calculate the distance between two colon vectors.    Parameters
+    ----------
+    x : ndarray
+        First colon vector
+    y : ndarray
+        Second colon vector    Returns
+    -------
+    d : ndarray
+        Distance between x and y    Examples
+    --------
+    >>> from pygsp import utils
+    >>> x = np.arange(3)
+    >>> utils.distanz(x, x)
+    array([[ 0.,  1.,  2.],
+           [ 1.,  0.,  1.],
+           [ 2.,  1.,  0.]])    """
+    try:
+        x.shape[1]
+    except IndexError:
+        x = x.reshape(1, x.shape[0])    
+    if y is None:
+        y = x    
+    else:
+        try:
+
+            y.shape[1]
+        except IndexError:
+            y = y.reshape(1, y.shape[0])    
+    rx, cx = x.shape
+    ry, cy = y.shape    
+    # Size verification
+    if cx != cy:
+        raise ValueError("The sizes of x and y do not fit")    
+    xx = (x * x).sum(axis=1)
+    yy = (y * y).sum(axis=1)
+    xy = np.dot(x, y.T)    
+    d = abs(np.kron(np.ones((ry, 1)), xx).T +np.kron(np.ones((rx, 1)), yy) - 2 * xy)    
+    
+    return d
 
 

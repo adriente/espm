@@ -1,20 +1,15 @@
 import numpy as np
 from snmfem import generate_data as gd
-from snmfem import EDXS_model as em
+from snmfem.models import EDXS_model as em
 from snmfem.conf import DB_PATH
 import os
 
 def test_generate():
     # To save the dataset
     filename = "test"
-
     abs_db_path = None
     # abs_db_path = "Data/wernisch_abs.json"
     abs_elt_dict = None
-
-    # Continuum X-rays parameters
-    # They were determine by fitting experimental data from 0.6 to 18 keV. 
-    # Since low energies were incorporated, the model is only effective and not quantitative.
     brstlg_pars = {
         "c0": 0.094,
         "c1": 1417,
@@ -23,14 +18,15 @@ def test_generate():
         "b1": -0.06,
         "b2": 0.00683,
     }
-
     scale = 1
-
-    # Average number of counts in one spectrum of the artificial data
     N = 10
+    e_scale = 0.01
+    e_offset = 0.208
+    e_size = 1980
+    db_name = "simple_xrays_threshold.json"
 
     # Creation of the pure spectra of the different phases.
-    phase1 = em.EDXS_Model(DB_PATH, abs_db_path, brstlg_pars)
+    phase1 = em.EDXS_Model(e_offset,e_size,e_scale,brstlg_pars,db_name)
     # Gaussians corresponding to elements
     phase1.generate_spectrum(
         {
@@ -49,7 +45,7 @@ def test_generate():
         scale,
     )
 
-    phase2 = em.EDXS_Model(DB_PATH, abs_db_path, brstlg_pars)
+    phase2 = em.EDXS_Model(e_offset,e_size,e_scale,brstlg_pars,db_name)
     phase2.generate_spectrum(
         {
             "8": 0.54,
@@ -64,7 +60,7 @@ def test_generate():
         scale,
     )
 
-    phase3 = em.EDXS_Model(DB_PATH, abs_db_path, brstlg_pars)
+    phase3 = em.EDXS_Model(e_offset,e_size,e_scale,brstlg_pars,db_name)
     phase3.generate_spectrum(
         {
             "8": 1.0,
@@ -86,8 +82,9 @@ def test_generate():
     # list of densities which will give different total number of events per spectra
     densities = np.array([1.0, 1.33, 1.25])
 
-    spim = gd.AritificialSpim(phases, densities, (20, 20))
+    spim = gd.ArtificialSpim(phases, densities, (20, 20))
     assert spim.phases.shape == (3, 1980)
+    assert spim.weights.shape == (20,20,3)
     np.testing.assert_allclose(np.sum(spim.phases, axis=1), np.ones([3]))
 
     # We add two particles belonging to two different phases to the data
@@ -97,18 +94,16 @@ def test_generate():
     # Generates a noiseless version of the dataset
     spim.generate_spim_stochastic(N)
 
-
-
     D = spim.phases.T
-    A = spim.weights.reshape(-1, 3).T
-    X = spim.generated_spim.reshape(-1, 1980).T
+    A = spim.flatten_weights()
+    X = spim.flatten_gen_spim()
     np.testing.assert_allclose(D @ A, X)
     assert spim.generated_spim.shape == (20, 20, 1980)
 
     np.testing.assert_allclose(np.sum(spim.generated_spim, axis=2), np.ones([20, 20]))
 
     w = spim.densities
-    Xdot = spim.continuous_spim.reshape(-1, 1980).T
+    Xdot = spim.flatten_Xdot()
     # n D W A
     np.testing.assert_allclose(N * D @ np.diag(w) @ A, Xdot)
 
@@ -123,9 +118,9 @@ def test_generate():
     weights = dat["weights"]
     N = dat["N"]
     D = phases.T
-    A = weights.reshape(-1, 3).T  
+    A = weights.T.reshape(phases.shape[0],X.shape[1]*X.shape[0])  
     w = densities
-    Xdot = Xdot.reshape(-1, 1980).T
+    Xdot = Xdot.T.reshape(X.shape[2],X.shape[1]*X.shape[0])
 
     np.testing.assert_allclose(N * D @ np.diag(w) @ A, Xdot)
     del dat

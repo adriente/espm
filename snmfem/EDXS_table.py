@@ -327,3 +327,13 @@ class EDXS_Table:
 
     def wernisch_dN(self, Z):
         return 4.838 + 4.911e-2 * Z
+
+
+if __name__ == "__main__" : 
+    table = EDXS_Table(cs_threshold = 7.85e-8)
+    res = table.generate_table()
+    table.save_table("Data/xrays_temp.json")
+
+    abs_table = EDXS_Table()
+    table.wernisch_abs_table()
+    abs_table.save_table("Data/wernisch_abs.json")

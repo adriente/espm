@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.lib.function_base import kaiser
-from snmfem.measures import mse, spectral_angle, KLdiv_loss, KLdiv
+from snmfem.measures import mse, spectral_angle, KLdiv_loss, KLdiv, square_distance, find_min_MSE, find_min_angle
 import pytest
 from snmfem.conf import log_shift
 
@@ -41,6 +41,34 @@ def test_mse():
 
     np.testing.assert_allclose(mse(a, b), MSE_map(a, b))
 
+def test_distance () : 
+    a = np.random.randn(10, 34)
+    b = np.random.randn(10, 34)
+
+    d_matr = []
+    for a_vec in a :
+        d_vec = []
+        for b_vec in b :
+            d_vec.append(mse(b_vec,a_vec))
+        d_matr.append(d_vec)
+    d_matr = np.array(d_matr)
+    d_matr_2 = square_distance(a,b)
+    np.testing.assert_allclose(d_matr,d_matr_2)
+
+    mins= []
+    for vec in d_matr_2 :
+        mins.append(np.min(vec))
+        ind_min = np.argmin(vec)
+        d_matr_2[:,ind_min] = np.inf * np.ones(d_matr_2.shape[0])
+
+    mins = np.array(mins)
+    mins_2 = find_min_MSE(a,b) 
+    np.testing.assert_allclose(mins,mins_2)
+
+
+
+
+
 def test_spectral_angle():
     v1 = np.random.randn(10)
     v2 = np.random.randn(10)
@@ -63,8 +91,8 @@ def test_spectral_angle():
 
     np.testing.assert_allclose(spectral_angle(v1, v2), 180)
 
-    a = np.random.randn(8, 10)
-    b = np.random.randn(5, 10)
+    a = np.random.randn(5, 40)
+    b = np.random.randn(5, 40)
 
     res = []
     for v1 in a:
@@ -75,6 +103,16 @@ def test_spectral_angle():
     res = np.array(res)
 
     np.testing.assert_allclose(spectral_angle(a, b), res)
+
+    mins= []
+    for vec in res :
+        mins.append(np.min(vec))
+        ind_min = np.argmin(vec)
+        res[:,ind_min] = np.inf * np.ones(res.shape[0])
+
+    mins = np.array(mins)
+    mins_2 = find_min_angle(a,b) 
+    np.testing.assert_allclose(mins,mins_2)
 
 def test_base_loss():
     l = 26
