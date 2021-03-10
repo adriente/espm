@@ -6,7 +6,7 @@ import numpy as np
 
 class EMModel (ABC) :
 
-    def __init__(self, e_offset, e_size, e_scale, params_dict,db_name=None) :
+    def __init__(self, e_offset, e_size, e_scale, params_dict,db_name=None,**kwargs) :
         self.x = self.build_energy_scale(e_offset, e_size, e_scale)
         self.params_dict = params_dict
         if db_name is None :

@@ -19,7 +19,7 @@ class ToyModel (EMModel) :
         self.P = np.random.rand(self.c,self.k)
         self.phases = None
 
-    def generate_g_matr(self) : 
+    def generate_g_matr(self,**kwargs) : 
         np.random.seed(self.seed)
         self.G = np.random.rand(self.x.shape[0],self.c)
 

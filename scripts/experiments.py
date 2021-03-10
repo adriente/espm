@@ -5,12 +5,12 @@ from pathlib import Path
 
 from snmfem import conf
 from snmfem.estimator import nmf
-import snmfem.EDXS_model as em
-import snmfem.toy as toy
+import snmfem.models.EDXS_model as em
+import snmfem.models.toy_model as toy
 import snmfem.measures as measures
 
 if __name__ == "__main__" : 
-    FUNC_MAP = {"NMF" : nmf.NMF, "ToyModel" : toy.ToyModel, "EDXS_Model" : em.EDXS_Model}
+    FUNC_MAP = {"ToyModel" : toy.ToyModel, "EDXS_Model" : em.EDXS_Model}
 
     json_file = sys.argv[1]
     json_path = conf.SCRIPT_CONFIG_PATH / Path(json_file)
@@ -27,20 +27,20 @@ if __name__ == "__main__" :
     model = FUNC_MAP[json_dict["model"]](**json_dict["model_parameters"])
     model.generate_g_matr(**json_dict["g_parameters"])
 
-    G = model.g_matr
+    G = model.G
 
-    estimator = FUNC_MAP[json_dict["estimator"]](G,**json_dict["hyperparameters"])
-    P, A = estimator.fit_transform(X)
+    estimator = nmf.NMF(**json_dict["hyperparameters"])
+    estimator.fit(X,G=G)
 
     d = {}  # dictionary of everything we would like to save
-    d["G"] = G
-    d["P"] = P
-    d["A"] = A
+    d["G"] = estimator.G_
+    d["P"] = estimator.P_
+    d["A"] = estimator.A_
     save_data_path = conf.RESULTS_PATH / Path("data/" + json_dict["filename"])
     np.savez(save_data_path, **d)
 
-    angles = measures.find_min_angle(true_spectra,(G@P).T)
-    mse = measures.find_min_MSE(true_maps,A)
+    angles = measures.find_min_angle(true_spectra,(estimator.G_@estimator.P_).T)
+    mse = measures.find_min_MSE(true_maps,estimator.A_)
 
     save_dict = {}
     save_dict["inputs"] = json_dict

@@ -123,6 +123,9 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
 
 def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_simplex):
     # Handle initialization
+    if G is None : 
+        G = np.diag(np.ones(X.shape[0]))
+
     if P is None:
         if A is None:
             D, A = initialize_nmf(X, n_components=n_components, init=init, random_state=random_state)
@@ -139,7 +142,7 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
         if force_simplex:
             scale = np.sum(A, axis=1, keepdims=True)
             A = A/scale
-    return P, A
+    return G, P, A
 
     # def initialize(self, x_matr):
     #     """

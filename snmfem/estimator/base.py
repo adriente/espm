@@ -11,9 +11,9 @@ from abc import ABC, abstractmethod
 
 class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
-    def __init__(self, G, n_components=None, init='warn', tol=1e-4, max_iter=200,
+    def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
-                 force_simplex=True,**kwargs
+                 force_simplex=True
                  ):
         self.n_components = n_components
         self.init = init
@@ -21,10 +21,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.max_iter = max_iter
         self.random_state = random_state
         self.verbose = verbose
-        self.G = G
         self.log_shift = log_shift
         self.debug = debug
         self.force_simplex= force_simplex
+        
 
     def _more_tags(self):
         return {'requires_positive_X': True}
@@ -34,12 +34,11 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         pass
 
     def loss(self, P, A):
-        GP = self.G @ P
-        kl = KLdiv(self.X, GP, A, self.log_shift, safe=self.debug) 
+        GP = self.G_ @ P
+        kl = KLdiv(self.X_, GP, A, self.log_shift, safe=self.debug) 
         return kl
 
-
-    def fit_transform(self, X, P=None, A=None, eval_print=10):
+    def fit_transform(self, X, y=None, G=None, P=None, A=None, eval_print=10):
         """Learn a NMF model for the data X and returns the transformed data.
         This is more efficient than calling fit followed by transform.
         Parameters
@@ -54,26 +53,25 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         -------
         P, A : ndarrays
         """
-        self.X = self._validate_data(X, accept_sparse=('csr', 'csc'),
-                                dtype=[np.float64, np.float32])
+        self.X_ = self._validate_data(X, dtype=[np.float64, np.float32])
 
-        self.P, self.A = initialize_algorithms(self.X, self.G, P, A, self.n_components, self.init, self.random_state, self.force_simplex)
+        self.G_, self.P_, self.A_ = initialize_algorithms(self.X_, G, P, A, self.n_components, self.init, self.random_state, self.force_simplex)
         
 
         algo_start = time.time()
         # If mu_sparse != 0, this is the regularized step of the algorithm
         # Otherwise this is directly the data fitting step
         eval_before = np.inf
-        num_iterations = 0
+        self.n_iter_ = 0
         if self.debug:
             self.losses = []
         try:
             while True:
                 start = time.time()
                 # Take one step in A, P
-                self.P, self.A = self._iteration( self.P, self.A )
-                eval_after = self.loss(self.P, self.A)
-                num_iterations +=1
+                self.P_, self.A_ = self._iteration( self.P_, self.A_ )
+                eval_after = self.loss(self.P_, self.A_)
+                self.n_iter_ +=1
 
 
                 # store some information for assessing the convergence
@@ -83,7 +81,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
 
                 # check convergence criterions
-                if num_iterations >= self.max_iter:
+                if self.n_iter_ >= self.max_iter:
                     print("exits because max_iteration was reached")
                     break
 
@@ -105,9 +103,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     print("exit because of negative decrease")
                     break
                 
-                if self.verbose > 0 and np.mod(num_iterations, eval_print) == 0:
+                if self.verbose > 0 and np.mod(self.n_iter_, eval_print) == 0:
                     print(
-                        f"It {num_iterations} / {self.max_iter}: loss {eval_after:0.3f},  {time.time()-start:0.3f} s/it",
+                        f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:0.3f},  {time.time()-start:0.3f} s/it",
                     )
                 eval_before = eval_after
         except KeyboardInterrupt:
@@ -115,18 +113,20 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
         algo_time = time.time() - algo_start
         print(
-            f"Stopped after {num_iterations} iterations in {algo_time//60} minutes "
+            f"Stopped after {self.n_iter_} iterations in {algo_time//60} minutes "
             f"and {np.round(algo_time) % 60} seconds."
         )
 
-        self.reconstruction_err_ = KLdiv(self.X, self.G @ self.P, self.A, self.log_shift, safe=self.debug) 
+        self.reconstruction_err_ = KLdiv(self.X_, self.G_ @ self.P_, self.A_, self.log_shift, safe=self.debug) 
 
-        self.n_components_ = self.A.shape[0]
-        self.components_ = self.A
+        self.n_components_ = self.A_.shape[0]
+        self.components_ = self.A_
 
-        return self.P, self.A
+        GP = self.G_@self.P_
 
-    def fit(self, X, **params):
+        return GP
+
+    def fit(self, X, y=None, **params):
         """Learn a NMF model for the data X.
         Parameters
         ----------
@@ -140,23 +140,23 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.fit_transform(X, **params)
         return self
 
-    def transform(self, X):
-        """Transform the data X according to the fitted NMF model.
-        Parameters
-        ----------
-        X : {array-like, sparse matrix} of shape (n_samples, n_features)
-            Data matrix to be transformed by the model.
-        Returns
-        -------
-        P : ndarray of shape (n_samples, n_components)
-            Transformed data.
-        """
-        check_is_fitted(self)
-        X = self._validate_data(X, accept_sparse=('csr', 'csc'),
-                                dtype=[np.float64, np.float32],
-                                reset=False)
+    # def transform(self, X):
+    #     """Transform the data X according to the fitted NMF model.
+    #     Parameters
+    #     ----------
+    #     X : {array-like, sparse matrix} of shape (n_samples, n_features)
+    #         Data matrix to be transformed by the model.
+    #     Returns
+    #     -------
+    #     P : ndarray of shape (n_samples, n_components)
+    #         Transformed data.
+    #     """
+    #     check_is_fitted(self)
+    #     X = self._validate_data(X, accept_sparse=('csr', 'csc'),
+    #                             dtype=[np.float64, np.float32],
+    #                             reset=False)
 
-        raise NotImplementedError
+    #     return self.P_
 
     def inverse_transform(self, P):
         """Transform data back to its original space.
@@ -171,4 +171,4 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         .. versionadded:: 0.18
         """
         check_is_fitted(self)
-        return self.G @ P @ self.A
+        return self.G_ @ P @ self.A_
