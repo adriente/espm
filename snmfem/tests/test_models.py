@@ -1,5 +1,5 @@
 import numpy as np
-from snmfem.models import ToyModel
+from snmfem.models import Toy
 from snmfem.conf import seed_max
 from snmfem.generate_data import ArtificialSpim
 
@@ -10,7 +10,7 @@ def test_toy_model() :
     densities = pars_dict["k"]*[1.0]
     N = 200
     
-    toy = ToyModel(e_offset = 0,e_size = 200,e_scale = 1,params_dict = pars_dict,seed = seed)
+    toy = Toy(e_offset = 0,e_size = 200,e_scale = 1,params_dict = pars_dict,seed = seed)
     toy.generate_g_matr()
     toy.generate_spectrum()
     toy.generate_phases()

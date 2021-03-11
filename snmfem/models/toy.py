@@ -1,9 +1,9 @@
 import numpy as np
 import snmfem.conf as conf
 from pathlib import Path
-from snmfem.models import EMModel
+from snmfem.models import EM
 
-class ToyModel (EMModel) :
+class Toy(EM) :
     def __init__(self,*args,seed = 0,**kwargs) : 
         super().__init__(*args,**kwargs)
         self.seed = seed

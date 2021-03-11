@@ -5,13 +5,13 @@ import snmfem.utils as u
 import re
 import snmfem.conf as conf
 from pathlib import Path
-from snmfem.models import EMModel
+from snmfem.models import EM
 from snmfem.models.EDXS_function import continuum_xrays, gaussian, simple_abs_coeff
 
 # Class to model the EDXS spectra. This is a temporary version since there are some design issues.
 
 
-class EDXS(EMModel):
+class EDXS(EM):
     def __init__(
         self, 
         *args,

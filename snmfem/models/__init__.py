@@ -1,3 +1,3 @@
-from snmfem.models.base import EMModel
-from snmfem.models.toy import ToyModel
+from snmfem.models.base import EM
+from snmfem.models.toy import Toy
 from snmfem.models.EDXS import EDXS
