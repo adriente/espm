@@ -1,5 +1,5 @@
 import snmfem.generate_data as gd
-import snmfem.EDXS_model as em
+import snmfem.models as em
 import numpy as np
 from snmfem.conf import DB_PATH, DATASETS_PATH
 from pathlib import Path
@@ -17,6 +17,12 @@ def generate_synthetic_dataset(seeds=[0], N=100):
     #abs_db_path = "Data/wernisch_abs.json"
     abs_elt_dict = None
 
+    db_name = "simple_xrays_threshold.json"
+
+    e_offset = 0.208
+    e_size = 1980
+    e_scale = 0.01
+
     # Continuum X-rays parameters
     # They were determine by fitting experimental data from 0.6 to 18 keV. Since low energies 
     # were incorporated, the model is only effective and not quantitative.
@@ -26,16 +32,16 @@ def generate_synthetic_dataset(seeds=[0], N=100):
     scale = 1
 
     # Creation of the pure spectra of the different phases.
-    phase1 = em.EDXS_Model(DB_PATH, abs_db_path, brstlg_pars)
+    phase1 = em.EDXS(e_offset, e_size, e_scale, params_dict = brstlg_pars,db_name = db_name,abs_db_path= abs_db_path)
     # Gaussians corresponding to elements
     phase1.generate_spectrum({"8": 1.0, "12": 0.51, "14": 0.61, "13": 0.07, "20": 0.04,
                               "62": 0.02, "26": 0.028, "60": 0.002, "71": 0.003, "72": 0.003, "29": 0.02}, scale)
 
-    phase2 = em.EDXS_Model(DB_PATH, abs_db_path, brstlg_pars)
+    phase2 = em.EDXS(e_offset, e_size, e_scale, params_dict = brstlg_pars,db_name = db_name,abs_db_path= abs_db_path)
     phase2.generate_spectrum({"8": 0.54, "26": 0.15, "12": 1.0, "29": 0.038,
                               "92": 0.0052, "60": 0.004, "31": 0.03, "71": 0.003}, scale)
 
-    phase3 = em.EDXS_Model(DB_PATH, abs_db_path, brstlg_pars)
+    phase3 = em.EDXS(e_offset, e_size, e_scale, params_dict = brstlg_pars,db_name = db_name,abs_db_path= abs_db_path)
     phase3.generate_spectrum({"8": 1.0, "14": 0.12, "13": 0.18, "20": 0.47,
                               "62": 0.04, "26": 0.004, "60": 0.008, "72": 0.004, "29": 0.01}, scale)
 
@@ -45,7 +51,7 @@ def generate_synthetic_dataset(seeds=[0], N=100):
     # list of densities which will give different total number of events per spectra
     densities = np.array([1.0, 1.33, 1.25])
 
-    spim = gd.AritificialSpim(phases, densities, (80, 80))
+    spim = gd.ArtificialSpim(phases, densities, (80, 80))
 
     spim.sphere((25, 30), 3.5, 3.5, 0.0, 0.5, 1)
     spim.sphere((55, 30), 3.5, 3.5, 0.0, 0.5, 2)

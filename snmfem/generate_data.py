@@ -320,10 +320,12 @@ class ArtificialSpim:
 
         # signal.save(filename,extension="hspy")
         d["X"] = self.stochastic_spim
+        d["X_flat"] = self.flatten_X()
         d["Xdot"] = self.continuous_spim
         d["phases"] = self.phases
         d["densities"] = self.densities
         d["weights"] = self.weights
+        d["flat_weights"] = self.flatten_weights()
         d["N"] = self.N
         np.savez(filename, **d)
         # for i in range(len(self.phases)) :

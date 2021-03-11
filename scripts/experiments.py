@@ -5,12 +5,11 @@ from pathlib import Path
 
 from snmfem import conf
 from snmfem.estimator import nmf
-import snmfem.models.EDXS_model as em
-import snmfem.models.toy_model as toy
+import snmfem.models as em
 import snmfem.measures as measures
 
 if __name__ == "__main__" : 
-    FUNC_MAP = {"ToyModel" : toy.ToyModel, "EDXS_Model" : em.EDXS_Model}
+    FUNC_MAP = {"Toy" : em.Toy, "EDXS" : em.EDXS}
 
     json_file = sys.argv[1]
     json_path = conf.SCRIPT_CONFIG_PATH / Path(json_file)
@@ -20,9 +19,9 @@ if __name__ == "__main__" :
 
     data_file = conf.DATASETS_PATH / Path(json_dict["data_file"])
     data = np.load(data_file)
-    X = data["X"]
+    X = data["X_flat"]
     true_spectra = data["densities"][:,np.newaxis]*data["phases"]
-    true_maps = data["weights"]
+    true_maps = data["flat_weights"]
 
     model = FUNC_MAP[json_dict["model"]](**json_dict["model_parameters"])
     model.generate_g_matr(**json_dict["g_parameters"])
