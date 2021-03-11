@@ -1,7 +1,7 @@
 from sklearn.utils.estimator_checks import check_estimator
 from snmfem.estimator.nmf import NMF
 import numpy as np
-from snmfem.models.toy_model import ToyModel
+from snmfem.models import ToyModel
 from snmfem.conf import seed_max
 from snmfem.generate_data import ArtificialSpim
 

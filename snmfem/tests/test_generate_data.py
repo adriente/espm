@@ -1,6 +1,6 @@
 import numpy as np
 from snmfem import generate_data as gd
-from snmfem.models import EDXS_model as em
+from snmfem.models import EDXS
 from snmfem.conf import DB_PATH
 import os
 
@@ -26,7 +26,7 @@ def test_generate():
     db_name = "simple_xrays_threshold.json"
 
     # Creation of the pure spectra of the different phases.
-    phase1 = em.EDXS_Model(e_offset,e_size,e_scale,brstlg_pars,db_name)
+    phase1 = EDXS(e_offset,e_size,e_scale,brstlg_pars,db_name)
     # Gaussians corresponding to elements
     phase1.generate_spectrum(
         {
@@ -45,7 +45,7 @@ def test_generate():
         scale,
     )
 
-    phase2 = em.EDXS_Model(e_offset,e_size,e_scale,brstlg_pars,db_name)
+    phase2 = EDXS(e_offset,e_size,e_scale,brstlg_pars,db_name)
     phase2.generate_spectrum(
         {
             "8": 0.54,
@@ -60,7 +60,7 @@ def test_generate():
         scale,
     )
 
-    phase3 = em.EDXS_Model(e_offset,e_size,e_scale,brstlg_pars,db_name)
+    phase3 = EDXS(e_offset,e_size,e_scale,brstlg_pars,db_name)
     phase3.generate_spectrum(
         {
             "8": 1.0,

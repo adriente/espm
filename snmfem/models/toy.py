@@ -1,7 +1,7 @@
 import numpy as np
 import snmfem.conf as conf
 from pathlib import Path
-from snmfem.models.base_model import EMModel
+from snmfem.models import EMModel
 
 class ToyModel (EMModel) :
     def __init__(self,*args,seed = 0,**kwargs) : 

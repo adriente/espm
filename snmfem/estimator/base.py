@@ -122,7 +122,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.n_components_ = self.A_.shape[0]
         self.components_ = self.A_
 
-        GP = self.G_@self.P_
+        GP = self.G_ @ self.P_
 
         return GP
 
