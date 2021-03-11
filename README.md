@@ -30,6 +30,17 @@ Generate the synthetic dataset. Run the script:
 python scripts/generate_synthetic_dataset.py
 ```
 
+## Running the algorithm
+Fill a json file with the relevant input parameters such as dataset name, hyperparameters values, etc ... (see the template in scritps/config/).
+Then you can run the algorithm running :
+```
+python experiments.py json_filename
+```
+It will produce two ouputs : 
+* A .npz file with the G, P and A matrices
+* A .json file containing the scores obtained based on the ground truth (and informations on the input used)
+
+For now it is supported for NMF only and the user needs to provide artificial data with ground truths
 
 # TO BE UPDATED!
 
