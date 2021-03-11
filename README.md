@@ -5,7 +5,12 @@ This project contains the code to create artificial Energy dispersive X-ray spec
 
 
 ## Installation
-You can install this package using
+Be sure to have all files by initialazing the submodule.
+```
+git submodule update --init --recursive
+```
+
+Then, you can install this package using
 ```
 pip install cython
 pip install .
@@ -14,6 +19,7 @@ pip install .
 ## Installation as a developer (What you should do Adrien)
 After setting up your virtual environnement, simply run 
 ```
+git submodule update --init --recursive
 pip install cython
 pip install -e ".[testing]"
 ```

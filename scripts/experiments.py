@@ -4,18 +4,19 @@ import numpy as np
 from pathlib import Path
 from snmfem import estimators
 from snmfem import models 
+from snmfem.conf import SCRIPT_CONFIG_PATH, DATASETS_PATH, RESULTS_PATH
 import snmfem.measures as measures
 
 if __name__ == "__main__" : 
 
 
     json_file = sys.argv[1]
-    json_path = conf.SCRIPT_CONFIG_PATH / Path(json_file)
+    json_path = SCRIPT_CONFIG_PATH / Path(json_file)
 
     with open(json_path,"r") as f :
         json_dict = json.load(f)
 
-    data_file = conf.DATASETS_PATH / Path(json_dict["data_file"])
+    data_file = DATASETS_PATH / Path(json_dict["data_file"])
     data = np.load(data_file)
     X = data["X_flat"]
     true_spectra = data["densities"][:,np.newaxis]*data["phases"]
@@ -35,7 +36,7 @@ if __name__ == "__main__" :
     d["G"] = estimator.G_
     d["P"] = estimator.P_
     d["A"] = estimator.A_
-    save_data_path = conf.RESULTS_PATH / Path("data/" + json_dict["filename"])
+    save_data_path = RESULTS_PATH / Path("data/" + json_dict["filename"])
     np.savez(save_data_path, **d)
 
     angles = measures.find_min_angle(true_spectra,(estimator.G_@estimator.P_).T)
@@ -44,7 +45,7 @@ if __name__ == "__main__" :
     save_dict = {}
     save_dict["inputs"] = json_dict
     save_dict["results"] = {"angles" : angles,"mse" : mse}
-    save_meta_path = conf.RESULTS_PATH / Path("summaries/" + json_dict["filename"]+".json")
+    save_meta_path = RESULTS_PATH / Path("summaries/" + json_dict["filename"]+".json")
 
     with open(save_meta_path, 'w') as outfile:
         json.dump(save_dict, outfile, sort_keys=True, indent=4)

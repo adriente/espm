@@ -2,11 +2,11 @@
 from snmfem.updates import multiplicative_step_a, multiplicative_step_p
 from snmfem.measures import KLdiv, log_reg
 from snmfem.conf import log_shift, dicotomy_tol
-from snmfem.estimator.base import NMFEstimator
+from snmfem.estimators import NMFEstimator
 from snmfem.conf import log_shift
 
 
-class NMF(NMFEstimator):
+class SmoothNMF(NMFEstimator):
     # args and kwargs are copied from the init to the super instead of capturing them in *args and **kwargs to be scikit-learn compliant.
     def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,

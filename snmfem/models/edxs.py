@@ -5,19 +5,19 @@ import snmfem.utils as u
 import re
 import snmfem.conf as conf
 from pathlib import Path
-from snmfem.models import EM
+from snmfem.models import PhysicalModel
 from snmfem.models.EDXS_function import continuum_xrays, gaussian, simple_abs_coeff
 
 # Class to model the EDXS spectra. This is a temporary version since there are some design issues.
 
 
-class EDXS(EM):
+class EDXS(PhysicalModel):
     def __init__(
         self, 
-        *args,
         abs_db_path=None, 
         width_slope=0.01,
         width_intercept=0.065,
+        db_name=None, 
         **kwargs
     ):
         """
@@ -30,7 +30,9 @@ class EDXS(EM):
         :width_slope: The FWHM of the detector increases with energy which is modeled with an affine function. This is the slope of this affine function (float).
         :width_intercept: The FWHM of the detector increases with energy which is modeled with an affine function. This is the intercept of this affine function (float).
         """
-        super().__init__(*args,**kwargs)
+        super().__init__(**kwargs)        
+        self.G = np.diag(np.ones_like(self.x))
+        
         self.width_slope = width_slope
         self.width_intercept = width_intercept
         # In the absence of abs coeff database a basic attenuation coefficient is built
@@ -197,3 +199,5 @@ class EDXS(EM):
             )
 
         self.abs = temp
+        
+

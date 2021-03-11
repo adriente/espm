@@ -4,7 +4,6 @@
                          "tol" : 1e-4,
                          "max_iter" : 50000,
                          "debug" : 1,
-                         "force_simplex" : 1,
                          "random_state" : 1,
                          "mu" : 0.5,
                          "epsilon_reg" : 1.0},

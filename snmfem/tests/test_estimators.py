@@ -1,5 +1,5 @@
 from sklearn.utils.estimator_checks import check_estimator
-from snmfem.estimator.nmf import NMF
+from snmfem.estimators import NMF
 import numpy as np
 
 def test_NMF () : 
