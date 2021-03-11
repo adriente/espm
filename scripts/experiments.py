@@ -2,14 +2,12 @@ import json
 import sys
 import numpy as np
 from pathlib import Path
-
-from snmfem import conf
-from snmfem.estimator import nmf
-import snmfem.models as em
+from snmfem import estimators
+from snmfem import models 
 import snmfem.measures as measures
 
 if __name__ == "__main__" : 
-    FUNC_MAP = {"Toy" : em.Toy, "EDXS" : em.EDXS}
+
 
     json_file = sys.argv[1]
     json_path = conf.SCRIPT_CONFIG_PATH / Path(json_file)
@@ -21,14 +19,16 @@ if __name__ == "__main__" :
     data = np.load(data_file)
     X = data["X_flat"]
     true_spectra = data["densities"][:,np.newaxis]*data["phases"]
-    true_maps = data["flat_weights"]
 
-    model = FUNC_MAP[json_dict["model"]](**json_dict["model_parameters"])
+    true_maps = data["weights"]
+    Model = getattr(models, json_dict["model"]) 
+    model = Model(**json_dict["model_parameters"])
     model.generate_g_matr(**json_dict["g_parameters"])
 
     G = model.G
+    Estimator = getattr(estimators, json_dict["estimator"]) 
 
-    estimator = nmf.NMF(**json_dict["hyperparameters"])
+    estimator = Estimator(**json_dict["hyperparameters"])
     estimator.fit(X,G=G)
 
     d = {}  # dictionary of everything we would like to save

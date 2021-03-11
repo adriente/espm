@@ -16,6 +16,7 @@ jedi = "*"
 black = "==20.8b1"
 yapf = "*"
 ipykernel = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.8"
