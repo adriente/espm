@@ -28,8 +28,11 @@ def generate_synthetic_dataset(seeds=[0], N=100):
     # were incorporated, the model is only effective and not quantitative.
     brstlg_pars = {"c0": 0.094, "c1": 1417, "c2": 1e-6,
                    "b0": 1.2, "b1": -0.06, "b2": 0.00683}
-
     scale = 1
+    e_scale = 0.01
+    e_offset = 0.208
+    e_size = 1980
+    db_name = "simple_xrays_threshold.json"
 
     # Creation of the pure spectra of the different phases.
     phase1 = em.EDXS(e_offset, e_size, e_scale, params_dict = brstlg_pars,db_name = db_name,abs_db_path= abs_db_path)
@@ -50,15 +53,23 @@ def generate_synthetic_dataset(seeds=[0], N=100):
     phases = np.array([phase1.spectrum, phase2.spectrum, phase3.spectrum])
     # list of densities which will give different total number of events per spectra
     densities = np.array([1.0, 1.33, 1.25])
-
-    spim = gd.ArtificialSpim(phases, densities, (80, 80))
-
-    spim.sphere((25, 30), 3.5, 3.5, 0.0, 0.5, 1)
-    spim.sphere((55, 30), 3.5, 3.5, 0.0, 0.5, 2)
-    folder = DATASETS_PATH / Path("aspim037_N{}_2ptcls_brstlg".format(N))
-    folder.mkdir(exist_ok=True, parents=True)
-
     for seed in tqdm(seeds):
+        spim = gd.ArtificialSpim(phases, densities, (80, 80))
+
+        if seed == 0:
+            spim.sphere((25, 30), 3.5, 3.5, 0.0, 0.5, 1)
+            spim.sphere((55, 30), 3.5, 3.5, 0.0, 0.5, 2)
+        else:
+            np.random.seed(seed)
+            for _ in range(2):
+                p = np.random.randint(1, 80, [2])
+                spim.sphere(p, 3.5, 3.5, 0.0, 0.5, 1)            
+
+        
+        folder = DATASETS_PATH / Path("aspim037_N{}_2ptcls_brstlg".format(N))
+        folder.mkdir(exist_ok=True, parents=True)
+
+    
         filename = folder / Path("sample_{}".format(seed))
         spim.generate_spim_stochastic(N, seed=seed)
         spim.save(filename=filename)
