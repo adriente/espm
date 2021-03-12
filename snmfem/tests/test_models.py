@@ -2,6 +2,7 @@ import numpy as np
 from snmfem.models import Toy
 from snmfem.conf import seed_max
 from snmfem.generate_data import ArtificialSpim
+from snmfem.generate_weights import random_weights, laplacian_weights
 
 def test_toy_model() : 
     seed = np.random.randint(seed_max)
@@ -20,8 +21,9 @@ def test_toy_model() :
     phases = toy.phases
     n_GP = (toy.phases/np.sum(toy.phases,axis=1,keepdims=True)).T
 
-    aspim = ArtificialSpim(phases,densities,shape_2D)
-    aspim.random_weights(seed)
+    weights = random_weights(shape_2D, pars_dict["k"])
+
+    aspim = ArtificialSpim(phases,densities,weights)
     aspim.generate_spim_deterministic()
     aspim.generate_spim_stochastic(N,seed)
 

@@ -1,13 +1,13 @@
 import snmfem.generate_data as gd
-import snmfem.models as EDXS
+from snmfem.models import EDXS, Toy
 import numpy as np
 from snmfem.conf import DB_PATH, DATASETS_PATH
 from pathlib import Path
 from tqdm import tqdm
-from snmfem.generate_weights import two_sphere_weights
+from snmfem.generate_weights import two_sphere_weights, laplacian_weights, random_weights
 
 
-def generate_three_phases():
+def three_phases():
     abs_db_path = None
     db_name = "simple_xrays_threshold.json"
 
@@ -43,7 +43,7 @@ def generate_three_phases():
     phases = np.array([phase1.spectrum, phase2.spectrum, phase3.spectrum])
     return phases
 
-def generate_edxs_dataset(seeds=[0], N=100):
+def generate_edxs_dataset(folder=None, seeds=[0], N=100):
     """Generate a synthetic dataset.
     
     # Input parameters
@@ -51,10 +51,14 @@ def generate_edxs_dataset(seeds=[0], N=100):
     N: (Int) Average number of counts in one spectrum of the artificial data
     """
 
-    phases = generate_three_phases()
+    phases = three_phases()
     
     # Objects needed for the creation of data
     # list of spectra
+    if folder is None:
+        folder_name = "aspim037_N{}_2ptcls_brstlg".format(N)
+        folder = DATASETS_PATH / Path(folder_name)
+    folder.mkdir(exist_ok=True, parents=True)
 
     # list of densities which will give different total number of events per spectra
     densities = np.array([1.0, 1.33, 1.25])
@@ -63,49 +67,57 @@ def generate_edxs_dataset(seeds=[0], N=100):
         
         spim = gd.ArtificialSpim(phases, densities, weights)
 
+        filename = folder / Path("sample_{}".format(seed))
+        spim.generate_spim_stochastic(N, seed=seed)
+        spim.save(filename=filename)
         
-        folder = DATASETS_PATH / Path("aspim037_N{}_2ptcls_brstlg".format(N))
-        folder.mkdir(exist_ok=True, parents=True)
 
+def toy_phases(e_size = 50,  k=5, seed=0):
+    e_offset = 0
+    e_scale = 1
+    pars_dict = {"c" : 25, "k" : k}
+    
+    toy = Toy(e_offset=e_offset, e_size=e_size, e_scale=e_scale, params_dict=pars_dict, seed = seed)
+    
+    toy.generate_g_matr()
+    toy.generate_spectrum()
+    toy.generate_phases()
+    phases = toy.phases
+
+    return phases
+
+def generate_toy_dataset(folder=None, seeds=[0], shape_2D = (15, 15), k = 5, N = 200, laplacian=True):
+    """Generate a toy dataset.
+    
+    # Input parameters
+    folder_name: (str) 
+    seeds: (List[Int])
+    shape_2D: ([Int, Int]) shape of the image
+    N: (Int) Average number of counts in one spectrum of the artificial data
+    laplacian: (bool) use laplacian instead of random image
+    """
+
+    phases = toy_phases(k=k)
+    densities = k*[1.0]
+    
+    if folder is None:
+        if laplacian:
+            folder_name = "Toy_{}_N{}".format("laplacian", N)
+        else: 
+            folder_name = "Toy_{}_N{}".format("random", N)
+        folder = DATASETS_PATH / Path(folder_name)
+    folder.mkdir(exist_ok=True, parents=True)
+    
+    # list of densities which will give different total number of events per spectra
+    for seed in tqdm(seeds):
+        if laplacian:
+            weights = laplacian_weights(shape_2D=shape_2D, n_phases=k, seed=seed)
+        else:
+            weights = random_weights(shape_2D=shape_2D, n_phases=k, seed=seed)
+                
+        spim = gd.ArtificialSpim(phases, densities, weights)
     
         filename = folder / Path("sample_{}".format(seed))
         spim.generate_spim_stochastic(N, seed=seed)
         spim.save(filename=filename)
         
-        
-
-
-# def generate_toy_dataset(seeds=[0], N=100):
-#     """Generate a synthetic dataset.
-    
-#     # Input parameters
-#     seeds: (List[Int]) list of the seeds for the dataset
-#     N: (Int) Average number of counts in one spectrum of the artificial data
-#     """
-
-
-#     # Objects needed for the creation of data
-#     # list of spectra
-#     phases = np.array([phase1.spectrum, phase2.spectrum, phase3.spectrum])
-#     # list of densities which will give different total number of events per spectra
-#     densities = np.array([1.0, 1.33, 1.25])
-#     for seed in tqdm(seeds):
-#         spim = gd.ArtificialSpim(phases, densities, (80, 80))
-
-#         if seed == 0:
-#             spim.sphere((25, 30), 3.5, 3.5, 0.0, 0.5, 1)
-#             spim.sphere((55, 30), 3.5, 3.5, 0.0, 0.5, 2)
-#         else:
-#             np.random.seed(seed)
-#             for _ in range(2):
-#                 p = np.random.randint(1, 80, [2])
-#                 spim.sphere(p, 3.5, 3.5, 0.0, 0.5, 1)            
-
-        
-#         folder = DATASETS_PATH / Path("aspim037_N{}_2ptcls_brstlg".format(N))
-#         folder.mkdir(exist_ok=True, parents=True)
-
-    
-#         filename = folder / Path("sample_{}".format(seed))
-#         spim.generate_spim_stochastic(N, seed=seed)
-#         spim.save(filename=filename)
