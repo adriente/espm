@@ -80,7 +80,7 @@ def toy_phases(e_size = 50,  k=5, seed=0):
     toy = Toy(e_offset=e_offset, e_size=e_size, e_scale=e_scale, params_dict=pars_dict, seed = seed)
     
     toy.generate_g_matr()
-    toy.generate_spectrum()
+    # toy.generate_spectrum()
     toy.generate_phases()
     phases = toy.phases
 
