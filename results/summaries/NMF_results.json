@@ -1,11 +1,17 @@
 {
-    "inputs": {
-        "data_file": "aspim038_toy.npz",
-        "estimator": "NMF",
-        "filename": "NMF_results",
+    "dataset": {
+        "N": 200,
+        "data_folder": "Toy_laplacian_N200",
+        "densities": [
+            1,
+            1,
+            1,
+            1,
+            1
+        ],
         "g_parameters": {
             "brstlg": 1,
-            "element_list": [
+            "elements_list": [
                 8,
                 13,
                 14,
@@ -21,50 +27,140 @@
                 20
             ]
         },
+        "model": "Toy",
+        "model_parameters": {
+            "db_name": "simple_xrays_threshold.json",
+            "e_offset": 0.208,
+            "e_scale": 0.01,
+            "e_size": 50,
+            "params_dict": {
+                "c": 25,
+                "k": 5
+            },
+            "seed": 1
+        },
+        "phases_parameters": [
+            {},
+            {},
+            {},
+            {},
+            {}
+        ],
+        "seeds_range": 10,
+        "weights_parameters": {
+            "shape_2D": [
+                15,
+                15
+            ],
+            "weight_type": "laplacian"
+        }
+    },
+    "experiment": {
+        "dataset": "dataset_Toy.json",
+        "estimator": "NMF",
+        "filename": "NMF_results",
         "hyperparameters": {
             "debug": 1,
-            "eps": 1.0,
-            "force_simplex": 1,
+            "epsilon_reg": 1.0,
             "init": "warn",
-            "max_iter": 10000,
-            "mu": 1.0,
-            "n_components": 3,
+            "max_iter": 2000,
+            "mu": 0.0,
+            "n_components": 5,
             "random_state": 1,
             "tol": 0.0001
-        },
-        "model": "ToyModel",
-        "model_parameters": {
-            "brstg_parameters": {
-                "b0": 1.2,
-                "b1": -0.06,
-                "b2": 0.00683,
-                "c0": 0.094,
-                "c1": 1417,
-                "c2": 1e-06
-            },
-            "c": 10,
-            "database_file": "simple_xrays_threshold.json",
-            "e_offset": 0.2081,
-            "e_scale": 0.01,
-            "e_size": 1980,
-            "k": 3,
-            "l": 25,
-            "n_poisson": 200,
-            "p": 100,
-            "width_intercept": 0.065,
-            "width_slope": 0.01
         }
     },
     "results": {
         "angles": [
-            11.956742212335925,
-            11.87238510049533,
-            13.241062794459646
+            [
+                5.981670996078752,
+                9.528328514144762,
+                11.577069521712279,
+                10.814096625988006,
+                10.801428604331681
+            ],
+            [
+                6.905080829816561,
+                8.381491206466121,
+                8.79160377116996,
+                11.899406024693985,
+                16.552466610004082
+            ],
+            [
+                6.588460566631687,
+                10.553009468703088,
+                10.75877467337846,
+                11.695170112116948,
+                12.742120681202813
+            ],
+            [
+                5.886996893046547,
+                7.861293610843728,
+                9.313771845017513,
+                8.585013441990013,
+                10.109623994701819
+            ],
+            [
+                5.242752308250213,
+                7.434103334850847,
+                7.411877066347278,
+                8.159376724772843,
+                8.87152743859947
+            ],
+            [
+                5.777838383647212,
+                9.767184184250434,
+                8.780688169709048,
+                8.831632955822974,
+                13.074547374669883
+            ],
+            [
+                5.984943962528256,
+                8.709013744928585,
+                10.415620702816206,
+                8.031925096619345,
+                12.012810190497358
+            ],
+            [
+                7.168662197919344,
+                7.189571821523212,
+                9.328261757830516,
+                9.438475113138411,
+                11.307587099805996
+            ],
+            [
+                5.76347552463097,
+                7.017578413612931,
+                9.475579991569521,
+                8.66231253288733,
+                11.90192755224082
+            ],
+            [
+                5.6517085389779576,
+                7.54129146915572,
+                9.616166016739133,
+                11.978350300215954,
+                13.872012190395937
+            ]
         ],
         "mse": [
-            21.728931170117228,
-            104.72821067830498,
-            221.86423096395936
+            9.625463081113136,
+            14.121134725628785,
+            14.783283586260305,
+            15.684643253056695,
+            34.59257680991789
         ]
-    }
+    },
+    "samples": [
+        "/Users/nati/SDSC/Projects/MLATEM/SNMF_EDXS/generated_datasets/Toy_laplacian_N200/sample_9.npz",
+        "/Users/nati/SDSC/Projects/MLATEM/SNMF_EDXS/generated_datasets/Toy_laplacian_N200/sample_8.npz",
+        "/Users/nati/SDSC/Projects/MLATEM/SNMF_EDXS/generated_datasets/Toy_laplacian_N200/sample_5.npz",
+        "/Users/nati/SDSC/Projects/MLATEM/SNMF_EDXS/generated_datasets/Toy_laplacian_N200/sample_4.npz",
+        "/Users/nati/SDSC/Projects/MLATEM/SNMF_EDXS/generated_datasets/Toy_laplacian_N200/sample_6.npz",
+        "/Users/nati/SDSC/Projects/MLATEM/SNMF_EDXS/generated_datasets/Toy_laplacian_N200/sample_7.npz",
+        "/Users/nati/SDSC/Projects/MLATEM/SNMF_EDXS/generated_datasets/Toy_laplacian_N200/sample_3.npz",
+        "/Users/nati/SDSC/Projects/MLATEM/SNMF_EDXS/generated_datasets/Toy_laplacian_N200/sample_2.npz",
+        "/Users/nati/SDSC/Projects/MLATEM/SNMF_EDXS/generated_datasets/Toy_laplacian_N200/sample_0.npz",
+        "/Users/nati/SDSC/Projects/MLATEM/SNMF_EDXS/generated_datasets/Toy_laplacian_N200/sample_1.npz"
+    ]
 }

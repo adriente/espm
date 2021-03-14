@@ -66,7 +66,7 @@ def test_generate_toy_dataset():
         "g_parameters" : {"elements_list" : [8,13,14,12,26,29,31,72,71,62,60,92,20],
                         "brstlg" : 1},
         "phases_parameters" : [{}, {}, {}, {}],
-        "data_folder" : "Toy_laplacian_N200"
+        "data_folder" : "test"
     }
     folder = DATASETS_PATH / Path(params["data_folder"])
     generate_dataset(**params)    

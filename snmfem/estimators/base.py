@@ -105,7 +105,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 
                 if self.verbose > 0 and np.mod(self.n_iter_, eval_print) == 0:
                     print(
-                        f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:0.3f},  {time.time()-start:0.3f} s/it",
+                        f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:0.3f},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
                     )
                 eval_before = eval_after
         except KeyboardInterrupt:

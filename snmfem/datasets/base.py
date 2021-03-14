@@ -57,7 +57,7 @@ def generate_dataset(**kwargs):
     for seed in tqdm(seeds):
 
         weights = generate_weights(**weights_parameters, n_phases=n_phases, seed=seed)
-        spim = gd.ArtificialSpim(phases, densities, weights)
+        spim = gd.ArtificialSpim(phases, densities, weights, G=G)
         filename = folder / Path("sample_{}".format(seed))
         spim.generate_spim_stochastic(N, seed=seed)
         spim.save(filename=filename)

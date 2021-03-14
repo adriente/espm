@@ -43,7 +43,7 @@ def test_generate():
     model.generate_g_matr(**g_parameters)
     model.generate_phases(phases_parameters)
     phases = model.phases
-    # G = model.G
+    G = model.G
     
     seed = 0
     n_phases = 3
@@ -55,7 +55,7 @@ def test_generate():
     # list of densities which will give different total number of events per spectra
     densities = np.array([1.0, 1.33, 1.25])
     
-    spim = ArtificialSpim(phases, densities, weights)
+    spim = ArtificialSpim(phases, densities, weights, G=G)
     assert spim.phases.shape == (3, 1980)
     assert spim.weights.shape == (80,80,3)
     np.testing.assert_allclose(np.sum(spim.phases, axis=1), np.ones([3]))
