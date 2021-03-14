@@ -1,8 +1,8 @@
 import numpy as np
-from snmfem import generate_data as gd
+from snmfem.datasets.generate_data import ArtificialSpim
 from snmfem.models import EDXS
 from snmfem.conf import DB_PATH, DATASETS_PATH
-from snmfem.generate_weights import generate_weights, random_weights, laplacian_weights, spheres_weights
+from snmfem.datasets.generate_weights import generate_weights, random_weights, laplacian_weights, spheres_weights
 from pathlib import Path
 import os
 
@@ -55,7 +55,7 @@ def test_generate():
     # list of densities which will give different total number of events per spectra
     densities = np.array([1.0, 1.33, 1.25])
     
-    spim = gd.ArtificialSpim(phases, densities, weights)
+    spim = ArtificialSpim(phases, densities, weights)
     assert spim.phases.shape == (3, 1980)
     assert spim.weights.shape == (80,80,3)
     np.testing.assert_allclose(np.sum(spim.phases, axis=1), np.ones([3]))
