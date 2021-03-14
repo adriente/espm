@@ -16,13 +16,14 @@ class PhysicalModel(ABC) :
         self.bkgd_in_G = False
         self.spectrum = np.zeros_like(self.x)
         self.G = np.diag(np.ones_like(self.x))
+        self.phases = None
 
     @abstractmethod
-    def generate_spectrum(self,elts_list) :
+    def generate_g_matr (self, g_parameters) :
         pass
 
     @abstractmethod
-    def generate_g_matr (self) :
+    def generate_phases (self, phase_parameters) :
         pass
 
     def extract_DB (self,db_name) :

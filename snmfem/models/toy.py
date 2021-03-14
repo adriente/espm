@@ -11,23 +11,15 @@ class Toy(PhysicalModel) :
             self.c = self.params_dict["c"]
         except KeyError : 
             self.c = self.x.shape[0]
-        try : 
-            self.k = self.params_dict["k"]
-        except KeyError : 
-            print("You need to define a number of phases for GP.")
-            
-        np.random.seed(self.seed)
-        self.P = np.random.rand(self.c, self.k)
-        self.phases = None
+        self.k = None
 
     def generate_g_matr(self,**kwargs) : 
         np.random.seed(self.seed)
         self.G = np.random.rand(self.x.shape[0], self.c)
 
-    def generate_spectrum(self) :
-        np.random.seed(self.seed)
-        self.spectrum = self.G @ np.random.rand(self.c,1)
-
-    def generate_phases(self) : 
+    def generate_phases(self, phases_parameters) : 
+        self.k = len(phases_parameters)
+        self.generate_g_matr()
+        self.P = np.random.rand(self.c, self.k)
         self.phases = (self.G @ self.P).T
         

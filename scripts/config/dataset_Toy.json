@@ -1,0 +1,19 @@
+{
+    "seeds_range" : 10,
+    "weights_parameters" : {"weight_type": "laplacian",
+                            "shape_2D": [15, 15]},
+    "N": 200,
+    "model" : "Toy",
+    "model_parameters" :{"params_dict" : {"c" : 25, 
+                                          "k" : 5},
+                         "db_name" : "simple_xrays_threshold.json",
+                         "e_offset" : 0.208,
+                         "e_scale" : 0.01,
+                         "e_size": 50,
+                         "seed" : 1},
+    "densities" : [1,1,1,1,1], 
+    "g_parameters" : {"elements_list" : [8,13,14,12,26,29,31,72,71,62,60,92,20],
+                      "brstlg" : 1},
+    "phases_parameters" : [{}, {}, {}, {}, {}],
+    "data_folder" : "Toy_laplacian_N200"
+}

@@ -81,25 +81,6 @@ class EDXS(PhysicalModel):
                 brstlg_spectrum = continuum_xrays(self.x,self.params_dict,self.abs)[np.newaxis].T
                 self.G = np.concatenate((self.G, brstlg_spectrum), axis=1)
 
-    def generate_spectrum(self, elements_dict, scale):
-        """
-        Generates an EDXS spectrum with the specified elements. The continuum x-rays are added and scaled to the gaussian peaks.
-        :elements_dict: dictionnary of elements with concentration in that way {"integer":concentration}
-        :scale: Scale of the continuum x-rays to the characteristic X-rays. It can be set to 0 to eliminate the continuum. (float)
-        """
-        temp = np.zeros_like(self.x)
-        for elt in elements_dict.keys():
-            for shell in self.db_dict[elt]:
-                for i, energy in enumerate(self.db_dict[elt][shell]["energies"]):
-                    width = self.width_slope * energy + self.width_intercept
-                    temp += (
-                        elements_dict[elt]
-                        * self.db_dict[elt][shell]["ratios"][i]
-                        * gaussian(self.x, energy, width / 2.3548)
-                    )
-        temp += continuum_xrays(self.x,self.params_dict,self.abs) * scale
-        self.spectrum = temp
-
     def generate_abs_coeff(self, elements_dict):
         """
         Function to update self.abs based on the given database. This function is working as intended but it can't be used as it is for SNMF.
@@ -197,3 +178,29 @@ class EDXS(PhysicalModel):
             )
 
         self.abs = temp
+
+    def generate_phases(self, phases_parameters) : 
+        self.phases = []
+        for p in phases_parameters:
+            self.phases.append(self.generate_spectrum(**p))
+        self.phases = np.array(self.phases)
+
+    def generate_spectrum(self, elements_dict, scale):
+        """
+        Generates an EDXS spectrum with the specified elements. The continuum x-rays are added and scaled to the gaussian peaks.
+        :elements_dict: dictionnary of elements with concentration in that way {"integer":concentration}
+        :scale: Scale of the continuum x-rays to the characteristic X-rays. It can be set to 0 to eliminate the continuum. (float)
+        """
+        temp = np.zeros_like(self.x)
+        for elt in elements_dict.keys():
+            for shell in self.db_dict[elt]:
+                for i, energy in enumerate(self.db_dict[elt][shell]["energies"]):
+                    width = self.width_slope * energy + self.width_intercept
+                    temp += (
+                        elements_dict[elt]
+                        * self.db_dict[elt][shell]["ratios"][i]
+                        * gaussian(self.x, energy, width / 2.3548)
+                    )
+        temp += continuum_xrays(self.x,self.params_dict,self.abs) * scale
+        return temp
+        

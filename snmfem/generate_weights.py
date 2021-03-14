@@ -99,15 +99,26 @@ def laplacian_weights(shape_2D, n_phases=3, seed=0) :
     weights = rnd_f/np.sum(rnd_f, axis=2, keepdims=True)
     return weights
     
-def two_sphere_weights(seed=0):
-    mat = Material([80, 80], 3)
+def spheres_weights(shape_2D=[80, 80], n_phases=3, seed=0):
+    mat = Material(shape_2D, n_phases)
     
-    if seed == 0:
+    if seed == 0 and n_phases==3 and shape_2D == [80, 80]:
         mat.sphere((25, 30), 3.5, 3.5, 0.0, 0.5, 1)
         mat.sphere((55, 30), 3.5, 3.5, 0.0, 0.5, 2)
     else:
         np.random.seed(seed)
-        for _ in range(2):
-            p = np.random.randint(1, 80, [2])
-            mat.sphere(p, 3.5, 3.5, 0.0, 0.5, 1)     
-    return mat.finalize_weight()  
+        for i in range(1, n_phases):
+            p1 = np.random.randint(1, shape_2D[0])
+            p2 = np.random.randint(1, shape_2D[1])
+            mat.sphere([p1,p2], 3.5, 3.5, 0.0, 0.5, i)     
+    return mat.finalize_weight()
+
+def generate_weights(weight_type, shape_2D, n_phases=3, seed=0):
+    if weight_type=="random":
+        return random_weights(shape_2D, n_phases, seed) 
+    elif weight_type=="laplacian":
+        return laplacian_weights(shape_2D, n_phases, seed) 
+    elif weight_type=="sphere":
+        return spheres_weights(shape_2D, n_phases, seed) 
+    else:
+        raise ValueError("Wrong weight_type: {}".format(weight_type))

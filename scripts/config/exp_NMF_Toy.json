@@ -1,5 +1,5 @@
 {
-    "hyperparameters" : {"n_components" : 3,
+    "hyperparameters" : {"n_components" : 5,
                          "init" : "warn",
                          "tol" : 1e-4,
                          "max_iter" : 20000,
@@ -16,6 +16,7 @@
                          "seed" : 1},
     "g_parameters" : {"elements_list" : [8,13,14,12,26,29,31,72,71,62,60,92,20],
                       "brstlg" : 1},
+    
     "model" : "Toy",
     "estimator": "NMF",
     "data_file" : "Toy_laplacian_N200/sample_0.npz",

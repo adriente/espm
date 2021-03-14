@@ -1,17 +1,9 @@
-from snmfem.datasets import generate_dataset
-from snmfem.conf import DATASETS_PATH
-from pathlib import Path
-import shutil
-
-
-def test_generate_edxs_dataset():
-    
-    params = {
-    "seeds_range" : 3,
-    "N": 30,
+{
+    "seeds_range" : 10,
+    "N": 100,
     "model" : "EDXS",
     "weights_parameters" : {"weight_type": "sphere",
-                            "shape_2D": [20, 15]},
+                            "shape_2D": [80, 80]},
     "model_parameters" :{"params_dict" : {"c0" : 4.8935e-05, 
                                           "c1" : 1464.19810,
                                           "c2" : 0.04216872,
@@ -40,34 +32,5 @@ def test_generate_edxs_dataset():
                            "62": 0.04, "26": 0.004, "60": 0.008, "72": 0.004, "29": 0.01}, 
          "scale" : 1} 
         ],
-    "data_folder" : "test"
-    }
-
-
-    folder = DATASETS_PATH / Path(params["data_folder"])
-    generate_dataset(**params)
-    shutil.rmtree(folder)
-
-def test_generate_toy_dataset():
-    params = {
-        "seeds_range" : 4,
-        "weights_parameters" : {"weight_type": "laplacian",
-                                "shape_2D": [14, 23]},
-        "N": 35,
-        "model" : "Toy",
-        "model_parameters" :{"params_dict" : {"c" : 25, 
-                                            "k" : 4},
-                            "db_name" : "simple_xrays_threshold.json",
-                            "e_offset" : 0.208,
-                            "e_scale" : 0.01,
-                            "e_size": 50,
-                            "seed" : 1},
-        "densities" : [1,1,1,1], 
-        "g_parameters" : {"elements_list" : [8,13,14,12,26,29,31,72,71,62,60,92,20],
-                        "brstlg" : 1},
-        "phases_parameters" : [{}, {}, {}, {}],
-        "data_folder" : "Toy_laplacian_N200"
-    }
-    folder = DATASETS_PATH / Path(params["data_folder"])
-    generate_dataset(**params)    
-    shutil.rmtree(folder)
+    "data_folder" : "aspim037_N100_2ptcls_brstlg"
+}
