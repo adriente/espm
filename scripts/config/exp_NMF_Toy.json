@@ -9,5 +9,5 @@
                          "epsilon_reg" : 1.0},
     "dataset" : "dataset_Toy.json",
     "estimator": "NMF",
-    "filename" : "NMF_results"
+    "filename" : "NMF_Toy_results"
 }

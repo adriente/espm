@@ -37,14 +37,28 @@ python scripts/generate_synthetic_dataset.py
 ```
 
 ## Running the algorithm
-Fill a json file with the relevant input parameters such as dataset name, hyperparameters values, etc ... (see the template in scritps/config/).
-Then you can run the algorithm running :
+Fill a json file with the relevant input parameters such as dataset name, hyperparameters values, etc ... (see the template in scritps/config/). They are two types of configuration files:
+1. Dataset files
+2. Experiment files
+
+To run an experiment, you can use 
 ```
-python experiments.py json_filename
+python scripts/synthetic_exp.py json_filename
 ```
-It will produce two ouputs : 
-* A .npz file with the G, P and A matrices
-* A .json file containing the scores obtained based on the ground truth (and informations on the input used)
+For example the following line will execute the experiment with the NMF method and the toy dataset.
+```
+python scripts/synthetic_exp.py exp_NMF_Toy.json
+```
+Since the Toy dataset has 10 samples, it will run 10 different experiment. To only run one experiment, you can use
+```
+python scripts/synthetic_exp.py exp_NMF_Toy.json True 3
+```
+This will run the experiment with the sample 3. Here, the argument `True` set the saving of the matrices G,P and A.
+
+The experiment script produces two ouputs : 
+* A .npz file with the G, P and A matrices (one file for each sample if the second argument is set to `True`)
+* A .json file containing the scores obtained based on the ground truth (and informations on the input used). One file is used for all samples.
+
 
 For now it is supported for NMF only and the user needs to provide artificial data with ground truths
 

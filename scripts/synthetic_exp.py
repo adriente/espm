@@ -39,15 +39,17 @@ def run_experiment(sample, json_dict) :
 
 if __name__ == "__main__" : 
     json_file = sys.argv[1]
+    
     if len(sys.argv)<3:
-        number = None
-    else:
-        number = [int(sys.argv[2])]
-
-    if len(sys.argv)<4:
         save = False
     else:
-        save = sys.argv[3]=="True"
+        save = sys.argv[2]=="True"
+
+    if len(sys.argv)<4:
+        number = None
+    else:
+        number = [int(sys.argv[3])]
+
     # Open experiment file
     json_path = SCRIPT_CONFIG_PATH / Path(json_file)
     with open(json_path,"r") as f :
