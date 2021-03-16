@@ -20,7 +20,7 @@ def run_experiment(sample, json_dict) :
     true_maps = data["weights"]
     k = true_maps.shape[2]
     true_maps_flat = true_maps.transpose([2,0,1]).reshape(k,nx*ny)
-    assert(true_maps.shape[:2] == nx, ny)
+    assert(true_maps.shape[:2] == (nx, ny))
     G = data["G"]
 
     # Load estimator
