@@ -5,7 +5,7 @@ import time
 # For the unused laplacian function
 # from scipy.sparse import lil_matrix, block_diag
 
-from snmfem.utils_V2 import Gaussians
+# from snmfem.utils_V2 import Gaussians
 
 
 class SNMF:

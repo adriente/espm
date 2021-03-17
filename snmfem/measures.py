@@ -1,5 +1,6 @@
 import numpy as np
 from snmfem.conf import log_shift
+import warnings as w
 
 def spectral_angle(v1, v2):
     """
@@ -35,21 +36,42 @@ def mse(map1, map2):
 # This function will find the best matching endmember for each true spectrum.
 # This is useful since the A and P matrice are initialized at random.
 # This function works but can probably greatly improved
-def find_min_angle(true_vectors, algo_vectors):
+def find_min_angle(true_vectors, algo_vectors, get_ind = False, unique=False):
     # This function calculates all the possible angles between endmembers and true spectra
     # For each true spectrum a best matching endmember is found
     # The function returns the angles of the corresponding pairs
     angle_matr = spectral_angle(true_vectors,algo_vectors)
-    ordered_angles = unique_min(angle_matr,[])
+    if unique :
+        ordered_angles = unique_min(angle_matr,[])
+    else :
+        ordered_angles = global_min(angle_matr)
     #unique minimum angles are ordered
-    return ordered_angles
+    if get_ind :
+        if unique :
+            print("Impossible to get indices when searching with unique minima.")
+        else : 
+            return ordered_angles[1]
+    else : 
+        return ordered_angles[0]
+
+def global_min (matr) :
+    res = []
+    ind_res = []
+    for i in matr : 
+        ind_min = np.argmin(i)
+        min = np.min(i)
+        res.append(min)
+        ind_res.append(ind_min)
+    if any(ind_res.count(x) > 1 for x in ind_res) :
+        w.warn("Several results share the same truth")
+    return res, ind_res
     
-def unique_min (matr,angles) : 
+def unique_min (matr, angles) : 
     # Recursive way to find the minimum values in a matrice, line by line.
     # For each line, the column of the min is removed at every iteration. This ensures that a min is found for each column once.
     # the input matrix should be n_comps*n_comps
     if matr.size==0 :
-        return angles
+        return angles, None
     else :
         ind_min = np.argmin(matr[0,:])
         angles.append(np.min(matr[0,:]))
@@ -59,13 +81,22 @@ def unique_min (matr,angles) :
 
 
 # This function works but can probably greatly improved
-def find_min_MSE(true_maps, algo_maps):
+def find_min_MSE(true_maps, algo_maps, get_ind = False, unique=False):
     # This function calculates all the possible MSE between abundances and true maps
     # For each true map a best matching abundance is found
     # The function returns the MSE of the corresponding pairs
     mse_matr = square_distance(true_maps,algo_maps)
-    ordered_maps = unique_min(mse_matr,[])
-    return ordered_maps
+    if unique :
+        ordered_maps = unique_min(mse_matr,[])
+    else :
+        ordered_maps = global_min(mse_matr)
+    if get_ind :
+        if unique :
+            print("Impossible to get indices when searching with unique minima.")
+        else : 
+            return ordered_maps[1]
+    else : 
+        return ordered_maps[0]
 
 
 # This function gives the residuals between the model determined by snmf and the data that were fitted

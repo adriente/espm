@@ -1,7 +1,6 @@
 import numpy as np
 import json
 import os
-import snmfem.utils as u
 import re
 import snmfem.conf as conf
 from pathlib import Path

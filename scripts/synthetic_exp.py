@@ -16,7 +16,7 @@ def run_experiment(sample, json_dict) :
     Xflat = X.transpose([2,0,1]).reshape(ns, nx*ny)
     densities = data["densities"]
     phases = data["phases"]
-    true_spectra = np.expand_dims(densities, axis=1) * phases
+    true_spectra = np.expand_dims(densities, axis=1) * phases * data["N"]
     true_maps = data["weights"]
     k = true_maps.shape[2]
     true_maps_flat = true_maps.transpose([2,0,1]).reshape(k,nx*ny)

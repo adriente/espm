@@ -62,7 +62,7 @@ def test_distance () :
         d_matr_2[:,ind_min] = np.inf * np.ones(d_matr_2.shape[0])
 
     mins = np.array(mins)
-    mins_2 = find_min_MSE(a,b) 
+    mins_2 = find_min_MSE(a,b,unique=True) 
     np.testing.assert_allclose(mins,mins_2)
 
 
@@ -111,7 +111,7 @@ def test_spectral_angle():
         res[:,ind_min] = np.inf * np.ones(res.shape[0])
 
     mins = np.array(mins)
-    mins_2 = find_min_angle(a,b) 
+    mins_2 = find_min_angle(a,b, unique=True) 
     np.testing.assert_allclose(mins,mins_2)
 
 def test_base_loss():
