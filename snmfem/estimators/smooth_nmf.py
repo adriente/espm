@@ -23,7 +23,7 @@ class SmoothNMF(NMF):
     def loss(self, P, A):
         l1 = super().loss(P, A)
         l2 = self.lambda_L * trace_xtLx(self.L, A.T)
-        return l1 + le
+        return l1 + l2
 
 
 
