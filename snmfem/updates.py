@@ -1,6 +1,7 @@
 import numpy as np
 from snmfem.conf import log_shift, dicotomy_tol
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
+from snmfem.laplacian import sigmaL
 import snmfem.utils as u
 
 def dichotomy_simplex(num, denum, tol=dicotomy_tol):
@@ -88,7 +89,7 @@ def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True):
 
 
 
-def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol):
+def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None):
     """
     Multiplicative step in A.
     The main terms are calculated first.
@@ -98,6 +99,9 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
     as a vector to regularize the different phase of A differently.
     To calculate the regularized step, we make a linear approximation of the log.
     """
+    if not(lambda_L==0):
+        if L is None:
+            raise ValueError("Please provide the laplacian")
 
     if safe:
         # Allow for very small negative values!
@@ -112,8 +116,12 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
         mu = np.expand_dims(mu, axis=1)
 
     num = A * (GP.T @ (X / (GPA+eps)))
-    denum = np.sum(GP, axis=0, keepdims=True).T + mu / (A + epsilon_reg)
-
+    denum = np.sum(GP, axis=0, keepdims=True).T 
+    if not(np.isscalar(mu) and mu==0):
+        denum = denum + mu / (A + epsilon_reg)
+    if not(lambda_L==0):
+        num = num + lambda_L * sigmaL * A
+        denum = denum + lambda_L * sigmaL + lambda_L * A @ L 
     if force_simplex:
         nu = dichotomy_simplex(num, denum,dicotomy_tol)
     else:

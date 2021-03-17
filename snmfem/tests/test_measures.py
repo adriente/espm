@@ -1,8 +1,9 @@
 import numpy as np
 from numpy.lib.function_base import kaiser
-from snmfem.measures import mse, spectral_angle, KLdiv_loss, KLdiv, square_distance, find_min_MSE, find_min_angle
+from snmfem.measures import mse, spectral_angle, KLdiv_loss, KLdiv, square_distance, find_min_MSE, find_min_angle, trace_xtLx
 import pytest
 from snmfem.conf import log_shift
+from snmfem.laplacian import create_laplacian_matrix
 
 def base_loss(x_matr, d_matr, a_matr, eps=log_shift):
     """
@@ -164,3 +165,24 @@ def test_base_loss():
         A = np.random.rand(k,p)
         D = np.random.randn(l,k)
         val2 = KLdiv_loss(X, D, A)
+
+def test_trace_xtLx():
+    nx = 4
+    ny = 6
+    L = create_laplacian_matrix(nx, ny)
+    x = np.ones([nx, ny]).flatten()
+    np.testing.assert_allclose(trace_xtLx(L, x), 0)
+
+    x = np.ones([nx, ny])
+    x[2,3] = 2
+    np.testing.assert_allclose(trace_xtLx(L, x.flatten()), 4)
+    
+    k = 10
+    x = np.random.randn(nx*ny, k)
+    r1 = trace_xtLx(L, x)
+    r2 = 0
+    for i in range(k):
+        r2 = r2 + trace_xtLx(L, x[:,i])
+    np.testing.assert_allclose(r1, r2)
+
+    np.testing.assert_allclose(trace_xtLx(L, x), np.sum(np.diag(x.T @ (L @ x))))
