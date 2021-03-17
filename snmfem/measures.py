@@ -122,6 +122,8 @@ def log_reg(A, mu, epsilon):
         mu = np.expand_dims(mu, axis=1)
     return np.sum(mu* np.log(A+epsilon))
 
+def trace_xtLx(L, x):
+    return np.sum(x * (L @ x))
 
 def square_distance(x, y=None):
     r"""
