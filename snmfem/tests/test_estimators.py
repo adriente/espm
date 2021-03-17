@@ -4,7 +4,8 @@ import numpy as np
 from snmfem.datasets.generate_data import ArtificialSpim
 from snmfem.models import EDXS
 from snmfem.datasets.generate_weights import generate_weights
-
+from snmfem.measures import trace_xtLx
+from snmfem.laplacian import create_laplacian_matrix
 
 def generate_one_sample():
     model_parameters  = {"params_dict" : {"c0" : 4.8935e-05, 
@@ -56,7 +57,7 @@ def generate_one_sample():
 
     spim = ArtificialSpim(phases, densities, weights, G=G)
 
-    N = 300
+    N = 50
     spim.generate_spim_stochastic(N)
 
     D = spim.phases.T
@@ -66,8 +67,7 @@ def generate_one_sample():
 
     w = spim.densities
     Xdot = spim.flatten_Xdot()
-    return G, P, A, D, w, X/N, Xdot/N
-
+    return G, P, A, D, w, X, Xdot/N
 
 
 def test_generate_one_sample():
@@ -75,9 +75,6 @@ def test_generate_one_sample():
     np.testing.assert_allclose(G @ P , D, atol=1e-5)
     np.testing.assert_allclose(D @ np.diag(w) @ A , Xdot)
     np.testing.assert_allclose(G @ P @ np.diag(w) @ A , Xdot, atol=1e-5)
-
-
- 
 
 
 def test_NMF_scikit () : 
@@ -90,7 +87,6 @@ def test_NMF_scikit () :
 def test_general():
     G, P, A, D, w, X, Xdot = generate_one_sample()
 
-
     estimator = NMF(n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1)
     D2 = estimator.fit_transform(G=G, A=A, X=Xdot)
     np.testing.assert_allclose(D@np.diag(w), D2, atol=1e-5)
@@ -99,3 +95,35 @@ def test_general():
     D2 = estimator.fit_transform( A=A, X=Xdot)
     np.testing.assert_allclose(D@np.diag(w), D2, atol=1e-5)
 
+    estimator = NMF(n_components= 3,max_iter=200,force_simplex = False,mu = 0, epsilon_reg = 1)
+    D2 = estimator.fit_transform(G =G, P=P@np.diag(w), X=Xdot)
+    np.testing.assert_allclose(D@np.diag(w), D2, atol=1e-5)
+
+    estimator = NMF(n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1)
+    D2 = estimator.fit_transform(G =G, P=P@np.diag(w), X=Xdot)
+    np.testing.assert_allclose(D@np.diag(w), D2, atol=1e-5)
+
+    estimator = NMF(n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1)
+    estimator.fit_transform(G=G, X=Xdot)
+    P2, A2 = estimator.P_, estimator.A_ 
+    np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1e-2)
+
+    estimator = NMF(n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1)
+    estimator.fit_transform(G=G, X=X)
+    P2, A2 = estimator.P_, estimator.A_ 
+    np.testing.assert_allclose(G @ P2 @ A2,  X, atol=1e-2)
+
+    estimator = SmoothNMF([15,15], lambda_L=0, n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, )
+    estimator.fit_transform(G=G, X=X)
+    P2, A2 = estimator.P_, estimator.A_ 
+    np.testing.assert_allclose(G @ P2 @ A2,  X, atol=1e-2)
+
+    estimator = SmoothNMF([15,15], lambda_L=1, n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, )
+    estimator.fit_transform(G=G, X=X)
+    P3, A3 = estimator.P_, estimator.A_ 
+    np.testing.assert_allclose(G @ P2 @ A2,  X, atol=1e-2)
+    L = create_laplacian_matrix(15, 15)
+
+    assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A2.T))
+    assert(trace_xtLx(L, A.T) < trace_xtLx(L, A2.T) )
+    assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A.T) )
