@@ -3,6 +3,7 @@ from snmfem.conf import log_shift, dicotomy_tol
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
 from snmfem.laplacian import sigmaL
 import snmfem.utils as u
+# test
 
 def dichotomy_simplex(num, denum, tol=dicotomy_tol):
     """
