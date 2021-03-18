@@ -5,7 +5,7 @@ from snmfem.laplacian import sigmaL
 import snmfem.utils as u
 # test
 
-def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=300):
+def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=100):
     """
     Function to solve the num/(x+denum) -1 = 0 equation. Here, x is the Lagragian multiplier which is used to apply the simplex constraint.
     The first part consists in finding a and b such that num/(a+denum) -1 > 0 and num/(b+denum) -1  < 0. (line search)
@@ -19,8 +19,8 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=300):
     ind_min = np.argmax(num/denum, axis=0)
     ind_min2 = np.argmin(denum, axis=0)
     ind = np.arange(len(ind_min2))
-    amin1 = (num[ind_min, ind]/1.1-denum[ind_min, ind])
-    amin2 = (num[ind_min2, ind]/1.1- denum[ind_min2, ind])
+    amin1 = (num[ind_min, ind]/2-denum[ind_min, ind])
+    amin2 = (num[ind_min2, ind]/2- denum[ind_min2, ind])
     a = np.maximum(amin1, amin2)
 
     r = np.sum(num/denum, axis=0)
@@ -50,7 +50,6 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=300):
         if it>=maxit:
             print("Dicotomy stopped for maximum number of iterations")
             break
-
     return new
 
 

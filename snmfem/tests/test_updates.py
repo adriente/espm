@@ -131,14 +131,18 @@ def test_dichotomy_simmplex():
 def test_dicotomy2():
     k = 5
     p = 6400
-    span = np.logspace(-8,8,num=17)
-    iter = 100
-    for i in range(iter) : 
+    span = np.logspace(-7,7,num=17)
+    its = 100
+    tol = 1e-6
+    np.random.seed(0)
+    for _ in range(its) : 
         scale_num = np.random.choice(span,size=(k,p))
         num = scale_num * np.random.rand(k,p)
         scale_denum = np.random.choice(span,size=(k,p))
         denum = scale_denum * np.random.rand(k,p)
-        dichotomy_simplex(num, denum)
+        sol = dichotomy_simplex(num, denum, tol, maxit=100)
+        v = np.sum(num/(denum + sol), axis=0)
+        np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
 
 def test_multiplicative_step_p():
     l = 26
