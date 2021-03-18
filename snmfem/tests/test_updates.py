@@ -92,9 +92,9 @@ def test_dichotomy_simmplex():
     num = np.random.rand(1,1) + 1
     denum = np.random.rand(1,1)
     sol = num - denum
-    tol = 1e-6
+    tol = 1e-8
     sol2 = dichotomy_simplex(num, denum, tol )
-    assert(np.abs(sol -sol2 )< tol)
+    assert(np.abs(sol -sol2 )< 2*tol)
 
     n = 10
     num = np.random.rand(1,n)
@@ -126,6 +126,19 @@ def test_dichotomy_simmplex():
     sol = dichotomy_simplex(num, denum, tol )
     np.sum(num/(denum + sol))
     np.testing.assert_allclose(sol, 0, atol=tol)
+
+
+def test_dicotomy2():
+    k = 5
+    p = 6400
+    span = np.logspace(-8,8,num=17)
+    iter = 100
+    for i in range(iter) : 
+        scale_num = np.random.choice(span,size=(k,p))
+        num = scale_num * np.random.rand(k,p)
+        scale_denum = np.random.choice(span,size=(k,p))
+        denum = scale_denum * np.random.rand(k,p)
+        dichotomy_simplex(num, denum)
 
 def test_multiplicative_step_p():
     l = 26
@@ -180,7 +193,7 @@ def test_multiplicative_step_a():
     np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
 
     Ap = multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=0, epsilon_reg=1, safe=True)
-    np.testing.assert_array_almost_equal(A, Ap)        
+    np.testing.assert_allclose(A, Ap, atol=dicotomy_tol)        
 
     for _ in range(10):
         A = np.random.rand(k,p)

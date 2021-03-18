@@ -5,7 +5,7 @@ from snmfem.laplacian import sigmaL
 import snmfem.utils as u
 # test
 
-def dichotomy_simplex(num, denum, tol=dicotomy_tol):
+def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=300):
     """
     Function to solve the num/(x+denum) -1 = 0 equation. Here, x is the Lagragian multiplier which is used to apply the simplex constraint.
     The first part consists in finding a and b such that num/(a+denum) -1 > 0 and num/(b+denum) -1  < 0. (line search)
@@ -14,49 +14,28 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol):
     In the future a vectorized version of Dekker Brent could be implemented.
     """
     # # The function has exactly one root at the right of the first singularity (the singularity at min(denum))
-    # # So a and b are set to -min(denum) plus an offset.
-    f_div = np.min(
-        np.where(num != 0, denum, np.inf), axis=0
-    )  # There are several min values in the case of particle regularization. In the case where there are exact 0 in num, the min of denum needs to be changed to the next nearest min.
 
-    a_off = 100 * np.ones(num.shape[1])
-    b_off = 0.01 * np.ones(num.shape[1])
-    a = -f_div * np.ones(num.shape[1]) + a_off
-    b = -f_div * np.ones(num.shape[1]) + b_off
 
-    # r = np.sum(num/denum, axis=0)
-    # ind_min = np.argmax(num/denum, axis=0)
-    # ind_min2 = np.argmin(denum, axis=0)
-    # ind = np.arange(len(ind_min))
-    # bmin1 = num[ind_min, ind]-denum[ind_min, ind]
-    # bmin2 = num[ind_min2, ind]-denum[ind_min2, ind]
-    # a = r
-    # b = np.maximum(bmin1, bmin2)
-        
-    # Search for a elements which give positive value
-    constr = np.sum(num / (a + denum), axis=0) - 1
-    while np.any(constr <= 0):
-        # We exclude a elements which give positive values
-        # We use <= because constr == 0 is problematic.
-        constr_bool = constr <= 0
-        # Reducing a will ensure that the function will diverge toward positive values
-        a_off[constr_bool] /= 1.2
-        a = -f_div * np.ones(num.shape[1]) + a_off
-        constr = np.sum(num / (a + denum), axis=0) - 1
+    ind_min = np.argmax(num/denum, axis=0)
+    ind_min2 = np.argmin(denum, axis=0)
+    ind = np.arange(len(ind_min2))
+    amin1 = (num[ind_min, ind]/1.1-denum[ind_min, ind])
+    amin2 = (num[ind_min2, ind]/1.1- denum[ind_min2, ind])
+    a = np.maximum(amin1, amin2)
 
-    # Search for b elements which give negative values
-    constr = np.sum(num / (b + denum), axis=0) - 1
-    while np.any(constr >= 0):
-        # We exclude b elements which give negative values
-        constr_bool = constr >= 0
-        # increasing b will ensure that the function will converge towards negative values
-        b_off[constr_bool] *= 1.2
-        b = -f_div * np.ones(num.shape[1]) + b_off
-        constr = np.sum(num / (b + denum), axis=0) - 1
+    r = np.sum(num/denum, axis=0)
+    b = np.zeros(r.shape)
+    b[r>=1] = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))[r>=1]
+
+    assert(np.sum((np.sum(num / (b + denum), axis=0) - 1)>=0)==0)
+    assert(np.sum((np.sum(num / (a + denum), axis=0) - 1)<=0)==0)
+
+    new = (a + b) / 2
 
     # Dichotomy algorithm to solve the equation
-    while np.any(np.abs(b - a) > tol):
-        new = (a + b) / 2
+    it = 0
+    while (np.max(np.abs(np.sum(num / (new + denum), axis=0) - 1))) > tol:
+        it=it+1
         # if f(a)*f(new) <0 then f(new) < 0 --> store in b
         minus_bool = (np.sum(num / (a + denum), axis=0) - 1) * (
             np.sum(num / (new + denum), axis=0) - 1
@@ -67,8 +46,12 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol):
         ) > 0
         b[minus_bool] = new[minus_bool]
         a[plus_bool] = new[plus_bool]
+        new = (a + b) / 2
+        if it>=maxit:
+            print("Dicotomy stopped for maximum number of iterations")
+            break
 
-    return (a + b) / 2
+    return new
 
 
 def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True):
@@ -148,7 +131,7 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
 
     elif A is None:
         D = G @ P
-        A = np.abs(np.linalg.lstsq(D, X)[0])
+        A = np.abs(np.linalg.lstsq(D, X, rcond=None)[0])
         if force_simplex:
             scale = np.sum(A, axis=0, keepdims=True)
             A = A/scale
