@@ -16,16 +16,18 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=100):
     # # The function has exactly one root at the right of the first singularity (the singularity at min(denum))
 
 
-    ind_min = np.argmax(num/denum, axis=0)
-    ind_min2 = np.argmin(denum, axis=0)
-    ind = np.arange(len(ind_min2))
-    amin1 = (num[ind_min, ind]/2-denum[ind_min, ind])
-    amin2 = (num[ind_min2, ind]/2- denum[ind_min2, ind])
-    a = np.maximum(amin1, amin2)
-
-    r = np.sum(num/denum, axis=0)
-    b = np.zeros(r.shape)
-    b[r>=1] = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))[r>=1]
+    # ind_min = np.argmax(num/denum, axis=0)
+    # ind_min2 = np.argmin(denum, axis=0)
+    # ind = np.arange(len(ind_min2))
+    # amin1 = (num[ind_min, ind]/2-denum[ind_min, ind])
+    # amin2 = (num[ind_min2, ind]/2- denum[ind_min2, ind])
+    # a = np.maximum(amin1, amin2)
+    a = np.max(num/2 - denum, axis=0)
+    
+    # r = np.sum(num/denum, axis=0)
+    # b = np.zeros(r.shape)
+    # b[r>=1] = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))[r>=1]    
+    b = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))
 
     assert(np.sum((np.sum(num / (b + denum), axis=0) - 1)>=0)==0)
     assert(np.sum((np.sum(num / (a + denum), axis=0) - 1)<=0)==0)
@@ -121,6 +123,8 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
     if P is None:
         if A is None:
             D, A = initialize_nmf(X, n_components=n_components, init=init, random_state=random_state)
+            assert(np.sum(A<0)==0)
+            assert(np.sum(D<0)==0)
             # D, A = u.rescaled_DA(D,A)
             if force_simplex:
                 scale = np.sum(A, axis=0, keepdims=True)
