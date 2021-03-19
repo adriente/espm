@@ -29,10 +29,12 @@ class NMF(NMFEstimator):
         return  P, A
 
     def loss(self, P, A):
-        GP = self.G_ @ P
-        kl = KLdiv(self.X_, GP, A, self.log_shift, safe=self.debug) 
+        lkl = super().loss(P, A)
+        # GP = self.G_ @ P
+        # kl = KLdiv(self.X_, GP, A, self.log_shift, safe=self.debug) 
         reg = log_reg(A, self.mu, self.epsilon_reg)
-        return kl + reg
+        self.detailed_loss.append(reg)
+        return lkl + reg
 
 
 

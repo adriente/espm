@@ -36,6 +36,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     def loss(self, P, A):
         GP = self.G_ @ P
         kl = KLdiv(self.X_, GP, A, self.log_shift, safe=self.debug) 
+        self.detailed_loss = [kl]
         return kl
 
     def fit_transform(self, X, y=None, G=None, P=None, A=None, eval_print=10):
@@ -65,19 +66,27 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.n_iter_ = 0
         if self.debug:
             self.losses = []
+            self.rel = []
+            self.detailed_losses = []
         try:
             while True:
                 start = time.time()
                 # Take one step in A, P
+                old_P, old_A = self.P_.copy(), self.A_.copy()
                 self.P_, self.A_ = self._iteration( self.P_, self.A_ )
                 eval_after = self.loss(self.P_, self.A_)
                 self.n_iter_ +=1
+                
+                rel_P = np.max((self.P_ - old_P)/(self.P_ + self.tol*np.mean(self.P_) ))
+                rel_A = np.max((self.A_ - old_A)/(self.A_ + self.tol*np.mean(self.A_) ))
 
 
                 # store some information for assessing the convergence
                 # for debugging purposes
                 if self.debug:
                     self.losses.append(eval_after)
+                    self.detailed_losses.append(self.detailed_loss)
+                    self.rel.append([rel_P,rel_A])
 
 
                 # check convergence criterions
@@ -87,10 +96,18 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
                 # If there is no regularization the algorithm stops with this criterion
                 # Otherwise it goes to the data fitting step
-                elif abs(eval_before - eval_after) < self.tol:
+                elif max(rel_A,rel_P) < self.tol:
+                    print(
+                        "exits because of relative change rel_A {} or rel_P {} < tol ".format(
+                            rel_A,rel_P
+                        )
+                    )
+                    break
+
+                elif abs((eval_before - eval_after)/eval_before) < self.tol:
                     print(
                         "exits because of relative change < tol: {}".format(
-                            eval_before - eval_after
+                            (eval_before - eval_after)/eval_before
                         )
                     )
                     break
