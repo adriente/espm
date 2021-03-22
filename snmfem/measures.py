@@ -42,15 +42,15 @@ def find_min_angle(true_vectors, algo_vectors, get_ind = False, unique=False):
     # The function returns the angles of the corresponding pairs
     angle_matr = spectral_angle(true_vectors,algo_vectors)
     if unique :
-        ordered_angles = unique_min(angle_matr,[])
+        ordered_angles = unique_min(angle_matr)
     else :
         ordered_angles = global_min(angle_matr)
     #unique minimum angles are ordered
     if get_ind :
-        if unique :
-            print("Impossible to get indices when searching with unique minima.")
-        else : 
-            return ordered_angles[1]
+        # if unique :
+        #     print("Impossible to get indices when searching with unique minima.")
+        # else : 
+        return ordered_angles[1]
     else : 
         return ordered_angles[0]
 
@@ -66,18 +66,17 @@ def global_min (matr) :
         w.warn("Several results share the same truth")
     return res, ind_res
     
-def unique_min (matr, angles) : 
-    # Recursive way to find the minimum values in a matrice, line by line.
-    # For each line, the column of the min is removed at every iteration. This ensures that a min is found for each column once.
-    # the input matrix should be n_comps*n_comps
-    if matr.size==0 :
-        return angles, None
-    else :
-        ind_min = np.argmin(matr[0,:])
-        angles.append(np.min(matr[0,:]))
-        reduced1 = np.delete(matr,ind_min,axis = 1)
-        reduced2 = np.delete(reduced1,0,axis = 0)
-        return unique_min(reduced2,angles)
+
+def unique_min (matr) : 
+    mins= []
+    ind_mins = []
+    for vec in matr :
+        mins.append(np.min(vec))
+        ind_min = np.argmin(vec)
+        ind_mins.append(ind_min)
+        matr[:,ind_min] = np.inf * np.ones(matr.shape[0])
+
+    return mins, ind_mins
 
 
 # This function works but can probably greatly improved
@@ -87,14 +86,14 @@ def find_min_MSE(true_maps, algo_maps, get_ind = False, unique=False):
     # The function returns the MSE of the corresponding pairs
     mse_matr = square_distance(true_maps,algo_maps)
     if unique :
-        ordered_maps = unique_min(mse_matr,[])
+        ordered_maps = unique_min(mse_matr)
     else :
         ordered_maps = global_min(mse_matr)
     if get_ind :
-        if unique :
-            print("Impossible to get indices when searching with unique minima.")
-        else : 
-            return ordered_maps[1]
+        # if unique :
+        #     print("Impossible to get indices when searching with unique minima.")
+        # else : 
+        return ordered_maps[1]
     else : 
         return ordered_maps[0]
 
@@ -197,5 +196,23 @@ def square_distance(x, y=None):
     d = abs(np.kron(np.ones((ry, 1)), xx).T +np.kron(np.ones((rx, 1)), yy) - 2 * xy)    
     
     return d
+
+##########################################
+# old version of the unique min function #
+##########################################
+
+# def unique_min (matr, angles) : 
+#     # Recursive way to find the minimum values in a matrice, line by line.
+#     # For each line, the column of the min is removed at every iteration. This ensures that a min is found for each column once.
+#     # the input matrix should be n_comps*n_comps
+#     if matr.size==0 :
+#         return angles, None
+#     else :
+#         ind_min = np.argmin(matr[0,:])
+#         angles.append(np.min(matr[0,:]))
+#         reduced1 = np.delete(matr,ind_min,axis = 1)
+#         reduced2 = np.delete(reduced1,0,axis = 0)
+#         return unique_min(reduced2,angles)
+
 
 
