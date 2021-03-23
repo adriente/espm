@@ -36,7 +36,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     def loss(self, P, A):
         GP = self.G_ @ P
         kl = KLdiv(self.X_, GP, A, self.log_shift, safe=self.debug) 
-        self.detailed_loss = [kl]
+        self.detailed_loss_ = [kl]
         return kl
 
     def fit_transform(self, X, y=None, G=None, P=None, A=None, eval_print=10):
@@ -85,7 +85,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 # for debugging purposes
                 if self.debug:
                     self.losses.append(eval_after)
-                    self.detailed_losses.append(self.detailed_loss)
+                    self.detailed_losses.append(self.detailed_loss_)
                     self.rel.append([rel_P,rel_A])
 
 

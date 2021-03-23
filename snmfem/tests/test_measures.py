@@ -56,15 +56,35 @@ def test_distance () :
     d_matr_2 = square_distance(a,b)
     np.testing.assert_allclose(d_matr,d_matr_2)
 
-    mins= []
-    for vec in d_matr_2 :
-        mins.append(np.min(vec))
-        ind_min = np.argmin(vec)
-        d_matr_2[:,ind_min] = np.inf * np.ones(d_matr_2.shape[0])
+    d_matr_c = d_matr.copy()
 
-    mins = np.array(mins)
-    mins_2 = find_min_MSE(a,b,unique=True) 
-    np.testing.assert_allclose(mins,mins_2)
+    unique_mins= []
+    unique_inds = []
+    for vec in d_matr_c :
+        unique_mins.append(np.min(vec))
+        ind_min = np.argmin(vec)
+        unique_inds.append(ind_min)
+        d_matr_c[:,ind_min] = np.inf * np.ones(d_matr_c.shape[0])
+
+    unique_mins = np.array(unique_mins)
+    unique_inds = np.array(unique_inds)
+    unique_mins_2 = find_min_MSE(a,b,unique=True) 
+    unique_inds_2 = find_min_MSE(a,b,get_ind=True,unique=True)
+    np.testing.assert_allclose(unique_mins,unique_mins_2)
+    np.testing.assert_allclose(unique_inds,unique_inds_2)
+
+    global_mins= []
+    global_inds = []
+    for vec in d_matr :
+        global_mins.append(np.min(vec))
+        global_inds.append(np.argmin(vec))
+
+    global_mins = np.array(global_mins)
+    global_inds = np.array(global_inds)
+    global_mins_2 = find_min_MSE(a,b) 
+    global_inds_2 = find_min_MSE(a,b,get_ind=True)
+    np.testing.assert_allclose(global_mins,global_mins_2)
+    np.testing.assert_allclose(global_inds,global_inds_2)
 
 
 
@@ -105,15 +125,35 @@ def test_spectral_angle():
 
     np.testing.assert_allclose(spectral_angle(a, b), res)
 
-    mins= []
-    for vec in res :
-        mins.append(np.min(vec))
-        ind_min = np.argmin(vec)
-        res[:,ind_min] = np.inf * np.ones(res.shape[0])
+    res_c = res.copy()
 
-    mins = np.array(mins)
-    mins_2 = find_min_angle(a,b, unique=True) 
-    np.testing.assert_allclose(mins,mins_2)
+    unique_mins= []
+    unique_inds = []
+    for vec in res_c :
+        unique_mins.append(np.min(vec))
+        ind_min = np.argmin(vec)
+        unique_inds.append(ind_min)
+        res_c[:,ind_min] = np.inf * np.ones(res_c.shape[0])
+
+    unique_mins = np.array(unique_mins)
+    unique_inds = np.array(unique_inds)
+    unique_mins_2 = find_min_angle(a,b,unique=True) 
+    unique_inds_2 = find_min_angle(a,b,get_ind=True,unique=True)
+    np.testing.assert_allclose(unique_mins,unique_mins_2)
+    np.testing.assert_allclose(unique_inds,unique_inds_2)
+
+    global_mins= []
+    global_inds = []
+    for vec in res :
+        global_mins.append(np.min(vec))
+        global_inds.append(np.argmin(vec))
+
+    global_mins = np.array(global_mins)
+    global_inds = np.array(global_inds)
+    global_mins_2 = find_min_angle(a,b) 
+    global_inds_2 = find_min_angle(a,b,get_ind=True)
+    np.testing.assert_allclose(global_mins,global_mins_2)
+    np.testing.assert_allclose(global_inds,global_inds_2)
 
 def test_base_loss():
     l = 26

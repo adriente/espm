@@ -33,7 +33,7 @@ class NMF(NMFEstimator):
         # GP = self.G_ @ P
         # kl = KLdiv(self.X_, GP, A, self.log_shift, safe=self.debug) 
         reg = log_reg(A, self.mu, self.epsilon_reg)
-        self.detailed_loss.append(reg)
+        self.detailed_loss_.append(reg)
         return lkl + reg
 
 
