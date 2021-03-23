@@ -34,3 +34,6 @@ class SKNMF(NMF):
         """
         self.fit_transform(X, **params)
         return self
+    
+    def get_losses(self):
+        return None

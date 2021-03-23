@@ -5,10 +5,10 @@ import snmfem.conf as conf
 from pathlib import Path
 import json
 
-def compute_metrics(true_spectra, true_maps, GP, A, get_ind = False, u = False):
-    angle = measures.find_min_angle(true_spectra, GP.T, get_ind, unique=u)
-    mse = measures.find_min_MSE(true_maps, A, get_ind, unique=u)
-    return angle, mse
+def compute_metrics(true_spectra, true_maps, GP, A, u = False):
+    angle, ind1 = measures.find_min_angle(true_spectra, GP.T, True, unique=u)
+    mse, ind2 = measures.find_min_MSE(true_maps, A, True, unique=u)
+    return angle, mse, (ind1, ind2)
 
 def run_experiment(Xflat, true_spectra, true_maps, G, experiment, params_evalution) : 
     
@@ -22,10 +22,7 @@ def run_experiment(Xflat, true_spectra, true_maps, G, experiment, params_evaluti
     P = estimator.P_
     A = estimator.A_
     
-    # if isinstance(estimator, estimators.NMFEstimator):
-    #     losses = np.hstack((np.expand_dims(np.array(estimator.losses1), 1), np.array(estimator.detailed_losses), np.array(estimator.rel)))
-    # else:
-    losses = None
+    losses = estimator.get_losses()
     metrics = compute_metrics(true_spectra, true_maps, G@P, A, **params_evalution)
     return metrics, (G@P, A), losses
 
@@ -60,7 +57,7 @@ def perform_simulations(samples, exp_list, params_evalution):
         Xflat, true_spectra, true_maps, G = load_data(s)
         m = []
         for exp in exp_list : 
-            m.append(run_experiment(Xflat, true_spectra, true_maps, G, exp, params_evalution)[0])
+            m.append(run_experiment(Xflat, true_spectra, true_maps, G, exp, params_evalution)[0][:-1])
         metrics.append(m)
     metrics = np.array(metrics)
     return metrics

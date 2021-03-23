@@ -66,10 +66,12 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         # Otherwise this is directly the data fitting step
         eval_before = np.inf
         self.n_iter_ = 0
-        if self.debug:
-            self.losses = []
-            self.rel = []
-            self.detailed_losses = []
+
+        # if self.debug:
+        self.losses = []
+        self.rel = []
+        self.detailed_losses = []
+
         try:
             while True:
                 start = time.time()
@@ -85,10 +87,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
                 # store some information for assessing the convergence
                 # for debugging purposes
-                if self.debug:
-                    self.losses.append(eval_after)
-                    self.detailed_losses.append(self.detailed_loss_)
-                    self.rel.append([rel_P,rel_A])
+                # if self.debug:
+                self.losses.append(eval_after)
+                self.detailed_losses.append(self.detailed_loss_)
+                self.rel.append([rel_P,rel_A])
 
                 # check convergence criterions
                 if self.n_iter_ >= self.max_iter:
@@ -189,3 +191,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         """
         check_is_fitted(self)
         return self.G_ @ P @ self.A_
+    
+    def get_losses(self):
+        return self.losses, self.detailed_losses, self.rel

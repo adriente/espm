@@ -50,7 +50,7 @@ def find_min_angle(true_vectors, algo_vectors, get_ind = False, unique=False):
         # if unique :
         #     print("Impossible to get indices when searching with unique minima.")
         # else : 
-        return ordered_angles[1]
+        return ordered_angles
     else : 
         return ordered_angles[0]
 
@@ -84,7 +84,7 @@ def find_min_MSE(true_maps, algo_maps, get_ind = False, unique=False):
     # This function calculates all the possible MSE between abundances and true maps
     # For each true map a best matching abundance is found
     # The function returns the MSE of the corresponding pairs
-    mse_matr = square_distance(true_maps,algo_maps)
+    mse_matr = square_distance(true_maps, algo_maps)
     if unique :
         ordered_maps = unique_min(mse_matr)
     else :
@@ -93,7 +93,7 @@ def find_min_MSE(true_maps, algo_maps, get_ind = False, unique=False):
         # if unique :
         #     print("Impossible to get indices when searching with unique minima.")
         # else : 
-        return ordered_maps[1]
+        return ordered_maps
     else : 
         return ordered_maps[0]
 

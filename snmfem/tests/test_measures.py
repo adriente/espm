@@ -69,9 +69,9 @@ def test_distance () :
     unique_mins = np.array(unique_mins)
     unique_inds = np.array(unique_inds)
     unique_mins_2 = find_min_MSE(a,b,unique=True) 
-    unique_inds_2 = find_min_MSE(a,b,get_ind=True,unique=True)
+    _, unique_inds_2 = find_min_MSE(a,b,get_ind=True,unique=True)
     np.testing.assert_allclose(unique_mins,unique_mins_2)
-    np.testing.assert_allclose(unique_inds,unique_inds_2)
+    np.testing.assert_allclose(unique_inds, unique_inds_2)
 
     global_mins= []
     global_inds = []
@@ -82,7 +82,7 @@ def test_distance () :
     global_mins = np.array(global_mins)
     global_inds = np.array(global_inds)
     global_mins_2 = find_min_MSE(a,b) 
-    global_inds_2 = find_min_MSE(a,b,get_ind=True)
+    _, global_inds_2 = find_min_MSE(a,b,get_ind=True)
     np.testing.assert_allclose(global_mins,global_mins_2)
     np.testing.assert_allclose(global_inds,global_inds_2)
 
@@ -138,7 +138,7 @@ def test_spectral_angle():
     unique_mins = np.array(unique_mins)
     unique_inds = np.array(unique_inds)
     unique_mins_2 = find_min_angle(a,b,unique=True) 
-    unique_inds_2 = find_min_angle(a,b,get_ind=True,unique=True)
+    _, unique_inds_2 = find_min_angle(a,b,get_ind=True,unique=True)
     np.testing.assert_allclose(unique_mins,unique_mins_2)
     np.testing.assert_allclose(unique_inds,unique_inds_2)
 
@@ -151,7 +151,7 @@ def test_spectral_angle():
     global_mins = np.array(global_mins)
     global_inds = np.array(global_inds)
     global_mins_2 = find_min_angle(a,b) 
-    global_inds_2 = find_min_angle(a,b,get_ind=True)
+    _, global_inds_2 = find_min_angle(a,b,get_ind=True)
     np.testing.assert_allclose(global_mins,global_mins_2)
     np.testing.assert_allclose(global_inds,global_inds_2)
 
