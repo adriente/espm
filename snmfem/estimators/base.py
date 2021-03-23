@@ -13,7 +13,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
     def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
-                 force_simplex=True
+                 force_simplex=True, skip_G=False,
                  ):
         self.n_components = n_components
         self.init = init
@@ -24,6 +24,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.log_shift = log_shift
         self.debug = debug
         self.force_simplex= force_simplex
+        self.skip_G = skip_G
         
 
     def _more_tags(self):
@@ -55,7 +56,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         P, A : ndarrays
         """
         self.X_ = self._validate_data(X, dtype=[np.float64, np.float32])
-
+        if self.skip_G:
+            G = None
         self.G_, self.P_, self.A_ = initialize_algorithms(self.X_, G, P, A, self.n_components, self.init, self.random_state, self.force_simplex)
         
 
@@ -88,7 +90,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     self.detailed_losses.append(self.detailed_loss_)
                     self.rel.append([rel_P,rel_A])
 
-
                 # check convergence criterions
                 if self.n_iter_ >= self.max_iter:
                     print("exits because max_iteration was reached")
@@ -103,11 +104,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                         )
                     )
                     break
-
-                elif abs((eval_before - eval_after)/eval_before) < self.tol:
+                elif abs((eval_before - eval_after)/min(eval_before, eval_after)) < self.tol:
                     print(
                         "exits because of relative change < tol: {}".format(
-                            (eval_before - eval_after)/eval_before
+                            (eval_before - eval_after)/min(eval_before, eval_after)
                         )
                     )
                     break
