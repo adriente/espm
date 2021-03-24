@@ -13,7 +13,7 @@ class SmoothNMF(NMF):
         self.lambda_L = lambda_L
         self.shape_2d = shape_2d 
         self.L = create_laplacian_matrix(*shape_2d)
-
+        self.loss_names_ = self.loss_names_ + ["Laplacian reglarization"]
 
     def _iteration(self, P, A):
         A = multiplicative_step_a(self.X_, self.G_, P, A, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L)
@@ -22,7 +22,7 @@ class SmoothNMF(NMF):
 
     def loss(self, P, A):
         l1 = super().loss(P, A)
-        l2 = self.lambda_L * trace_xtLx(self.L, A.T)
+        l2 = self.lambda_L * trace_xtLx(self.L, A.T, average=True)
         self.detailed_loss_.append(l2)
         return l1 + l2
 

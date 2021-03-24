@@ -21,6 +21,8 @@ class NMF(NMFEstimator):
         self.epsilon_reg = epsilon_reg
         self.log_shift = log_shift
         self.dicotomy_tol = dicotomy_tol
+        self.loss_names_ = self.loss_names_ + ["Log regularization"]
+
 
     def _iteration(self, P, A):
         A = multiplicative_step_a(self.X_, self.G_, P, A, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol)
@@ -32,7 +34,7 @@ class NMF(NMFEstimator):
         lkl = super().loss(P, A)
         # GP = self.G_ @ P
         # kl = KLdiv(self.X_, GP, A, self.log_shift, safe=self.debug) 
-        reg = log_reg(A, self.mu, self.epsilon_reg)
+        reg = log_reg(A, self.mu, self.epsilon_reg, average=True)
         self.detailed_loss_.append(reg)
         return lkl + reg
 

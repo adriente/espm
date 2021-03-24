@@ -109,7 +109,7 @@ def residuals(data, model):
     return X_sum - model_sum
 
 
-def KLdiv(X, D, A, eps=log_shift, safe=True):
+def KLdiv(X, D, A, eps=log_shift, safe=True, average=False):
     """
     Compute the generalized KL divergence.
 
@@ -121,11 +121,15 @@ def KLdiv(X, D, A, eps=log_shift, safe=True):
         assert(np.sum(D<-log_shift/2)==0)
     
     DA = D @ A
-    x_lin = np.sum(DA) - np.sum(X)
-    x_log = np.sum(X*np.log((X+ eps) / (DA + eps)))
+    if average:
+        x_lin = np.mean(DA) - np.mean(X)
+        x_log = np.mean(X*np.log(X+ eps)) - np.mean(X*np.log(DA + eps))                
+    else:
+        x_lin = np.sum(DA) - np.sum(X)
+        x_log = np.sum(X*np.log(X+ eps)) - np.sum(X*np.log(DA + eps))
     return x_lin + x_log
 
-def KLdiv_loss(X, D, A, eps=log_shift, safe=True):
+def KLdiv_loss(X, D, A, eps=log_shift, safe=True, average=False):
     """
     Compute the loss based on the generalized KL divergence.
 
@@ -140,20 +144,30 @@ def KLdiv_loss(X, D, A, eps=log_shift, safe=True):
         assert(np.sum(D<-log_shift/2)==0)
     
     DA = D @ A
-    x_lin = np.sum(DA)
-    x_log = np.sum(X*np.log(DA + eps))
+    if average:
+        x_lin = np.mean(DA)
+        x_log = np.mean(X*np.log(DA + eps))        
+    else:
+        x_lin = np.sum(DA)
+        x_log = np.sum(X*np.log(DA + eps))
     return x_lin - x_log
 
-def log_reg(A, mu, epsilon):
+def log_reg(A, mu, epsilon, average=False):
     """
     Compute the regularization loss: \sum_ij mu_i \log(A_{ij})
     """
     if not(np.isscalar(mu)):
         mu = np.expand_dims(mu, axis=1)
-    return np.sum(mu* np.log(A+epsilon))
+    if average:
+        return np.mean(mu* np.log(A+epsilon))        
+    else:
+        return np.sum(mu* np.log(A+epsilon))
 
-def trace_xtLx(L, x):
-    return np.sum(x * (L @ x))
+def trace_xtLx(L, x, average=False):
+    if average:
+        return np.mean(x * (L @ x))
+    else:
+        return np.sum(x * (L @ x))
 
 def square_distance(x, y=None):
     r"""
