@@ -78,4 +78,5 @@ def print_results(exp_list, metrics, metrics_names=["Phase angles", "Map MSE"]):
                 txt += "| {:.2f} ± {:.2f}".format(a, b).ljust(ec)
             txt += "|\n"
         txt += "\n"
-    print(txt)
+    # print(txt)
+    return txt
