@@ -174,6 +174,7 @@ def test_base_loss():
     np.testing.assert_almost_equal(val3, val2)
     np.testing.assert_almost_equal(val, val2)
 
+    np.testing.assert_almost_equal(KLdiv(X, D, A, average=True), 0)
     np.testing.assert_almost_equal(KLdiv(X, D, A), 0)
 
     # with a different value, the divergence should be bigger
@@ -184,9 +185,14 @@ def test_base_loss():
     val3 = KLdiv(X, D, A)
     np.testing.assert_almost_equal(val2 -val, val3 )
 
+
     A = np.random.rand(k,p)
     val2 = KLdiv_loss(X, D, A)
     assert(val2>val)
+    
+    val3 = KLdiv(X, D, A, average=False)
+    val4 = KLdiv(X, D, A, average=True)
+    np.testing.assert_almost_equal(val3, val4*X.shape[0]*X.shape[1] )
 
     A = 0.00001*np.random.rand(k,p)
     val2 = KLdiv_loss(X, D, A)
@@ -224,5 +230,9 @@ def test_trace_xtLx():
     for i in range(k):
         r2 = r2 + trace_xtLx(L, x[:,i])
     np.testing.assert_allclose(r1, r2)
-
     np.testing.assert_allclose(trace_xtLx(L, x), np.sum(np.diag(x.T @ (L @ x))))
+
+    r3 = trace_xtLx(L, x, average=True)
+
+    np.testing.assert_allclose(r1,r3*k*nx*ny)
+    

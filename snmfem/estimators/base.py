@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 from snmfem.updates import initialize_algorithms
-from snmfem.measures import KLdiv
+from snmfem.measures import KLdiv_loss, KLdiv
 from snmfem.conf import log_shift
 import time
 from abc import ABC, abstractmethod 
@@ -25,6 +25,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.debug = debug
         self.force_simplex= force_simplex
         self.skip_G = skip_G
+        self.const_KL_ = 0
+        self.loss_names_ = ["KL divergence"]
         
 
     def _more_tags(self):
@@ -36,7 +38,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
     def loss(self, P, A):
         GP = self.G_ @ P
-        kl = KLdiv(self.X_, GP, A, self.log_shift, safe=self.debug) 
+        kl = KLdiv_loss(self.X_, GP, A, self.log_shift, safe=self.debug, average=True) + self.const_KL_
         self.detailed_loss_ = [kl]
         return kl
 
@@ -56,6 +58,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         P, A : ndarrays
         """
         self.X_ = self._validate_data(X, dtype=[np.float64, np.float32])
+        
+        self.const_KL_ = np.mean(self.X_*np.log(self.X_+ self.log_shift)) - np.mean(X) 
+        
         if self.skip_G:
             G = None
         self.G_, self.P_, self.A_ = initialize_algorithms(self.X_, G, P, A, self.n_components, self.init, self.random_state, self.force_simplex)
@@ -135,7 +140,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             f"and {np.round(algo_time) % 60} seconds."
         )
 
-        self.reconstruction_err_ = KLdiv(self.X_, self.G_ @ self.P_, self.A_, self.log_shift, safe=self.debug) 
+        self.reconstruction_err_ = KLdiv(self.X_, self.G_ @ self.P_, self.A_, self.log_shift, safe=self.debug, average=True) 
 
         self.n_components_ = self.A_.shape[0]
         self.components_ = self.A_
@@ -192,4 +197,4 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         return self.G_ @ P @ self.A_
     
     def get_losses(self):
-        return self._losses, self._detailed_losses, self._rel
+        return self._losses, (self._detailed_losses, self._loss_names), self._rel,
