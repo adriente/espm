@@ -68,7 +68,11 @@ def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True):
 
     GP = G @ P
     GPA = GP @ A
-    term1 = (G.T @ (X / (GPA + eps)) @ A.T)
+    # Split to debug timing...
+    # term1 = G.T @ (X / (GPA + eps)) @ A.T
+    op1 = X / (GPA + eps)
+    mult1 = G.T @ op1
+    term1 = (mult1 @ A.T)
     term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(A, axis=1,  keepdims=True).T
     return P / term2 * term1
 
@@ -100,7 +104,11 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
     if not(np.isscalar(mu)) and len(np.shape(mu))==1:
         mu = np.expand_dims(mu, axis=1)
 
-    num = A * (GP.T @ (X / (GPA+eps)))
+    # Split to debug timing...
+    # num = A * (GP.T @ (X / (GPA+eps)))
+    op1 = X / (GPA+eps)
+    op2 = GP.T @ op1
+    num = A * op2
     denum = np.sum(GP, axis=0, keepdims=True).T 
     if not(np.isscalar(mu) and mu==0):
         denum = denum + mu / (A + epsilon_reg)
