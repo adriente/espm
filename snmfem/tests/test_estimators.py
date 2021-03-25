@@ -121,7 +121,7 @@ def test_general():
     estimator = SmoothNMF([15,15], lambda_L=1, n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, )
     estimator.fit_transform(G=G, X=X)
     P3, A3 = estimator.P_, estimator.A_ 
-    np.testing.assert_allclose(G @ P2 @ A2,  X, atol=1e-2)
+    np.testing.assert_allclose(G @ P3 @ A3,  X, atol=1e-2)
     L = create_laplacian_matrix(15, 15)
 
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A2.T))

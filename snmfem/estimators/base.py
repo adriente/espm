@@ -10,7 +10,9 @@ from abc import ABC, abstractmethod
 
 
 class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
-
+    
+    loss_names_ = ["KL divergence"]
+    
     def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
                  force_simplex=True, skip_G=False,
@@ -25,9 +27,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.debug = debug
         self.force_simplex= force_simplex
         self.skip_G = skip_G
-        self.const_KL_ = 0
-        self.loss_names_ = ["KL divergence"]
-        
+        self.const_KL_ = 0 
 
     def _more_tags(self):
         return {'requires_positive_X': True}

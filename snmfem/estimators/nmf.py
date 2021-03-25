@@ -7,6 +7,10 @@ from snmfem.conf import log_shift
 
 
 class NMF(NMFEstimator):
+    
+    loss_names_ = NMFEstimator.loss_names_ + ["Log regularization"]
+
+    
     # args and kwargs are copied from the init to the super instead of capturing them in *args and **kwargs to be scikit-learn compliant.
     def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
@@ -21,8 +25,6 @@ class NMF(NMFEstimator):
         self.epsilon_reg = epsilon_reg
         self.log_shift = log_shift
         self.dicotomy_tol = dicotomy_tol
-        self.loss_names_ = self.loss_names_ + ["Log regularization"]
-
 
     def _iteration(self, P, A):
         A = multiplicative_step_a(self.X_, self.G_, P, A, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol)

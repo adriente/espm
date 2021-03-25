@@ -78,22 +78,10 @@ def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True):
     return P / term2 * term1
 
 # import torch
-# from torch.autograd import Variable
-# def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True):
+# def multiplicative_step_p_torch(X, G, P, A, eps=log_shift):
 #     """
 #     Multiplicative step in P.
 #     """
-
-#     if safe:
-#         # Allow for very small negative values!
-#         assert(np.sum(A<-log_shift/2)==0)
-#         assert(np.sum(P<-log_shift/2)==0)
-#         assert(np.sum(G<-log_shift/2)==0)
-
-#     G = Variable(torch.tensor(G), requires_grad=False)
-#     P = Variable(torch.tensor(P), requires_grad=False)
-#     A = Variable(torch.tensor(A), requires_grad=False)
-#     X = Variable(torch.tensor(X), requires_grad=False)
 
 #     GP = G.matmul(P)
 #     GPA = GP.matmul(A)
@@ -104,7 +92,7 @@ def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True):
 #     mult1 = G.T.matmul(op1)
 #     term1 = mult1.matmul(A.T)
 #     term2 = (torch.sum(A, axis=1,  keepdims=True).matmul(torch.sum(G, axis=0,  keepdims=True))).T 
-#     new_P = (P / term2 * term1).cpu().numpy()
+#     new_P = (P / term2 * term1)
 #     return new_P
 
 def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None):
