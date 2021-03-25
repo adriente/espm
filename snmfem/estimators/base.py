@@ -73,9 +73,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.n_iter_ = 0
 
         # if self.debug:
-        self._losses = []
-        self._rel = []
-        self._detailed_losses = []
+        self.losses_ = []
+        self.rel_ = []
+        self.detailed_losses_ = []
 
         try:
             while True:
@@ -92,9 +92,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 # store some information for assessing the convergence
                 # for debugging purposes
                 # if self.debug:
-                self._losses.append(eval_after)
-                self._detailed_losses.append(self.detailed_loss_)
-                self._rel.append([rel_P,rel_A])
+                self.losses_.append(eval_after)
+                self.detailed_losses_.append(self.detailed_loss_)
+                self.rel_.append([rel_P,rel_A])
 
                 # check convergence criterions
                 if self.n_iter_ >= self.max_iter:
@@ -197,4 +197,4 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         return self.G_ @ P @ self.A_
     
     def get_losses(self):
-        return self._losses, (self._detailed_losses, self._loss_names), self._rel,
+        return self.losses_, (self.detailed_losses_, self.loss_names_), self.rel_,
