@@ -8,11 +8,11 @@ from pathlib import Path
 
 default_params = {
     # Common parms for estimators
-    "tol" : 1e-6,
-    "max_iter" : 10000,
+    "tol" : 1e-8,
+    "max_iter" : 50000,
     "init" : "random",
     "random_state" : 1,
-    "verbose" : 0,
+    "verbose" : False,
 
     # Evaluation params
     "u" : True,
