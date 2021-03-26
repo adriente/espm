@@ -134,5 +134,5 @@ def run_exp(positional_dict,default_dict,evaluation_dict,estimator_dict,output) 
 if __name__ == "__main__" : 
     p_dict, d_dict, eval_dict, est_dict = parse_args(sys.argv[1:],default_params)
     output_file = RESULTS_PATH / Path(p_dict["file"])
-    metrics = run_exp(p_dict,d_dict,eval_dict,est_dict,output=output_file)
+    _ = run_exp(p_dict,d_dict,eval_dict,est_dict,output=output_file)
 

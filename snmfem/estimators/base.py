@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 from snmfem.updates import initialize_algorithms
-from snmfem.measures import KLdiv_loss, KLdiv
+from snmfem.measures import KLdiv_loss, KLdiv, Frobenius_loss
 from snmfem.conf import log_shift
 import time
 from abc import ABC, abstractmethod 
@@ -15,7 +15,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     
     def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
-                 force_simplex=True, skip_G=False,
+                 force_simplex=True, skip_G=False, l2=False,
                  ):
         self.n_components = n_components
         self.init = init
@@ -27,7 +27,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.debug = debug
         self.force_simplex= force_simplex
         self.skip_G = skip_G
-        self.const_KL_ = 0 
+        self.const_KL_ = None
+        self.l2 = l2
 
     def _more_tags(self):
         return {'requires_positive_X': True}
@@ -38,9 +39,16 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
     def loss(self, P, A):
         GP = self.G_ @ P
-        kl = KLdiv_loss(self.X_, GP, A, self.log_shift, safe=self.debug, average=True) + self.const_KL_
-        self.detailed_loss_ = [kl]
-        return kl
+
+        if self.l2:
+            loss = Frobenius_loss(self.X_, GP, A, average=True) 
+        else:
+            if self.const_KL_ is None:
+                self.const_KL_ = np.mean(self.X_*np.log(self.X_+ self.log_shift)) - np.mean(self.X_) 
+
+            loss = KLdiv_loss(self.X_, GP, A, self.log_shift, safe=self.debug, average=True) + self.const_KL_
+        self.detailed_loss_ = [loss]
+        return loss
 
     def fit_transform(self, X, y=None, G=None, P=None, A=None, eval_print=10):
         """Learn a NMF model for the data X and returns the transformed data.
@@ -58,8 +66,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         P, A : ndarrays
         """
         self.X_ = self._validate_data(X, dtype=[np.float64, np.float32])
-        
-        self.const_KL_ = np.mean(self.X_*np.log(self.X_+ self.log_shift)) - np.mean(X) 
+        self.const_KL_ = None
         
         if self.skip_G:
             G = None
@@ -140,7 +147,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             f"and {np.round(algo_time) % 60} seconds."
         )
 
-        self.reconstruction_err_ = KLdiv(self.X_, self.G_ @ self.P_, self.A_, self.log_shift, safe=self.debug, average=True) 
+        self.reconstruction_err_ = self.loss(self.G_ @ self.P_, self.A_)
 
         self.n_components_ = self.A_.shape[0]
         self.components_ = self.A_

@@ -55,7 +55,7 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=100):
     return new
 
 
-def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True):
+def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True, l2=False):
     """
     Multiplicative step in P.
     """
@@ -66,16 +66,25 @@ def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True):
         assert(np.sum(P<-log_shift/2)==0)
         assert(np.sum(G<-log_shift/2)==0)
 
-    GP = G @ P
-    GPA = GP @ A
-    # Split to debug timing...
-    # term1 = G.T @ (X / (GPA + eps)) @ A.T
-    op1 = X / (GPA + eps)
-    
-    mult1 = G.T @ op1
-    term1 = (mult1 @ A.T)
-    term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(A, axis=1,  keepdims=True).T
-    return P / term2 * term1
+    if l2:
+        GG = G.T @ G
+        AA = A @ A.T
+        GGPAA = GG @ P @ AA
+
+        GXA = G.T @ (X @ A.T)
+
+        return P / GGPAA * GXA
+    else:
+        GP = G @ P
+        GPA = GP @ A
+        # Split to debug timing...
+        # term1 = G.T @ (X / (GPA + eps)) @ A.T
+        op1 = X / (GPA + eps)
+        
+        mult1 = G.T @ op1
+        term1 = (mult1 @ A.T)
+        term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(A, axis=1,  keepdims=True).T
+        return P / term2 * term1
 
 # import torch
 # def multiplicative_step_p_torch(X, G, P, A, eps=log_shift):
@@ -95,7 +104,8 @@ def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True):
 #     new_P = (P / term2 * term1)
 #     return new_P
 
-def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None):
+
+def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False):
     """
     Multiplicative step in A.
     The main terms are calculated first.
@@ -116,18 +126,24 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
         assert(np.sum(G<-log_shift/2)==0)
 
     GP = G @ P # Also called D
-    GPA = GP @ A
 
-    if not(np.isscalar(mu)) and len(np.shape(mu))==1:
-        mu = np.expand_dims(mu, axis=1)
+    if l2:
+        PGGP = GP.T @ GP
+        PGX = GP.T @ X
+        num = A * PGX
+        denum = PGGP @ A
+    else:
+        GPA = GP @ A
+        # Split to debug timing...
+        num = A * (GP.T @ (X / (GPA+eps)))
+        # op1 = X / (GPA+eps)
+        # op2 = GP.T @ op1
+        # num = A * op2
+        denum = np.sum(GP, axis=0, keepdims=True).T 
 
-    # Split to debug timing...
-    # num = A * (GP.T @ (X / (GPA+eps)))
-    op1 = X / (GPA+eps)
-    op2 = GP.T @ op1
-    num = A * op2
-    denum = np.sum(GP, axis=0, keepdims=True).T 
     if not(np.isscalar(mu) and mu==0):
+        if len(np.shape(mu))==1:
+            mu = np.expand_dims(mu, axis=1)
         denum = denum + mu / (A + epsilon_reg)
     if not(lambda_L==0):
         num = num + lambda_L * sigmaL * A
