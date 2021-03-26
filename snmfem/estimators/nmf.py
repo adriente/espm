@@ -27,8 +27,8 @@ class NMF(NMFEstimator):
         self.dicotomy_tol = dicotomy_tol
 
     def _iteration(self, P, A):
-        A = multiplicative_step_a(self.X_, self.G_, P, A, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol)
-        P = multiplicative_step_p(self.X_, self.G_, P, A, eps=self.log_shift, safe=self.debug)
+        A = multiplicative_step_a(self.X_, self.G_, P, A, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, l2=self.l2)
+        P = multiplicative_step_p(self.X_, self.G_, P, A, eps=self.log_shift, safe=self.debug, l2=self.l2)
 
         return  P, A
 

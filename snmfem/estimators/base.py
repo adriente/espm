@@ -147,7 +147,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             f"and {np.round(algo_time) % 60} seconds."
         )
 
-        self.reconstruction_err_ = self.loss(self.G_ @ self.P_, self.A_)
+        self.reconstruction_err_ = self.loss(self.P_, self.A_)
 
         self.n_components_ = self.A_.shape[0]
         self.components_ = self.A_
