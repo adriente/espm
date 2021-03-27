@@ -19,13 +19,13 @@ class ArtificialSpim:
         """
         Inputs :
         phases : It shoud be a (nb_phases,nb_spectral_channels) shape array or a list of array with (nb_spectral_channels,) shape. It corresponds to the spectra of the different phases. The bremsstrahlung (or background) signal should be included in phases.
-        shape_2D : A tuple or a list containing 2 integers such as (nb_px_x,nb_px_y)
+        shape_2d : A tuple or a list containing 2 integers such as (nb_px_x,nb_px_y)
         """
         # I don't use phases as Gaussians instances within this class for generality purposes.
         # Initialisation of the relevant quantities
         
         # Normalize the phases
-        self.shape_2D = weights.shape[:2]
+        self.shape_2d = weights.shape[:2]
         
         self.phases = phases / np.sum(phases, axis=1, keepdims=True)
         self.densities = densities
@@ -50,16 +50,16 @@ class ArtificialSpim:
         self.G = G
 
     def flatten_weights (self) :
-        return self.weights.transpose([2,0,1]).reshape(self.num_phases,self.shape_2D[0]*self.shape_2D[1])
+        return self.weights.transpose([2,0,1]).reshape(self.num_phases,self.shape_2d[0]*self.shape_2d[1])
 
     def flatten_Xdot (self) :
-        return self.continuous_spim.transpose([2,0,1]).reshape(self.spectral_len, self.shape_2D[0]*self.shape_2D[1])
+        return self.continuous_spim.transpose([2,0,1]).reshape(self.spectral_len, self.shape_2d[0]*self.shape_2d[1])
 
     def flatten_X (self) :
-        return self.stochastic_spim.transpose([2,0,1]).reshape(self.spectral_len, self.shape_2D[0]*self.shape_2D[1])
+        return self.stochastic_spim.transpose([2,0,1]).reshape(self.spectral_len, self.shape_2d[0]*self.shape_2d[1])
 
     def flatten_gen_spim (self) :
-        return self.generated_spim.transpose([2,0,1]).reshape(self.spectral_len, self.shape_2D[0]*self.shape_2D[1])
+        return self.generated_spim.transpose([2,0,1]).reshape(self.spectral_len, self.shape_2d[0]*self.shape_2d[1])
 
 
     def generate_spim_deterministic(self):
@@ -72,7 +72,7 @@ class ArtificialSpim:
         
         self.generated_spim = (
             self.weights.reshape(-1, self.weights.shape[-1]) @ self.phases
-        ).reshape(*self.shape_2D, -1)
+        ).reshape(*self.shape_2d, -1)
 
 
     def generate_spim_stochastic(self, N, seed=0):
@@ -97,13 +97,13 @@ class ArtificialSpim:
         self.continuous_spim = N * (
             self.weights.reshape(-1, self.weights.shape[-1])
             @ (self.phases * np.expand_dims(self.densities, axis=1))
-        ).reshape(*self.shape_2D, -1)
+        ).reshape(*self.shape_2d, -1)
 
-        self.stochastic_spim = np.zeros([*self.shape_2D, self.spectral_len])
+        self.stochastic_spim = np.zeros([*self.shape_2d, self.spectral_len])
         for k, w in enumerate(self.densities):
             # generating the spectroscopic events
-            for i in range(self.shape_2D[0]):
-                for j in range(self.shape_2D[1]):
+            for i in range(self.shape_2d[0]):
+                for j in range(self.shape_2d[1]):
                     # Draw a local_N based on the local density
                     local_N = np.random.poisson(N * w * self.weights[i, j, k])
                     # draw local_N events from the ideal spectrum
@@ -137,6 +137,7 @@ class ArtificialSpim:
         d["phases"] = self.phases
         d["densities"] = self.densities
         d["weights"] = self.weights
+        d["shape_2d"] = self.shape_2d
         # d["flat_weights"] = self.flatten_weights()
         d["N"] = self.N
         if self.G is not None:

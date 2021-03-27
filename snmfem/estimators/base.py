@@ -3,6 +3,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 from snmfem.updates import initialize_algorithms
 from snmfem.measures import KLdiv_loss, KLdiv
+from snmfem.laplacian import sigmaL, create_laplacian_matrix
 from snmfem.conf import log_shift
 import time
 from abc import ABC, abstractmethod 
@@ -42,7 +43,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.detailed_loss_ = [kl]
         return kl
 
-    def fit_transform(self, X, y=None, G=None, P=None, A=None, eval_print=10):
+    def fit_transform(self, X, y=None, G=None, P=None, A=None, shape_2d = None, eval_print=10):
         """Learn a NMF model for the data X and returns the transformed data.
         This is more efficient than calling fit followed by transform.
         Parameters
@@ -65,6 +66,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             G = None
         self.G_, self.P_, self.A_ = initialize_algorithms(self.X_, G, P, A, self.n_components, self.init, self.random_state, self.force_simplex)
         
+        self.shape_2d_ = shape_2d
+        if not(self.shape_2d_ is None) :
+            self.L_ = create_laplacian_matrix(*self.shape_2d_)
 
         algo_start = time.time()
         # If mu_sparse != 0, this is the regularized step of the algorithm
@@ -197,4 +201,17 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         return self.G_ @ P @ self.A_
     
     def get_losses(self):
-        return self.losses_, (self.detailed_losses_, self.loss_names_), self.rel_,
+        names = ["ful_loss"] + self.loss_names_ + ["rel_P","rel_A"]
+
+        dt_list = []
+        for elt in names : 
+            dt_list.append((elt,"float64"))
+        dt = np.dtype(dt_list)
+
+        tup_list = []
+        for i in range(len(self.losses_)) : 
+            tup_list.append((self.losses_[i],) + tuple(self.detailed_losses_[i]) + tuple(self.rel_[i]))
+        
+        array = np.array(tup_list,dtype=dt)
+
+        return array
