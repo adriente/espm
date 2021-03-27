@@ -108,6 +108,19 @@ def residuals(data, model):
     )
     return X_sum - model_sum
 
+def Frobenius_loss(X, D, A, average=False):
+    """
+    Compute the generalized KL divergence.
+
+    \sum_{ji} | X_{ij} - (D A)_{ij} |^2
+    """
+    
+    DA = D @ A
+
+    if average:
+        return np.mean((DA - X)**2)
+    else:
+        return np.sum((DA - X)**2)
 
 def KLdiv(X, D, A, eps=log_shift, safe=True, average=False):
     """

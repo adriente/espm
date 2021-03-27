@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.lib.function_base import kaiser
-from snmfem.measures import mse, spectral_angle, KLdiv_loss, KLdiv, square_distance, find_min_MSE, find_min_angle, trace_xtLx
+from snmfem.measures import mse, spectral_angle, KLdiv_loss, KLdiv, square_distance, find_min_MSE, find_min_angle, trace_xtLx, Frobenius_loss
 import pytest
 from snmfem.conf import log_shift
 from snmfem.laplacian import create_laplacian_matrix
@@ -236,3 +236,26 @@ def test_trace_xtLx():
 
     np.testing.assert_allclose(r1,r3*k*nx*ny)
     
+def test_froebenius_loss():
+    l = 26
+    k = 5
+    p = 100
+
+    A = np.random.rand(k,p)
+    A = A/np.sum(A, axis=1, keepdims=1)
+    
+    D = np.random.rand(l,k)
+    
+    X = D @ A
+    
+    np.testing.assert_almost_equal(Frobenius_loss(X, D, A), 0)
+
+    D2 = np.random.rand(l,k)
+    res1 = np.linalg.norm(D2 @ A -X,"fro")**2   
+    res2 = Frobenius_loss(X, D2, A)
+
+    np.testing.assert_almost_equal(res1, res2)
+
+    res1 = Frobenius_loss(X, D2, A)
+    res2 = Frobenius_loss(X, D2, A, average=True)
+    np.testing.assert_almost_equal(res1/l/p, res2)

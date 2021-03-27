@@ -1172,34 +1172,66 @@ Adding the constraints and regularizers
 \end_layout
 
 \begin_layout Section
-Problem regularization
+L2 algorithm
 \end_layout
 
 \begin_layout Standard
-Constraint 
-\begin_inset Formula $A,P\geq0$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
+Let us consider the following optimization problem
 \begin_inset Formula 
-\[
-\mathcal{L}(A,P)=-\langle X,\log(GPA)\rangle+\langle\mathbf{1}^{\ell,p},GPA\rangle+\lambda\|A\|_{TV}+\eta\|\mathbf{1}^{k}A-\mathbf{1}^{p}\|_{2}^{2}
-\]
+\begin{align*}
+\arg\min_{A\geq0,P\geq0} & \mathcal{L}(A,P)\\
+\text{where} & \mathcal{L}(A,P)=\frac{1}{2}\|GPA-X\|_{F}^{2}{\color{green}+\mu^{T}\log(A+\epsilon)\mathbf{1}^{p}}{\color{blue}+\frac{\lambda}{2}\text{tr}\left(A^{T}\Delta A\right)+\left(\mathbf{1}^{cT}A-\mathbf{1}^{p}\right)\nu}
+\end{align*}
+
+\end_inset
+
+The gradient is given by
+\begin_inset Formula 
+\begin{align*}
+\nabla_{P}\mathcal{L}(A,P) & =G^{T}(GPA-X)A^{T}\\
+ & =G^{T}GPAA^{T}-G^{T}XA^{T}
+\end{align*}
 
 \end_inset
 
 
 \begin_inset Formula 
-\[
-\mathcal{L}(A,P)=-\langle X,\log(GPA)\rangle+\langle\mathbf{1}^{\ell,p},GPA\rangle+\lambda\text{tr}\left(A^{T}\Delta A\right)+\eta\|\mathbf{1}^{k}A-\mathbf{1}^{p}\|_{2}^{2}
-\]
+\begin{align*}
+\nabla_{A}\mathcal{L}(A,P) & =P^{T}G^{T}(GPA-X)+\mu^{T}\mathbf{1}^{p}\oslash(A+\epsilon)+\lambda\Delta A+\mathbf{1}^{c}\nu^{T}\\
+ & =P^{T}G^{T}GPA-P^{T}G^{T}X+\mu^{T}\mathbf{1}^{p}\oslash(A+\epsilon)+\lambda\Delta A
+\end{align*}
+
+\end_inset
+
+A gradient step can be done as
+\begin_inset Formula 
+\begin{align*}
+P_{t+1} & =P_{t}-\gamma\nabla_{P}\mathcal{L}(A_{t},P_{t})\\
+ & =P_{t}-\gamma G^{T}GP_{t}A_{t}A_{t}^{T}+\gamma G^{T}XA_{t}^{T}\\
+ & =P_{t}\oslash G^{T}GP_{t}A_{t}A_{t}^{T}\circ G^{T}XA_{t}^{T}
+\end{align*}
 
 \end_inset
 
 
+\begin_inset Formula 
+\begin{align*}
+A_{t+1} & =A_{t}-\gamma\nabla_{P}\mathcal{L}(A_{t},P_{t})\\
+ & =A_{t}-\gamma\left(P^{T}G^{T}GPA-P^{T}G^{T}X+\mu^{T}\mathbf{1}^{p}\oslash(A+\epsilon)+\lambda\Delta A+\mathbf{1}^{c}\nu^{T}\right)\\
+ & =A_{t}\oslash\left(P^{T}G^{T}GPA+\lambda\Delta A+\mu^{T}\mathbf{1}^{p}\oslash(A+\epsilon)+\mathbf{1}^{c}\nu^{T}\right)\circ P^{T}G^{T}X
+\end{align*}
+
+\end_inset
+
+where 
+\begin_inset Formula $\gamma=P_{t}\oslash G^{T}GP_{t}A_{t}A_{t}^{T}$
+\end_inset
+
+ and 
+\begin_inset Formula $A_{t}\oslash\left(P^{T}G^{T}GPA+\lambda\Delta A+\mu^{T}\mathbf{1}^{p}\oslash(A+\epsilon)+\mathbf{1}^{c}\nu^{T}\right)$
+\end_inset
+
+.
 \end_layout
 
 \end_body
