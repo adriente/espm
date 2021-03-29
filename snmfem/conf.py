@@ -23,7 +23,7 @@ seed_max = 4294967295
 
 POS_ARGS = {
     "json" : ["json",{"help" : "str : Name of the json file containing info about the data"}],
-    "method" : ["method",{"choices":  ["NMF","SmoothNMF","SKNMF"], "help" : "str : Name of the estimator for the decomposition"}]
+    "method" : ["method",{"choices":  ["NMF","SmoothNMF","SKNMF","MCRLLM"], "help" : "str : Name of the estimator for the decomposition"}]
     # "k" : ["k",{"type" : int,"help" : "int : expected number of phases"}]
 }
 
@@ -35,9 +35,9 @@ EVAL_ARGS = {
 
 ESTIMATOR_ARGS = {
     # Common parameters
-    "max_iter" : ["-mi","--max_iter",{"type" : float, "default" : 1000, "help" : "int : Max number of iterations for the algorithm"},None],
+    "max_iter" : ["-mi","--max_iter",{"type" : int, "default" : 1000, "help" : "int : Max number of iterations for the algorithm"},None],
     "verbose" : ["-v","--verbose",{"action" : "store_true", "help" : "None : Activate to display details about the algorithm"},None],
-    "init" : ["-i","--init",{"choices" : ["random","nndsvd","nndsvda","nndsvdar","custom"],"default" : "random", "help" : "str : Initialisation method"}, None],
+    "init" : ["-i","--init",{"choices" : ["random","nndsvd","nndsvda","nndsvdar","custom","Kmeans","MBKmeans","NFindr","RobustNFindr","ATGP","FIPPI","nKmeans"],"default" : "random", "help" : "str : Initialisation method"}, None],
     "tol" : ["-t", "--tol", {"type" : float, "default" : 1e-6, "help" : "float : Stopping criterion"}, None],
 
     # SNMFEM parameters
@@ -51,6 +51,9 @@ ESTIMATOR_ARGS = {
     "solver" : ["-s", "--solver", {"choices" : ["mu", "cd"], "default" : "mu", "help" : "str : Type of updates for the optimization"},["SKNMF"]],
     "alpha" : ["-a", "--alpha",{"type" : float, "default" : 0.0, "help" : "float : strength of the regularization L1, L2 or both depending on the value of l1_ratio"}, ["SKNMF"]],
     "l1_ratio" : ["-l1","--l1_ratio",{"type" : float, "default" : 1.0, "help" : "float : ratio between L1 and L2 regularization, 1.0 is full L1 regularization"},["SKNMF"]],
-    "regularization" : ["-r","--regularization",{"choices" : ["both","components","transformation"], "default" : "components", "help" : "str : determines on what the regularization is applied, W, H or both"},["SKNMF"]]
+    "regularization" : ["-r","--regularization",{"choices" : ["both","components","transformation"], "default" : "components", "help" : "str : determines on what the regularization is applied, W, H or both"},["SKNMF"]],
+
+    # MCR
+    "mcr_method" : ["-mm","--mcr_method",{"action" : "store_false","help" : "None : to be written"},["MCRLLM"]]
 }
 
