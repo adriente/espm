@@ -9,7 +9,6 @@ snmfem = {editable = true, extras = ["testing"], path = "."}
 pyunlocbox = {editable = true, path = "./pyunlocbox"}
 torch = "*"
 argparse = "*"
-pysptools = "*"
 
 [dev-packages]
 jupyter = "*"

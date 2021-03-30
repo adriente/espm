@@ -31,7 +31,7 @@ setuptools.setup(
         'Topic :: Scientific/Engineering'
     ],
     install_requires=[
-        'numpy', 'matplotlib', 'hyperspy', 'tqdm', 'hyperspy-gui-ipywidgets', 'PyQt5' ,'hyperspy-gui-traitsui', 'sklearn'
+        'numpy', 'matplotlib', 'hyperspy', 'tqdm', 'hyperspy-gui-ipywidgets', 'PyQt5' ,'hyperspy-gui-traitsui', 'sklearn', 'pysptools'
     ],
     python_requires='>=3.6',
 )
