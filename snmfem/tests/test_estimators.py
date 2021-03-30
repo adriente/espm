@@ -80,9 +80,8 @@ def test_generate_one_sample():
 # def test_NMF_scikit () : 
 #     estimator = NMF(n_components= 5,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0)
 #     check_estimator(estimator)
-
-# def test_smooth_NMF() :
-#     estimator = SmoothNMF(shape_2d=[12, 32], lambda_L=2, n_components= 5,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0)
+#     estimator = SmoothNMF(lambda_L=2, n_components= 5,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0)
+#     check_estimator(estimator)
 
 def test_general():
     G, P, A, D, w, X, Xdot = generate_one_sample()
