@@ -113,13 +113,13 @@ def test_general():
     P2, A2 = estimator.P_, estimator.A_ 
     np.testing.assert_allclose(G @ P2 @ A2,  X, atol=1e-2)
 
-    estimator = SmoothNMF([15,15], lambda_L=0, n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, )
-    estimator.fit_transform(G=G, X=X)
+    estimator = SmoothNMF(lambda_L=0, n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, )
+    estimator.fit_transform(G=G, X=X, shape_2d=[15,15])
     P2, A2 = estimator.P_, estimator.A_ 
     np.testing.assert_allclose(G @ P2 @ A2,  X, atol=1e-2)
 
-    estimator = SmoothNMF([15,15], lambda_L=1, n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, )
-    estimator.fit_transform(G=G, X=X)
+    estimator = SmoothNMF(lambda_L=10, n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, )
+    estimator.fit_transform(G=G, X=X, shape_2d=[15,15])
     P3, A3 = estimator.P_, estimator.A_ 
     np.testing.assert_allclose(G @ P3 @ A3,  X, atol=1e-2)
     L = create_laplacian_matrix(15, 15)

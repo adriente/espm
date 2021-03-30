@@ -70,7 +70,7 @@ def print_results(exp_list, metrics, metrics_names=["Phase angles", "Map MSE"]):
     mean = np.mean(metrics, axis=0)
     tc = 25
     ec = 18
-    nc = len(exp_list)*ec//2
+    nc = metrics.shape[3]*ec //2
     txt = ""
     for j, metrics_name in enumerate(metrics_names):
         txt += "="*nc + metrics_name.center(tc) +"="*nc +"=\n"
