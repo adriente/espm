@@ -9,6 +9,7 @@ snmfem = {editable = true, extras = ["testing"], path = "."}
 pyunlocbox = {editable = true, path = "./pyunlocbox"}
 torch = "*"
 argparse = "*"
+pysptools = "*"
 
 [dev-packages]
 jupyter = "*"
@@ -20,7 +21,6 @@ yapf = "*"
 ipykernel = "*"
 pylint = "*"
 line-profiler = "*"
-pysptools = "*"
 
 [requires]
 python_version = "3.8"
