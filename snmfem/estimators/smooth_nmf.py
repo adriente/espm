@@ -19,9 +19,12 @@ class SmoothNMF(NMF):
         P = multiplicative_step_p(self.X_, self.G_, P, A, eps=self.log_shift, safe=self.debug, l2=self.l2)
         return  P, A
 
-    def loss(self, P, A):
-        l1 = super().loss(P, A)
-        l2 = self.lambda_L * trace_xtLx(self.L_, A.T, average=True)
+    def loss(self, P, A, average=True):
+        l1 = super().loss(P, A, average=average)
+        l2 = self.lambda_L * trace_xtLx(self.L_, A.T, average=False)
+        if average:
+            l2 = l2 / self.GP_numel_
+    
         self.detailed_loss_.append(l2)
         return l1 + l2
 
