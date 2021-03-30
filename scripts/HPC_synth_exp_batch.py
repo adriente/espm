@@ -22,7 +22,7 @@ if __name__ == "__main__" :
     print(p_dict,eval_dict,est_dict)
     
     int_seq = np.random.randint(low=0,high = 9, size = 10)
-    file_name = "dump_"
+    file_name = eval_dict["file"] + "_"
     for elt in int_seq : 
         file_name += str(elt)
     file_name += ".txt"
@@ -31,7 +31,7 @@ if __name__ == "__main__" :
     
     if eval_dict["gather_files"] :
         os.chdir(RESULTS_PATH)
-        files = glob("*dump*.txt")
-        e.gather_results(files,eval_dict["file"])
+        files = glob("*{}*.txt".format(eval_dict["file"]))
+        e.gather_results(files,eval_dict["file"]+"_gathered")
 
 
