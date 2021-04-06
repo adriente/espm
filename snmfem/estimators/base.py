@@ -41,13 +41,13 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     def loss(self, P, A, average=True):
         GP = self.G_ @ P
 
-        self.GP_numel_ = GP.size
+        self.GP_numel_ = self.G_.shape[0] * A.shape[1]
         
         if self.l2:
             loss = Frobenius_loss(self.X_, GP, A, average=False) 
         else:
             if self.const_KL_ is None:
-                self.const_KL_ = np.mean(self.X_*np.log(self.X_+ self.log_shift)) - np.mean(self.X_) 
+                self.const_KL_ = np.sum(self.X_*np.log(self.X_+ self.log_shift)) - np.sum(self.X_) 
 
             loss = KLdiv_loss(self.X_, GP, A, self.log_shift, safe=self.debug, average=False) + self.const_KL_
         if average:

@@ -134,6 +134,9 @@ def KLdiv(X, D, A, eps=log_shift, safe=True, average=False):
         assert(np.sum(D<-log_shift/2)==0)
     
     DA = D @ A
+    return KL(X, DA, log_shift, average)
+
+def KL(X, DA, eps=log_shift, average=False):
     if average:
         x_lin = np.mean(DA) - np.mean(X)
         x_log = np.mean(X*np.log(X+ eps)) - np.mean(X*np.log(DA + eps))                
