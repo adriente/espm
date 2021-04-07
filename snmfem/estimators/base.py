@@ -13,6 +13,7 @@ from abc import ABC, abstractmethod
 class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     
     loss_names_ = ["KL_div_loss"]
+    const_KL_ = None
     
     def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
@@ -28,7 +29,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.debug = debug
         self.force_simplex= force_simplex
         self.skip_G = skip_G
-        self.const_KL_ = None
         self.l2 = l2
 
     def _more_tags(self):
@@ -84,6 +84,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.shape_2d_ = shape_2d
         if not(self.shape_2d_ is None) :
             self.L_ = create_laplacian_matrix(*self.shape_2d_)
+        else : 
+            self.L_ = np.diag(np.ones((self.X_.shape[1],)))
 
         algo_start = time.time()
         # If mu_sparse != 0, this is the regularized step of the algorithm
