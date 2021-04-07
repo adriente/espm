@@ -137,7 +137,7 @@ def test_losses():
     default_params = {
     "n_components" : k,
     "tol" : 1e-6,
-    "max_iter" : 10,
+    "max_iter" : 100,
     "init" : "random",
     "random_state" : 1,
     "verbose" : 0
