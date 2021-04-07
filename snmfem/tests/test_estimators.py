@@ -4,8 +4,9 @@ import numpy as np
 from snmfem.datasets.generate_data import ArtificialSpim
 from snmfem.models import EDXS
 from snmfem.datasets.generate_weights import generate_weights
-from snmfem.measures import trace_xtLx
+from snmfem.measures import trace_xtLx, KL
 from snmfem.laplacian import create_laplacian_matrix
+from snmfem.experiments import run_experiment
 
 def generate_one_sample():
     model_parameters  = {"params_dict" : {"c0" : 4.8935e-05, 
@@ -77,6 +78,7 @@ def test_generate_one_sample():
     np.testing.assert_allclose(G @ P @ np.diag(w) @ A , Xdot, atol=1e-5)
 
 
+
 # def test_NMF_scikit () : 
 #     estimator = NMF(n_components= 5,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0)
 #     check_estimator(estimator)
@@ -126,3 +128,37 @@ def test_general():
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A2.T))
     assert(trace_xtLx(L, A.T) < trace_xtLx(L, A2.T) )
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A.T) )
+
+
+def test_losses():
+    G, P, A, D, w, X, Xdot = generate_one_sample()
+    true_spectra = (G @ P @ np.diag(w)).T
+    true_maps = A 
+    shape_2d = [15,15]
+    k = 3
+    default_params = {
+    "n_components" : k,
+    "tol" : 1e-6,
+    "max_iter" : 10,
+    "init" : "random",
+    "random_state" : 1,
+    "verbose" : 0
+    }
+
+    params_snmf = {
+        "force_simplex" : True,
+        "skip_G" : False,
+        "mu": np.random.rand(k)
+    }
+
+    params_evalution = {
+        "u" : True,
+    }
+
+    # All parameters are contained here
+    exp = {"name": "snmfem smooth 30", "method": "SmoothNMF", "params": {**default_params, **params_snmf, "lambda_L" : 100.0}}
+    
+    m, (GP, A), loss  = run_experiment(Xdot, true_spectra, true_maps, G, exp, params_evalution,shape_2d)
+    
+    values = np.array([list(e) for e in loss])
+    np.testing.assert_allclose(KL(Xdot, GP @ A, average=True), values[-1,1])
