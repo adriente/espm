@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 
 class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     
-    loss_names_ = ["KL divergence"]
+    loss_names_ = ["KL_div_loss"]
     
     def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
@@ -238,7 +238,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             for i in range(self.n_components) :
                 angles_list.append("ang_p{}".format(i))
                 mse_list.append("mse_p{}".format(i))
-            names = ["full_loss"] + self.loss_names_ + ["rel_P","rel_A"] + angles_list + mse_list + ["true_KL"]
+            names = ["full_loss"] + self.loss_names_ + ["rel_P","rel_A"] + angles_list + mse_list + ["true_KL_loss"]
 
             dt_list = []
             for elt in names : 

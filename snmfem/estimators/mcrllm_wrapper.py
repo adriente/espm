@@ -11,7 +11,7 @@ class MCRLLM() :
         self.verbose = verbose
         self.mcr_method = mcr_method
 
-    def fit_transform(self, X, y=None, G=None, P=None, A=None, shape_2d = None) : 
+    def fit_transform(self, X, y=None, G=None, P=None, A=None, shape_2d = None,true_D = None, true_A = None) : 
         Xt = X.T
         if self.mcr_method : 
             method = "variable"

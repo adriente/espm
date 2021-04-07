@@ -6,7 +6,7 @@ from snmfem.estimators import NMF
 
 class SmoothNMF(NMF):
 
-    loss_names_ = NMF.loss_names_ + ["Laplacian reglarization"]
+    loss_names_ = NMF.loss_names_ + ["Lapl_reg_loss"]
 
     # args and kwargs are copied from the init to the super instead of capturing them in *args and **kwargs to be scikit-learn compliant.
     def __init__(self, lambda_L=1, **kwargs):
