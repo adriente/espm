@@ -36,7 +36,7 @@ EVAL_ARGS = {
 ESTIMATOR_ARGS = {
     # Common parameters
     "max_iter" : ["-mi","--max_iter",{"type" : int, "default" : 1000, "help" : "int : Max number of iterations for the algorithm"},None],
-    "verbose" : ["-v","--verbose",{"action" : "store_true", "help" : "None : Activate to display details about the algorithm"},None],
+    "verbose" : ["-v","--verbose",{"action" : "store_false", "help" : "None : Activate to prevent display details about the algorithm"},None],
     "init" : ["-i","--init",{"choices" : ["random","nndsvd","nndsvda","nndsvdar","custom","Kmeans","MBKmeans","NFindr","RobustNFindr","ATGP","FIPPI","nKmeans"],"default" : "random", "help" : "str : Initialisation method"}, None],
     "tol" : ["-t", "--tol", {"type" : float, "default" : 1e-6, "help" : "float : Stopping criterion"}, None],
 

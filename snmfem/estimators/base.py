@@ -3,7 +3,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 from snmfem.updates import initialize_algorithms
 from snmfem.laplacian import sigmaL, create_laplacian_matrix
-from snmfem.measures import KLdiv_loss, KLdiv, Frobenius_loss
+from snmfem.measures import KLdiv_loss, KLdiv, Frobenius_loss, find_min_angle, find_min_MSE
 from snmfem.conf import log_shift
 import time
 from abc import ABC, abstractmethod 
@@ -12,7 +12,8 @@ from abc import ABC, abstractmethod
 
 class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     
-    loss_names_ = ["KL divergence"]
+    loss_names_ = ["KL_div_loss"]
+    const_KL_ = None
     
     def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
@@ -28,7 +29,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.debug = debug
         self.force_simplex= force_simplex
         self.skip_G = skip_G
-        self.const_KL_ = None
         self.l2 = l2
 
     def _more_tags(self):
@@ -38,24 +38,28 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     def _iteration(self,  P, A):
         pass
 
-    def loss(self, P, A, average=True):
+    def loss(self, P, A, average=True, X = None):
         GP = self.G_ @ P
+        if X is None : 
+            X = self.X_
 
-        self.GP_numel_ = self.G_.shape[0] * A.shape[1]
+        assert(X.shape == (self.G_.shape[0],A.shape[1]))
+
+        self.GPA_numel_ = self.G_.shape[0] * A.shape[1]
         
         if self.l2:
-            loss = Frobenius_loss(self.X_, GP, A, average=False) 
+            loss = Frobenius_loss(X, GP, A, average=False) 
         else:
             if self.const_KL_ is None:
-                self.const_KL_ = np.sum(self.X_*np.log(self.X_+ self.log_shift)) - np.sum(self.X_) 
+                self.const_KL_ = np.sum(X*np.log(self.X_+ self.log_shift)) - np.sum(X) 
 
-            loss = KLdiv_loss(self.X_, GP, A, self.log_shift, safe=self.debug, average=False) + self.const_KL_
+            loss = KLdiv_loss(X, GP, A, self.log_shift, safe=self.debug, average=False) + self.const_KL_
         if average:
-            loss = loss / self.GP_numel_
+            loss = loss / self.GPA_numel_
         self.detailed_loss_ = [loss]
         return loss
 
-    def fit_transform(self, X, y=None, G=None, P=None, A=None, shape_2d = None, eval_print=10):
+    def fit_transform(self, X, y=None, G=None, P=None, A=None, shape_2d = None, eval_print=10, true_D = None, true_A = None):
         """Learn a NMF model for the data X and returns the transformed data.
         This is more efficient than calling fit followed by transform.
         Parameters
@@ -80,6 +84,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.shape_2d_ = shape_2d
         if not(self.shape_2d_ is None) :
             self.L_ = create_laplacian_matrix(*self.shape_2d_)
+        else : 
+            self.L_ = np.diag(np.ones((self.X_.shape[1],)))
 
         algo_start = time.time()
         # If mu_sparse != 0, this is the regularized step of the algorithm
@@ -91,6 +97,13 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.losses_ = []
         self.rel_ = []
         self.detailed_losses_ = []
+        self.true_D_ = true_D
+        self.true_A_ = true_A
+        if not(true_D is None) and not(true_A is None) : 
+            self.angles_ = []
+            self.mse_ = []
+            self.true_losses_ = []
+            true_DA = true_D @ true_A
 
         try:
             while True:
@@ -103,6 +116,14 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 rel_P = np.max((self.P_ - old_P)/(self.P_ + self.tol*np.mean(self.P_) ))
                 rel_A = np.max((self.A_ - old_A)/(self.A_ + self.tol*np.mean(self.A_) ))
 
+                if not(true_D is None) and not(true_A is None) :
+                    GP = self.G_ @ self.P_ 
+                    angles = find_min_angle(true_D.T,GP.T, unique=True)
+                    mse = find_min_MSE(true_A, self.A_,unique=True)
+                    loss = self.loss(self.P_,self.A_, X = true_DA )
+                    self.angles_.append(angles)
+                    self.mse_.append(mse)
+                    self.true_losses_.append(loss)
 
                 # store some information for assessing the convergence
                 # for debugging purposes
@@ -212,17 +233,39 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         return self.G_ @ P @ self.A_
     
     def get_losses(self):
-        names = ["full_loss"] + self.loss_names_ + ["rel_P","rel_A"]
-
-        dt_list = []
-        for elt in names : 
-            dt_list.append((elt,"float64"))
-        dt = np.dtype(dt_list)
-
-        tup_list = []
-        for i in range(len(self.losses_)) : 
-            tup_list.append((self.losses_[i],) + tuple(self.detailed_losses_[i]) + tuple(self.rel_[i]))
         
-        array = np.array(tup_list,dtype=dt)
+        if not(self.true_D_ is None) and not(self.true_A_ is None) :
+            mse_list = []
+            angles_list = []
+            for i in range(self.n_components) :
+                angles_list.append("ang_p{}".format(i))
+                mse_list.append("mse_p{}".format(i))
+            names = ["full_loss"] + self.loss_names_ + ["rel_P","rel_A"] + angles_list + mse_list + ["true_KL_loss"]
+
+            dt_list = []
+            for elt in names : 
+                dt_list.append((elt,"float64"))
+            dt = np.dtype(dt_list)
+
+            tup_list = []
+            for i in range(len(self.losses_)) : 
+                tup_list.append((self.losses_[i],) + tuple(self.detailed_losses_[i]) + tuple(self.rel_[i]) \
+                    + tuple(self.angles_[i]) + tuple(self.mse_[i]) + (self.true_losses_[i],) )
+            
+            array = np.array(tup_list,dtype=dt)
+        
+        #Bon j'ai copié ca comme un bourrin. Il y a moyen de faire mieux.
+        else : 
+            names = ["full_loss"] + self.loss_names_ + ["rel_P","rel_A"]
+            dt_list = []
+            for elt in names : 
+                dt_list.append((elt,"float64"))
+            dt = np.dtype(dt_list)
+
+            tup_list = []
+            for i in range(len(self.losses_)) : 
+                tup_list.append((self.losses_[i],) + tuple(self.detailed_losses_[i]) + tuple(self.rel_[i]))
+            
+            array = np.array(tup_list,dtype=dt)
 
         return array

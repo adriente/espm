@@ -84,7 +84,7 @@ def find_min_MSE(true_maps, algo_maps, get_ind = False, unique=False):
     # This function calculates all the possible MSE between abundances and true maps
     # For each true map a best matching abundance is found
     # The function returns the MSE of the corresponding pairs
-    mse_matr = square_distance(true_maps, algo_maps)
+    mse_matr = square_distance(true_maps, algo_maps)/square_distance(true_maps,np.zeros_like(true_maps))
     if unique :
         ordered_maps = unique_min(mse_matr)
     else :

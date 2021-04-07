@@ -18,7 +18,7 @@ def run_experiment(Xflat, true_spectra, true_maps, G, experiment, params_evaluti
 
     estimator = Estimator(**experiment["params"])
     
-    estimator.fit(Xflat,G=G,shape_2d = shape_2d)
+    estimator.fit(Xflat,G=G,shape_2d = shape_2d,true_D = true_spectra.T, true_A = true_maps )
     
     G = estimator.G_
     P = estimator.P_

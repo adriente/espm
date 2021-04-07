@@ -56,7 +56,7 @@ def test_distance () :
     d_matr_2 = square_distance(a,b)
     np.testing.assert_allclose(d_matr,d_matr_2)
 
-    d_matr_c = d_matr.copy()
+    d_matr_c = d_matr.copy() / square_distance(a,np.zeros_like(a))
 
     unique_mins= []
     unique_inds = []
@@ -73,9 +73,11 @@ def test_distance () :
     np.testing.assert_allclose(unique_mins,unique_mins_2)
     np.testing.assert_allclose(unique_inds, unique_inds_2)
 
+    d_matr_c = d_matr.copy() / square_distance(a,np.zeros_like(a))
+
     global_mins= []
     global_inds = []
-    for vec in d_matr :
+    for vec in d_matr_c :
         global_mins.append(np.min(vec))
         global_inds.append(np.argmin(vec))
 
