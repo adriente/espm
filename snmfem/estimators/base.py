@@ -116,6 +116,17 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 rel_P = np.max((self.P_ - old_P)/(self.P_ + self.tol*np.mean(self.P_) ))
                 rel_A = np.max((self.A_ - old_A)/(self.A_ + self.tol*np.mean(self.A_) ))
 
+
+
+                # store some information for assessing the convergence
+                # for debugging purposes
+                
+                # We need to store this value as 
+                #    loss = self.loss(self.P_,self.A_, X = true_DA )
+                # might destroy it. Furthermore, saving the data before the if, might cause 
+                # an error if the optimization is stoped with a keyboard interrupt. 
+                detailed_loss_ = self.detailed_loss_
+
                 if not(true_D is None) and not(true_A is None) :
                     GP = self.G_ @ self.P_ 
                     angles = find_min_angle(true_D.T,GP.T, unique=True)
@@ -124,14 +135,11 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     self.angles_.append(angles)
                     self.mse_.append(mse)
                     self.true_losses_.append(loss)
-
-                # store some information for assessing the convergence
-                # for debugging purposes
-                # if self.debug:
+                
                 self.losses_.append(eval_after)
-                self.detailed_losses_.append(self.detailed_loss_)
+                self.detailed_losses_.append(detailed_loss_)
                 self.rel_.append([rel_P,rel_A])
-
+                              
                 # check convergence criterions
                 if self.n_iter_ >= self.max_iter:
                     print("exits because max_iteration was reached")
