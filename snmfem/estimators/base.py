@@ -91,6 +91,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         # If mu_sparse != 0, this is the regularized step of the algorithm
         # Otherwise this is directly the data fitting step
         eval_before = np.inf
+        eval_init = self.loss(self.P_, self.A_)
         self.n_iter_ = 0
 
         # if self.debug:
@@ -154,7 +155,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                         )
                     )
                     break
-                elif abs((eval_before - eval_after)/min(eval_before, eval_after)) < self.tol:
+                elif abs((eval_before - eval_after)/eval_init) < self.tol:
                     print(
                         "exits because of relative change < tol: {}".format(
                             (eval_before - eval_after)/min(eval_before, eval_after)
