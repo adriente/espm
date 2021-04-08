@@ -30,7 +30,6 @@ POS_ARGS = {
 EVAL_ARGS = {
     "u" : ["-u", "--u", {"action" : "store_false", "help" : "None : Activate so that each result is uniquely matched with a ground truth."}],
     "file" : ["-f","--file",{"default" : "dump.npz", "help" : "str : Name of the npz file where the data are stored"}],
-    "gather_files" : ["-gf","--gather_files",{"action" : "store_true","help" : "None : When relevant this parameter is used to gather txt results in one file"}]
 }
 
 ESTIMATOR_ARGS = {
