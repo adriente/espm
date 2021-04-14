@@ -1,6 +1,6 @@
 import snmfem.experiments as exps
 from pathlib import Path
-from snmfem.conf import DATASETS_PATH, SCRIPT_CONFIG_PATH
+from snmfem.conf import DATASETS_PATH, BASE_PATH
 from snmfem.datasets import generate_dataset
 import shutil
 import json
@@ -27,39 +27,40 @@ params = {
         "data_folder" : "test"
     }
 
-script_file = SCRIPT_CONFIG_PATH / Path("test.json")
-with open(script_file,"w") as f :
-    json.dump(params,f)
-
-
-folder = DATASETS_PATH / Path(params["data_folder"])
-generate_dataset(**params)
-
+base_path = BASE_PATH / Path("tests/ressources/") 
+folder = base_path / Path(params["data_folder"])
+script_file = Path("test.json")
+    
+def test_generate_dataset():
+    with open(base_path / script_file,"w") as f :
+        json.dump(params,f)
+    generate_dataset(base_path=base_path , **params)
+    
 def test_load_samples() : 
-    samples , k  = exps.load_samples(script_file)
+    samples , k  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
     assert(k == params["model_parameters"]["params_dict"]["k"])
     assert(len(samples) == params["seeds_range"])
 
 def test_load_data() : 
-    samples , k  = exps.load_samples(script_file)
-    r = np.random.randint(params["seeds_range"])
-    Xflat, true_spectra_flat, true_maps_flat, G, shape_2d = exps.load_data(samples[r])
-    data_path = folder / Path("sample_{}.npz".format(r))
-    data = np.load(data_path)
-    
-    shape_2d_test = tuple(params["weights_parameters"]["shape_2D"])
-    Xflat_test = (data["X"].reshape(shape_2d_test[0]*shape_2d_test[1],params["model_parameters"]["e_size"])).T
-    true_spectra_test = data["phases"]*params["N"]*np.array(params["densities"])[:,np.newaxis]
-    true_maps_test = (data["weights"].reshape(shape_2d_test[0]*shape_2d_test[1],k)).T
+    samples , k  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
+    for r in range(params["seeds_range"]):
+        Xflat, true_spectra_flat, true_maps_flat, G, shape_2d = exps.load_data(samples[r])
+        
+        data_path = folder / Path("sample_{}.npz".format(r))
+        data = np.load(data_path)
+        shape_2d_test = tuple(params["weights_parameters"]["shape_2D"])
+        Xflat_test = (data["X"].reshape(shape_2d_test[0]*shape_2d_test[1],params["model_parameters"]["e_size"])).T
+        true_spectra_test = data["phases"]*params["N"]*np.array(params["densities"])[:,np.newaxis]
+        true_maps_test = (data["weights"].reshape(shape_2d_test[0]*shape_2d_test[1],k)).T
 
-    assert(tuple(shape_2d) == shape_2d_test)
-    np.testing.assert_array_equal(Xflat, Xflat_test)
-    np.testing.assert_array_equal(data["G"],G)
-    np.testing.assert_array_equal(true_spectra_test,true_spectra_flat)
-    np.testing.assert_array_equal(true_maps_test,true_maps_flat)
+        assert(tuple(shape_2d) == shape_2d_test)
+        np.testing.assert_array_equal(Xflat, Xflat_test)
+        np.testing.assert_array_equal(data["G"],G)
+        np.testing.assert_array_equal(true_spectra_test,true_spectra_flat)
+        np.testing.assert_array_equal(true_maps_test,true_maps_flat)
 
 def test_run_experiments () :
-    samples , k  = exps.load_samples(script_file)
+    samples , k  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
     r = np.random.randint(params["seeds_range"])
     Xflat, true_spectra_flat, true_maps_flat, G, shape_2d = exps.load_data(samples[r])
     default_params = {
@@ -95,8 +96,10 @@ def test_run_experiments () :
     for i in loss.dtype.names : 
         l_loss += 1
     assert(l_loss == 7 + 2*k)
+    
+def test_delete_dataset():
     shutil.rmtree(folder)
-    os.remove(script_file)
+    os.remove(base_path / script_file)
 
 
 
