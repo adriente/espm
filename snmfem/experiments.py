@@ -43,12 +43,13 @@ def load_data(sample) :
     shape_2d = data["shape_2d"]
     return Xflat, true_spectra_flat, true_maps_flat, G, shape_2d
 
-def load_samples(dataset):
-    data_json = conf.SCRIPT_CONFIG_PATH / Path(dataset)
+def load_samples(dataset, base_path_conf=conf.SCRIPT_CONFIG_PATH, base_path_dataset = conf.DATASETS_PATH):
+    data_json = base_path_conf / Path(dataset)
+    print(data_json)
     with open(data_json,"r") as f :
         data_dict = json.load(f)
     k = data_dict["model_parameters"]["params_dict"]["k"]
-    data_folder = conf.DATASETS_PATH / Path(data_dict["data_folder"])
+    data_folder = base_path_dataset / Path(data_dict["data_folder"])
     samples = list(data_folder.glob("sample_*.npz"))
     return samples, k
 

@@ -27,7 +27,7 @@ def generate_dataset_from_json(json_file):
     generate_dataset(**json_dict)
 
 
-def generate_dataset(**kwargs):
+def generate_dataset(base_path=DATASETS_PATH, **kwargs):
     
     # Handle paramters
     data_folder = kwargs["data_folder"]
@@ -50,7 +50,7 @@ def generate_dataset(**kwargs):
     G = model.G
 
     # Ensure the data folder exist
-    folder = DATASETS_PATH / Path(data_folder)
+    folder = base_path / Path(data_folder)
     folder.mkdir(exist_ok=True, parents=True)
     
     # list of densities which will give different total number of events per spectra
