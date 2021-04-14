@@ -126,7 +126,7 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
         assert(np.sum(G<-log_shift/2)==0)
 
     GP = G @ P # Also called D
-
+    
     if l2:
         PGGP = GP.T @ GP
         PGX = GP.T @ X
@@ -146,13 +146,18 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
             mu = np.expand_dims(mu, axis=1)
         denum = denum + mu / (A + epsilon_reg)
     if not(lambda_L==0):
-        num = num + lambda_L * sigmaL * A
-        denum = denum + lambda_L * sigmaL + lambda_L * A @ L 
+        maxA = np.max(A)
+        num = num + lambda_L * sigmaL * A * maxA
+        denum = denum + lambda_L * sigmaL * maxA + lambda_L * A @ L 
+
     if force_simplex:
         nu = dichotomy_simplex(num, denum,dicotomy_tol)
     else:
         nu = 0
-    
+    if safe:
+        assert(np.sum(denum<0)==0)
+        assert(np.sum(num<0)==0)
+
     return num/(denum + nu)
 
 
@@ -164,8 +169,6 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
     if P is None:
         if A is None:
             D, A = initialize_nmf(X, n_components=n_components, init=init, random_state=random_state)
-            assert(np.sum(A<0)==0)
-            assert(np.sum(D<0)==0)
             # D, A = u.rescaled_DA(D,A)
             if force_simplex:
                 scale = np.sum(A, axis=0, keepdims=True)
