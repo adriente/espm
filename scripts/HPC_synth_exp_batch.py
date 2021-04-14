@@ -7,9 +7,6 @@ from pathlib import Path
 from glob import glob
 import os
 
-
-
-
 def run_batch_exp(positional_dict,evaluation_dict,estimator_dict,output) :
     samples, k = e.load_samples(positional_dict["json"])
     exp_list = [e.build_exp(k,positional_dict,estimator_dict)]
@@ -28,10 +25,5 @@ if __name__ == "__main__" :
     file_name += ".txt"
     
     run_batch_exp(p_dict,eval_dict,est_dict,output=file_name)
-    
-    if eval_dict["gather_files"] :
-        os.chdir(RESULTS_PATH)
-        files = glob("*{}*.txt".format(eval_dict["file"]))
-        e.gather_results(files,eval_dict["file"]+"_gathered")
 
 
