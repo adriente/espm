@@ -5,6 +5,7 @@ from snmfem.updates import initialize_algorithms
 from snmfem.laplacian import sigmaL, create_laplacian_matrix
 from snmfem.measures import KLdiv_loss, KLdiv, Frobenius_loss, find_min_angle, find_min_MSE
 from snmfem.conf import log_shift
+from snmfem.utils import rescaled_DA
 import time
 from abc import ABC, abstractmethod 
 
@@ -129,10 +130,14 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 detailed_loss_ = self.detailed_loss_
 
                 if not(true_D is None) and not(true_A is None) :
-                    GP = self.G_ @ self.P_ 
+                    if self.force_simplex:
+                        P, A = self.P_, self.A_ 
+                    else:
+                        P, A = rescaled_DA(self.P_, self.A_ )
+                    GP = self.G_ @ P
                     angles = find_min_angle(true_D.T,GP.T, unique=True)
-                    mse = find_min_MSE(true_A, self.A_,unique=True)
-                    loss = self.loss(self.P_,self.A_, X = true_DA )
+                    mse = find_min_MSE(true_A, A,unique=True)
+                    loss = self.loss(self.P_,A, X = true_DA )
                     self.angles_.append(angles)
                     self.mse_.append(mse)
                     self.true_losses_.append(loss)
@@ -178,13 +183,15 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 eval_before = eval_after
         except KeyboardInterrupt:
             pass
-
+        
+        if not(self.force_simplex):
+            self.P_, self.A_ = rescaled_DA(self.P_, self.A_ )
+        
         algo_time = time.time() - algo_start
         print(
             f"Stopped after {self.n_iter_} iterations in {algo_time//60} minutes "
             f"and {np.round(algo_time) % 60} seconds."
         )
-
         self.reconstruction_err_ = self.loss(self.P_, self.A_)
 
         self.n_components_ = self.A_.shape[0]
