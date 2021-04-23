@@ -11,8 +11,10 @@ class PhysicalModel(ABC) :
         self.params_dict = params_dict
         if db_name is None :
             self.db_dict = {}
+            self.db_mdata = {}
         else :
             self.db_dict = self.extract_DB(db_name)
+            self.db_mdata = self.extract_DB_mdata(db_name)
         self.bkgd_in_G = False
         self.spectrum = np.zeros_like(self.x)
         self.G = np.diag(np.ones_like(self.x))
@@ -29,8 +31,14 @@ class PhysicalModel(ABC) :
     def extract_DB (self,db_name) :
         db_path = conf.DB_PATH / Path(db_name)
         with open(db_path,"r") as f :
-            json_dict = json.load(f)["table"]
-        return json_dict
+            json_dict = json.load(f)
+        return json_dict["table"]
+
+    def extract_DB_mdata (self,db_name) :
+        db_path = conf.DB_PATH / Path(db_name)
+        with open(db_path,"r") as f :
+            json_dict = json.load(f)
+        return json_dict["metadata"]
 
     def build_energy_scale(self,e_offset, e_size, e_scale) :
         return np.linspace(e_offset,e_offset+e_size*e_scale,num=e_size)

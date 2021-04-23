@@ -5,7 +5,7 @@ import re
 import snmfem.conf as conf
 from pathlib import Path
 from snmfem.models import PhysicalModel
-from snmfem.models.EDXS_function import continuum_xrays, gaussian, simple_abs_coeff
+from snmfem.models.EDXS_function import continuum_xrays, gaussian, simple_abs_coeff, read_lines_db, read_compact_db
 
 # Class to model the EDXS spectra. This is a temporary version since there are some design issues.
 
@@ -41,6 +41,8 @@ class EDXS(PhysicalModel):
                 self.abs_db = json.load(abs_file)["table"]
             self.abs = np.zeros_like(self.x)
 
+        self.lines = self.db_mdata["lines"]
+
         # e_offset=0.20805000000000007,
         # e_size=1980,
         # e_scale=0.01,
@@ -61,20 +63,23 @@ class EDXS(PhysicalModel):
             self.G = np.zeros((self.x.shape[0], 0))
             # For each element we unpack all shells and then unpack all lines of each shell.
             for elt in elements_list:
-                for shell in self.db_dict[str(elt)]:
-                    peaks = np.zeros((self.x.shape[0], 1))
-                    for i, energy in enumerate(self.db_dict[str(elt)][shell]["energies"]):
-                        # The actual detected width is calculated at each energy
-                        if energy > np.min(self.x):
-                            width = self.width_slope * energy + self.width_intercept
-                            peaks += (
-                                self.db_dict[str(elt)][shell]["ratios"][i]
-                                * gaussian(self.x, energy, width / 2.3548)[
-                                    np.newaxis
-                                ].T
-                            )
-                    if np.max(peaks) > 0.0:
-                        self.G = np.concatenate((self.G, peaks), axis=1)
+                if self.lines : 
+                    energies, cs = read_lines_db(elt,self.db_dict)
+                else : 
+                    energies, cs = read_compact_db(elt,self.db_dict)
+                peaks = np.zeros((self.x.shape[0], 1))
+                for i, energy in enumerate(energies):
+                    # The actual detected width is calculated at each energy
+                    if energy > np.min(self.x):
+                        width = self.width_slope * energy + self.width_intercept
+                        peaks += (
+                            cs[i]
+                            * gaussian(self.x, energy, width / 2.3548)[
+                                np.newaxis
+                            ].T
+                        )
+                if np.max(peaks) > 0.0:
+                    self.G = np.concatenate((self.G, peaks), axis=1)
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
                 brstlg_spectrum = continuum_xrays(self.x,self.params_dict,self.abs)[np.newaxis].T
@@ -192,14 +197,17 @@ class EDXS(PhysicalModel):
         """
         temp = np.zeros_like(self.x)
         for elt in elements_dict.keys():
-            for shell in self.db_dict[elt]:
-                for i, energy in enumerate(self.db_dict[elt][shell]["energies"]):
-                    width = self.width_slope * energy + self.width_intercept
-                    temp += (
-                        elements_dict[elt]
-                        * self.db_dict[elt][shell]["ratios"][i]
-                        * gaussian(self.x, energy, width / 2.3548)
-                    )
+            if self.lines : 
+                energies, cs = read_lines_db(elt,self.db_dict)
+            else : 
+                energies, cs = read_compact_db(elt,self.db_dict)
+            for i, energy in enumerate(energies):
+                width = self.width_slope * energy + self.width_intercept
+                temp += (
+                    elements_dict[elt]
+                    * cs[i]
+                    * gaussian(self.x, energy, width / 2.3548)
+                )
         temp += continuum_xrays(self.x,self.params_dict,self.abs) * scale
         return temp
         

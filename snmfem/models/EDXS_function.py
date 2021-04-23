@@ -12,6 +12,20 @@ def gaussian(x, mu, sigma):
         * np.exp(-np.power(x - mu, 2) / (2 * np.power(sigma, 2)))
     )
 
+def read_lines_db (elt,db_dict) :
+    energies = []
+    cs = []
+    for line in db_dict[str(elt)] : 
+        energies.append(db_dict[str(elt)][line]["energy"])
+        cs.append(db_dict[str(elt)][line]["cs"])
+    return energies, cs
+
+
+def read_compact_db (elt,db_dict) :
+    energies = db_dict[str(elt)]["energies"]
+    cs = db_dict[str(elt)]["cs"] 
+    return energies, cs
+
 
 def simple_abs_coeff(x):
     return 1 / np.power(x, 3)
