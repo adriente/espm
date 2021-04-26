@@ -47,7 +47,7 @@ class EDXS(PhysicalModel):
         # e_size=1980,
         # e_scale=0.01,
 
-    def generate_g_matr(self, elements_list=None, brstlg=False):
+    def generate_g_matr(self, elements_list=None, brstlg=False, norm = True):
         """
         Generates a matrix (e_size,n). Each column corresponds to the sum of X-ray characteristic gaussian peaks associated to each shell of the elements of elements_lists. n is then len(elements_list)*number of shells per element.
         :elements_list: List of integers. Each integer is an element of the model. If None, the g_matr is diagonal matrix of size e_size.
@@ -84,6 +84,9 @@ class EDXS(PhysicalModel):
             if self.bkgd_in_G:
                 brstlg_spectrum = continuum_xrays(self.x,self.params_dict,self.abs)[np.newaxis].T
                 self.G = np.concatenate((self.G, brstlg_spectrum), axis=1)
+
+            if norm : 
+                self.G /= self.G.sum(axis=0)
 
     def generate_abs_coeff(self, elements_dict):
         """
@@ -208,6 +211,8 @@ class EDXS(PhysicalModel):
                     * cs[i]
                     * gaussian(self.x, energy, width / 2.3548)
                 )
+        temp /= temp.sum()
         temp += continuum_xrays(self.x,self.params_dict,self.abs) * scale
+        
         return temp
         

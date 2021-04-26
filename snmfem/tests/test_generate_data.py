@@ -14,7 +14,7 @@ def test_generate():
                                           "b0" : 0.15910789,
                                           "b1" : -0.00773158,
                                           "b2" : 8.7417e-04},
-                         "db_name" : "simple_xrays_threshold.json",
+                         "db_name" : "default_xrays.json",
                          "e_offset" : 0.208,
                          "e_scale" : 0.01,
                          "e_size": 1980,

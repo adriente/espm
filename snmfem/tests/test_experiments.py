@@ -15,7 +15,7 @@ params = {
         "model" : "Toy",
         "model_parameters" :{"params_dict" : {"c" : 25, 
                                             "k" : 4},
-                            "db_name" : "simple_xrays_threshold.json",
+                            "db_name" : "default_xrays.json",
                             "e_offset" : 0.208,
                             "e_scale" : 0.01,
                             "e_size": 50,
