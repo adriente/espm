@@ -5,7 +5,7 @@
     "weights_parameters" : {"weight_type": "laplacian",
                             "shape_2D": [30, 20]},
     "model_parameters" :{"params_dict" : {"k" : 5},
-                         "db_name" : "simple_xrays_threshold.json",
+                         "db_name" : "default_xrays.json",
                          "e_offset" : 0.16,
                          "e_scale" : 0.01,
                          "e_size": 1000,

@@ -23,8 +23,8 @@ seed_max = 4294967295
 
 POS_ARGS = {
     "json" : ["json",{"help" : "str : Name of the json file containing info about the data"}],
-    "method" : ["method",{"choices":  ["NMF","SmoothNMF","SKNMF","MCRLLM"], "help" : "str : Name of the estimator for the decomposition"}]
-    # "k" : ["k",{"type" : int,"help" : "int : expected number of phases"}]
+    "method" : ["method",{"choices":  ["NMF","SmoothNMF","SKNMF","MCRLLM"], "help" : "str : Name of the estimator for the decomposition"}],
+    "k" : ["k",{"type" : int,"help" : "int : expected number of phases"}]
 }
 
 EVAL_ARGS = {
