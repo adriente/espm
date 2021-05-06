@@ -2,11 +2,9 @@ import numpy as np
 import snmfem.experiments as e
 import snmfem.data_analysis as da
 import sys
-import json
 
 def run_single_exp(pos_dict,est_dict,eval_dict) :
-    with open(pos_dict["json"],"r") as f : 
-        file = json.load(f)["data_file"]
+    file = da.load_filename(pos_dict["json"])
     Xflat, shape_2d, offset, scale, size = da.load_hs_data(file)
     G = da.build_model(pos_dict["json"], offset, scale, size)
     experiment = da.build_analysis(pos_dict, est_dict)

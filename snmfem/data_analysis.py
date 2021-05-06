@@ -5,6 +5,11 @@ import json
 import snmfem.conf as conf
 import numpy as np
 
+def load_filename (json_file) : 
+    with open(json_file,"r") as f : 
+        file = json.load(f)["data_file"]
+    return file
+
 def load_hs_data(filename) : 
     spim = hs.load(filename)
     try : 
