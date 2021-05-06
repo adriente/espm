@@ -2,6 +2,8 @@ import hyperspy.api as hs
 from snmfem import estimators
 from snmfem import models
 import json
+import snmfem.conf as conf
+import numpy as np
 
 def load_hs_data(filename) : 
     spim = hs.load(filename)
@@ -23,7 +25,6 @@ def build_analysis(pos_dict,est_dict) :
     d = {}
     d["name"] = pos_dict["method"]
     d["method"] = pos_dict["method"]
-    d["n_components"] = post_dict["k"]
     estimator_dict = {}
     for key in est_dict.keys() : 
         if conf.ESTIMATOR_ARGS[key][3] is None : 
@@ -32,11 +33,12 @@ def build_analysis(pos_dict,est_dict) :
             estimator_dict[key] = est_dict[key]
         else : 
             pass
-    d["params"] = {**k_dict, **estimator_dict}
+    estimator_dict["n_components"] = pos_dict["k"]
+    d["params"] = {**estimator_dict}
     return d
 
-def build_model(json,offset,scale,size) :
-    with open(json,"r") as f : 
+def build_model(json_file,offset,scale,size) :
+    with open(json_file,"r") as f : 
         d = json.load(f)
     Model = getattr(models,d["model"])
     model = Model(offset,size,scale,**d["model_parameters"])
