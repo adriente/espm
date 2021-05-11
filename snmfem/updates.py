@@ -164,7 +164,7 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
 def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_simplex):
     # Handle initialization
     if G is None : 
-        G = np.diag(np.ones(X.shape[0]))
+        G = np.diag(np.ones(X.shape[0])).astype(X.dtype)
 
     if P is None:
         if A is None:
