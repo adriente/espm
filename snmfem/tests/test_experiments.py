@@ -45,15 +45,14 @@ def test_load_data() :
     samples , k  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
     for r in range(params["seeds_range"]):
         Xflat, true_spectra_flat, true_maps_flat, G, shape_2d = exps.load_data(samples[r])
-        print(Xflat.shape)
-        
-        data_path = folder / Path("sample_{}.npz".format(r))
-        data = np.load(data_path)
+        # The following line does not work because the order is not the same!
+        # data_path = folder / Path("sample_{}.npz".format(r))
+        data = np.load(samples[r])
         shape_2d_test = tuple(params["weights_parameters"]["shape_2D"])
         Xflat_test = (data["X"].reshape(shape_2d_test[0]*shape_2d_test[1],params["model_parameters"]["e_size"])).T
+
         true_spectra_test = data["phases"]*params["N"]*np.array(params["densities"])[:,np.newaxis]
         true_maps_test = (data["weights"].reshape(shape_2d_test[0]*shape_2d_test[1],k)).T
-        print(Xflat_test.shape, data["X"].shape, shape_2d)
         assert(tuple(shape_2d) == shape_2d_test)
         np.testing.assert_array_equal(Xflat, Xflat_test)
         np.testing.assert_array_equal(data["G"],G)

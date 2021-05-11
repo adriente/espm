@@ -3,7 +3,8 @@ from snmfem.updates import multiplicative_step_a, multiplicative_step_p
 from snmfem.measures import trace_xtLx
 from snmfem.estimators import NMF
 from snmfem.conf import log_shift, dicotomy_tol
-
+from snmfem.laplacian import create_laplacian_matrix
+import numpy as np
 
 class SmoothNMF(NMF):
 
@@ -33,6 +34,14 @@ class SmoothNMF(NMF):
     
         self.detailed_loss_.append(l2)
         return l1 + l2
+    
+    def fit_transform(self, X, y=None, G=None, P=None, A=None, shape_2d=None, eval_print=10, true_D=None, true_A=None):
+        self.shape_2d_ = shape_2d
+        if not(self.shape_2d_ is None) :
+            self.L_ = create_laplacian_matrix(*self.shape_2d_)
+        else : 
+            self.L_ = np.diag(np.ones(X.shape[1]))
+        super().fit_transform(X, y=None, G=G, P=P, A=A, shape_2d=shape_2d, eval_print=eval_print, true_D=true_D, true_A=true_A)
 
 
 
