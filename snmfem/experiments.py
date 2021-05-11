@@ -28,7 +28,7 @@ def run_experiment(Xflat, true_spectra, true_maps, G, experiment, params_evaluti
     metrics = compute_metrics(true_spectra, true_maps, G@P, A, **params_evalution)
     return metrics, (G@P, A), losses
 
-def load_data(sample) : 
+def load_data(sample, float32=False) : 
     data = np.load(sample)
     X = data["X"]
     nx, ny, ns = X.shape
@@ -41,6 +41,11 @@ def load_data(sample) :
     true_maps_flat = true_maps.transpose([2,0,1]).reshape(k,nx*ny)
     G = data["G"]
     shape_2d = data["shape_2d"]
+    if float32:
+        Xflat = Xflat.astype(np.float32)
+        true_spectra_flat = true_spectra_flat.astype(np.float32)
+        true_maps_flat = true_maps_flat.astype(np.float32)
+        G = G.astype(np.float32)
     return Xflat, true_spectra_flat, true_maps_flat, G, shape_2d
 
 def load_samples(dataset, base_path_conf=conf.SCRIPT_CONFIG_PATH, base_path_dataset = conf.DATASETS_PATH):
