@@ -55,7 +55,7 @@ def load_samples(dataset, base_path_conf=conf.SCRIPT_CONFIG_PATH, base_path_data
         data_dict = json.load(f)
     k = data_dict["model_parameters"]["params_dict"]["k"]
     data_folder = base_path_dataset / Path(data_dict["data_folder"])
-    samples = list(data_folder.glob("sample_*.npz"))
+    samples = sorted(list(data_folder.glob("sample_*.npz")))
     return samples, k
 
 def perform_simulations(samples, exp_list, params_evalution):

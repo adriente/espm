@@ -46,8 +46,8 @@ def test_load_data() :
     for r in range(params["seeds_range"]):
         Xflat, true_spectra_flat, true_maps_flat, G, shape_2d = exps.load_data(samples[r])
         # The following line does not work because the order is not the same!
-        # data_path = folder / Path("sample_{}.npz".format(r))
-        data = np.load(samples[r])
+        data_path = folder / Path("sample_{}.npz".format(r))
+        data = np.load(data_path)
         shape_2d_test = tuple(params["weights_parameters"]["shape_2D"])
         Xflat_test = (data["X"].reshape(shape_2d_test[0]*shape_2d_test[1],params["model_parameters"]["e_size"])).T
 
