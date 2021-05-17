@@ -6,7 +6,8 @@ from snmfem.measures import KLdiv_loss, KLdiv, Frobenius_loss, find_min_angle, f
 from snmfem.conf import log_shift
 from snmfem.utils import rescaled_DA
 import time
-from abc import ABC, abstractmethod 
+from abc import ABC, abstractmethod
+from snmfem.laplacian import create_laplacian_matrix 
 
 
 
