@@ -10,6 +10,7 @@ pyunlocbox = {editable = true, path = "./pyunlocbox"}
 torch = "*"
 argparse = "*"
 pypstools = "*"
+memory-profiler = "*"
 
 [dev-packages]
 jupyter = "*"

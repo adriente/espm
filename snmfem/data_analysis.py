@@ -16,7 +16,7 @@ def load_hs_data(filename) :
         offset = spim.axes_manager[2].offset
         scale = spim.axes_manager[2].scale
         size = spim.axes_manager[2].size
-        X = spim.data
+        X = spim.data.astype("float32")
         nx, ny, ns = X.shape
         Xflat = X.transpose([2,0,1]).reshape(ns, nx*ny)
         shape_2d = nx,ny
@@ -62,7 +62,7 @@ def run_analysis(Xflat, G, experiment, shape_2d = None) :
     G = estimator.G_
     P = estimator.P_
     A = estimator.A_
-    
+
     losses = estimator.get_losses()
     return G, P, A, losses
 
