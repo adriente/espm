@@ -2,7 +2,6 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 from snmfem.updates import initialize_algorithms
-from snmfem.laplacian import sigmaL, create_laplacian_matrix
 from snmfem.measures import KLdiv_loss, KLdiv, Frobenius_loss, find_min_angle, find_min_MSE
 from snmfem.conf import log_shift
 from snmfem.utils import rescaled_DA
@@ -82,6 +81,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         if self.skip_G:
             G = None
         self.G_, self.P_, self.A_ = initialize_algorithms(self.X_, G, P, A, self.n_components, self.init, self.random_state, self.force_simplex)
+<<<<<<< HEAD
         
         self.shape_2d_ = shape_2d
         if not(self.shape_2d_ is None) :
@@ -89,6 +89,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         else : 
             self.L_ =lil_matrix((self.X_shape[1],self.X_shape[1]),dtype=np.float32)
             self.L_.setdiag([1]*self.X_shape[1])
+=======
+>>>>>>> 68d0509cf138f50988af87ed57b8eb24faa8176f
 
         algo_start = time.time()
         # If mu_sparse != 0, this is the regularized step of the algorithm
@@ -113,14 +115,13 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             while True:
                 # Take one step in A, P
                 old_P, old_A = self.P_.copy(), self.A_.copy()
+                
                 self.P_, self.A_ = self._iteration( self.P_, self.A_ )
                 eval_after = self.loss(self.P_, self.A_)
                 self.n_iter_ +=1
                 
                 rel_P = np.max((self.P_ - old_P)/(self.P_ + self.tol*np.mean(self.P_) ))
                 rel_A = np.max((self.A_ - old_A)/(self.A_ + self.tol*np.mean(self.A_) ))
-
-
 
                 # store some information for assessing the convergence
                 # for debugging purposes

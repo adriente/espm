@@ -22,6 +22,7 @@ yapf = "*"
 ipykernel = "*"
 pylint = "*"
 line-profiler = "*"
+memory-profiler = "*"
 
 [requires]
 python_version = "3.8"
