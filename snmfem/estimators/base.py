@@ -81,7 +81,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         if self.skip_G:
             G = None
         self.G_, self.P_, self.A_ = initialize_algorithms(self.X_, G, P, A, self.n_components, self.init, self.random_state, self.force_simplex)
-<<<<<<< HEAD
         
         self.shape_2d_ = shape_2d
         if not(self.shape_2d_ is None) :
@@ -89,8 +88,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         else : 
             self.L_ =lil_matrix((self.X_shape[1],self.X_shape[1]),dtype=np.float32)
             self.L_.setdiag([1]*self.X_shape[1])
-=======
->>>>>>> 68d0509cf138f50988af87ed57b8eb24faa8176f
 
         algo_start = time.time()
         # If mu_sparse != 0, this is the regularized step of the algorithm
