@@ -18,7 +18,7 @@ RESULTS_PATH.mkdir(exist_ok=True, parents=True)
 SCRIPT_CONFIG_PATH = BASE_PATH.parent / Path("scripts/config/")
 
 log_shift = 1e-14
-dicotomy_tol = 1e-4
+dicotomy_tol = 1e-10
 seed_max = 4294967295
 
 POS_ARGS = {

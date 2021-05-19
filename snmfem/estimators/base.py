@@ -8,6 +8,7 @@ from snmfem.utils import rescaled_DA
 import time
 from abc import ABC, abstractmethod
 from snmfem.laplacian import create_laplacian_matrix 
+from scipy.sparse import lil_matrix, block_diag
 
 
 
@@ -87,8 +88,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         if not(self.shape_2d_ is None) :
             self.L_ = create_laplacian_matrix(*self.shape_2d_)
         else : 
-            self.L_ =lil_matrix((self.X_shape[1],self.X_shape[1]),dtype=np.float32)
-            self.L_.setdiag([1]*self.X_shape[1])
+            self.L_ =lil_matrix((self.X_.shape[1],self.X_.shape[1]),dtype=np.float32)
+            self.L_.setdiag([1]*self.X_.shape[1])
 
         algo_start = time.time()
         # If mu_sparse != 0, this is the regularized step of the algorithm
@@ -108,7 +109,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             self.mse_ = []
             self.true_losses_ = []
             true_DA = true_D @ true_A
-
         try:
             while True:
                 # Take one step in A, P
@@ -181,6 +181,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     print(
                         f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:0.3f},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
                     )
+                    pass
                 eval_before = eval_after
         except KeyboardInterrupt:
             pass
