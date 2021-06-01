@@ -4,10 +4,11 @@ from snmfem import models
 import json
 import snmfem.conf as conf
 import numpy as np
+from pathlib import Path
 
 def load_filename (json_file) : 
     with open(json_file,"r") as f : 
-        file = json.load(f)["data_file"]
+        file = conf.DATASETS_PATH / Path(json.load(f)["data_file"])
     return file
 
 def load_hs_data(filename) : 
