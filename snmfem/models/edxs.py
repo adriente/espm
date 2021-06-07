@@ -94,11 +94,9 @@ class EDXS(PhysicalModel):
         The way it was coded is probably over-complicated ...
         """
         temp = np.zeros_like(self.x)
-        sum_Z = 0
-        sum_conc = 0
+        sum_mass = 0
         for elt in elements_dict.keys():
-            sum_Z += 2 * int(elt)
-            sum_conc += elements_dict[elt]
+            sum_mass += 2 * int(elt)*elements_dict[elt]
 
         for elt in elements_dict.keys():
             H = np.ones_like(self.x)
@@ -175,13 +173,8 @@ class EDXS(PhysicalModel):
             for i in range(len(H_tups) - 1):
                 H[H_tups[i][0] : H_tups[i + 1][0]] = H_tups[i][1]
 
-            temp += (
-                elements_dict[elt]
-                * 2
-                * int(elt)
-                * H
-                * np.exp(d + k * np.log(self.x))
-                / (sum_conc * sum_Z)
+            temp += (H
+                * np.exp(d + k * np.log(self.x))*elements_dict[elt]*(2* int(elt)/sum_mass)
             )
 
         self.abs = temp

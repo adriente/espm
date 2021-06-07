@@ -6,7 +6,9 @@ from snmfem.measures import KLdiv_loss, KLdiv, Frobenius_loss, find_min_angle, f
 from snmfem.conf import log_shift
 from snmfem.utils import rescaled_DA
 import time
-from abc import ABC, abstractmethod 
+from abc import ABC, abstractmethod
+from snmfem.laplacian import create_laplacian_matrix 
+from scipy.sparse import lil_matrix, block_diag
 
 
 
@@ -37,6 +39,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     @abstractmethod
     def _iteration(self,  P, A):
         pass
+    
 
     def loss(self, P, A, average=True, X = None):
         GP = self.G_ @ P
@@ -53,7 +56,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             if self.const_KL_ is None:
                 self.const_KL_ = np.sum(X*np.log(self.X_+ self.log_shift)) - np.sum(X) 
 
-            loss = KLdiv_loss(X, GP, A, self.log_shift, safe=self.debug, average=False) + self.const_KL_
+            loss =  KLdiv_loss(X, GP, A, self.log_shift, safe=self.debug, average=False) + self.const_KL_
         if average:
             loss = loss / self.GPA_numel_
         self.detailed_loss_ = [loss]
@@ -80,6 +83,13 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         if self.skip_G:
             G = None
         self.G_, self.P_, self.A_ = initialize_algorithms(self.X_, G, P, A, self.n_components, self.init, self.random_state, self.force_simplex)
+        
+        self.shape_2d_ = shape_2d
+        if not(self.shape_2d_ is None) :
+            self.L_ = create_laplacian_matrix(*self.shape_2d_)
+        else : 
+            self.L_ =lil_matrix((self.X_.shape[1],self.X_.shape[1]),dtype=np.float32)
+            self.L_.setdiag([1]*self.X_.shape[1])
 
         algo_start = time.time()
         # If mu_sparse != 0, this is the regularized step of the algorithm
@@ -99,7 +109,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             self.mse_ = []
             self.true_losses_ = []
             true_DA = true_D @ true_A
-
         try:
             while True:
                 # Take one step in A, P
@@ -172,6 +181,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     print(
                         f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:0.3f},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
                     )
+                    pass
                 eval_before = eval_after
         except KeyboardInterrupt:
             pass

@@ -4,10 +4,11 @@ from snmfem import models
 import json
 import snmfem.conf as conf
 import numpy as np
+from pathlib import Path
 
 def load_filename (json_file) : 
     with open(json_file,"r") as f : 
-        file = json.load(f)["data_file"]
+        file = conf.DATASETS_PATH / Path(json.load(f)["data_file"])
     return file
 
 def load_hs_data(filename) : 
@@ -16,7 +17,7 @@ def load_hs_data(filename) :
         offset = spim.axes_manager[2].offset
         scale = spim.axes_manager[2].scale
         size = spim.axes_manager[2].size
-        X = spim.data
+        X = spim.data.astype("float32")
         nx, ny, ns = X.shape
         Xflat = X.transpose([2,0,1]).reshape(ns, nx*ny)
         shape_2d = nx,ny
@@ -62,7 +63,7 @@ def run_analysis(Xflat, G, experiment, shape_2d = None) :
     G = estimator.G_
     P = estimator.P_
     A = estimator.A_
-    
+
     losses = estimator.get_losses()
     return G, P, A, losses
 

@@ -1,3 +1,4 @@
+from re import A
 import numpy as np
 from snmfem.conf import log_shift, dicotomy_tol
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
@@ -6,7 +7,7 @@ import snmfem.utils as u
 from scipy import sparse
 # test
 
-def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=100):
+def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
     """
     Function to solve the num/(x+denum) -1 = 0 equation. Here, x is the Lagragian multiplier which is used to apply the simplex constraint.
     The first part consists in finding a and b such that num/(a+denum) -1 > 0 and num/(b+denum) -1  < 0. (line search)
@@ -15,7 +16,8 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=100):
     In the future a vectorized version of Dekker Brent could be implemented.
     """
     # # The function has exactly one root at the right of the first singularity (the singularity at min(denum))
-
+    num = num.astype("float64")
+    denum = denum.astype("float64")
 
     # ind_min = np.argmax(num/denum, axis=0)
     # ind_min2 = np.argmin(denum, axis=0)
@@ -23,30 +25,40 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=100):
     # amin1 = (num[ind_min, ind]/2-denum[ind_min, ind])
     # amin2 = (num[ind_min2, ind]/2- denum[ind_min2, ind])
     # a = np.maximum(amin1, amin2)
-    a = np.max(num/2 - denum, axis=0)
+    alpha = 1
+    i = 0
+    a = np.max(num/(1+alpha) - denum, axis=0)
+    while np.intersect1d(a,-denum).size > 0 :
+        i+=1
+        alpha/= 2
+        a = np.max(num/(1+alpha) - denum, axis=0)
+        if i ==20 :
+            raise ValueError("Probably too many zeros in the data, the dichotomy will fail. Please retry with force_simplex = False")
+
     
     # r = np.sum(num/denum, axis=0)
     # b = np.zeros(r.shape)
     # b[r>=1] = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))[r>=1]    
     b = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))
-
     assert(np.sum((np.sum(num / (b + denum), axis=0) - 1)>=0)==0)
     assert(np.sum((np.sum(num / (a + denum), axis=0) - 1)<=0)==0)
 
-    new = (a + b) / 2
+    new = (a + b)/2
 
     # Dichotomy algorithm to solve the equation
     it = 0
     while (np.max(np.abs(np.sum(num / (new + denum), axis=0) - 1))) > tol:
+        
         it=it+1
         # if f(a)*f(new) <0 then f(new) < 0 --> store in b
         minus_bool = (np.sum(num / (a + denum), axis=0) - 1) * (
             np.sum(num / (new + denum), axis=0) - 1
-        ) < 0
+        ) <= 0
         # if f(a)*f(new) > 0 then f(new) > 0 --> store in a
         plus_bool = (np.sum(num / (a + denum), axis=0) - 1) * (
             np.sum(num / (new + denum), axis=0) - 1
         ) > 0
+
         b[minus_bool] = new[minus_bool]
         a[plus_bool] = new[plus_bool]
         new = (a + b) / 2
