@@ -3,6 +3,7 @@ from snmfem.conf import log_shift, dicotomy_tol
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
 from snmfem.laplacian import sigmaL
 import snmfem.utils as u
+from scipy import sparse
 # test
 
 def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=100):
@@ -164,7 +165,11 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
 def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_simplex):
     # Handle initialization
     if G is None : 
-        G = np.diag(np.ones(X.shape[0])).astype(X.dtype)
+        skip_second = True
+        # G = sparse.diags(np.ones(X.shape[0]).astype(X.dtype))        
+        G = np.diag(np.ones(X.shape[0]).astype(X.dtype))
+    else:
+        skip_second = False
 
     if P is None:
         if A is None:
@@ -174,7 +179,10 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
                 scale = np.sum(A, axis=0, keepdims=True)
                 A = A/scale 
         D = np.linalg.lstsq(A.T, X.T,rcond=None)[0].T
-        P = np.abs(np.linalg.lstsq(G, D,rcond=None)[0])
+        if skip_second:
+            P = D
+        else:
+            P = np.abs(np.linalg.lstsq(G, D,rcond=None)[0])
 
     elif A is None:
         D = G @ P
