@@ -15,33 +15,41 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
     The second part applies the dichotomy algorithm to solve the equation.
     In the future a vectorized version of Dekker Brent could be implemented.
     """
-    # # The function has exactly one root at the right of the first singularity (the singularity at min(denum))
-    num = num.astype("float64")
-    denum = denum.astype("float64")
-
-    # ind_min = np.argmax(num/denum, axis=0)
-    # ind_min2 = np.argmin(denum, axis=0)
-    # ind = np.arange(len(ind_min2))
-    # amin1 = (num[ind_min, ind]/2-denum[ind_min, ind])
-    # amin2 = (num[ind_min2, ind]/2- denum[ind_min2, ind])
-    # a = np.maximum(amin1, amin2)
-    alpha = 1
-    i = 0
-    a = np.max(num/(1+alpha) - denum, axis=0)
-    while np.intersect1d(a,-denum).size > 0 :
-        i+=1
-        alpha/= 2
-        a = np.max(num/(1+alpha) - denum, axis=0)
-        if i ==20 :
-            raise ValueError("Probably too many zeros in the data, the dichotomy will fail. Please retry with force_simplex = False")
-
+    # The function has exactly one root at the right of the first singularity (the singularity at min(denum))
     
+    # num = num.astype("float64")
+    # denum = denum.astype("float64")
+
+    # do some test
+    assert((num>=0).all())
+    assert((denum>=0).all())
+    assert((np.sum(num, axis=0)>0).all())
+    
+    # Ideally we want to do this, but we have to exclude the case where num==0.
+    # a = np.max(num/2 - denum, axis=0)
+    if denum.shape[1]>1:
+        a = []
+        for n,d in zip(num.T, denum.T):
+            m = n>0
+            a.append(np.max(n[m]/2 - d[m]))
+        a = np.array(a)
+    else:
+        d = denum[:,0]
+        def max_masked(n):
+            m = n>0
+            return np.max(n[m]/2-d[m])
+        a = np.apply_along_axis(max_masked, 0, num)
+        
+        
     # r = np.sum(num/denum, axis=0)
     # b = np.zeros(r.shape)
-    # b[r>=1] = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))[r>=1]    
-    b = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))
+    # b[r>=1] = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))[r>=1]
+    
+    b = len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0)
     assert(np.sum((np.sum(num / (b + denum), axis=0) - 1)>=0)==0)
     assert(np.sum((np.sum(num / (a + denum), axis=0) - 1)<=0)==0)
+    assert(np.sum(np.isnan(np.sum(num / (a + denum), axis=0)))==0)
+    assert(np.sum(np.isnan(np.sum(num / (b + denum), axis=0)))==0)
 
     new = (a + b)/2
 

@@ -88,7 +88,7 @@ def make_step_p(x_matr, g_matr, p_matr , a_matr, eps = log_shift):
     p_matr = p_matr / term2 * term1
     return p_matr
 
-def test_dichotomy_simmplex():
+def test_dichotomy_simplex():
     num = np.random.rand(1,1) + 1
     denum = np.random.rand(1,1)
     sol = num - denum
@@ -121,18 +121,29 @@ def test_dichotomy_simmplex():
     denum = np.random.rand(n, 1)
     num = num/(np.sum(num/denum))
     np.testing.assert_allclose(np.sum(num/(denum)), 1)
-
     tol = 1e-6
     sol = dichotomy_simplex(num, denum, tol )
-    np.sum(num/(denum + sol))
     np.testing.assert_allclose(sol, 0, atol=tol)
+
+    tol = 1e-6
+    num = np.array([[1,1,0,0,0,2]]).T
+    denum = np.array([[1,1,3,5,4,2]]).T
+    sol = dichotomy_simplex(num, denum, tol )
+    np.testing.assert_allclose(np.sum(num/(denum + sol)), 1, atol=tol)
+
+    tol = 1e-6
+    num = np.array([[1,1,0,0,0,2]]).T
+    denum = np.array([[1,1,0,5,0,2]]).T
+    sol = dichotomy_simplex(num, denum, tol )
+    np.sum(num/(denum + sol))
+    np.testing.assert_allclose(np.sum(num/(denum + sol)), 1, atol=tol)
 
 
 def test_dicotomy2():
     k = 5
     p = 6400
-    span = np.logspace(-7,7,num=17)
-    its = 100
+    span = np.logspace(-6,6,num=17)
+    its = 25
     tol = 1e-6
     np.random.seed(0)
     for _ in range(its) : 
@@ -140,6 +151,35 @@ def test_dicotomy2():
         num = scale_num * np.random.rand(k,p)
         scale_denum = np.random.choice(span,size=(k,p))
         denum = scale_denum * np.random.rand(k,p)
+        sol = dichotomy_simplex(num, denum, tol, maxit=100)
+        v = np.sum(num/(denum + sol), axis=0)
+        np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
+        
+    for _ in range(its) : 
+        scale_num = np.random.choice(span,size=(k,p))
+        num = scale_num * np.random.rand(k,p)
+        num[np.tile(np.arange(k),p//k),np.arange(p)] = 0
+        scale_denum = np.random.choice(span,size=(k,p))
+        denum = scale_denum * np.random.rand(k,p)
+        sol = dichotomy_simplex(num, denum, tol, maxit=100)
+        v = np.sum(num/(denum + sol), axis=0)
+        np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
+        
+    for _ in range(its) : 
+        scale_num = np.random.choice(span,size=(k,p))
+        num = scale_num * np.random.rand(k,p)
+        scale_denum = np.random.choice(span,size=(k,1))
+        denum = scale_denum * np.random.rand(k,1)
+        sol = dichotomy_simplex(num, denum, tol, maxit=100)
+        v = np.sum(num/(denum + sol), axis=0)
+        np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
+        
+    for _ in range(its) : 
+        scale_num = np.random.choice(span,size=(k,p))
+        num = scale_num * np.random.rand(k,p)
+        num[np.tile(np.arange(k),p//k),np.arange(p)] = 0
+        scale_denum = np.random.choice(span,size=(k,1))
+        denum = scale_denum * np.random.rand(k,1)
         sol = dichotomy_simplex(num, denum, tol, maxit=100)
         v = np.sum(num/(denum + sol), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
