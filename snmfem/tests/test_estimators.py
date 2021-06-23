@@ -9,10 +9,7 @@ from snmfem.laplacian import create_laplacian_matrix
 from snmfem.experiments import run_experiment
 
 def generate_one_sample():
-    model_parameters  = {"params_dict" : {"c0" : 4.8935e-05, 
-                                            "c1" : 1464.19810,
-                                            "c2" : 0.04216872,
-                                            "b0" : 0.15910789,
+    model_parameters  = {"params_dict" : {  "b0" : 0.15910789,
                                             "b1" : -0.00773158,
                                             "b2" : 8.7417e-04},
                             "db_name" : "default_xrays.json",
@@ -24,17 +21,32 @@ def generate_one_sample():
                             "seed" : 1}
 
 
-    g_parameters = {"elements_list" : [8,13,14,12,26,29,31,72,71,62,60,92,20],
-                        "brstlg" : 1}
+    g_parameters = {"thickness": 2e-05,
+            "density": 3.5,
+            "toa": 22,
+            "elements_list" : [8,13,14,12,26,29,31,72,71,62,60,92,20],
+            "brstlg" : 1}
 
     phases_parameters =  [
-        {"elements_dict":{"8": 1.0 , "12": 0.51  , "14": 0.61  , "13": 0.07  , "20": 0.04  , "62": 0.02  ,
+        {"thickness": 2e-05,
+            "density": 3.5,
+            "toa": 22,
+            "atomic_fraction": True,
+            "elements_dict":{"8": 1.0 , "12": 0.51  , "14": 0.61  , "13": 0.07  , "20": 0.04  , "62": 0.02  ,
                             "26": 0.028  , "60": 0.002  , "71": 0.003  , "72": 0.003  , "29": 0.02  }, 
             "scale" : 0.01},
-        {"elements_dict":{"8": 0.54  , "26": 0.15  , "12": 1.0  , "29": 0.038  ,
+        {"thickness": 2e-05,
+            "density": 3.5,
+            "toa": 22,
+            "atomic_fraction": True,
+            "elements_dict":{"8": 0.54  , "26": 0.15  , "12": 1.0  , "29": 0.038  ,
                             "92": 0.0052  , "60": 0.004  , "31": 0.03  , "71": 0.003  },
             "scale" : 0.01},   
-            {"elements_dict":{"8": 1.0  , "14": 0.12  , "13": 0.18  , "20": 0.47  ,
+            {"thickness": 2e-05,
+            "density": 3.5,
+            "toa": 22,
+            "atomic_fraction": True,
+            "elements_dict":{"8": 1.0  , "14": 0.12  , "13": 0.18  , "20": 0.47  ,
                             "62": 0.04  , "26": 0.004  , "60": 0.008  , "72": 0.004  , "29": 0.01  }, 
             "scale" : 0.01} 
         ]
@@ -73,9 +85,9 @@ def generate_one_sample():
 
 def test_generate_one_sample():
     G, P, A, D, w, X, Xdot = generate_one_sample()
-    np.testing.assert_allclose(G @ P , D, atol=1e-5)
+    np.testing.assert_allclose(G @ P , D, atol=1e-3)
     np.testing.assert_allclose(D @ np.diag(w) @ A , Xdot)
-    np.testing.assert_allclose(G @ P @ np.diag(w) @ A , Xdot, atol=1e-5)
+    np.testing.assert_allclose(G @ P @ np.diag(w) @ A , Xdot, atol=1e-3)
 
 def test_NMF_scikit () : 
     estimator = NMF(n_components= 5,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0)
@@ -88,19 +100,19 @@ def test_general():
 
     estimator = NMF(n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1)
     D2 = estimator.fit_transform(G=G, A=A, X=Xdot)
-    np.testing.assert_allclose(D@np.diag(w), D2, atol=1e-5)
+    np.testing.assert_allclose(D@np.diag(w), D2, atol=1e-3)
 
     estimator = NMF(n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1)
     D2 = estimator.fit_transform( A=A, X=Xdot)
-    np.testing.assert_allclose(D@np.diag(w), D2, atol=1e-5)
+    np.testing.assert_allclose(D@np.diag(w), D2, atol=1e-3)
 
     estimator = NMF(n_components= 3,max_iter=200,force_simplex = False,mu = 0, epsilon_reg = 1)
     D2 = estimator.fit_transform(G =G, P=P@np.diag(w), X=Xdot)
-    np.testing.assert_allclose(D@np.diag(w), D2, atol=1e-5)
+    np.testing.assert_allclose(D@np.diag(w), D2, atol=1e-3)
 
     estimator = NMF(n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1)
     D2 = estimator.fit_transform(G =G, P=P@np.diag(w), X=Xdot)
-    np.testing.assert_allclose(D@np.diag(w), D2, atol=1e-5)
+    np.testing.assert_allclose(D@np.diag(w), D2, atol=1e-3)
 
     estimator = NMF(n_components= 3,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1)
     estimator.fit_transform(G=G, X=Xdot)

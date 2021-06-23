@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.special import erfc
-
+from snmfem.models.absorption_edxs import det_efficiency_from_curve,det_efficiency,absorption_correction
     
 def gaussian(x, mu, sigma):
     """
@@ -20,63 +20,37 @@ def read_lines_db (elt,db_dict) :
         cs.append(db_dict[str(elt)][line]["cs"])
     return energies, cs
 
-
 def read_compact_db (elt,db_dict) :
     energies = db_dict[str(elt)]["energies"]
     cs = db_dict[str(elt)]["cs"] 
     return energies, cs
 
-
-def simple_abs_coeff(x):
-    return 1 / np.power(x, 3)
-
-
-def self_abs(abs_coeff, c0):
-    """
-    docstring
-    """
-    return (1 - np.exp(-c0 * abs_coeff)) / (c0 * abs_coeff)
-
-
 def bremsstrahlung(x, b0, b1, b2):
     return b0 / x + b1 + b2 * x
-
-
-def detector(abs_coeff, c1, c2):
-    return np.exp(-c2 * abs_coeff) * (1 - np.exp(-c1 * abs_coeff))
-
 
 def shelf(x, height, length):
     return height * erfc(x - length)
 
-def continuum_xrays(x,params_dict,abs_coeff):
+def continuum_xrays(x,params_dict,thickness = 10.0e-7, toa = 90.0, density = None,atomic_fraction = False,*,elements_dict = {}):
     """
     Computes the continuum X-ray based on the brstlg_pars set during init.
     The function is built in a way so that even an incomplete brstlg_pars dict is not a problem.
     """
-    try:
-        B = bremsstrahlung(
+    B = bremsstrahlung(
             x,
             params_dict["b0"],
             params_dict["b1"],
             params_dict["b2"],
         )
-    except KeyError:
-        B = np.ones_like(x)
-    # Both A and D are built to use the attenuation coefficien (abs_coeff).
-    # This needs to change because the attenuation coefficients in D should be different than the one in A.
-    try:
-        A = self_abs(abs_coeff, params_dict["c0"])
-    except KeyError:
-        A = np.ones_like(x)
-    try:
-        D = detector(
-            abs_coeff, params_dict["c1"], params_dict["c2"]
-        )
-    except KeyError:
-        D = np.ones_like(x)
-    try:
-        S = shelf(x, params_dict["h"], params_dict["l"])
-    except KeyError:
-        S = np.zeros_like(x)
+    
+    A = absorption_correction(x,thickness,toa, density,atomic_fraction,elements_dict= elements_dict)
+    
+    if type(params_dict["Det"]) == str : 
+        D = det_efficiency_from_curve(x,params_dict["Det"])
+    else : 
+        D = det_efficiency(x,params_dict["Det"])
+    
+    S = shelf(x, params_dict["height"], params_dict["length"])
+    
     return B * A * D + S
+

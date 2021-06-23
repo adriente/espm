@@ -1,3 +1,4 @@
+from hyperspy.misc.material import _density_of_mixture
 import numpy as np
 import snmfem.utils as u
 
@@ -18,3 +19,51 @@ def test_rescale() :
         W_r, H_r = u.rescaled_DA(W,H)
         np.testing.assert_array_almost_equal(W@H,W_r@H_r)
         np.testing.assert_allclose(H_r.sum(axis=0),1, atol=0.2) 
+
+def test_number_symbols () : 
+    mixed_dict = {"Fe" : 1.0, "Si" : 2.0, 27 : 3.0, "83" : 4.0, 8 : 5.0}
+    symbol_dict = {"Fe" : 1.0, "Si" : 2.0, "Co" : 3.0, "Bi" : 4.0, "O" : 5.0}
+    number_dict = {26 : 1.0, 14 : 2.0, 27 : 3.0, 83 : 4.0, 8 : 5.0}
+
+    mixed_list = ["Fe","Si",27,"83",8]
+    number_list = [26,14,27,83,8]
+
+    @u.symbol_to_number_dict
+    def s_to_n (elements_dict = {}) : 
+        return elements_dict
+
+    @u.number_to_symbol_dict
+    def n_to_s (elements_dict = {}) : 
+        return elements_dict
+
+    @u.symbol_to_number_list
+    def s_to_n_list (elements_list = []) : 
+        return elements_list
+
+    assert s_to_n(elements_dict = mixed_dict) == number_dict
+    assert n_to_s(elements_dict = mixed_dict) == symbol_dict
+    assert s_to_n_list(elements_list=mixed_list) == number_list
+
+    
+def test_is_symbol () : 
+    symbols = ["Si", "45", 34, "si", "Zbrra"]
+    bools = [True, False, False, False, False]
+
+    bools_test = []
+    for i in symbols : 
+        bools_test.append(u.is_symbol(i))
+
+    assert bools == bools_test
+
+def test_hspy_wrappers () : 
+    atomic_fractions = {8 : 0.2, 14 : 0.3, 26 : 0.1, 83 : 0.4}
+    weight_fractions = {'O': 0.03174415159035731, 'Si': 0.08358598161408992, 'Fe': 0.055400582070687154, 'Bi': 0.8292692847248655}
+
+    res_wt = u.atomic_to_weight_dict(elements_dict = atomic_fractions)
+    assert res_wt == weight_fractions
+
+    res_dens = u.approx_density(atomic_fraction = True, elements_dict=atomic_fractions)
+    hspy_dens = _density_of_mixture([0.03174415159035731, 0.08358598161408992, 0.055400582070687154, 0.8292692847248655],['O','Si','Fe','Bi'])
+
+    assert res_dens == hspy_dens
+

@@ -99,7 +99,7 @@ def laplacian_weights(shape_2D, n_phases=3, seed=0) :
     weights = rnd_f/np.sum(rnd_f, axis=2, keepdims=True)
     return weights
     
-def spheres_weights(shape_2D=[80, 80], n_phases=3, seed=0):
+def spheres_weights(shape_2D=[80, 80], n_phases=3,  seed=0):
     mat = Material(shape_2D, n_phases)
     
     if seed == 0 and n_phases==3 and shape_2D == [80, 80]:
@@ -110,7 +110,7 @@ def spheres_weights(shape_2D=[80, 80], n_phases=3, seed=0):
         for i in range(1, n_phases):
             p1 = np.random.randint(1, shape_2D[0])
             p2 = np.random.randint(1, shape_2D[1])
-            mat.sphere([p1,p2], 3.5, 3.5, 0.0, 0.5, i)     
+            mat.sphere([p1,p2], 2.5, 2.5, 0.0, 0.5, i)     
     return mat.finalize_weight()
 
 def generate_weights(weight_type, shape_2D, n_phases=3, seed=0):

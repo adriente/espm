@@ -1,0 +1,106 @@
+{
+    "model": "EDXS",
+    "N": 100,
+    "densities": [
+        1.1236203565420875,
+        2.8521429192297485,
+        2.1959818254342154,
+        1.7959754525911098
+    ],
+    "data_folder": "aspim039_random_phases",
+    "seeds_range": 10,
+    "weights_parameters": {
+        "weight_type": "sphere",
+        "shape_2D": [
+            80,
+            80
+        ]
+    },
+    "model_parameters": {
+        "e_offset": 0.2,
+        "e_size": 1980,
+        "e_scale": 0.01,
+        "db_name": "default_xrays.json",
+        "params_dict": {
+            "b0": 0.15910789,
+            "b1": -0.00773158,
+            "b2": 0.00087417
+        },
+        "Abs": {
+            "thickness": 2e-05,
+            "density": null,
+            "toa": 22,
+            "atomic_fraction": true
+        }
+    },
+    "g_parameters": {
+        "brstlg": true,
+        "elements_list": [
+            33,
+            40,
+            42,
+            12,
+            80,
+            20,
+            53,
+            56,
+            24,
+            58,
+            59
+        ],
+        "thickness": 2e-05,
+        "density": null,
+        "toa": 22,
+        "atomic_fraction": true
+    },
+    "phases_parameters": [
+        {
+            "thickness": 2e-05,
+            "density": null,
+            "toa": 22,
+            "atomic_fraction": true,
+            "elements_dict": {
+                "59": 0.14235498972778104,
+                "56": 0.7013906500151152,
+                "24": 0.2565330432036853
+            },
+            "scale": 0.01
+        },
+        {
+            "thickness": 2e-05,
+            "density": null,
+            "toa": 22,
+            "atomic_fraction": true,
+            "elements_dict": {
+                "58": 0.5222713139552585,
+                "80": 0.7736509365941115,
+                "33": 0.018991224131512774
+            },
+            "scale": 0.01
+        },
+        {
+            "thickness": 2e-05,
+            "density": null,
+            "toa": 22,
+            "atomic_fraction": true,
+            "elements_dict": {
+                "42": 0.0024839924479617137,
+                "40": 0.9501540345945482,
+                "12": 0.040389128861466395
+            },
+            "scale": 0.01
+        },
+        {
+            "thickness": 2e-05,
+            "density": null,
+            "toa": 22,
+            "atomic_fraction": true,
+            "elements_dict": {
+                "53": 0.8509115425844922,
+                "20": 0.26157184766698427,
+                "33": 0.5932422916558882
+            },
+            "scale": 0.01
+        }
+    ]
+}

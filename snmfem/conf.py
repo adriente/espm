@@ -1,10 +1,18 @@
 from pathlib import Path
+import hyperspy.misc.eds.ffast_mac as macs
+import numpy as np
 
 # Path of the base
 BASE_PATH = Path(__file__).parent
 
 # Path of the db
 DB_PATH = BASE_PATH / Path("Data/")
+
+NUMBER_PERIODIC_TABLE = DB_PATH / Path("periodic_table_number.json")
+
+SYMBOLS_PERIODIC_TABLE = DB_PATH / Path("periodic_table_symbols.json")
+
+DEFAULT_SDD_EFF = "SDD_efficiency.txt"
 
 # Path of the generated datasets
 DATASETS_PATH = BASE_PATH.parent / Path("generated_datasets")
@@ -16,6 +24,17 @@ RESULTS_PATH = BASE_PATH.parent / Path("results")
 RESULTS_PATH.mkdir(exist_ok=True, parents=True)
 
 SCRIPT_CONFIG_PATH = BASE_PATH.parent / Path("scripts/config/")
+
+HSPY_MAC = macs.ffast_mac
+
+DEFAULT_EDXS_PARAMS = {
+    "b0" : 0.0,
+    "b1" : 0.0,
+    "b2" : 0.0,
+    "Det" : DEFAULT_SDD_EFF,
+    "height" : 0.0,
+    "length" : 0.0
+}
 
 log_shift = 1e-14
 dicotomy_tol = 1e-10

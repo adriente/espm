@@ -53,7 +53,7 @@ def load_samples(dataset, base_path_conf=conf.SCRIPT_CONFIG_PATH, base_path_data
     print(data_json)
     with open(data_json,"r") as f :
         data_dict = json.load(f)
-    k = data_dict["model_parameters"]["params_dict"]["k"]
+    k = len(data_dict["phases_parameters"])
     data_folder = base_path_dataset / Path(data_dict["data_folder"])
     samples = sorted(list(data_folder.glob("sample_*.npz")))
     return samples, k

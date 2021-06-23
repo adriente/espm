@@ -3,6 +3,7 @@ from snmfem.datasets.generate_data import ArtificialSpim
 from snmfem.models import EDXS
 from snmfem.conf import DB_PATH, DATASETS_PATH
 from snmfem.datasets.generate_weights import generate_weights, random_weights, laplacian_weights, spheres_weights
+from snmfem.datasets.generate_EDXS_phases import generate_brem_params, generate_random_phases, DEFAULT_PARAMS, unique_elts
 from pathlib import Path
 import os
 
@@ -23,19 +24,34 @@ def test_generate():
                          "seed" : 1}
   
 
-    g_parameters = {"elements_list" : [8,13,14,12,26,29,31,72,71,62,60,92,20],
-                      "brstlg" : 1}
+    g_parameters = {"thickness": 2e-05,
+            "density": 3.5,
+            "toa": 22,
+            "elements_list" : [8,13,14,12,26,29,31,72,71,62,60,92,20],
+                        "brstlg" : 1}
 
     phases_parameters =  [
-        {"elements_dict":{"8": 1.0, "12": 0.51, "14": 0.61, "13": 0.07, "20": 0.04, "62": 0.02,
-                          "26": 0.028, "60": 0.002, "71": 0.003, "72": 0.003, "29": 0.02}, 
-         "scale" : 1},
-        {"elements_dict":{"8": 0.54, "26": 0.15, "12": 1.0, "29": 0.038,
-                          "92": 0.0052, "60": 0.004, "31": 0.03, "71": 0.003},
-         "scale" : 1},   
-         {"elements_dict":{"8": 1.0, "14": 0.12, "13": 0.18, "20": 0.47,
-                           "62": 0.04, "26": 0.004, "60": 0.008, "72": 0.004, "29": 0.01}, 
-         "scale" : 1} 
+        {"thickness": 2e-05,
+            "density": 3.5,
+            "toa": 22,
+            "atomic_fraction": True,
+            "elements_dict":{"8": 1.0 , "12": 0.51  , "14": 0.61  , "13": 0.07  , "20": 0.04  , "62": 0.02  ,
+                            "26": 0.028  , "60": 0.002  , "71": 0.003  , "72": 0.003  , "29": 0.02  }, 
+            "scale" : 0.01},
+        {"thickness": 2e-05,
+            "density": 3.5,
+            "toa": 22,
+            "atomic_fraction": True,
+            "elements_dict":{"8": 0.54  , "26": 0.15  , "12": 1.0  , "29": 0.038  ,
+                            "92": 0.0052  , "60": 0.004  , "31": 0.03  , "71": 0.003  },
+            "scale" : 0.01},   
+            {"thickness": 2e-05,
+            "density": 3.5,
+            "toa": 22,
+            "atomic_fraction": True,
+            "elements_dict":{"8": 1.0  , "14": 0.12  , "13": 0.18  , "20": 0.47  ,
+                            "62": 0.04  , "26": 0.004  , "60": 0.008  , "72": 0.004  , "29": 0.01  }, 
+            "scale" : 0.01} 
         ]
 
     # Generate the phases
@@ -127,3 +143,24 @@ def test_generate_two_sphere():
     assert(w.shape == (80, 80, 3))
     np.testing.assert_array_less(-1e-30, w)
     np.testing.assert_array_almost_equal(np.sum(w, axis=2), 1)
+
+def test_gen_EDXS () : 
+    
+    b_dict = generate_brem_params(42)
+    assert b_dict["b0"] > 0.0 
+    assert b_dict["b1"] < 0.0
+    assert b_dict["b1"]**2 - 4*b_dict["b2"] <= 0
+
+    phases, dicts = generate_random_phases(n_phases=3,seed = 42)
+    np.testing.assert_array_less(-1e-30, phases)
+    model = EDXS(**DEFAULT_PARAMS)
+    model.generate_phases(dicts)
+    np.testing.assert_almost_equal(model.phases,phases)
+
+    unique_list = unique_elts(dicts)
+    assert len(unique_list) == len(set(unique_list))
+
+
+
+
+
