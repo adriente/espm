@@ -11,6 +11,7 @@ torch = "*"
 argparse = "*"
 pypstools = "*"
 memory-profiler = "*"
+lmfit = "*"
 
 [dev-packages]
 jupyter = "*"

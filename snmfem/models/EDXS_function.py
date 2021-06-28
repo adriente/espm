@@ -31,7 +31,7 @@ def bremsstrahlung(x, b0, b1, b2):
 def shelf(x, height, length):
     return height * erfc(x - length)
 
-def continuum_xrays(x,params_dict,thickness = 10.0e-7, toa = 90.0, density = None,atomic_fraction = False,*,elements_dict = {}):
+def continuum_xrays(x,params_dict,thickness = 10.0e-7, toa = 22.0, density = None,atomic_fraction = True,*,elements_dict = {}):
     """
     Computes the continuum X-ray based on the brstlg_pars set during init.
     The function is built in a way so that even an incomplete brstlg_pars dict is not a problem.

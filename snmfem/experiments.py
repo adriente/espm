@@ -2,6 +2,7 @@ from snmfem import estimators
 from  snmfem import  measures
 import numpy as np
 import snmfem.conf as conf
+import snmfem.utils as u
 from pathlib import Path
 import json
 from argparse import ArgumentParser, Namespace
@@ -12,7 +13,7 @@ def compute_metrics(true_spectra, true_maps, GP, A, u = False):
     mse, ind2 = measures.find_min_MSE(true_maps, A, True, unique=u)
     return angle, mse, (ind1, ind2)
 
-def run_experiment(Xflat, true_spectra, true_maps, G, experiment, params_evalution, shape_2d = None) : 
+def run_experiment(Xflat, true_spectra, true_maps, G, experiment, params_evalution = {"u" : True}, shape_2d = None) : 
     
     Estimator = getattr(estimators, experiment["method"]) 
 
@@ -58,7 +59,7 @@ def load_samples(dataset, base_path_conf=conf.SCRIPT_CONFIG_PATH, base_path_data
     samples = sorted(list(data_folder.glob("sample_*.npz")))
     return samples, k
 
-def perform_simulations(samples, exp_list, params_evalution):
+def perform_simulations(samples, exp_list, params_evalution = {"u" : True}):
     
     metrics = []
     for s in samples: 
@@ -113,9 +114,12 @@ def experiment_parser (argv) :
     
     return vars(arg_groups["positional_group"]), vars(arg_groups["estimator_group"]), vars(arg_groups["evaluation_group"])
 
-def build_exp(k,pos_dict,est_dict) : 
+def build_exp(k,pos_dict,est_dict, name = None) : 
     d = {}
-    d["name"] = pos_dict["method"]
+    if name is None : 
+        d["name"] = pos_dict["method"]
+    else : 
+        d["name"] = name
     d["method"] = pos_dict["method"]
     k_dict = {"n_components" : k}
     estimator_dict = {}
@@ -158,20 +162,30 @@ def print_in_file(exp_list,metrics,out_file,estimator_dict = {}) :
         f.write(txt)
         f.write(results)
 
-def gather_results(file_list,output,folder = conf.RESULTS_PATH,output_folder = conf.RESULTS_PATH) : 
-    string_list = []
-    path_list = [folder / Path(a) for a in file_list]
+def fill_exp_dict(input_dict) :
+
+    parser = ArgumentParser()
+    for key in conf.ESTIMATOR_ARGS.keys(): 
+        parser.add_argument(conf.ESTIMATOR_ARGS[key][0],conf.ESTIMATOR_ARGS[key][1],**conf.ESTIMATOR_ARGS[key][2])
+    args = parser.parse_args([])
+    default_dict =  vars(args)
+
+    return u.arg_helper(input_dict,default_dict)
+
+# def gather_results(file_list,output,folder = conf.RESULTS_PATH,output_folder = conf.RESULTS_PATH) : 
+#     string_list = []
+#     path_list = [folder / Path(a) for a in file_list]
     
-    for file in path_list : 
-        with open(file,"r") as f : 
-            string_list.append(f.read())
+#     for file in path_list : 
+#         with open(file,"r") as f : 
+#             string_list.append(f.read())
 
-    output_path = output_folder / Path(output)
-    for elt in string_list : 
-        with open(output_path, "a") as o :
-            o.write(elt)
-            o.write("\n")
+#     output_path = output_folder / Path(output)
+#     for elt in string_list : 
+#         with open(output_path, "a") as o :
+#             o.write(elt)
+#             o.write("\n")
 
-    for file in path_list : 
-        os.remove(file)
+#     for file in path_list : 
+#         os.remove(file)
 
