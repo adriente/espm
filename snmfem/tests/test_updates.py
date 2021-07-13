@@ -1,6 +1,6 @@
 import numpy as np
 
-from snmfem.updates import dichotomy_simplex, multiplicative_step_p, multiplicative_step_a
+from snmfem.updates import dichotomy_simplex, multiplicative_step_p, multiplicative_step_a, update_q
 from snmfem.measures import KLdiv_loss, log_reg, Frobenius_loss
 from snmfem.conf import log_shift, dicotomy_tol
 
@@ -336,3 +336,41 @@ def test_multiplicative_step_a():
         val2 = Frobenius_loss(X, GP, Ap) + log_reg(A, 3*mu, epsilon_reg)
         np.testing.assert_array_less(0, Ap)
         assert(val1 > val2)
+
+
+def test_Q_step():
+    l = 4
+    p = 5
+    i = 3
+
+    D = np.random.randn(l,i)
+    A = np.random.randn(i,p)
+
+    Q = np.zeros([l,p,i])
+    for a in range(l):
+        for b in range(p):
+            for c in range(i):
+                Q[a,b,c] = A[c,b] * D[a,c] / np.sum(A[:,b] * D[a,:])
+    Q2 = update_q(D, A)
+    np.testing.assert_array_almost_equal(Q, Q2)
+
+def test_Q_step2():
+    l = 4
+    p = 5
+    i = 3
+
+    D = np.random.randn(l,i)
+    A = np.random.randn(i,p)
+    A[0,:] = 0
+    A[:,0] = 0
+    D[0,:] = 0
+    D[:,0] = 0
+
+    Q = np.zeros([l,p,i])
+    for a in range(l):
+        for b in range(p):
+            for c in range(i):
+                Q[a,b,c] = A[c,b] * D[a,c] / (np.sum(A[:,b] * D[a,:]) + log_shift)
+    Q2 = update_q(D, A)
+    np.testing.assert_array_almost_equal(Q, Q2)
+    assert((np.isnan(Q)==False).all())
