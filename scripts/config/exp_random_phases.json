@@ -1,6 +1,6 @@
 {
     "experiment": {
-        "name": "A_cool_name",
+        "name": "random_phases",
         "method": "SmoothNMF",
         "params": {
             "n_components": 4,
@@ -15,5 +15,5 @@
             "l2": false
         }
     },
-    "dataset": "EDXS_data_rand_phases.json"
+    "dataset": "dataset_random_phases.json"
 }

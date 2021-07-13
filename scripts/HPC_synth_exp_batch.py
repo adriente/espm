@@ -1,17 +1,12 @@
 import numpy as np
 import snmfem.experiments as e
-from argparse import ArgumentParser,Namespace
 import sys
-from snmfem.conf import RESULTS_PATH
-from pathlib import Path
-from glob import glob
-import os
 
 def run_batch_exp(positional_dict,evaluation_dict,estimator_dict,output) :
-    samples, k = e.load_samples(positional_dict["json"])
+    samples, k, g, mod = e.load_samples(positional_dict["json"])
     exp_list = [e.build_exp(k,positional_dict,estimator_dict)]
     eval = {"u" : evaluation_dict["u"]}
-    metrics = e.perform_simulations(samples,exp_list,eval)
+    metrics = e.perform_simulations(samples,exp_list,eval,G_func = True,g_pars = g, mod_pars=mod)
     e.print_in_file(exp_list,metrics,output,estimator_dict)
 
 if __name__ == "__main__" : 

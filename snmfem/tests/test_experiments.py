@@ -1,6 +1,6 @@
 import snmfem.experiments as exps
 from pathlib import Path
-from snmfem.conf import DATASETS_PATH, BASE_PATH
+from snmfem.conf import BASE_PATH
 from snmfem.datasets import generate_dataset
 import shutil
 import json
@@ -37,14 +37,16 @@ def test_generate_dataset():
     generate_dataset(base_path=base_path , **params)
     
 def test_load_samples() : 
-    samples , k  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
+    samples , k, g, mod  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
     assert(k == params["model_parameters"]["params_dict"]["k"])
     assert(len(samples) == params["seeds_range"])
+    assert(g == params["g_parameters"])
+    assert(mod == params["model_parameters"])
 
 def test_load_data() : 
-    samples , k  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
+    samples , k, g, mod  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
     for r in range(params["seeds_range"]):
-        Xflat, true_spectra_flat, true_maps_flat, G, shape_2d = exps.load_data(samples[r])
+        Xflat, true_spectra_flat, true_maps_flat, G, shape_2d = exps.load_data(samples[r],G_func = False)
         # The following line does not work because the order is not the same!
         data_path = folder / Path("sample_{}.npz".format(r))
         data = np.load(data_path)
@@ -60,9 +62,9 @@ def test_load_data() :
         np.testing.assert_array_equal(true_maps_test,true_maps_flat)
 
 def test_run_experiments () :
-    samples , k  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
+    samples , k, g, mod  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
     r = np.random.randint(params["seeds_range"])
-    Xflat, true_spectra_flat, true_maps_flat, G, shape_2d = exps.load_data(samples[r])
+    Xflat, true_spectra_flat, true_maps_flat, G, shape_2d = exps.load_data(samples[r],G_func = False)
     default_params = {
     "n_components" : k,
     "tol" : 1e-3,
@@ -82,7 +84,7 @@ def test_run_experiments () :
         "u" : True,
     }
     experiment = {"name": "snmfem smooth 3", "method": "SmoothNMF", "params": {**default_params, **params_snmf, "lambda_L" : 3.0}}
-    m, (GP, A), loss = exps.run_experiment(Xflat, true_spectra_flat, true_maps_flat, G, experiment, params_evalution, shape_2d = shape_2d)
+    m, (GP, A), loss = exps.run_experiment(Xflat, true_spectra_flat, true_maps_flat, G, experiment, params_evalution, shape_2d = shape_2d, g_pars= g, mod_pars= mod)
     
     assert(len(m) == 3)
     assert(len(m[0])==k)

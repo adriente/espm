@@ -9,12 +9,12 @@ import os
 
 def test_generate():
 
-    model_parameters  = {"params_dict" : {"c0" : 4.8935e-05, 
-                                          "c1" : 1464.19810,
-                                          "c2" : 0.04216872,
-                                          "b0" : 0.15910789,
-                                          "b1" : -0.00773158,
-                                          "b2" : 8.7417e-04},
+    model_parameters  = {"params_dict" : {"Abs" : {
+        "thickness" : 200e-7,
+        "toa" : 22,
+        "atomic_fraction" : True,
+        "density" : 4.5
+    }},
                          "db_name" : "default_xrays.json",
                          "e_offset" : 0.208,
                          "e_scale" : 0.01,
@@ -24,34 +24,14 @@ def test_generate():
                          "seed" : 1}
   
 
-    g_parameters = {"thickness": 2e-05,
-            "density": 3.5,
-            "toa": 22,
+    g_parameters = {
             "elements_list" : [8,13,14,12,26,29,31,72,71,62,60,92,20],
                         "brstlg" : 1}
 
     phases_parameters =  [
-        {"thickness": 2e-05,
-            "density": 3.5,
-            "toa": 22,
-            "atomic_fraction": True,
-            "elements_dict":{"8": 1.0 , "12": 0.51  , "14": 0.61  , "13": 0.07  , "20": 0.04  , "62": 0.02  ,
-                            "26": 0.028  , "60": 0.002  , "71": 0.003  , "72": 0.003  , "29": 0.02  }, 
-            "scale" : 0.01},
-        {"thickness": 2e-05,
-            "density": 3.5,
-            "toa": 22,
-            "atomic_fraction": True,
-            "elements_dict":{"8": 0.54  , "26": 0.15  , "12": 1.0  , "29": 0.038  ,
-                            "92": 0.0052  , "60": 0.004  , "31": 0.03  , "71": 0.003  },
-            "scale" : 0.01},   
-            {"thickness": 2e-05,
-            "density": 3.5,
-            "toa": 22,
-            "atomic_fraction": True,
-            "elements_dict":{"8": 1.0  , "14": 0.12  , "13": 0.18  , "20": 0.47  ,
-                            "62": 0.04  , "26": 0.004  , "60": 0.008  , "72": 0.004  , "29": 0.01  }, 
-            "scale" : 0.01} 
+        {"b0" : 4.3298e-09 , "b1" : 6.7732e-07, "elements_dict" :  {"8": 1.0, "12": 0.51, "14": 0.61, "13": 0.07, "20": 0.04, "62": 0.02,"26": 0.028, "60": 0.002, "71": 0.003, "72": 0.003, "29": 0.02}},
+        {"b0" : 1.3298e-09 , "b1" : 7.7732e-07, "elements_dict" : {"8": 0.54, "26": 0.15, "12": 1.0, "29": 0.038,"92": 0.0052, "60": 0.004, "31": 0.03, "71": 0.003}},
+        {"b0" : 5.3298e-09 , "b1" : 3.7732e-07, "elements_dict" : {"8": 1.0, "14": 0.12, "13": 0.18, "20": 0.47,"62": 0.04, "26": 0.004, "60": 0.008, "72": 0.004, "29": 0.01}} 
         ]
 
     # Generate the phases
@@ -147,9 +127,8 @@ def test_generate_two_sphere():
 def test_gen_EDXS () : 
     
     b_dict = generate_brem_params(42)
-    assert b_dict["b0"] > 0.0 
-    assert b_dict["b1"] < 0.0
-    assert b_dict["b1"]**2 - 4*b_dict["b2"] <= 0
+    assert b_dict["b0"] <= 1e-7 
+    assert b_dict["b1"] <= 1e-7
 
     phases, dicts = generate_random_phases(n_phases=3,seed = 42)
     np.testing.assert_array_less(-1e-30, phases)

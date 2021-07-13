@@ -1,8 +1,6 @@
-from copy import deepcopy
-from hyperspy.misc.material import density_of_mixture
 import numpy as np
 from snmfem.models import PhysicalModel
-from snmfem.models.EDXS_function import continuum_xrays, gaussian, read_lines_db, read_compact_db
+from snmfem.models.EDXS_function import G_bremsstrahlung, continuum_xrays, gaussian, read_lines_db, read_compact_db, update_bremsstrahlung, elts_dict_from_dict_list
 from snmfem.conf import DEFAULT_EDXS_PARAMS
 from snmfem.utils import arg_helper, symbol_to_number_dict, symbol_to_number_list
 from snmfem.models.absorption_edxs import absorption_correction, det_efficiency, det_efficiency_from_curve
@@ -40,7 +38,7 @@ class EDXS(PhysicalModel):
         # e_size=1980,
         # e_scale=0.01,
     @symbol_to_number_list
-    def generate_g_matr(self, brstlg=False, norm = True,density = None, toa = 90.0, thickness = 0.0,*,elements_list=[], **kwargs):
+    def generate_g_matr(self, brstlg=False, norm = True,*,elements_list=[], **kwargs):
         """
         Generates a matrix (e_size,n). Each column corresponds to the sum of X-ray characteristic gaussian peaks associated to each shell of the elements of elements_lists. n is then len(elements_list)*number of shells per element.
         :elements_list: List of integers. Each integer is an element of the model. If None, the g_matr is diagonal matrix of size e_size.
@@ -73,7 +71,7 @@ class EDXS(PhysicalModel):
                         else : 
                             D = det_efficiency(energy,self.params_dict["Det"])
 
-                        A = absorption_correction(energy,thickness,toa,density,elements_dict = {elt : 1.0})
+                        A = absorption_correction(energy,**self.params_dict["Abs"],elements_dict = {elt : 1.0})
                         
                         width = self.width_slope * energy + self.width_intercept
                         peaks += (
@@ -87,30 +85,33 @@ class EDXS(PhysicalModel):
                     self.G = np.concatenate((self.G, peaks), axis=1)
                 else : 
                     print("No peak is present in the energy range for element : {}".format(elt))
+            
+            if norm : 
+                self.G /= self.G.sum(axis=0)
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
                 approx_elts = {key : 1.0/len(elements_list) for key in elements_list}
-                brstlg_spectrum = continuum_xrays(self.x,self.params_dict,thickness,toa,density,elements_dict=approx_elts)[np.newaxis].T
+                brstlg_spectrum = G_bremsstrahlung(self.x,self.params_dict,elements_dict=approx_elts)
                 if np.max(brstlg_spectrum) > 0.0 : 
                     self.G = np.concatenate((self.G, brstlg_spectrum), axis=1)
                 else : 
                     print("Bremsstrahlung parameters were not provided, bkgd not added in G")
                     self.bkgd_in_G = False
 
-            if norm : 
-                self.G /= self.G.sum(axis=0)
+            
 
    
 
     def generate_phases(self, phases_parameters) : 
         self.phases = []
+        unique_elts = elts_dict_from_dict_list([x["elements_dict"] for x in phases_parameters])
         for p in phases_parameters:
-            # self.set_brstlg_dict(**p)
+            p.update({"elements_dict" : unique_elts})
             self.phases.append(self.generate_spectrum(**p))
         self.phases = np.array(self.phases)
 
     @symbol_to_number_dict
-    def generate_spectrum(self, thickness = 10.0e-7, toa = 90.0, density = None,atomic_fraction = False, scale = 1.0,*,elements_dict = {}):
+    def generate_spectrum(self, b0=0, b1 = 0, E0=200, scale = 1.0,*,elements_dict = {}):
         """
         Generates an EDXS spectrum with the specified elements. The continuum x-rays are added and scaled to the gaussian peaks.
         :elements_dict: dictionnary of elements with concentration in that way {"integer":concentration}
@@ -128,7 +129,7 @@ class EDXS(PhysicalModel):
                         D = det_efficiency_from_curve(energy,self.params_dict["Det"])
                     else : 
                         D = det_efficiency(energy,self.params_dict["Det"])
-                    A = absorption_correction(energy,thickness,toa,density,elements_dict = {elt : 1.0})
+                    A = absorption_correction(energy,**self.params_dict["Abs"],elements_dict = {elt : 1.0})
                 
                     width = self.width_slope * energy + self.width_intercept
                     temp += (
@@ -137,20 +138,21 @@ class EDXS(PhysicalModel):
                         * gaussian(self.x, energy, width / 2.3548)
                     )*A*D
         temp /= temp.sum()
-        temp += continuum_xrays(self.x,self.params_dict,thickness, toa, density, atomic_fraction, elements_dict=elements_dict) * scale
+        temp += continuum_xrays(self.x,self.params_dict,b0,b1,E0,elements_dict=elements_dict) * scale
         
         return temp
 
-    # def set_brstlg_dict(self, b0 , b1, b2, **kwargs) : 
-    #     default_brstlg_pars = {
-    #         "b0" : self.params_dict["b0"],
-    #         "b1" : self.params_dict["b1"],
-    #         "b2" : self.params_dict["b2"]
-    #         }
-    #     input_dict = {"b0" : b0, "b1" : b1, "b2" : b2}
-    #     new_params_dict = arg_helper(input_dict, default_brstlg_pars)
-    #     self.params_dict.update(new_params_dict)
+def G_EDXS (model_params,g_params,part_P = None, G = None) : 
+    if G is None : 
+        model = EDXS(**model_params)
+        model.generate_g_matr(**g_params)
+        G = model.G
 
+    if part_P is None : 
+        return G
+    else : 
+        new_G = update_bremsstrahlung(G,part_P,model_params,g_params["elements_list"])
+        return new_G
 
  # def generate_abs_coeff(self, elements_dict = None):
     #     """

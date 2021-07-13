@@ -14,6 +14,11 @@ def rescaled_DA(D,A) :
     A_rescale = np.diag(s)@A
     return D_rescale, A_rescale
 
+def bin_spim(data,n,m):
+    # return a matrix of shape (n,m,k)
+    bs = data.shape[0]//n,data.shape[1]//m  # blocksize averaged over
+    k = data.shape[2]
+    return np.reshape(np.array([np.sum(data[k1*bs[0]:(k1+1)*bs[0],k2*bs[1]:(k2+1)*bs[1]],axis=(0,1)) for k1 in range(n) for k2 in range(m)]),(n,m,k))
 
 def number_to_symbol_dict (func) : 
     """

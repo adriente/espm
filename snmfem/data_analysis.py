@@ -17,7 +17,7 @@ def load_hs_data(filename) :
         offset = spim.axes_manager[2].offset
         scale = spim.axes_manager[2].scale
         size = spim.axes_manager[2].size
-        X = spim.data.astype("float32")
+        X = spim.data.astype("float64")
         nx, ny, ns = X.shape
         Xflat = X.transpose([2,0,1]).reshape(ns, nx*ny)
         shape_2d = nx,ny
