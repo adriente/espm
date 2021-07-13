@@ -1,4 +1,5 @@
 from re import A
+from snmfem import models
 import numpy as np
 from snmfem.conf import log_shift, dicotomy_tol
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
@@ -182,12 +183,19 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
     return num/(denum + nu)
 
 
-def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_simplex):
+def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_simplex, model_params = None, g_params = None ):
     # Handle initialization
     if G is None : 
         skip_second = True
         # G = sparse.diags(np.ones(X.shape[0]).astype(X.dtype))        
         G = np.diag(np.ones(X.shape[0]).astype(X.dtype))
+
+    elif callable(G) : 
+        assert not(model_params is None), "You need to input model_parameters"
+        assert not(g_params is None), "You need to input g_parameters"
+        G = G(model_params,g_params)
+        skip_second = False
+
     else:
         skip_second = False
 
@@ -198,7 +206,7 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
             if force_simplex:
                 scale = np.sum(A, axis=0, keepdims=True)
                 A = A/scale 
-        D = np.linalg.lstsq(A.T, X.T,rcond=None)[0].T
+        D = np.abs(np.linalg.lstsq(A.T, X.T,rcond=None)[0].T)
         if skip_second:
             P = D
         else:

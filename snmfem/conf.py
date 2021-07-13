@@ -28,12 +28,14 @@ SCRIPT_CONFIG_PATH = BASE_PATH.parent / Path("scripts/config/")
 HSPY_MAC = macs.ffast_mac
 
 DEFAULT_EDXS_PARAMS = {
-    "b0" : 0.0,
-    "b1" : 0.0,
-    "b2" : 0.0,
+    "E0" : 200,
     "Det" : DEFAULT_SDD_EFF,
-    "height" : 0.0,
-    "length" : 0.0
+    "Abs" : {
+        "thickness" : 0.0,
+        "toa" : 90,
+        "density" : None,
+        "atomic_fraction" : False
+    }
 }
 
 log_shift = 1e-14

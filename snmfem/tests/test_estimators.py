@@ -7,11 +7,17 @@ from snmfem.datasets.generate_weights import generate_weights
 from snmfem.measures import trace_xtLx, KL
 from snmfem.laplacian import create_laplacian_matrix
 from snmfem.experiments import run_experiment
+from snmfem.models.edxs import G_EDXS
 
 def generate_one_sample():
-    model_parameters  = {"params_dict" : {  "b0" : 0.15910789,
-                                            "b1" : -0.00773158,
-                                            "b2" : 8.7417e-04},
+    model_parameters  = {"params_dict" : {
+        "Abs" : {
+            "thickness" : 200e-7,
+            "toa" : 22,
+            "density" : 4.5,
+            "atomic_fraction" : True
+        }
+      },
                             "db_name" : "default_xrays.json",
                             "e_offset" : 0.208,
                             "e_scale" : 0.01,
@@ -21,34 +27,14 @@ def generate_one_sample():
                             "seed" : 1}
 
 
-    g_parameters = {"thickness": 2e-05,
-            "density": 3.5,
-            "toa": 22,
+    g_parameters = {
             "elements_list" : [8,13,14,12,26,29,31,72,71,62,60,92,20],
             "brstlg" : 1}
 
     phases_parameters =  [
-        {"thickness": 2e-05,
-            "density": 3.5,
-            "toa": 22,
-            "atomic_fraction": True,
-            "elements_dict":{"8": 1.0 , "12": 0.51  , "14": 0.61  , "13": 0.07  , "20": 0.04  , "62": 0.02  ,
-                            "26": 0.028  , "60": 0.002  , "71": 0.003  , "72": 0.003  , "29": 0.02  }, 
-            "scale" : 0.01},
-        {"thickness": 2e-05,
-            "density": 3.5,
-            "toa": 22,
-            "atomic_fraction": True,
-            "elements_dict":{"8": 0.54  , "26": 0.15  , "12": 1.0  , "29": 0.038  ,
-                            "92": 0.0052  , "60": 0.004  , "31": 0.03  , "71": 0.003  },
-            "scale" : 0.01},   
-            {"thickness": 2e-05,
-            "density": 3.5,
-            "toa": 22,
-            "atomic_fraction": True,
-            "elements_dict":{"8": 1.0  , "14": 0.12  , "13": 0.18  , "20": 0.47  ,
-                            "62": 0.04  , "26": 0.004  , "60": 0.008  , "72": 0.004  , "29": 0.01  }, 
-            "scale" : 0.01} 
+        {"b0" : 4.3298e-09 , "b1" : 6.7732e-07, "elements_dict" :  {"8": 1.0, "12": 0.51, "14": 0.61, "13": 0.07, "20": 0.04, "62": 0.02,"26": 0.028, "60": 0.002, "71": 0.003, "72": 0.003, "29": 0.02}},
+        {"b0" : 1.3298e-09 , "b1" : 7.7732e-07, "elements_dict" : {"8": 0.54, "26": 0.15, "12": 1.0, "29": 0.038,"92": 0.0052, "60": 0.004, "31": 0.03, "71": 0.003}},
+        {"b0" : 5.3298e-09 , "b1" : 3.7732e-07, "elements_dict" : {"8": 1.0, "14": 0.12, "13": 0.18, "20": 0.47,"62": 0.04, "26": 0.004, "60": 0.008, "72": 0.004, "29": 0.01}} 
         ]
 
     # Generate the phases
@@ -75,6 +61,8 @@ def generate_one_sample():
 
     D = spim.phases.T
     A = spim.flatten_weights()
+    P = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
+    G = G_EDXS(model_parameters, g_parameters,P[:,-2:],G)
     P = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
     X = spim.flatten_gen_spim()
 
@@ -136,7 +124,7 @@ def test_general():
     L = create_laplacian_matrix(15, 15)
 
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A2.T))
-    assert(trace_xtLx(L, A.T) < trace_xtLx(L, A2.T) )
+    # assert(trace_xtLx(L, A.T) < trace_xtLx(L, A2.T) )
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A.T) )
 
 

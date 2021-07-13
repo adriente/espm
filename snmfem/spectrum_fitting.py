@@ -38,7 +38,7 @@ def residual(pars,x,data = None) :
     kwargs = params_to_ndict(pars)
     kwargs["params_dict"] = arg_helper(kwargs["params_dict"],DEFAULT_EDXS_PARAMS)
     
-    model = ef.continuum_xrays(x,atomic_fraction = True,**kwargs)    
+    model = ef.continuum_xrays(x,**kwargs)    
     
     if data is None : 
         return model
@@ -73,12 +73,10 @@ def ndict_to_params (input_dict) :
         else :
             # The elements are not learned (they represent too many variables)
             #All positive expect for b1 which is negative
-            
-            params.add(par[0],value = par[1], min = 0)
             if elt_match : 
-                params[par[0]].vary=False
-            elif par[0] == "params_dict__b1"  :
-                params[par[0]].set(value = par[1],min = -np.inf, max = 0)
+                params.add(par[0],value = par[1], vary=False)
+            else : 
+                params.add(par[0],value = par[1], min = 0)
     return params
 
 

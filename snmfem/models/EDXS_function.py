@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.special import erfc
 from snmfem.models.absorption_edxs import det_efficiency_from_curve,det_efficiency,absorption_correction
+from snmfem.models import edxs as e
+from collections import Counter
     
 def gaussian(x, mu, sigma):
     """
@@ -25,32 +27,100 @@ def read_compact_db (elt,db_dict) :
     cs = db_dict[str(elt)]["cs"] 
     return energies, cs
 
-def bremsstrahlung(x, b0, b1, b2):
+def chapman_bremsstrahlung(x, b0, b1, b2):
     return b0 / x + b1 + b2 * x
+    
+def lifshin_bremsstrahlung(x, b0, b1, E0 = 200):
+    lbb0 = lifshin_bremsstrahlung_b0(x,b0,E0)
+    lbb1 = lifshin_bremsstrahlung_b1(x,b1,E0)
+    return lbb0 + lbb1
+
+def lifshin_bremsstrahlung_b0(x, b0, E0 = 200):
+    assert np.inf not in 1/x, "You have 0.0 in your energy scale. Retry with a cropped energy scale"
+    return b0*(E0 - x)/x
+
+def lifshin_bremsstrahlung_b1(x, b1, E0 = 200):
+    assert np.inf not in 1/x, "You have 0.0 in your energy scale. Retry with a cropped energy scale"
+    return b1*np.power((E0 - x),2)/x
 
 def shelf(x, height, length):
     return height * erfc(x - length)
 
-def continuum_xrays(x,params_dict,thickness = 10.0e-7, toa = 22.0, density = None,atomic_fraction = True,*,elements_dict = {}):
+def continuum_xrays(x,params_dict={},b0= 0, b1 = 0, E0 = 200,*,elements_dict = {"Si" : 1.0} ):
     """
     Computes the continuum X-ray based on the brstlg_pars set during init.
     The function is built in a way so that even an incomplete brstlg_pars dict is not a problem.
     """
-    B = bremsstrahlung(
+    if len(params_dict) == 0 : 
+        return 0*x
+    
+    B = lifshin_bremsstrahlung(
             x,
-            params_dict["b0"],
-            params_dict["b1"],
-            params_dict["b2"],
+            b0 = b0,
+            b1 = b1,
+            E0 = E0
         )
     
-    A = absorption_correction(x,thickness,toa, density,atomic_fraction,elements_dict= elements_dict)
+    A = absorption_correction(x,**params_dict["Abs"],elements_dict=elements_dict)
     
     if type(params_dict["Det"]) == str : 
         D = det_efficiency_from_curve(x,params_dict["Det"])
     else : 
         D = det_efficiency(x,params_dict["Det"])
     
-    S = shelf(x, params_dict["height"], params_dict["length"])
+    return B * A * D 
+
+def G_bremsstrahlung(x,params_dict,*,elements_dict = {}):
+    """
+    Computes the continuum X-ray based on the brstlg_pars set during init.
+    The function is built in a way so that even an incomplete brstlg_pars dict is not a problem.
+    """
     
-    return B * A * D + S
+    A = absorption_correction(x,**params_dict["Abs"],elements_dict= elements_dict)
+    
+    if type(params_dict["Det"]) == str : 
+        D = det_efficiency_from_curve(x,params_dict["Det"])
+    else : 
+        D = det_efficiency(x,params_dict["Det"])
+
+    B0 = A*D*lifshin_bremsstrahlung_b0(
+            x,
+            b0 = 1,
+            E0 = params_dict["E0"]
+        )
+
+    B1 = A*D*lifshin_bremsstrahlung_b1(
+        x,
+        b1=1,
+        E0 = params_dict["E0"]
+    )
+
+    B = np.vstack((B0,B1)).T
+    
+    return B
+    
+def elts_dict_from_P (part_P,elements_list) : 
+    flat_P = np.sum(part_P,axis = 1)/np.sum(part_P)
+    elements_dict = {}
+    for i,elt in enumerate(elements_list) :
+        elements_dict[elt] = flat_P[i] 
+    return elements_dict
+
+def elts_dict_from_dict_list (dict_list) : 
+    unique_elts_dict = sum((Counter(x) for x in dict_list),Counter())
+    sum_elts = sum(unique_elts_dict.values())
+    for e in unique_elts_dict : 
+        unique_elts_dict[e] /= sum_elts
+    return unique_elts_dict
+
+
+def update_bremsstrahlung (G,part_P,model_parameters,elements_list) : 
+    elts = elts_dict_from_P(part_P,elements_list)
+    model = e.EDXS(**model_parameters)
+    B = G_bremsstrahlung(model.x,model.params_dict,elements_dict=elts)
+    new_G = G.copy()
+    new_G[:,-2:] = B
+    return new_G
+
+
 

@@ -1,0 +1,30 @@
+{
+    "model": "EDXS",
+    "data_file": "1537_Robin_cropped.hspy",
+    "model_parameters": {
+        "db_name": "default_xrays.json",
+        "params_dict": {
+            "b0": 0.02150441,
+            "b1": -1.7220e-4,
+            "b2": 3.8651e-9
+        }
+    },
+    "g_parameters": {
+        "brstlg": true,
+        "elements_list": [
+            "Al",
+            "Cu"  ,
+            "Fe"  ,
+            "Ba"  ,
+            "Zn"  ,
+            "Zr"  ,
+            "Mg"  ,
+            "Ag",
+            "Pb"  
+        ],
+        "thickness": 3.2214e-10,
+        "density": null,
+        "toa": 90,
+        "atomic_fraction": true
+    }
+}
