@@ -1475,7 +1475,7 @@ The general loss is
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\mathcal{L}(A,D)=\sum_{\ell,p}\left[-X_{\ell,p}\log\left(\sum_{i}D_{\ell,i}^{\prime}A_{i,p}\right)+\sum_{i}D_{\ell,i}^{\prime}A_{i,p}\right]
+\mathcal{L}(A,D)=\sum_{\ell,p}\left[-X_{\ell,p}\log\left(\sum_{k}D_{\ell,k}^{\prime}A_{k,p}\right)+\sum_{k}D_{\ell,k}^{\prime}A_{k,p}\right]
 \]
 
 \end_inset
@@ -1529,12 +1529,12 @@ f_{J}(x,a,d,q):=-x\sum_{i}q_{i}\log\left(\frac{a_{i}d_{i}}{q_{i}}\right)+\sum_{i
 Now les us write an auxiliary objective function
 \begin_inset Formula 
 \begin{align*}
-\mathcal{L}_{J}(A,D,Q) & :=\sum_{\ell,p}\left[f_{J}(X_{\ell,p},A_{\ell,p},D_{\ell,p},Q_{\ell,p})\right]\\
- & =\sum_{\ell,p}\left[-X_{\ell,p}\sum_{i}Q_{\ell,p,i}\log\left(\frac{A_{i,p}D_{\ell,i}}{Q_{\ell,p,i}}\right)+\sum_{i}A_{i,p}D_{\ell,i}\right]\\
- & =-\sum_{p,i}\log\left(A_{i,p}\right)\sum_{\ell}X_{\ell,p}Q_{\ell,p,i}\\
- & -\sum_{\ell,i}\log\left(D_{\ell,i}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,i}\\
- & +\sum_{\ell,p}\sum_{i}X_{\ell,p}Q_{\ell,p,i}\log\left(Q_{\ell,p,i}\right)\\
- & +\sum_{\ell,p}\sum_{i}A_{i,p}D_{\ell,i}
+\mathcal{L}_{J}(A,D,Q) & :=\sum_{\ell,p}\left[f_{J}(X_{\ell,p},A_{\cdot,p},D_{\ell,\cdot},Q_{\ell,p})\right]\\
+ & =\sum_{\ell,p}\left[-X_{\ell,p}\sum_{k}Q_{\ell,p,k}\log\left(\frac{A_{k,p}D_{\ell,k}}{Q_{\ell,p,k}}\right)+\sum_{k}A_{k,p}D_{\ell,k}\right]\\
+ & =-\sum_{p,k}\log\left(A_{k,p}\right)\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}\\
+ & -\sum_{\ell,k}\log\left(D_{\ell,k}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,k}\\
+ & +\sum_{\ell,p}\sum_{k}X_{\ell,p}Q_{\ell,p,k}\log\left(Q_{\ell,p,k}\right)\\
+ & +\sum_{\ell,p}\sum_{k}A_{k,p}D_{\ell,k}
 \end{align*}
 
 \end_inset
@@ -1862,7 +1862,88 @@ D_{\ell,p}=\frac{\sum_{i}X_{\ell,i}Q_{\ell,i,p}^{t}}{\sum_{p}A_{p,i}^{t}}
 
 \end_inset
 
+Alternatively, we need to take into account that 
+\begin_inset Formula $D=GP$
+\end_inset
 
+.
+ So we find
+\begin_inset Formula 
+\begin{align*}
+\left.\nabla_{P}\mathcal{D}_{J}(A,P,Q)\right|_{c_{0},k_{0}} & :=\left.\nabla_{P}\left(-\sum_{\ell,k}\log\left(D_{\ell,k}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,k}+\sum_{\ell,p}\sum_{k}A_{k,p}D_{\ell,k}\right)_{D=GP}\right|_{c_{0},k_{0}}\\
+ & =\left.\nabla_{P}\left(-\sum_{\ell,k,p}\log\left(\sum_{c}G_{\ell,c}P_{c,k}\right)X_{\ell,p}Q_{\ell,p,k}+\sum_{\ell,p,c,k}A_{k,p}G_{\ell,c}P_{c,k}\right)\right|_{c_{0},k_{0}}\\
+ & =-\sum_{\ell}\frac{G_{\ell,c_{0}}\sum_{p}X_{\ell,p}Q_{\ell,p,k_{0}}}{\sum_{c}G_{\ell,c}P_{c,k_{0}}}+\sum_{p,\ell}A_{k_{0},p}G_{\ell,c_{0}}
+\end{align*}
+
+\end_inset
+
+In matrix notation, we find
+\begin_inset Formula 
+\[
+\nabla_{P}\mathcal{D}_{J}(A,P,Q)=-G^{T}\left(\left[XQ\right]\oslash GP\right)+G^{T}1^{\ell,p}A^{T}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\left[XQ\right]_{\ell,k}=\sum_{p}X_{\ell,p}Q_{\ell,p,k}.$
+\end_inset
+
+This is a bit annoying, because come back to a multiplicative algorithm!
+ I believe we have to live with this...
+\begin_inset Formula 
+\begin{align*}
+P^{t+1} & =P^{t}-\gamma_{t}\nabla_{P}\mathcal{D}_{J}(A,P,Q)\\
+ & =P^{t}-\gamma_{t}\left[-G^{T}\left(\left[XQ\right]\oslash GP\right)+G^{T}1^{\ell,p}A^{T}\right]\\
+ & =P^{t}+\gamma_{t}\left[G^{T}\left(\left[XQ\right]\oslash GP\right)-G^{T}1^{\ell,p}A^{T}\right]\\
+ & =\left(P^{t}\oslash G^{T}1^{\ell,p}A^{T}\right)\circ\left(G^{T}\left(\left[XQ\right]\oslash GP^{t}\right)\right)
+\end{align*}
+
+\end_inset
+
+where the learning rate is set to
+\begin_inset Formula 
+\[
+\gamma_{t}=P^{t}\oslash G^{T}1^{\ell,p}A^{T}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let us replace Q with its current value with respect of 
+\begin_inset Formula $P,A$
+\end_inset
+
+.
+ We have
+\begin_inset Formula 
+\begin{align*}
+\left[XQ\right]_{\ell,k} & =\sum_{p}X_{\ell,p}Q_{\ell,p,k}\\
+ & =\sum_{p}X_{\ell,p}\frac{A_{k,p}D_{\ell,k}}{\sum_{j}A_{j,p}D_{\ell,j}}\\
+ & =D_{\ell,k}\sum_{p}A_{k,p}\frac{X_{\ell,p}}{\sum_{j}A_{j,p}D_{\ell,j}}\\
+ & =\left[D\circ\left(\left(X\oslash DA\right)A^{T}\right)\right]_{\ell,k}
+\end{align*}
+
+\end_inset
+
+Given that 
+\begin_inset Formula $D=GP$
+\end_inset
+
+, we find
+\begin_inset Formula 
+\begin{align*}
+P^{t+1} & =\left(P^{t}\oslash G^{T}1^{\ell,p}A^{T}\right)\circ\left(G^{T}\left(\left[XQ\right]\oslash GP^{t}\right)\right)\\
+ & =\left(P^{t}\oslash G^{T}1^{\ell,p}A^{T}\right)\circ\left(G^{T}\left(GP^{t}\circ\left(\left(X\oslash GP^{t}A\right)A^{T}\right)\oslash GP^{t}\right)\right)\\
+ & =\left(P^{t}\oslash G^{T}1^{\ell,p}A^{T}\right)\circ\left(G^{T}\left(X\oslash GP^{t}A\right)A^{T}\right)
+\end{align*}
+
+\end_inset
+
+which is the same update as we had previously!!!
 \end_layout
 
 \begin_layout Paragraph
@@ -1873,7 +1954,7 @@ Q update:
 We simply do 
 \begin_inset Formula 
 \[
-Q_{\ell,p,i}=\frac{A_{i,p}^{t}D_{\ell,i}^{t}}{\sum_{j}A_{j,p}^{t}D_{\ell,j}^{t}}.
+Q_{\ell,p,k}=\frac{A_{k,p}^{t}D_{\ell,k}^{t}}{\sum_{j}A_{j,p}^{t}D_{\ell,j}^{t}}.
 \]
 
 \end_inset

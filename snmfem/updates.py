@@ -227,3 +227,25 @@ def update_q(D, A, eps=log_shift):
     Ntmp = np.expand_dims(D @ A, axis=2) 
     return Atmp * (Dtmp / (Ntmp+eps))
     
+def multiplicative_step_pq(X, G, P, A, eps=log_shift, safe=True):
+    """
+    Multiplicative step in P using the PQ technique.
+    """
+
+    if safe:
+        # Allow for very small negative values!
+        assert(np.sum(A<-log_shift/2)==0)
+        assert(np.sum(P<-log_shift/2)==0)
+        assert(np.sum(G<-log_shift/2)==0)
+
+
+    GP = G @ P
+    Q = update_q(GP, A, eps=log_shift)
+    
+    XQ = np.sum(np.expand_dims(X, axis=2) * Q, axis=1)
+    
+    term1 = G.T @ (XQ / (GP + eps)) 
+    
+    term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(A, axis=1,  keepdims=True).T
+    
+    return P / term2 * term1
