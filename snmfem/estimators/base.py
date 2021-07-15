@@ -62,7 +62,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.detailed_loss_ = [loss]
         return loss
 
-    def fit_transform(self, X, y=None, G=None, P=None, A=None, shape_2d = None, eval_print=10, true_D = None, true_A = None,model_params = None, g_params = None):
+    def fit_transform(self, X, y=None, G=None, P=None, A=None, shape_2d = None, eval_print=10, true_D = None, true_A = None,model_params = None, g_params = None, fixed_A_inds = None):
         """Learn a NMF model for the data X and returns the transformed data.
         This is more efficient than calling fit followed by transform.
         Parameters
@@ -79,6 +79,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         """
         self.X_ = self._validate_data(X, dtype=[np.float64, np.float32])
         self.const_KL_ = None
+
+        self.fixed_A_inds_ = fixed_A_inds
         
         if self.skip_G:
             G = None
@@ -90,7 +92,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.model_params_ = model_params
         self.g_params_ = g_params
         
-        self.G_, self.P_, self.A_ = initialize_algorithms(self.X_, G, P, A, self.n_components, self.init, self.random_state, self.force_simplex, model_params = self.model_params_, g_params = self.g_params_)
+        self.G_, self.P_, self.A_ = initialize_algorithms(self.X_, G, P, A, self.n_components, self.init, self.random_state, self.force_simplex, model_params = self.model_params_, g_params = self.g_params_, fixed_A_inds = self.fixed_A_inds_)
         
         self.shape_2d_ = shape_2d
         if not(self.shape_2d_ is None) :

@@ -22,7 +22,7 @@ class SmoothNMF(NMF):
         self.lambda_L = lambda_L
 
     def _iteration(self, P, A):
-        A = multiplicative_step_a(self.X_, self.G_, P, A, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2)
+        A = multiplicative_step_a(self.X_, self.G_, P, A, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_A_inds=self.fixed_A_inds_)
         P = multiplicative_step_p(self.X_, self.G_, P, A, eps=self.log_shift, safe=self.debug, l2=self.l2)
         if self.G_func_ : 
             self.G_ = self.G_func_(self.model_params_,self.g_params_,part_P = P[:-2,:],G = self.G_)
