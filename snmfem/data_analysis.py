@@ -24,8 +24,8 @@ def set_analysis_parameters (s,beam_energy = 200, azimuth_angle = 0.0, elevation
     s.metadata.Acquisition_instrument.TEM.Detector.take_off_angle = take_off_angle(tilt_stage,azimuth_angle,elevation_angle)
 
 def get_analysis_parameters (spim) : 
-    if spim is str() : 
-        s = hs.load(data)
+    if type(spim) == type("") : 
+        s = hs.load(spim)
     else : 
         s = spim
     mod_pars = {}
@@ -74,7 +74,7 @@ def get_data (s) :
     return Xflat
 
 def load_hs_data(data) : 
-    if data is str() : 
+    if type(data) == type(""): 
         spim = hs.load(data)
     else : 
         spim = data
