@@ -599,6 +599,17 @@ G(A,A^{t}) & =\sum_{\ell,p}\left[X_{\ell,p}\sum_{i}w_{i}^{t,\ell,k}\log\left(\fr
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+G(A,A^{t})=F(A^{t})+\nabla F(A^{t})(A-A^{t})+\frac{1}{\gamma}D_{GKL}(A,A^{t})
+\]
+
+\end_inset
+
 I am not sure where I am going.
  We have established that
 \begin_inset Formula 
@@ -854,7 +865,7 @@ For
 \begin{align*}
 {\color{blue}R_{2}(A)} & =\frac{\lambda}{2}\text{tr}\left(A^{T}\Delta A\right)\\
  & =\frac{\lambda}{2}\sum_{k}A_{k}^{T}\Delta A_{k}\\
- & \leq\frac{\lambda}{2}\sum_{k}A_{k}^{t}{}^{T}\Delta A_{k}^{t}+2\left(A_{k}-A_{k}^{t}\right)^{T}\Delta A_{k}^{t}+2\sigma(\Delta)\sum_{p,k}\left(A_{k,p}^{t}\log\left(\frac{A_{k,p}^{t}}{A_{k,p}}\right)-A_{k,p}^{t}+A_{k,p}\right)
+ & \leq\frac{\lambda}{2}\sum_{k}A_{k}^{t}{}^{T}\Delta A_{k}^{t}+2\left(A_{k}-A_{k}^{t}\right)^{T}\Delta A_{k}^{t}+2\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)\sum_{p,k}\left(A_{k,p}^{t}\log\left(\frac{A_{k,p}^{t}}{A_{k,p}}\right)-A_{k,p}^{t}+A_{k,p}\right)
 \end{align*}
 
 \end_inset
@@ -868,7 +879,7 @@ As a result, we create an auxiliary defined as
 \begin{align*}
 G\left(A,A^{t}\right) & =\sum_{\ell,p}\left[-\sum_{i}X_{\ell,p}\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}}\left(\log\left(D_{\ell,i}^{\prime}A_{i,p}\right)-\log\left(\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}}\right)\right)+\sum_{i}D_{\ell,i}^{\prime}A_{i,p}\right]\\
  & +\sum_{k,p}\mu_{k}\left[\log\left(A_{k,p}^{t}+\epsilon\right)+\frac{A-A_{k,p}^{t}}{\epsilon+A_{k,p}^{t}}\right]+\sum_{k}\nu_{k}\left(\sum_{p}A_{kp}-1\right)\\
- & +\frac{\lambda}{2}\sum_{i}\left[A_{i}^{t}{}^{T}\Delta A_{i}^{t}+2\left(A_{i}-A_{i}^{t}\right)^{T}\Delta A_{i}^{t}\right]+2\sigma(\Delta)\sum_{i,p}\left(A_{i,p}^{t}\log\left(\frac{A_{i,p}^{t}}{A_{i,p}}\right)-A_{i,p}^{t}+A_{i,p}\right)
+ & +\frac{\lambda}{2}\sum_{i}\left[A_{i}^{t}{}^{T}\Delta A_{i}^{t}+2\left(A_{i}-A_{i}^{t}\right)^{T}\Delta A_{i}^{t}\right]+2\sigma(\Delta)\left(\max_{i,p}A_{i,p}^{t}\right)\sum_{i,p}\left(A_{i,p}^{t}\log\left(\frac{A_{i,p}^{t}}{A_{i,p}}\right)-A_{i,p}^{t}+A_{i,p}\right)
 \end{align*}
 
 \end_inset
@@ -889,14 +900,14 @@ Let us compute the gradient of the auxiliary function
 \begin_inset Formula $A$
 \end_inset
 
-
+ 
 \begin_inset Formula 
 \begin{align*}
 \frac{\partial G(A,A^{t})}{\partial A_{k_{0},p_{0}}} & =\sum_{\ell}D_{\ell,k_{0}}^{\prime}-\frac{1}{A_{k_{0},p_{0}}}\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}\\
  & +\frac{\mu_{k_{0}}}{\epsilon+A_{k_{0},p_{0}}^{t}}+\nu_{k_{0}}\\
- & +\frac{\lambda}{2}\left[2\sum_{k_{2}}A_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+2\sigma(\Delta)\left(-\frac{A_{k_{0},p_{0}}^{t}}{A_{k_{0},p_{0}}}+1\right)\right]\\
- & =-\frac{1}{A_{k_{0},p_{0}}}\left(\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}+\lambda\sigma(\Delta)A_{k_{0},p_{0}}^{t}\right)\\
- & +\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\frac{\mu_{k_{0}}}{\epsilon+A_{k_{0},p_{0}}^{t}}+\lambda\sum_{k_{2}}A_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+\lambda\sigma(\Delta)+\nu_{k_{0}}\\
+ & +\frac{\lambda}{2}\left[2\sum_{k_{2}}A_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+2\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)\left(-\frac{A_{k_{0},p_{0}}^{t}}{A_{k_{0},p_{0}}}+1\right)\right]\\
+ & =-\frac{1}{A_{k_{0},p_{0}}}\left(\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}+\lambda\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)A_{k_{0},p_{0}}^{t}\right)\\
+ & +\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\frac{\mu_{k_{0}}}{\epsilon+A_{k_{0},p_{0}}^{t}}+\lambda\sum_{k_{2}}A_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+\lambda\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)+\nu_{k_{0}}\\
  & =0
 \end{align*}
 
@@ -905,7 +916,7 @@ Let us compute the gradient of the auxiliary function
 So we obtain we obtain the following solution
 \begin_inset Formula 
 \[
-A_{k_{0},p_{0}}=A_{k_{0},p_{0}}^{t}\frac{\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}+\lambda\sigma(\Delta)A_{k_{0},p_{0}}^{t}}{\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\frac{\mu_{k_{0}}}{\epsilon+A_{k_{0},p_{0}}^{t}}+\lambda\sum_{k_{2}}A_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+\lambda\sigma(\Delta)+\nu_{k_{0}}}
+A_{k_{0},p_{0}}=A_{k_{0},p_{0}}^{t}\frac{\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}+\lambda\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)A_{k_{0},p_{0}}^{t}}{\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\frac{\mu_{k_{0}}}{\epsilon+A_{k_{0},p_{0}}^{t}}+\lambda\sum_{k_{2}}A_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+\lambda\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)+\nu_{k_{0}}}
 \]
 
 \end_inset
@@ -921,8 +932,8 @@ Key computation
 In this subsection, we prove that
 \begin_inset Formula 
 \begin{align*}
-p^{T}Lp & \le p_{t}^{T}Lp_{t}+2\left(p-p_{t}\right)^{T}Lp_{t}+2\sigma(L)D_{GKL}\left(p_{t}||p\right),\\
- & =p_{t}^{T}Lp_{t}+2\left(p-p_{t}\right)^{T}Lp_{t}+2\sigma(L)\left(\sum_{i=1}^{k}p_{i}\log\left(\frac{p_{ti}}{p_{i}}\right)-\sum_{i=1}^{k}p_{ti}+\sum_{i=1}^{k}p_{i}\right)
+p^{T}Lp & \le p_{t}^{T}Lp_{t}+2\left(p-p_{t}\right)^{T}Lp_{t}+2\sigma(L)\left(\max_{i}p_{i}\right)D_{GKL}\left(p_{t}||p\right),\\
+ & =p_{t}^{T}Lp_{t}+2\left(p-p_{t}\right)^{T}Lp_{t}+2\sigma(L)\left(\max_{i}p_{i}\right)\left(\sum_{i=1}^{k}p_{i}\log\left(\frac{p_{ti}}{p_{i}}\right)-\sum_{i=1}^{k}p_{ti}+\sum_{i=1}^{k}p_{i}\right)
 \end{align*}
 
 \end_inset
@@ -939,7 +950,11 @@ p^{T}Lp & \le p_{t}^{T}Lp_{t}+2\left(p-p_{t}\right)^{T}Lp_{t}+2\sigma(L)D_{GKL}\
 \begin_inset Formula $\sigma(L)=\|L\|_{op}.$
 \end_inset
 
- Here is some key computation
+ 
+\end_layout
+
+\begin_layout Standard
+Here is some key computation
 \begin_inset Formula 
 \[
 \|p-q\|^{2}\leq2D_{GKL}\left(p||q\right)
@@ -977,7 +992,7 @@ D_{GKL}\left(p||q\right) & =\sum_{i=1}^{k}p_{i}\log\left(\frac{p_{i}}{q_{i}}\rig
  & =D_{V}(p\|q)\\
  & =V(p)-\left(V(q)+\nabla V(q)^{T}(p-q)\right)\\
  & =\frac{1}{2}\left(q-p\right)^{T}\mathcal{H}(\tilde{p})\left(q-p\right)\\
- & \geq\frac{1}{2}\|p-q\|^{2}
+ & \geq\frac{1}{2}\frac{1}{\max_{i}p_{i}}\|p-q\|^{2}
 \end{align*}
 
 \end_inset
@@ -998,7 +1013,7 @@ There exist at least a
 
 \begin_inset Formula 
 \[
-\mathcal{H}(p)=\left[\frac{\partial^{2}V}{\partial p_{i}\partial p_{j}}\right]_{ij}\geq I
+\mathcal{H}(p)=\left[\frac{\partial^{2}V}{\partial p_{i}\partial p_{j}}\right]_{ij}\geq\frac{1}{\max_{i}p_{i}}I
 \]
 
 \end_inset
@@ -1006,7 +1021,7 @@ There exist at least a
 since
 \begin_inset Formula 
 \[
-\frac{\partial V}{\partial p_{i}}\log\left(p_{i}\right)+1\hspace{1em}\text{and}\hspace{1em}\frac{\partial^{2}V}{\partial p_{i}\partial p_{j}}=\delta_{ij}\frac{1}{p_{i}}\geq1.
+\frac{\partial V}{\partial p_{i}}\log\left(p_{i}\right)+1\hspace{1em}\text{and}\hspace{1em}\frac{\partial^{2}V}{\partial p_{i}\partial p_{j}}=\delta_{ij}\frac{1}{p_{i}}\geq\frac{1}{\max_{i}p_{i}}.
 \]
 
 \end_inset
@@ -1020,12 +1035,20 @@ Furthermore a tailor developement of
 \begin{align*}
 p^{T}Lp & =p_{t}^{T}Lp_{t}+2\left(p-p_{t}\right)^{T}Lp_{t}+\left(p-p_{t}\right)^{T}L\left(p-p_{t}\right)\\
  & \leq p_{t}^{T}Lp_{t}+2\left(p-p_{t}\right)^{T}Lp_{t}+\sigma(L)\|p-p_{t}\|^{2}\\
- & \leq p_{t}^{T}Lp_{t}+2\left(p-p_{t}\right)^{T}Lp_{t}+2\sigma(L)D_{GKL}\left(p_{t}||p\right)
+ & \leq p_{t}^{T}Lp_{t}+2\left(p-p_{t}\right)^{T}Lp_{t}+2\left(\max_{i}p_{i}\right)\sigma(L)D_{GKL}\left(p_{t}||p\right)
 \end{align*}
 
 \end_inset
 
+Note that is only true if 
+\begin_inset Formula $p\leq1!!!!$
+\end_inset
 
+ If 
+\begin_inset Formula $p_{t}>1,$
+\end_inset
+
+ we can simply renormalize the bound
 \end_layout
 
 \begin_layout Section
@@ -1232,6 +1255,809 @@ where
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Section
+Projected algorithm
+\end_layout
+
+\begin_layout Standard
+The definition of the Bregman divergence is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+D_{f}(B\|A)=f(B)-\langle\nabla f(A),B-A\rangle-f(A)
+\]
+
+\end_inset
+
+ If we select 
+\begin_inset Formula $f(A)=\sum_{i}A_{i}\log(A_{i})=-H(A)$
+\end_inset
+
+, we have 
+\begin_inset Formula $\nabla f(A)=\log\left(A\right)+1$
+\end_inset
+
+ and
+\begin_inset Formula 
+\begin{align*}
+D_{f}(B\|A) & =f(B)-\langle\nabla f(A),B-A\rangle-f(A)\\
+ & =\sum_{i}B_{i}\log(B_{i})-\langle\log\left(A\right)+1,B-A\rangle-\sum_{i}A_{i}\log(A_{i})\\
+ & =\sum_{i}\left[B_{i}\log(B_{i})-B_{i}\log\left(A_{i}\right)-B_{i}+A_{i}\right]\\
+ & =D_{GKL}(B\|A)
+\end{align*}
+
+\end_inset
+
+From the definition, we have
+\begin_inset Formula 
+\[
+f(B)=f(A)+\langle\nabla f(A),B-A\rangle+D_{f}(B\|A)
+\]
+
+\end_inset
+
+Let us use this relation in our problem and assume we would like to minimize
+ 
+\begin_inset Formula $-\langle X,\log(GPA)\rangle+\langle\mathbf{1}^{\ell,p},GPA\rangle$
+\end_inset
+
+.
+ We start with 
+\begin_inset Formula $f(A)=-\langle X,\log(GPA)\rangle$
+\end_inset
+
+ and find 
+\begin_inset Formula 
+\begin{align*}
+f(A) & =f(A_{t})+\langle\nabla f(A^{t}),A-A^{t}\rangle+D_{f}(A\|A^{t})\\
+ & =-\langle X,\log(GPA^{t})\rangle+\langle\nabla f(A^{t}),A-A^{t}\rangle+D_{f}(A\|A^{t})\\
+ & =
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Idea from Guillaume
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+f(x) & \leq f(x_{t})+\langle\nabla f(x_{t}),x-x_{t}\rangle+D_{B}(x\|x_{t})\\
+ & =f(x_{t})+\langle\Pi\nabla f(x_{t}),x-x_{t}\rangle+D_{B}(x_{t}\|x)
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\text{s.t. }x\in S
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $D_{B}$
+\end_inset
+
+ is the bregman divergence
+\begin_inset Formula 
+\[
+D_{B}(x_{t}\|x)=-\sum_{i}x_{ti}\log\left(\frac{x_{i}}{x_{it}}\right)
+\]
+
+\end_inset
+
+
+\begin_inset Formula $\Pi:$
+\end_inset
+
+ projection on 
+\begin_inset Formula $\{x|x^{T}1=0\}$
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\min_{x_{i}}\sum_{i=1}^{K}g_{ti}x_{i}-\sum
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+regle d'Armiro
+\end_layout
+
+\begin_layout Subsection
+Some tests
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula 
+\[
+F(A)=-\langle X,\log(DA)\rangle+\langle\mathbf{1}^{\ell,p},DA\rangle
+\]
+
+\end_inset
+
+and define 
+\begin_inset Formula $G(A,A^{t})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+G(A,A^{t})=F(A^{t})+\nabla F(A^{t})(A-A^{t})+\frac{1}{\gamma}D_{F}(A\|A^{t})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\nabla F(A^{t})=-D^{T}\left(X\oslash DA\right)+D^{T}\mathbf{\mathbf{1}}^{\ell,p}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+D_{F}(A\|A^{t}) & =F(A)-\langle\nabla F(A^{t}),A-A^{t}\rangle-F(A^{t})\\
+ & =-\langle X,\log(DA)\rangle+\langle\mathbf{1}^{\ell,p},DA\rangle\\
+ & +\langle D^{T}\left(X\oslash DA^{t}\right),(A-A^{t})\rangle-\langle D^{T}\mathbf{\mathbf{1}}^{\ell,p},(A-A^{t})\rangle\\
+ & +\langle X,\log(DA^{t})\rangle-\langle\mathbf{1}^{\ell,p},DA^{t}\rangle
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+G(A,A^{t}) & =\sum_{\ell,p}\left[-\sum_{i}X_{\ell,p}\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}}\left(\log\left(D_{\ell,i}^{\prime}A_{i,p}\right)-\log\left(\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}}\right)\right)+\sum_{i}D_{\ell,i}^{\prime}A_{i,p}\right]\\
+ & =\sum_{\ell,p}\left[X_{\ell,p}\sum_{i}w_{i}^{t,\ell,k}\log\left(\frac{w_{i}^{t,\ell,k}}{Z_{i}^{\ell,p}}\right)+\sum_{i}Z_{i}^{\ell,p}\right]
+\end{align*}
+
+\end_inset
+
+where we have set set 
+\begin_inset Formula $w_{i}^{t,\ell,k}=\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}}$
+\end_inset
+
+ and 
+\begin_inset Formula $D_{\ell,i}^{\prime}A_{i,p}=Z_{i}^{\ell,p}$
+\end_inset
+
+.
+ We have used
+\begin_inset Formula 
+\begin{align*}
+-\sum_{i}Xw_{i}^{t}\left(\log\left(Z_{i}\right)-\log\left(w_{i}^{t}\right)\right) & =X\sum_{i}w_{i}^{t}\log\left(\frac{w_{i}^{t}}{Z_{i}}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Guillaume rederivation with Itakura Saito
+\end_layout
+
+\begin_layout Standard
+The general loss is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\mathcal{L}(A,D)=\sum_{\ell,p}\left[-X_{\ell,p}\log\left(\sum_{k}D_{\ell,k}^{\prime}A_{k,p}\right)+\sum_{k}D_{\ell,k}^{\prime}A_{k,p}\right]
+\]
+
+\end_inset
+
+Let us focus on the function
+\begin_inset Formula 
+\begin{align*}
+f(x,a,d) & :=-x\log\left(\sum_{i}a_{i}d_{i}\right)+\sum_{i}a_{i}d_{i}\\
+ & =-x\log\left(\sum_{i}\frac{a_{i}d_{i}}{q_{i}}q_{i}\right)+\sum_{i}a_{i}d_{i}\\
+ & \leq-x\sum_{i}q_{i}\log\left(\frac{a_{i}d_{i}}{q_{i}}\right)+\sum_{i}a_{i}d_{i}
+\end{align*}
+
+\end_inset
+
+for 
+\begin_inset Formula $\sum_{i}q_{i}=1$
+\end_inset
+
+, 
+\begin_inset Formula $q_{i}>0$
+\end_inset
+
+.
+ The last line follow from the Jensen inequality.
+ Note that we have an equality for 
+\begin_inset Formula 
+\[
+q_{i}=q_{i}^{*}=\frac{a_{i}d_{i}}{\sum_{j}a_{j}d_{j}}.
+\]
+
+\end_inset
+
+This can be verified using
+\begin_inset Formula 
+\begin{align*}
+\sum_{i}q_{i}^{*}\log\left(\frac{a_{i}d_{i}}{q_{i}^{*}}\right) & =\sum_{i}\frac{a_{i}d_{i}}{\sum_{j}a_{j}d_{j}}\log\left(\frac{a_{i}d_{i}}{\frac{a_{i}d_{i}}{\sum_{j}a_{j}d_{j}}}\right)\\
+ & =\log\left(\sum_{j}a_{j}d_{j}\right)\frac{\sum_{i}a_{i}d_{i}}{\sum_{j}a_{j}d_{j}}\\
+ & =\log\left(\sum_{j}a_{j}d_{j}\right).
+\end{align*}
+
+\end_inset
+
+ Let us define
+\begin_inset Formula 
+\[
+f_{J}(x,a,d,q):=-x\sum_{i}q_{i}\log\left(\frac{a_{i}d_{i}}{q_{i}}\right)+\sum_{i}a_{i}d_{i}
+\]
+
+\end_inset
+
+Now les us write an auxiliary objective function
+\begin_inset Formula 
+\begin{align*}
+\mathcal{L}_{J}(A,D,Q) & :=\sum_{\ell,p}\left[f_{J}(X_{\ell,p},A_{\cdot,p},D_{\ell,\cdot},Q_{\ell,p})\right]\\
+ & =\sum_{\ell,p}\left[-X_{\ell,p}\sum_{k}Q_{\ell,p,k}\log\left(\frac{A_{k,p}D_{\ell,k}}{Q_{\ell,p,k}}\right)+\sum_{k}A_{k,p}D_{\ell,k}\right]\\
+ & =-\sum_{p,k}\log\left(A_{k,p}\right)\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}\\
+ & -\sum_{\ell,k}\log\left(D_{\ell,k}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,k}\\
+ & +\sum_{\ell,p}\sum_{k}X_{\ell,p}Q_{\ell,p,k}\log\left(Q_{\ell,p,k}\right)\\
+ & +\sum_{\ell,p}\sum_{k}A_{k,p}D_{\ell,k}
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\mathcal{L}(A,D)\leq\mathcal{L}_{J}(A,D,Q)
+\]
+
+\end_inset
+
+Note that minimizing 
+\begin_inset Formula $\mathcal{L}_{J}(A,D,Q)$
+\end_inset
+
+ with respect of 
+\begin_inset Formula $A,D$
+\end_inset
+
+ is simple.
+ (If we do not add further constraint, one can find a closed form solution.)
+ The smooth regularizer is given by 
+\begin_inset Formula 
+\[
+\frac{\lambda}{2}\text{tr}\left(A^{T}\Delta A\right)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\tilde{\psi_{t}}\left(A^{t},A\right) & =\frac{\lambda}{2}\text{tr}\left(A^{T}\Delta A\right)=\frac{\lambda}{2}\sum_{k}A_{k}^{T}\Delta A_{k}\\
+ & =\frac{\lambda}{2}\sum_{k}A_{k}^{tT}\Delta A_{k}^{t}+\lambda\sum_{k}\left(A_{k}-A_{k}^{t}\right)^{T}\Delta A_{k}^{t}+\frac{\lambda}{2}\sum_{k}\left(A_{k}-A_{k}^{t}\right)^{T}\Delta\left(A_{k}-A_{k}^{t}\right)\\
+ & \leq\frac{\lambda}{2}\sum_{k}A_{k}^{tT}\Delta A_{k}^{t}+\lambda\sum_{k}\left(A_{k}-A_{k}^{t}\right)^{T}\Delta A_{k}^{t}+\sigma(\Delta)\frac{\lambda}{2}\sum_{k}\|A_{k}-A_{k}^{t}\|^{2}
+\end{align*}
+
+\end_inset
+
+I believe that minimizing with respect of 
+\begin_inset Formula $Q$
+\end_inset
+
+ is simply doing 
+\begin_inset Formula 
+\[
+\dot{Q_{\ell,p,i}}=\frac{A_{i,p}D_{\ell,i}}{\sum_{j}A_{j,p}D_{\ell,j}}.
+\]
+
+\end_inset
+
+At optimimality of 
+\begin_inset Formula $Q$
+\end_inset
+
+, we have
+\begin_inset Formula 
+\[
+\mathcal{L}(A,D)=\mathcal{L}_{J}(A,D,\dot{Q})
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\nabla_{A}\mathcal{L}(A,D)=\nabla_{A}\mathcal{L}_{J}(A,D,\dot{Q})
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\nabla_{D}\mathcal{L}(A,D)=\nabla_{D}\mathcal{L}_{J}(A,D,\dot{Q})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Optimization
+\end_layout
+
+\begin_layout Standard
+If we define 
+\begin_inset Formula 
+\[
+\tilde{\phi}_{t,\gamma}\left(A^{t},A\right)=\phi\left(A^{t}\right)+\left\langle \nabla\phi\left(A^{t}\right),A-A^{t}\right\rangle +\gamma\left\Vert A-A^{t}\right\Vert _{F}^{2}
+\]
+
+\end_inset
+
+Then we have
+\begin_inset Formula 
+\[
+\phi\left(A^{t}\right)\le\tilde{\phi}_{t,\gamma}\left(A^{t},A\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+What is 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ here? The Lipschitz constant?
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\phi_{Q}\left(A,D\right)=\mathcal{L}_{J}\left(A,D,Q\right)$
+\end_inset
+
+, view as as a function of 
+\begin_inset Formula $A,D$
+\end_inset
+
+.
+ So we can minimize 
+\begin_inset Formula $\mathcal{L}(A,D)$
+\end_inset
+
+ by solving a sequence of problem of the form
+\begin_inset Formula 
+\[
+\min_{A,D}\lambda\psi\left(A\right)+\phi_{Q}\left(A,D\right)+\mathcal{I}\left(A\in\mathcal{S}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So we can define a proximal step as
+\begin_inset Formula 
+\[
+\min_{A}\tilde{\psi_{t}}\left(A^{t},A\right)+\tilde{\phi}_{Q}\left(A^{t},A,D\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+WE CAN DO LINESEARCH OVER GAMMA
+\end_layout
+
+\begin_layout Subsection
+An algorithm?
+\end_layout
+
+\begin_layout Paragraph
+Let us define our loss function as
+\begin_inset Formula 
+\begin{align*}
+\mathcal{L}_{J}(A,D,Q) & :=-\sum_{p,\ell}\log\left(A_{\ell,p}\right)\sum_{i}X_{i,p}Q_{i,p,\ell}\\
+ & -\sum_{\ell,i}\log\left(D_{\ell,i}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,i}\\
+ & +\sum_{\ell,p}\sum_{i}X_{\ell,p}Q_{\ell,p,i}\log\left(Q_{\ell,p,i}\right)\\
+ & +\sum_{\ell,p}A_{\ell,p}\sum_{i}D_{i,\ell}\\
+ & +\frac{\lambda}{2}\sum_{\ell,p}A_{\ell,p}\sum_{p_{2}}\Delta_{p,p_{2}}A_{\ell,p_{2}}
+\end{align*}
+
+\end_inset
+
+A update: 
+\end_layout
+
+\begin_layout Quotation
+The Lagrangian is given by 
+\begin_inset Formula 
+\[
+\mathcal{D}_{J}(A,D,Q,\nu)=\mathcal{L}_{J}(A,D,Q)+\nu^{T}\left(A\mathbf{1}^{p}-\mathbf{1}^{k}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A direct optimization with respec of 
+\begin_inset Formula $A$
+\end_inset
+
+ is complicated because of the Laplacian.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left.\nabla_{A}\mathcal{D}_{J}(A,D^{t},Q)\right|_{\ell,p}=-\frac{\sum_{i}X_{i,p}Q_{i,p,\ell}^{t}}{A_{\ell,p}}+\sum_{i}D_{i,\ell}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{\ell,p_{2}}+\nu_{p}=0
+\]
+
+\end_inset
+
+So instead, we optimize an auxiliary function
+\begin_inset Formula 
+\begin{align*}
+\tilde{\mathcal{D}_{J}}(A,A^{t},D^{t},Q^{t},\nu) & :=-\sum_{\ell,i}\log\left(D_{\ell,i}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,i}-\sum_{\ell,i}\log\left(D_{\ell,i}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,i}+\sum_{\ell,p}\sum_{i}X_{\ell,p}Q_{\ell,p,i}\log\left(Q_{\ell,p,i}\right)+\sum_{\ell,p}A_{\ell,p}\sum_{i}D_{i,\ell}\\
+ & -\frac{\lambda}{2}\sum_{\ell}A_{\ell}^{tT}\Delta A_{\ell}^{t}+\lambda\sum_{\ell}A_{\ell}^{T}\Delta A_{\ell}^{t}+\sigma(\Delta)\frac{\lambda}{2}\|A-A^{t}\|_{F}^{2}\\
+ & +\nu^{T}\left(A\mathbf{1}^{p}-\mathbf{1}^{k}\right)
+\end{align*}
+
+\end_inset
+
+The gradient of the auxiliary function becomes
+\begin_inset Formula 
+\[
+\left.\nabla_{A}\tilde{\mathcal{D}_{J}}(A,A^{t},D^{t},Q^{t},\nu)\right|_{\ell,p}=-\frac{\sum_{i}X_{i,p}Q_{i,p,\ell}^{t}}{A_{\ell,p}}+\sum_{i}D_{i,\ell}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{\ell,p_{2}}^{t}+\lambda\sigma(\Delta)\left(A_{\ell,p}-A_{\ell,p}^{t}\right)+\nu_{p}=0
+\]
+
+\end_inset
+
+Let us solve this equation assuming that 
+\begin_inset Formula $A_{\ell,p}>0.$
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\lambda\sigma(\Delta)A_{\ell,p}^{2}+A_{\ell,p}\left(\sum_{i}D_{i,\ell}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{\ell,p_{2}}^{t}-A_{\ell,p}^{t}\lambda\sigma(\Delta)+\nu_{p}\right)-\sum_{i}X_{i,p}Q_{i,p,\ell}^{t}=0
+\]
+
+\end_inset
+
+Let us define 
+\begin_inset Formula $a=\lambda\sigma(\Delta)$
+\end_inset
+
+, 
+\begin_inset Formula $b=\sum_{i}D_{i,\ell}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{\ell,p_{2}}^{t}-A_{\ell,p}^{t}\lambda\sigma(\Delta)+\nu_{p}$
+\end_inset
+
+, and 
+\begin_inset Formula $c=-\sum_{i}X_{i,p}Q_{i,p,\ell}^{t}$
+\end_inset
+
+.
+ It is easy to see that 
+\begin_inset Formula $a>0,c<0$
+\end_inset
+
+.
+ So 
+\begin_inset Formula $ac<0$
+\end_inset
+
+ and 
+\begin_inset Formula 
+\[
+b^{2}-4ac>b^{2}>0
+\]
+
+\end_inset
+
+Thus, we have two real solution, one negative and one positive.
+ We are interested in the positive one:
+\begin_inset Formula 
+\[
+A_{\ell,p}=\frac{-b+\sqrt{b^{2}-4ac}}{2a}
+\]
+
+\end_inset
+
+Note that finding the right 
+\begin_inset Formula $\nu$
+\end_inset
+
+ is probably harder as the function is not as nice as before.
+ We have
+\begin_inset Formula 
+\begin{align*}
+1 & =\sum_{p}A_{p}\\
+ & =\sum_{p}-\frac{b_{p}\left(\nu_{p}\right)+\sqrt{b_{p}\left(\nu_{p}\right)^{2}-4ac_{p}}}{2a}\\
+ & =\sum_{p}-\frac{s_{p}+\nu_{p}+\sqrt{\left(s_{p}+\nu_{p}\right)^{2}-4ac_{p}}}{2a}
+\end{align*}
+
+\end_inset
+
+where 
+\begin_inset Formula $s_{p}=\sum_{i}D_{i,\ell}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{\ell,p_{2}}^{t}-A_{\ell,p}^{t}\lambda\sigma(\Delta)$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+Check for a library for dicotomy...
+\end_layout
+
+\begin_layout Paragraph
+D update:
+\end_layout
+
+\begin_layout Standard
+We simply that the gradient
+\end_layout
+
+\begin_layout Paragraph
+\begin_inset Formula 
+\[
+\left.\nabla_{D}\mathcal{D}_{J}(A^{t},D,Q^{t})\right|_{\ell,p}=-\frac{\sum_{i}X_{\ell,i}Q_{\ell,i,p}^{t}}{D_{\ell,p}}+\sum_{p}A_{p,i}^{t}=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The update rule becomes
+\begin_inset Formula 
+\[
+D_{\ell,p}=\frac{\sum_{i}X_{\ell,i}Q_{\ell,i,p}^{t}}{\sum_{p}A_{p,i}^{t}}
+\]
+
+\end_inset
+
+Alternatively, we need to take into account that 
+\begin_inset Formula $D=GP$
+\end_inset
+
+.
+ So we find
+\begin_inset Formula 
+\begin{align*}
+\left.\nabla_{P}\mathcal{D}_{J}(A,P,Q)\right|_{c_{0},k_{0}} & :=\left.\nabla_{P}\left(-\sum_{\ell,k}\log\left(D_{\ell,k}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,k}+\sum_{\ell,p}\sum_{k}A_{k,p}D_{\ell,k}\right)_{D=GP}\right|_{c_{0},k_{0}}\\
+ & =\left.\nabla_{P}\left(-\sum_{\ell,k,p}\log\left(\sum_{c}G_{\ell,c}P_{c,k}\right)X_{\ell,p}Q_{\ell,p,k}+\sum_{\ell,p,c,k}A_{k,p}G_{\ell,c}P_{c,k}\right)\right|_{c_{0},k_{0}}\\
+ & =-\sum_{\ell}\frac{G_{\ell,c_{0}}\sum_{p}X_{\ell,p}Q_{\ell,p,k_{0}}}{\sum_{c}G_{\ell,c}P_{c,k_{0}}}+\sum_{p,\ell}A_{k_{0},p}G_{\ell,c_{0}}
+\end{align*}
+
+\end_inset
+
+In matrix notation, we find
+\begin_inset Formula 
+\[
+\nabla_{P}\mathcal{D}_{J}(A,P,Q)=-G^{T}\left(\left[XQ\right]\oslash GP\right)+G^{T}1^{\ell,p}A^{T}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\left[XQ\right]_{\ell,k}=\sum_{p}X_{\ell,p}Q_{\ell,p,k}.$
+\end_inset
+
+This is a bit annoying, because come back to a multiplicative algorithm!
+ I believe we have to live with this...
+\begin_inset Formula 
+\begin{align*}
+P^{t+1} & =P^{t}-\gamma_{t}\nabla_{P}\mathcal{D}_{J}(A,P,Q)\\
+ & =P^{t}-\gamma_{t}\left[-G^{T}\left(\left[XQ\right]\oslash GP\right)+G^{T}1^{\ell,p}A^{T}\right]\\
+ & =P^{t}+\gamma_{t}\left[G^{T}\left(\left[XQ\right]\oslash GP\right)-G^{T}1^{\ell,p}A^{T}\right]\\
+ & =\left(P^{t}\oslash G^{T}1^{\ell,p}A^{T}\right)\circ\left(G^{T}\left(\left[XQ\right]\oslash GP^{t}\right)\right)
+\end{align*}
+
+\end_inset
+
+where the learning rate is set to
+\begin_inset Formula 
+\[
+\gamma_{t}=P^{t}\oslash G^{T}1^{\ell,p}A^{T}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let us replace Q with its current value with respect of 
+\begin_inset Formula $P,A$
+\end_inset
+
+.
+ We have
+\begin_inset Formula 
+\begin{align*}
+\left[XQ\right]_{\ell,k} & =\sum_{p}X_{\ell,p}Q_{\ell,p,k}\\
+ & =\sum_{p}X_{\ell,p}\frac{A_{k,p}D_{\ell,k}}{\sum_{j}A_{j,p}D_{\ell,j}}\\
+ & =D_{\ell,k}\sum_{p}A_{k,p}\frac{X_{\ell,p}}{\sum_{j}A_{j,p}D_{\ell,j}}\\
+ & =\left[D\circ\left(\left(X\oslash DA\right)A^{T}\right)\right]_{\ell,k}
+\end{align*}
+
+\end_inset
+
+Given that 
+\begin_inset Formula $D=GP$
+\end_inset
+
+, we find
+\begin_inset Formula 
+\begin{align*}
+P^{t+1} & =\left(P^{t}\oslash G^{T}1^{\ell,p}A^{T}\right)\circ\left(G^{T}\left(\left[XQ\right]\oslash GP^{t}\right)\right)\\
+ & =\left(P^{t}\oslash G^{T}1^{\ell,p}A^{T}\right)\circ\left(G^{T}\left(GP^{t}\circ\left(\left(X\oslash GP^{t}A\right)A^{T}\right)\oslash GP^{t}\right)\right)\\
+ & =\left(P^{t}\oslash G^{T}1^{\ell,p}A^{T}\right)\circ\left(G^{T}\left(X\oslash GP^{t}A\right)A^{T}\right)
+\end{align*}
+
+\end_inset
+
+which is the same update as we had previously!!!
+\end_layout
+
+\begin_layout Paragraph
+Q update:
+\end_layout
+
+\begin_layout Standard
+We simply do 
+\begin_inset Formula 
+\[
+Q_{\ell,p,k}=\frac{A_{k,p}^{t}D_{\ell,k}^{t}}{\sum_{j}A_{j,p}^{t}D_{\ell,j}^{t}}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Definitions and stuff to know
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $f$
+\end_inset
+
+ be a differentiable and convex function.
+ Then we have
+\begin_inset Formula 
+\[
+f(x)=f(x_{t})+\left\langle \nabla f(x_{t}),x-x_{t}\right\rangle +D_{f}\left(x\|x_{t}\right)
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $D_{f}$
+\end_inset
+
+ is the Bregman divergence associated with 
+\begin_inset Formula $f$
+\end_inset
+
+.
+ This follows from the definition of the Bregmann divergence:
+\begin_inset Formula 
+\[
+D_{f}\left(x\|x_{t}\right):=f(x)-f(x_{t})-\left\langle \nabla f(x_{t}),x-x_{t}\right\rangle .
+\]
+
+\end_inset
+
+For example if 
+\begin_inset Formula $f(x)=-\log(x),$
+\end_inset
+
+ then 
+\begin_inset Formula 
+\[
+D_{f}\left(x\|x_{t}\right):=-\log\left(\frac{x}{x_{t}}\right)+\frac{x}{x_{t}}-1,
+\]
+
+\end_inset
+
+which is the Itakura–Saito distance.
+\end_layout
+
+\begin_layout Subsection
+A connection here
+\end_layout
+
+\begin_layout Standard
+Question: can we just use 
+\begin_inset Formula $\dot{Q}$
+\end_inset
+
+ and assume that it is equal to 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\mathcal{L}$
+\end_inset
+
+?
+\end_layout
+
+\begin_layout LyX-Code
+\begin_inset Formula 
+\[
+\mathcal{L}_{J}(A,D^{t},Q^{t})=\mathcal{L}_{J}(A^{t},D^{t},Q^{t})+\left\langle \nabla_{A}\mathcal{L}_{J}(A^{t},D^{t},Q^{t}),A-A^{t}\right\rangle +D_{\mathcal{L}_{J}}\left(A\|A^{t}\right)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\left\langle \nabla_{A}\mathcal{L}_{J}(A^{t},D^{t},\dot{Q^{t}}),A-A^{t}\right\rangle  & =\sum_{\ell,p}\left(\sum_{i}D_{i,\ell}^{t}-\frac{\sum_{i}X_{i,p}\dot{Q_{i,p,\ell}^{t}}}{A_{\ell,p}^{t}}\right)\left(A_{\ell,p}-A_{\ell,p}^{t}\right)\\
+\end{align*}
+
+\end_inset
+
+
 \end_layout
 
 \end_body

@@ -243,88 +243,32 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
 
     return G, P, A
 
-    # def initialize(self, x_matr):
-    #     """
-    #     Initialization of the data, matrices and parameters
-    #     The data are flattened if necessary. The x-matr of SNMF has to be ExN, i.e. (number of energy channels) x (number of pixels).
-    #     The a-matr is initialized at random unless init_a is specified.
-    #     If a bremsstrahlung spectrum is specified, the b-matr update is deactivated (b_tol is set to 0) and B is set to 0.
-    #     Otherwise, the b_matr is initialized through the values of c0, c1, c2, b1 and b2.
-    #     The p-matr entries of the main phase are set through linear regression on the init_spectrum (if specified) or on the average spectrum.
-    #     The other entries of the p_matr are initialized at random.
-    #     """
-    #     # Data pre-processing
-    #     # store the original shape of the input data X
-    #     self.x_shape = x_matr.shape
-    #     # If necessary, flattens X to a Ex(NM) matrix, such that the columns hold the raw spectra
-    #     if x_matr.ndim == 3:
-    #         x_matr = x_matr.reshape(
-    #             (self.x_shape[0] * self.x_shape[1], self.x_shape[2])
-    #         ).T
-    #         self.x_matr = x_matr.astype(np.float)
-    #     else:
-    #         self.x_matr = x_matr.astype(np.float)
+def update_q(D, A, eps=log_shift):
+    """Perform a Q step."""
+    Atmp = np.expand_dims(A.T, axis=0)
+    Dtmp = np.expand_dims(D, axis=1)
+    Ntmp = np.expand_dims(D @ A, axis=2) 
+    return Atmp * (Dtmp / (Ntmp+eps))
+    
+def multiplicative_step_pq(X, G, P, A, eps=log_shift, safe=True):
+    """
+    Multiplicative step in P using the PQ technique.
+    """
 
-    #     # Initialization of A
-    #     if self.init_a is None:
-    #         self.a_matr = np.random.rand(self.p_, self.x_matr.shape[1])
-    #     else:
-    #         self.a_matr = self.init_a
+    if safe:
+        # Allow for very small negative values!
+        assert(np.sum(A<-log_shift/2)==0)
+        assert(np.sum(P<-log_shift/2)==0)
+        assert(np.sum(G<-log_shift/2)==0)
 
-    #     # Initialization of B
-    #     if self.bremsstrahlung:
-    #         self.b_matr = np.zeros((self.g_matr.shape[0], self.p_))
-    #         self.b_tol = 0
-    #     else:
-    #         # B is removed from the model
 
-    #         self.b_matr = self.calc_b()
-
-    #     # Initialization of p-matr
-    #     # If the regularization is activated (mu_sparse != 0) it is important to correctly set the first phase so that the main phase is not penalized
-    #     if self.init_p is None:
-    #         # All phases are initialized at random and the first phase will be overwritten
-    #         self.p_matr = np.random.rand(self.g_matr.shape[1], self.p_)
-    #         # If a bremsstrahlung is specified, it is added to the g_matr and therefore should not be subtracted for the linear regression
-    #         if self.bremsstrahlung:
-    #             # Average spectrum initialization without b_matr model
-    #             if self.init_spectrum is None:
-    #                 avg_sp = np.average(self.x_matr, axis=1)
-    #                 self.p_matr[:, 0] = (
-    #                     np.linalg.inv(self.g_matr.T @ self.g_matr)
-    #                     @ self.g_matr.T
-    #                     @ avg_sp
-    #                 ).clip(min=1e-8)
-    #             # init_spectrum initialization without b_matr model
-    #             else:
-    #                 self.p_matr[:, 0] = (
-    #                     np.linalg.inv(self.g_matr.T @ self.g_matr)
-    #                     @ self.g_matr.T
-    #                     @ self.init_spectrum
-    #                 ).clip(min=1e-8)
-    #         # If no bremsstrahlung spectrum is specified the b-matr is substracted from the linear regression to get correct values for p_matr (Linear regression on the gaussians only)
-    #         else:
-    #             # Average spectrum initialization with b_matr model
-    #             if self.init_spectrum is None:
-    #                 avg_sp = np.average(self.x_matr, axis=1)
-    #                 self.p_matr[:, 0] = (
-    #                     np.linalg.inv(self.g_matr.T @ self.g_matr)
-    #                     @ self.g_matr.T
-    #                     @ (avg_sp - self.b_matr[:, 0])
-    #                 ).clip(min=1e-8)
-    #             # init_spectrum initialization with b_matr model
-    #             else:
-    #                 self.p_matr[:, 0] = (
-    #                     np.linalg.inv(self.g_matr.T @ self.g_matr)
-    #                     @ self.g_matr.T
-    #                     @ (self.init_spectrum - self.b_matr[:, 0])
-    #                 ).clip(min=1e-8)
-    #     else:
-    #         # If specified the p_matr is used
-    #         self.p_matr = self.init_p
-    #     # The linear regression of p_matr are clipped to avoid negative values
-
-    #     # Initalization of other internal variables.
-    #     self.d_matr = self.g_matr @ self.p_matr + self.b_matr
-    #     self.num_iterations = 0
-    #     self.lambda_s = np.ones((self.x_matr.shape[1],))
+    GP = G @ P
+    Q = update_q(GP, A, eps=log_shift)
+    
+    XQ = np.sum(np.expand_dims(X, axis=2) * Q, axis=1)
+    
+    term1 = G.T @ (XQ / (GP + eps)) 
+    
+    term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(A, axis=1,  keepdims=True).T
+    
+    return P / term2 * term1
