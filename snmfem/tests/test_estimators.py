@@ -16,6 +16,25 @@ def generate_one_sample():
             "toa" : 22,
             "density" : 4.5,
             "atomic_fraction" : True
+        },
+        "Det" : {
+            "detection" : {
+                "thickness" : 450e-4,
+                "density" : 2.3,
+                "atomic_fraction" : True,
+                "elements_dict" : {
+                    "Si" : 1.0
+                }
+            },
+            "layer1" : {
+                "thickness" : 30e-7,
+                "density" : 2.3,
+                "atomic_fraction" : True,
+                "elements_dict" : {
+                    "Si" : 0.333,
+                    "O" : 0.666
+                }
+            }
         }
       },
                             "db_name" : "default_xrays.json",
@@ -62,8 +81,9 @@ def generate_one_sample():
     D = spim.phases.T
     A = spim.flatten_weights()
     P = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
-    G = G_EDXS(model_parameters, g_parameters,P[:,-2:],G)
-    P = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
+    for i in range(3) : 
+        G = G_EDXS(model_parameters, g_parameters,P[:,-2:],G)
+        P = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
     X = spim.flatten_gen_spim()
 
     w = spim.densities

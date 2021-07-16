@@ -126,8 +126,7 @@ def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True, l2=False):
 #     new_P = (P / term2 * term1)
 #     return new_P
 
-
-def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, sigmaL=sigmaL):
+def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, fixed_A_inds = None, sigmaL=sigmaL):
     """
     Multiplicative step in A.
     The main terms are calculated first.
@@ -140,6 +139,17 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
     if not(lambda_L==0):
         if L is None:
             raise ValueError("Please provide the laplacian")
+
+    if not(fixed_A_inds is None) : 
+        not_fixed_inds = [x for x in range(A.shape[1]) if not(x in fixed_A_inds)]    
+        if not(lambda_L==0):
+            AL = (A@L)[:,not_fixed_inds]
+        new_A = A.copy()
+        A = A[:,not_fixed_inds]
+        X = X[:,not_fixed_inds]
+    else : 
+        if not(lambda_L==0):
+            AL = A @ L
 
     if safe:
         # Allow for very small negative values!
@@ -170,7 +180,7 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
     if not(lambda_L==0):
         maxA = np.max(A)
         num = num + lambda_L * sigmaL * A * maxA
-        denum = denum + lambda_L * sigmaL * maxA + lambda_L * A @ L 
+        denum = denum + lambda_L * sigmaL * maxA + lambda_L * AL 
 
     if force_simplex:
         nu = dichotomy_simplex(num, denum,dicotomy_tol)
@@ -180,10 +190,15 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
         assert(np.sum(denum<0)==0)
         assert(np.sum(num<0)==0)
 
-    return num/(denum + nu)
+    if fixed_A_inds is None : 
+        new_A = num/(denum+nu)
+    else : 
+        new_A[:,not_fixed_inds] = num/(denum+nu)
+
+    return new_A
 
 
-def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_simplex, model_params = None, g_params = None ):
+def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_simplex, model_params = None, g_params = None, fixed_A_inds = None ):
     # Handle initialization
     if G is None : 
         skip_second = True
@@ -218,6 +233,14 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
         if force_simplex:
             scale = np.sum(A, axis=0, keepdims=True)
             A = A/scale
+    
+    if not(fixed_A_inds is None) : 
+        vec = np.zeros_like(A[:,0])
+        vec[0] = 1
+        fixed_A = np.tile(vec[:,np.newaxis],(len(fixed_A_inds),))
+        A[:,fixed_A_inds] = fixed_A
+        
+
     return G, P, A
 
 def update_q(D, A, eps=log_shift):
