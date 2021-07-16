@@ -1699,11 +1699,11 @@ An algorithm?
 Let us define our loss function as
 \begin_inset Formula 
 \begin{align*}
-\mathcal{L}_{J}(A,D,Q) & :=-\sum_{p,\ell}\log\left(A_{\ell,p}\right)\sum_{i}X_{i,p}Q_{i,p,\ell}\\
- & -\sum_{\ell,i}\log\left(D_{\ell,i}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,i}\\
- & +\sum_{\ell,p}\sum_{i}X_{\ell,p}Q_{\ell,p,i}\log\left(Q_{\ell,p,i}\right)\\
- & +\sum_{\ell,p}A_{\ell,p}\sum_{i}D_{i,\ell}\\
- & +\frac{\lambda}{2}\sum_{\ell,p}A_{\ell,p}\sum_{p_{2}}\Delta_{p,p_{2}}A_{\ell,p_{2}}
+\mathcal{L}_{J}(A,D,Q) & :=-\sum_{p,k}\log\left(A_{k,p}\right)\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}\\
+ & -\sum_{\ell,k}\log\left(D_{\ell,k}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,k}\\
+ & +\sum_{\ell,p}\sum_{k}X_{\ell,p}Q_{\ell,p,k}\log\left(Q_{\ell,p,k}\right)\\
+ & +\sum_{k,p}A_{k,p}\sum_{\ell}D_{\ell,k}\\
+ & +\frac{\lambda}{2}\sum_{k,p}A_{k,p}\sum_{p_{2}}\Delta_{p,p_{2}}A_{k,p_{2}}
 \end{align*}
 
 \end_inset
@@ -1734,7 +1734,7 @@ A direct optimization with respec of
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\left.\nabla_{A}\mathcal{D}_{J}(A,D^{t},Q)\right|_{\ell,p}=-\frac{\sum_{i}X_{i,p}Q_{i,p,\ell}^{t}}{A_{\ell,p}}+\sum_{i}D_{i,\ell}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{\ell,p_{2}}+\nu_{p}=0
+\left.\nabla_{A}\mathcal{D}_{J}(A,D^{t},Q)\right|_{k,p}=-\frac{\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}^{t}}{A_{k,p}}+\sum_{i}D_{i,\ell}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{k,p_{2}}+\nu_{p}=0
 \]
 
 \end_inset
@@ -1742,8 +1742,8 @@ A direct optimization with respec of
 So instead, we optimize an auxiliary function
 \begin_inset Formula 
 \begin{align*}
-\tilde{\mathcal{D}_{J}}(A,A^{t},D^{t},Q^{t},\nu) & :=-\sum_{\ell,i}\log\left(D_{\ell,i}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,i}-\sum_{\ell,i}\log\left(D_{\ell,i}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,i}+\sum_{\ell,p}\sum_{i}X_{\ell,p}Q_{\ell,p,i}\log\left(Q_{\ell,p,i}\right)+\sum_{\ell,p}A_{\ell,p}\sum_{i}D_{i,\ell}\\
- & -\frac{\lambda}{2}\sum_{\ell}A_{\ell}^{tT}\Delta A_{\ell}^{t}+\lambda\sum_{\ell}A_{\ell}^{T}\Delta A_{\ell}^{t}+\sigma(\Delta)\frac{\lambda}{2}\|A-A^{t}\|_{F}^{2}\\
+\tilde{\mathcal{D}_{J}}(A,A^{t},D^{t},Q^{t},\nu) & :=-\sum_{p,k}\log\left(A_{k,p}\right)\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}-\sum_{\ell,k}\log\left(D_{\ell,k}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,k}+\sum_{\ell,p}\sum_{k}X_{\ell,p}Q_{\ell,p,k}\log\left(Q_{\ell,p,k}\right)+\sum_{k,p}A_{k,p}\sum_{\ell}D_{\ell,k}\\
+ & -\frac{\lambda}{2}\sum_{k}A_{k}^{tT}\Delta A_{k}^{t}+\lambda\sum_{k}A_{k}^{T}\Delta A_{k}^{t}+\sigma(\Delta)\frac{\lambda}{2}\|A-A^{t}\|_{F}^{2}\\
  & +\nu^{T}\left(A\mathbf{1}^{p}-\mathbf{1}^{k}\right)
 \end{align*}
 
@@ -1752,7 +1752,7 @@ So instead, we optimize an auxiliary function
 The gradient of the auxiliary function becomes
 \begin_inset Formula 
 \[
-\left.\nabla_{A}\tilde{\mathcal{D}_{J}}(A,A^{t},D^{t},Q^{t},\nu)\right|_{\ell,p}=-\frac{\sum_{i}X_{i,p}Q_{i,p,\ell}^{t}}{A_{\ell,p}}+\sum_{i}D_{i,\ell}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{\ell,p_{2}}^{t}+\lambda\sigma(\Delta)\left(A_{\ell,p}-A_{\ell,p}^{t}\right)+\nu_{p}=0
+\left.\nabla_{A}\tilde{\mathcal{D}_{J}}(A,A^{t},D^{t},Q^{t},\nu)\right|_{k,p}=-\frac{\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}^{t}}{A_{k,p}}+\sum_{\ell}D_{\ell,k}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{k,p_{2}}^{t}+\lambda\sigma(\Delta)\left(A_{k,p}-A_{k,p}^{t}\right)+\nu_{k}=0
 \]
 
 \end_inset
@@ -1764,7 +1764,7 @@ Let us solve this equation assuming that
 
 \begin_inset Formula 
 \[
-\lambda\sigma(\Delta)A_{\ell,p}^{2}+A_{\ell,p}\left(\sum_{i}D_{i,\ell}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{\ell,p_{2}}^{t}-A_{\ell,p}^{t}\lambda\sigma(\Delta)+\nu_{p}\right)-\sum_{i}X_{i,p}Q_{i,p,\ell}^{t}=0
+\lambda\sigma(\Delta)A_{k,p}^{2}+A_{k,p}\left(\sum_{\ell}D_{\ell,k}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{k,p_{2}}^{t}-A_{k,p}^{t}\lambda\sigma(\Delta)+\nu_{k}\right)-\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}^{t}=0
 \]
 
 \end_inset
@@ -1774,11 +1774,11 @@ Let us define
 \end_inset
 
 , 
-\begin_inset Formula $b=\sum_{i}D_{i,\ell}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{\ell,p_{2}}^{t}-A_{\ell,p}^{t}\lambda\sigma(\Delta)+\nu_{p}$
+\begin_inset Formula $b_{k,p}=\sum_{\ell}D_{\ell,k}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{k,p_{2}}^{t}-A_{k,p}^{t}\lambda\sigma(\Delta)+\nu_{p}$
 \end_inset
 
 , and 
-\begin_inset Formula $c=-\sum_{i}X_{i,p}Q_{i,p,\ell}^{t}$
+\begin_inset Formula $c_{k,p}=-\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}^{t}$
 \end_inset
 
 .
@@ -1803,7 +1803,7 @@ Thus, we have two real solution, one negative and one positive.
  We are interested in the positive one:
 \begin_inset Formula 
 \[
-A_{\ell,p}=\frac{-b+\sqrt{b^{2}-4ac}}{2a}
+A_{k,p}=\frac{-b+\sqrt{b^{2}-4ac}}{2a}
 \]
 
 \end_inset
@@ -1816,15 +1816,49 @@ Note that finding the right
  We have
 \begin_inset Formula 
 \begin{align*}
-1 & =\sum_{p}A_{p}\\
- & =\sum_{p}-\frac{b_{p}\left(\nu_{p}\right)+\sqrt{b_{p}\left(\nu_{p}\right)^{2}-4ac_{p}}}{2a}\\
- & =\sum_{p}-\frac{s_{p}+\nu_{p}+\sqrt{\left(s_{p}+\nu_{p}\right)^{2}-4ac_{p}}}{2a}
+1 & =\sum_{p}A_{k,p}\\
+ & =\sum_{p}\frac{-b_{k,p}\left(\nu_{k}\right)+\sqrt{b_{k,p}\left(\nu_{k}\right)^{2}-4ac_{k,p}}}{2a}\\
+ & =\frac{1}{2a}\sum_{p}-s_{k,p}-\nu_{k}+\sqrt{\left(s_{k,p}+\nu_{k}\right)^{2}-4ac_{k,p}}
 \end{align*}
 
 \end_inset
 
 where 
-\begin_inset Formula $s_{p}=\sum_{i}D_{i,\ell}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{\ell,p_{2}}^{t}-A_{\ell,p}^{t}\lambda\sigma(\Delta)$
+\begin_inset Formula $s_{p}=\sum_{\ell}D_{\ell,k}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{k,p_{2}}^{t}-A_{k,p}^{t}\lambda\sigma(\Delta)$
+\end_inset
+
+.
+ So we need to solve
+\begin_inset Formula 
+\[
+f_{k}(\nu_{k})=n_{p}\nu_{k}+\sum_{p}s_{k,p}-\sum_{p}\sqrt{\left(s_{k,p}+\nu_{k}\right)^{2}-4ac_{k,p}}+2a=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ is a (strictly) concave function.
+ Furthermore for 
+\begin_inset Formula 
+\[
+\lim_{\nu\rightarrow-\infty}f_{k}(\nu_{k})=-\infty
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\lim_{\nu\rightarrow\infty}f_{k}(\nu_{k})=2a
+\]
+
+\end_inset
+
+Let us consider the function 
+\begin_inset Formula $g(x)=x-\sqrt{x^{2}-d}.$
 \end_inset
 
  
@@ -1832,6 +1866,25 @@ where
 
 \begin_layout Standard
 Check for a library for dicotomy...
+ The challenge is that it is hard to solve multiple dicotomy problem in
+ parallel.
+ 
+\end_layout
+
+\begin_layout Standard
+Finally let us analyse 
+\begin_inset Formula 
+\begin{align*}
+c_{k,p} & =-\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}^{t}\\
+ & =-\sum_{\ell}X_{\ell,p}\frac{A_{k,p}^{t}D_{\ell,k}^{t}}{\sum_{j}A_{j,p}^{t}D_{\ell,j}^{t}}\\
+ & =-A_{k,p}^{t}\sum_{\ell}D_{\ell,k}^{t}\frac{X_{\ell,p}}{\sum_{j}A_{j,p}^{t}D_{\ell,j}^{t}}\\
+ & =\left[-A^{t}\circ\left(D^{tT}\left(X\oslash D^{t}A^{t}\right)\right)\right]_{k,p}\\
+ & =\left[-A^{t}\circ\left(P^{tT}G^{T}\left(X\oslash GP^{t}A^{t}\right)\right)\right]_{k,p}
+\end{align*}
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Paragraph
