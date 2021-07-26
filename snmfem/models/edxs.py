@@ -142,7 +142,7 @@ class EDXS(PhysicalModel):
         
         return temp
 
-def G_EDXS (model_params,g_params,part_P = None, G = None) : 
+def G_EDXS (model_params, g_params, part_P = None, G = None) : 
     if G is None : 
         model = EDXS(**model_params)
         model.generate_g_matr(**g_params)
