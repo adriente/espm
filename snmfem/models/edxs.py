@@ -104,14 +104,14 @@ class EDXS(PhysicalModel):
 
     def generate_phases(self, phases_parameters) : 
         self.phases = []
-        unique_elts = elts_dict_from_dict_list([x["elements_dict"] for x in phases_parameters])
+        unique_elts = dict(elts_dict_from_dict_list([x["elements_dict"] for x in phases_parameters]))
         for p in phases_parameters:
-            p.update({"elements_dict" : unique_elts})
-            self.phases.append(self.generate_spectrum(**p))
+            # p.update({"elements_dict" : unique_elts})
+            self.phases.append(self.generate_spectrum(**p,abs_elts_dict = unique_elts))
         self.phases = np.array(self.phases)
 
     @symbol_to_number_dict
-    def generate_spectrum(self, b0=0, b1 = 0, E0=200, scale = 1.0,*,elements_dict = {}):
+    def generate_spectrum(self, b0=0, b1 = 0, E0=200, scale = 1.0,abs_elts_dict = {},*,elements_dict = {}):
         """
         Generates an EDXS spectrum with the specified elements. The continuum x-rays are added and scaled to the gaussian peaks.
         :elements_dict: dictionnary of elements with concentration in that way {"integer":concentration}
@@ -138,7 +138,10 @@ class EDXS(PhysicalModel):
                         * gaussian(self.x, energy, width / 2.3548)
                     )*A*D
         temp /= temp.sum()
-        temp += continuum_xrays(self.x,self.params_dict,b0,b1,E0,elements_dict=elements_dict) * scale
+        if abs_elts_dict == {} : 
+            temp += continuum_xrays(self.x,self.params_dict,b0,b1,E0,elements_dict=elements_dict) * scale
+        else : 
+            temp += continuum_xrays(self.x,self.params_dict,b0,b1,E0,elements_dict=abs_elts_dict) * scale
         
         return temp
 

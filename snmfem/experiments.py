@@ -13,12 +13,12 @@ def compute_metrics(true_spectra, true_maps, GP, A, u = False):
     mse, ind2 = measures.find_min_MSE(true_maps, A, True, unique=u)
     return angle, mse, (ind1, ind2)
 
-def run_experiment(Xflat, true_spectra, true_maps, G, experiment, params_evalution = {"u" : True}, shape_2d = None, g_pars = None, mod_pars = None) : 
+def run_experiment(Xflat, true_spectra, true_maps, G, experiment, params_evalution = {"u" : True}, shape_2d = None, g_pars = None, mod_pars = None, ind_list = None) : 
     
     Estimator = getattr(estimators, experiment["method"]) 
 
     estimator = Estimator(**experiment["params"])
-    estimator.fit(Xflat,G=G,shape_2d = shape_2d,true_D = true_spectra.T, true_A = true_maps, g_params = g_pars, model_params = mod_pars)
+    estimator.fit(Xflat,G=G,shape_2d = shape_2d,true_D = true_spectra.T, true_A = true_maps, g_params = g_pars, model_params = mod_pars,fixed_A_inds = ind_list)
     
     G = estimator.G_
     P = estimator.P_
@@ -26,7 +26,7 @@ def run_experiment(Xflat, true_spectra, true_maps, G, experiment, params_evaluti
     
     losses = estimator.get_losses()
     metrics = compute_metrics(true_spectra, true_maps, G@P, A, **params_evalution)
-    return metrics, (G@P, A), losses
+    return metrics, (G, P, A), losses
 
 def load_data(sample, G_func = False) : 
     data = np.load(sample)
