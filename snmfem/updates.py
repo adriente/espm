@@ -126,7 +126,7 @@ def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True, l2=False):
 #     new_P = (P / term2 * term1)
 #     return new_P
 
-def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, fixed_A_inds = None):
+def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, fixed_A_inds = None, sigmaL=sigmaL):
     """
     Multiplicative step in A.
     The main terms are calculated first.
