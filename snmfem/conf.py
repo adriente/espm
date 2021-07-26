@@ -78,3 +78,6 @@ ESTIMATOR_ARGS = {
     "mcr_method" : ["-mm","--mcr_method",{"action" : "store_false","help" : "None : to be written"},["MCRLLM"]]
 }
 
+# DATASET_A = {...}
+# SYNTHETIC_DATASETS = [DATASET_A, DATASET_B, DATASET_C]
+# DATASETS = SYNTHETIC_DATASETS + [DATASET_REAL]

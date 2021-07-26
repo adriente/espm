@@ -865,7 +865,7 @@ For
 \begin{align*}
 {\color{blue}R_{2}(A)} & =\frac{\lambda}{2}\text{tr}\left(A^{T}\Delta A\right)\\
  & =\frac{\lambda}{2}\sum_{k}A_{k}^{T}\Delta A_{k}\\
- & \leq\frac{\lambda}{2}\sum_{k}A_{k}^{t}{}^{T}\Delta A_{k}^{t}+2\left(A_{k}-A_{k}^{t}\right)^{T}\Delta A_{k}^{t}+2\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)\sum_{p,k}\left(A_{k,p}^{t}\log\left(\frac{A_{k,p}^{t}}{A_{k,p}}\right)-A_{k,p}^{t}+A_{k,p}\right)
+ & \leq\frac{\lambda}{2}\sum_{k}A_{k}^{t}{}^{T}\Delta A_{k}^{t}+2\left(A_{k}-A_{k}^{t}\right)^{T}\Delta A_{k}^{t}+2\lambda\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)\sum_{p,k}\left(A_{k,p}^{t}\log\left(\frac{A_{k,p}^{t}}{A_{k,p}}\right)-A_{k,p}^{t}+A_{k,p}\right)
 \end{align*}
 
 \end_inset
