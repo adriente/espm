@@ -120,5 +120,7 @@ def generate_weights(weight_type, shape_2D, n_phases=3, seed=0):
         return laplacian_weights(shape_2D, n_phases, seed) 
     elif weight_type=="sphere":
         return spheres_weights(shape_2D, n_phases, seed) 
+    # elif weight_type=="gradient":
+    #     return spheres_gradient(shape_2D, n_phases, seed) 
     else:
         raise ValueError("Wrong weight_type: {}".format(weight_type))

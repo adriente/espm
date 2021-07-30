@@ -84,8 +84,11 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         
         if self.skip_G:
             G = None
-        if callable(G) : 
+        if callable(G): 
             self.G_func_ = G
+            assert not(model_params is None), "You need to input model_parameters"
+            assert not(g_params is None), "You need to input g_parameters"
+            G = self.G_func_(model_params,g_params)
         else : 
             self.G_func_ = None
             

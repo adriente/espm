@@ -198,18 +198,18 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
     return new_A
 
 
-def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_simplex, model_params = None, g_params = None, fixed_A_inds = None ):
+def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_simplex, fixed_A_inds = None ):
     # Handle initialization
     if G is None : 
         skip_second = True
         # G = sparse.diags(np.ones(X.shape[0]).astype(X.dtype))        
         G = np.diag(np.ones(X.shape[0]).astype(X.dtype))
 
-    elif callable(G) : 
-        assert not(model_params is None), "You need to input model_parameters"
-        assert not(g_params is None), "You need to input g_parameters"
-        G = G(model_params,g_params)
-        skip_second = False
+    # elif callable(G) : 
+    #     assert not(model_params is None), "You need to input model_parameters"
+    #     assert not(g_params is None), "You need to input g_parameters"
+    #     G = G(model_params,g_params)
+    #     skip_second = False
 
     else:
         skip_second = False
