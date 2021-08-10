@@ -31,11 +31,46 @@ DEFAULT_EDXS_PARAMS = {
     "E0" : 200,
     "Det" : DEFAULT_SDD_EFF,
     "Abs" : {
-        "thickness" : 0.0,
-        "toa" : 90,
-        "density" : None,
-        "atomic_fraction" : False
+            "thickness" : 100.0e-7,
+            "toa" : 22,
+            "density" : None,
+            "atomic_fraction" : False
     }
+}
+
+DEFAULT_PHASE_PARAMS = [{"b0" : 1e-9 , "b1" : 1e-7, "elements_dict" :  {"14": 1.0},"scale" : 1.0},{"b0" : 7e-8 , "b1" : 3e-8, "elements_dict" :  {"79": 1.0},"scale" : 0.5}]
+
+DEFAULT_SYNTHETIC_DATA_DICT = {
+    "data_folder" : "default_synth_data",
+    "model_parameters" : {
+    "e_offset" : 0.200,
+    "e_size" : 1980,
+    "e_scale" : 0.01,
+    "width_slope" : 0.01,
+    "width_intercept" : 0.065,
+    "db_name" : "default_xrays.json",
+    "E0" : 200,
+    "params_dict" : {
+        "Abs" : {
+            "thickness" : 100.0e-7,
+            "toa" : 22,
+            "density" : None,
+            "atomic_fraction" : False
+            },
+    "Det" : DEFAULT_SDD_EFF,
+        }
+    },
+    "g_parameters" : {
+        "brstlg" : True,
+        "elements" : ["Si","Au"]
+    },
+    "phases_parameters" : DEFAULT_PHASE_PARAMS,
+    "shape_2d" : (80,80),
+    "weight_type" : "sphere",
+    "N" : 100,
+    "densities" : [1.5],
+    "model" : "EDXS",
+    "seeds" : 10
 }
 
 log_shift = 1e-14

@@ -1,1 +1,1 @@
-from snmfem.datasets.base import generate_dataset_from_json, generate_dataset
+from snmfem.datasets.base import generate_dataset
