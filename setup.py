@@ -15,6 +15,7 @@ setuptools.setup(
     zip_safe=False,
     long_description=long_description,
     long_description_content_type="text/markdown",
+    entry_points={'hyperspy.extensions': 'snmfem = snmfem'},
     extras_require={'testing': ['flake8', 'pytest', 'jupyterlab', 'twine', 'setuptools', 'wheel']},
     classifiers=[
         'Development Status :: 5 - Production/Stable',

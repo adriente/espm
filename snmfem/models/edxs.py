@@ -38,24 +38,28 @@ class EDXS(PhysicalModel):
         # e_size=1980,
         # e_scale=0.01,
     @symbol_to_number_list
-    def generate_g_matr(self, brstlg=False, norm = True,*,elements_list=[], **kwargs):
+    def generate_g_matr(self, g_type="bremsstrahlung", norm = True,*,elements=[], **kwargs):
         """
         Generates a matrix (e_size,n). Each column corresponds to the sum of X-ray characteristic gaussian peaks associated to each shell of the elements of elements_lists. n is then len(elements_list)*number of shells per element.
         :elements_list: List of integers. Each integer is an element of the model. If None, the g_matr is diagonal matrix of size e_size.
         :brstlg: Boolean. If true a continuum X-ray spectrum is added to g_matr.
         """
         # Diagonal g_matr
-        self.bkgd_in_G = brstlg
+        if g_type == "bremsstrahlung" : 
+            self.bkgd_in_G = True
 
-        if len(elements_list) == 0:
-            pass
+        if len(elements) == 0:
+            return None
+
+        elif g_type == "identity" : 
+            return None
         # model based on elements_list
-        else:
+        elif (g_type == "bremsstrahlung") or (g_type == "no_brstlg"):
             
             # The number of shells depend on the element, it is then not straightforward to pre-determine the size of g_matr
             self.G = np.zeros((self.x.shape[0], 0))
             # For each element we unpack all shells and then unpack all lines of each shell.
-            for elt in elements_list:
+            for elt in elements:
                 if self.lines : 
                     energies, cs = read_lines_db(elt,self.db_dict)
                 else : 
@@ -90,13 +94,15 @@ class EDXS(PhysicalModel):
                 self.G /= self.G.sum(axis=0)
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
-                approx_elts = {key : 1.0/len(elements_list) for key in elements_list}
+                approx_elts = {key : 1.0/len(elements) for key in elements}
                 brstlg_spectrum = G_bremsstrahlung(self.x,self.params_dict,elements_dict=approx_elts)
                 if np.max(brstlg_spectrum) > 0.0 : 
                     self.G = np.concatenate((self.G, brstlg_spectrum), axis=1)
                 else : 
                     print("Bremsstrahlung parameters were not provided, bkgd not added in G")
                     self.bkgd_in_G = False
+        else : 
+            print("g_type has to be one of those : \"bremsstrahlung\", \"no_brstlg\" or \"identity\". G will be None, corresponding to \"identity\". ")
 
             
 
@@ -154,7 +160,7 @@ def G_EDXS (model_params, g_params, part_P = None, G = None) :
     if part_P is None : 
         return G
     else : 
-        new_G = update_bremsstrahlung(G,part_P,model_params,g_params["elements_list"])
+        new_G = update_bremsstrahlung(G,part_P,model_params,g_params["elements"])
         return new_G
 
  # def generate_abs_coeff(self, elements_dict = None):

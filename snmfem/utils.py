@@ -81,7 +81,7 @@ def symbol_to_number_list (func) :
     returns a dict of elements with atomic numbers as keys (e.g. 26 for iron)
     """
     def inner(*args,**kwargs) : 
-        elts_list = kwargs["elements_list"]
+        elts_list = kwargs["elements"]
         new_list = []
         with open(SYMBOLS_PERIODIC_TABLE,"r") as f : 
             SPT = json.load(f)["table"]
@@ -93,7 +93,31 @@ def symbol_to_number_list (func) :
             else : 
                 raise ValueError("Input has to be either atomic number, either chemical symbols")
         
-        kwargs["elements_list"] = new_list
+        kwargs["elements"] = new_list
+        return func(*args,**kwargs)
+            
+    return inner
+
+def number_to_symbol_list (func) : 
+    """
+    Decorator
+    Takes a dict of elements (a.k.a chemical composition) with symbols as keys (e.g. Fe for iron)
+    returns a dict of elements with atomic numbers as keys (e.g. 26 for iron)
+    """
+    def inner(*args,**kwargs) : 
+        elts_list = kwargs["elements"]
+        new_list = []
+        with open(NUMBER_PERIODIC_TABLE,"r") as f : 
+            NPT = json.load(f)["table"]
+        for key in elts_list : 
+            if is_number(key) : 
+                new_list.append(NPT[str(key)]["symbol"])
+            elif is_symbol(key) : 
+                new_list.append(key)
+            else : 
+                raise ValueError("Input has to be either atomic number, either chemical symbols")
+        
+        kwargs["elements"] = new_list
         return func(*args,**kwargs)
             
     return inner

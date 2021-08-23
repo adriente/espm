@@ -1,13 +1,11 @@
-import snmfem.datasets.generate_data as gd
 from snmfem import models
 import numpy as np
-from snmfem.conf import DB_PATH, DATASETS_PATH
+from snmfem.conf import DATASETS_PATH
 from pathlib import Path
 from tqdm import tqdm
 from snmfem.datasets.generate_weights import generate_weights
-from snmfem.conf import SCRIPT_CONFIG_PATH
-import json
 import hyperspy.api as hs
+from snmfem.datasets.generate_EDXS_phases import unique_elts
 
 def generate_spim(phases, weights, densities, N, seed=0,continuous = False):
         """
@@ -54,21 +52,23 @@ def generate_spim(phases, weights, densities, N, seed=0,continuous = False):
                         stochastic_spim[i, j] += hist
             return stochastic_spim
 
-def save_generated_spim(filename, spim, model_params, g_params, phases_params, misc_params) : 
+
+def save_generated_spim(filename, spim, model_params, phases_params, misc_params) : 
     s = hs.signals.Signal1D(spim)
-    s.set_signal_type("EDS_TEM")
+    s.set_signal_type("EDXSsnmfem")
     s.axes_manager[-1].offset = model_params["e_offset"]
     s.axes_manager[-1].scale = model_params["e_scale"]
 
     s.set_microscope_parameters(beam_energy = model_params["E0"])
-    s.add_elements(g_params["elements"])
+
+    s.add_elements(elements = unique_elts(phases_params))
     s.metadata.Sample.thickness = model_params["params_dict"]["Abs"]["thickness"]
     s.metadata.Sample.density = model_params["params_dict"]["Abs"]["density"]
+    s.metadata.Acquisition_instrument.TEM.Detector.type = model_params["params_dict"]["Det"]
     s.metadata.Acquisition_instrument.TEM.Detector.take_off_angle = model_params["params_dict"]["Abs"]["toa"]
     s.metadata.Acquisition_instrument.TEM.Detector.width_slope = model_params["width_slope"]
     s.metadata.Acquisition_instrument.TEM.Detector.width_intercept = model_params["width_intercept"]
     s.metadata.xray_db = model_params["db_name"]
-    s.metadata.g_type = g_params["brstlg"]
     
     s.metadata.Truth = {}
     s.metadata.Truth.phases = phases_params
@@ -76,18 +76,16 @@ def save_generated_spim(filename, spim, model_params, g_params, phases_params, m
 
     s.save(filename)
 
-def generate_dataset(base_path=DATASETS_PATH, **kwargs):
+def generate_dataset(base_path=DATASETS_PATH,seeds_range = 10, **kwargs):
     
     # Handle paramters
     data_folder = kwargs["data_folder"]
     model_parameters = kwargs["model_parameters"]
-    g_parameters = kwargs["g_parameters"]
     phases_parameters = kwargs["phases_parameters"]
     misc_parameters = {
         "weight_type" : kwargs["weight_type"],
         "N" : kwargs["N"],
         "densities" : kwargs["densities"],
-        "seeds" : range(kwargs["seeds_range"]),
         "model" : kwargs["model"]
     }
 
@@ -96,7 +94,6 @@ def generate_dataset(base_path=DATASETS_PATH, **kwargs):
 
     # Generate the phases
     model = Model(**model_parameters)
-    model.generate_g_matr(**g_parameters)
     model.generate_phases(phases_parameters)
     phases = model.phases
 
@@ -105,9 +102,10 @@ def generate_dataset(base_path=DATASETS_PATH, **kwargs):
     folder.mkdir(exist_ok=True, parents=True)
     
     # list of densities which will give different total number of events per spectra
-    for seed in tqdm(range(kwargs["seeds_range"])):
+    for seed in tqdm(range(seeds_range)):
 
         weights = generate_weights(kwargs["weight_type"],kwargs["shape_2d"], n_phases=n_phases, seed=seed)
         spim = generate_spim(phases, weights, kwargs["densities"], kwargs["N"], seed=seed)
         filename = folder / Path("sample_{}".format(seed))
-        save_generated_spim(filename, spim, model_parameters, g_parameters, phases_parameters, misc_parameters)
+        misc_parameters.update({"seed" : seed})
+        save_generated_spim(filename, spim, model_parameters, phases_parameters, misc_parameters)

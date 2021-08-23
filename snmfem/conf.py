@@ -60,17 +60,12 @@ DEFAULT_SYNTHETIC_DATA_DICT = {
     "Det" : DEFAULT_SDD_EFF,
         }
     },
-    "g_parameters" : {
-        "brstlg" : True,
-        "elements" : ["Si","Au"]
-    },
     "phases_parameters" : DEFAULT_PHASE_PARAMS,
     "shape_2d" : (80,80),
     "weight_type" : "sphere",
     "N" : 100,
-    "densities" : [1.5],
-    "model" : "EDXS",
-    "seeds" : 10
+    "densities" : [2.33,19.3],
+    "model" : "EDXS"
 }
 
 log_shift = 1e-14
