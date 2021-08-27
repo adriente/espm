@@ -2,13 +2,13 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 from snmfem.updates import initialize_algorithms
-from snmfem.measures import KLdiv_loss, KLdiv, Frobenius_loss, find_min_angle, find_min_MSE
+from snmfem.measures import KLdiv_loss, Frobenius_loss, find_min_angle, find_min_MSE
 from snmfem.conf import log_shift
 from snmfem.utils import rescaled_DA
 import time
 from abc import ABC, abstractmethod
 from snmfem.laplacian import create_laplacian_matrix 
-from scipy.sparse import lil_matrix, block_diag
+from scipy.sparse import lil_matrix
 
 
 
@@ -19,7 +19,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     
     def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
-                 force_simplex=True, skip_G=False, l2=False,
+                 force_simplex=True, l2=False,  G=None, shape_2d = None,
+                 eval_print=10, true_D = None, true_A = None, fixed_A_inds = None, hspy_comp = True
                  ):
         self.n_components = n_components
         self.init = init
@@ -30,8 +31,14 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.log_shift = log_shift
         self.debug = debug
         self.force_simplex= force_simplex
-        self.skip_G = skip_G
         self.l2 = l2
+        self.G = G
+        self.shape_2d = shape_2d
+        self.eval_print = eval_print
+        self.true_D = true_D
+        self.true_A = true_A
+        self.fixed_A_inds = fixed_A_inds
+        self.hspy_comp = hspy_comp
 
     def _more_tags(self):
         return {'requires_positive_X': True}
@@ -62,7 +69,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.detailed_loss_ = [loss]
         return loss
 
-    def fit_transform(self, X, y=None, G=None, P=None, A=None, shape_2d = None, eval_print=10, true_D = None, true_A = None, fixed_A_inds = None):
+    def fit_transform(self, X, y=None, P=None, A=None):
         """Learn a NMF model for the data X and returns the transformed data.
         This is more efficient than calling fit followed by transform.
         Parameters
@@ -77,24 +84,22 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         -------
         P, A : ndarrays
         """
-        self.X_ = self._validate_data(X, dtype=[np.float64, np.float32])
+        if self.hspy_comp : 
+            self.X_ = self._validate_data(X.T, dtype=[np.float64, np.float32])
+        else : 
+            self.X_ = self._validate_data(X, dtype=[np.float64, np.float32])
         self.const_KL_ = None
 
-        self.fixed_A_inds_ = fixed_A_inds
-        
-        if self.skip_G:
-            G = None
-        if callable(G): 
-            self.G_func_ = G
-            # G = self.G_func_(model_params,g_params)
+        if callable(self.G): 
+            G = self.G()
         else : 
-            self.G_func_ = None
+            G = self.G
         
-        self.G_, self.P_, self.A_ = initialize_algorithms(self.X_, G, P, A, self.n_components, self.init, self.random_state, self.force_simplex, fixed_A_inds = self.fixed_A_inds_)
-        
-        self.shape_2d_ = shape_2d
-        if not(self.shape_2d_ is None) :
-            self.L_ = create_laplacian_matrix(*self.shape_2d_)
+        self.G_, self.P_, self.A_ = initialize_algorithms(self.X_, G, P, A, self.n_components, self.init, self.random_state, self.force_simplex, fixed_A_inds = self.fixed_A_inds)
+
+
+        if not(self.shape_2d is None) :
+            self.L_ = create_laplacian_matrix(*self.shape_2d)
         else : 
             self.L_ =lil_matrix((self.X_.shape[1],self.X_.shape[1]),dtype=np.float32)
             self.L_.setdiag([1]*self.X_.shape[1])
@@ -110,19 +115,20 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.losses_ = []
         self.rel_ = []
         self.detailed_losses_ = []
-        self.true_D_ = true_D
-        self.true_A_ = true_A
-        if not(true_D is None) and not(true_A is None) : 
-            self.angles_ = []
-            self.mse_ = []
-            self.true_losses_ = []
-            true_DA = true_D @ true_A
+        if not(self.true_D is None) and not(self.true_A is None) : 
+            if (self.true_D.shape[1] == self.n_components) and (self.true_A.shape[0] == self.n_components) : 
+                self.angles_ = []
+                self.mse_ = []
+                self.true_losses_ = []
+                true_DA = self.true_D @ self.true_A
+            else : 
+                print("The chosen number of components does not match the number of components of the provided truth. The ground truth will be ignored.")
         try:
             while True:
                 # Take one step in A, P
                 old_P, old_A = self.P_.copy(), self.A_.copy()
                 
-                self.P_, self.A_ = self._iteration( self.P_, self.A_ )
+                self.P_, self.A_ = self._iteration(self.P_, self.A_ )
                 eval_after = self.loss(self.P_, self.A_)
                 self.n_iter_ +=1
                 
@@ -138,18 +144,19 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 # an error if the optimization is stoped with a keyboard interrupt. 
                 detailed_loss_ = self.detailed_loss_
 
-                if not(true_D is None) and not(true_A is None) :
-                    if self.force_simplex:
-                        P, A = self.P_, self.A_ 
-                    else:
-                        P, A = rescaled_DA(self.P_, self.A_ )
-                    GP = self.G_ @ P
-                    angles = find_min_angle(true_D.T,GP.T, unique=True)
-                    mse = find_min_MSE(true_A, A,unique=True)
-                    loss = self.loss(self.P_,A, X = true_DA )
-                    self.angles_.append(angles)
-                    self.mse_.append(mse)
-                    self.true_losses_.append(loss)
+                if not(self.true_D is None) and not(self.true_A is None) :
+                    if (self.true_D.shape[1] == self.n_components) and (self.true_A.shape[0] == self.n_components) : 
+                        if self.force_simplex:
+                            P, A = self.P_, self.A_ 
+                        else:
+                            P, A = rescaled_DA(self.P_, self.A_ )
+                        GP = self.G_ @ P
+                        angles = find_min_angle(self.true_D.T,GP.T, unique=True)
+                        mse = find_min_MSE(self.true_A, A,unique=True)
+                        loss = self.loss(self.P_,A, X = true_DA )
+                        self.angles_.append(angles)
+                        self.mse_.append(mse)
+                        self.true_losses_.append(loss)
                 
                 self.losses_.append(eval_after)
                 self.detailed_losses_.append(detailed_loss_)
@@ -185,7 +192,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     print("exit because of negative decrease")
                     break
                 
-                if self.verbose > 0 and np.mod(self.n_iter_, eval_print) == 0:
+                if self.verbose > 0 and np.mod(self.n_iter_, self.eval_print) == 0:
                     print(
                         f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:0.3f},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
                     )
@@ -203,13 +210,16 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             f"and {np.round(algo_time) % 60} seconds."
         )
         self.reconstruction_err_ = self.loss(self.P_, self.A_)
-
-        self.n_components_ = self.A_.shape[0]
-        self.components_ = self.A_
-
+        
         GP = self.G_ @ self.P_
-
-        return GP
+        self.n_components_ = self.A_.shape[0]
+        
+        if self.hspy_comp : 
+            self.components_ = GP.T
+            return self.A_.T
+        else : 
+            self.components_ = self.A_
+            return GP
 
     def fit(self, X, y=None, **params):
         """Learn a NMF model for the data X.
@@ -260,7 +270,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     
     def get_losses(self):
         
-        if not(self.true_D_ is None) and not(self.true_A_ is None) :
+        if not(self.true_D is None) and not(self.true_A is None) :
             mse_list = []
             angles_list = []
             for i in range(self.n_components) :

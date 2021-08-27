@@ -10,15 +10,9 @@ class FastNMF(NMFEstimator):
 
     
     # args and kwargs are copied from the init to the super instead of capturing them in *args and **kwargs to be scikit-learn compliant.
-    def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,
-                 random_state=None, verbose=1, log_shift=log_shift, debug=False,
-                 force_simplex=True, epsilon_reg=1, dicotomy_tol=dicotomy_tol, lambda_L = 1.
-                 **kwargs):
+    def __init__(self, log_shift=log_shift, epsilon_reg=1, dicotomy_tol=dicotomy_tol, **kwargs):
 
-        super().__init__( n_components=n_components, init=init, tol=tol, max_iter=max_iter,
-                        random_state=random_state, verbose=verbose, log_shift=log_shift, debug=debug,
-                        force_simplex=force_simplex, **kwargs
-                        )
+        super().__init__( **kwargs )
         self.mu = mu
         self.epsilon_reg = epsilon_reg
         self.log_shift = log_shift

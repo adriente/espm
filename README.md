@@ -16,6 +16,29 @@ pip install cython
 pip install .
 ```
 
+# Set up the virtual env
+
+To be done
+
+# Modifying hyperspy 
+
+Once your virtual env has started search for the folder where hyperspy is installed : 
+```
+pipenv --venv
+```
+
+Go to this location + ``/lib/python3.X/site-packages/hyperspy`` and open the ``hyperspy_extension.yaml``.
+In that file add the following lines : 
+```
+  EDXSsnmfem:
+    signal_type: "EDXSsnmfem"
+    signal_dimension: 1
+    dtype : real
+    lazy: False
+    module: snmfem.datasets.spim
+```
+
+
 ## Installation as a developer (What you should do Adrien)
 After setting up your virtual environnement, simply run 
 ```

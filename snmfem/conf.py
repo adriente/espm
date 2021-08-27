@@ -73,14 +73,15 @@ dicotomy_tol = 1e-10
 seed_max = 4294967295
 
 POS_ARGS = {
-    "json" : ["json",{"help" : "str : Name of the json file containing info about the data"}],
+    "input_file" : ["input_file",{"help" : "str : Name of the file containing the data."}],
     "method" : ["method",{"choices":  ["NMF","SmoothNMF","SKNMF","MCRLLM"], "help" : "str : Name of the estimator for the decomposition"}],
+    "g_type" : ["-gm", "--g_type", {"choices" : ["bremsstrahlung","no_brstlg", "identity"], "default" : "bremsstrahlung", "help" : "str : method to generate the G matrix from the metadata"}],
     "k" : ["k",{"type" : int,"help" : "int : expected number of phases"}]
 }
 
 EVAL_ARGS = {
     "u" : ["-u", "--u", {"action" : "store_false", "help" : "None : Activate so that each result is uniquely matched with a ground truth."}],
-    "file" : ["-f","--file",{"default" : "dump.npz", "help" : "str : Name of the npz file where the data are stored"}],
+    "output_file" : ["-of","--output_file",{"default" : "dump.npz", "help" : "str : Name of the npz file where the data are stored"}],
 }
 
 ESTIMATOR_ARGS = {
@@ -92,7 +93,6 @@ ESTIMATOR_ARGS = {
 
     # SNMFEM parameters
     "mu" : ["-mu","--mu",{"type" : float,"default" : 0.0, "help" : "float : strenght of the log regularization"},["NMF","SmoothNMF"]],
-    "skip_G" : ["-sG","--skip_G",{"action" : "store_true", "help" : "None : Activate G matrix"},["NMF","SmoothNMF"]],
     "force_simplex" : ["-fs","--force_simplex",{"action" : "store_false", "help" : "None : Activate simplex constraint"},["NMF","SmoothNMF"]],
     "lambda_L" : ["-l","--lambda_L",{"type" : float, "default" : 0.0,"help":"float : strengh of the Laplacian reg"},["SmoothNMF"]],
     "l2" : ["-l2","--l2",{"action" : "store_true","help" : "None : Sets the loss function to frobenius when activated"}, ["NMF","SmoothNMF"]],

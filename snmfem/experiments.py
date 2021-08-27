@@ -4,73 +4,57 @@ import numpy as np
 import snmfem.conf as conf
 import snmfem.utils as u
 from pathlib import Path
-import json
 from argparse import ArgumentParser, Namespace
-from snmfem.models.edxs import G_EDXS
 
-def compute_metrics(true_spectra, true_maps, GP, A, u = False):
+def compute_metrics(true_spectra, true_maps, GP, A, u = True):
     angle, ind1 = measures.find_min_angle(true_spectra, GP.T, True, unique=u)
     mse, ind2 = measures.find_min_MSE(true_maps, A, True, unique=u)
     return angle, mse, (ind1, ind2)
 
-def run_experiment(Xflat, true_spectra, true_maps, G, experiment, params_evalution = {"u" : True}, shape_2d = None, g_pars = None, mod_pars = None, ind_list = None) : 
+def run_experiment(estimator,experiment,simulated = False) : 
+    spim.decomposition(estimator)
     
-    Estimator = getattr(estimators, experiment["method"]) 
-
-    estimator = Estimator(**experiment["params"])
-    estimator.fit(Xflat,G=G,shape_2d = shape_2d,true_D = true_spectra.T, true_A = true_maps, g_params = g_pars, model_params = mod_pars,fixed_A_inds = ind_list)
-    
-    G = estimator.G_
-    P = estimator.P_
-    A = estimator.A_
+    P = spim.get_P()
+    A = spim.get_decomposition_loadings().data.reshape((experiment["params"]["n_components"],spim.axes_manager[0]*spim.axes_manager[1]))
     
     losses = estimator.get_losses()
-    metrics = compute_metrics(true_spectra, true_maps, G@P, A, **params_evalution)
+    if simulated :
+        metrics = compute_metrics(true_spectra, true_maps, G@P, A)
+    else : 
+        temp = np.zeros((experiment["params"]["n_components"],))
+        metrics = (temp, temp, (temp,temp))
     return metrics, (G, P, A), losses
 
-def load_data(sample, G_func = False) : 
-    data = np.load(sample)
-    X = data["X"]
-    nx, ny, ns = X.shape
-    Xflat = X.transpose([2,0,1]).reshape(ns, nx*ny)
-    densities = data["densities"]
-    phases = data["phases"]
-    true_spectra_flat = np.expand_dims(densities, axis=1) * phases * data["N"]
-    true_maps = data["weights"]
-    k = true_maps.shape[2]
-    true_maps_flat = true_maps.transpose([2,0,1]).reshape(k,nx*ny)
-    if G_func : 
-        G = G_EDXS
+def quick_load(experiment) : 
+    loaded = hs.load(experiment["input_file"])
+    spim = loaded.set_signal_type("EDXSsnmfem")
+    G, shape_2d = spim.extract_params(g_type = experiment["g_type"])
+    Estimator = getattr(estimators, experiment["method"]) 
+    if simulated : 
+        D, A = spim.extract_truth()
+        estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"])
     else : 
-        G = data["G"]
-    shape_2d = data["shape_2d"]
-    # if float32:
-    #     Xflat = Xflat.astype(np.float32)
-    #     true_spectra_flat = true_spectra_flat.astype(np.float32)
-    #     true_maps_flat = true_maps_flat.astype(np.float32)
-    #     G = G.astype(np.float32)
-    return Xflat, true_spectra_flat, true_maps_flat, G, shape_2d
+        estimator = Estimator(G = G, shape_2d = shape_2d, **experiment["params"])
+    return estimator
 
-def load_samples(dataset, base_path_conf=conf.SCRIPT_CONFIG_PATH, base_path_dataset = conf.DATASETS_PATH):
-    data_json = base_path_conf / Path(dataset)
-    print(data_json)
-    with open(data_json,"r") as f :
-        data_dict = json.load(f)
-    k = len(data_dict["phases_parameters"])
-    g, model = data_dict["g_parameters"], data_dict["model_parameters"]
-    data_folder = base_path_dataset / Path(data_dict["data_folder"])
-    samples = sorted(list(data_folder.glob("sample_*.npz")))
-    return samples, k, g, model
 
-def perform_simulations(samples, exp_list, params_evalution = {"u" : True},G_func = False, g_pars = None, mod_pars = None):
+# To be verified ...
+def perform_simulations(exp_list,n_samples = 10, simulated = False):
+    augm_exp_list = []
+    for exp in exp_list : 
+        files = [exp["input_file"] / Path("sample_{}.hspy".format(i)) for i in range(n_samples)]
+        new_exps = []
+        for f in files : 
+            exp["input_file"] = f
+            new_exps.append(exp)
+        augm_exp_list.append(new_exps)
     
     metrics = []
-    for s in samples: 
-        Xflat, true_spectra, true_maps, G, shape_2d = load_data(s,G_func = G_func)
-        m = []
-        for exp in exp_list : 
-            m.append(run_experiment(Xflat, true_spectra, true_maps, G, exp, params_evalution, shape_2d=shape_2d,g_pars=g_pars,mod_pars=mod_pars)[0][:-1])
-        metrics.append(m)
+    for augm_exp in augm_exp_list :
+        for exp in augm_exp : 
+            estim = quick_load(exp)
+            m.append(run_experiment(estimator = estim, experiment=exp, simulated= simulated)[0][:-1])
+            metrics.append(m)
     metrics = np.array(metrics)
     return metrics
 
@@ -117,14 +101,15 @@ def experiment_parser (argv) :
     
     return vars(arg_groups["positional_group"]), vars(arg_groups["estimator_group"]), vars(arg_groups["evaluation_group"])
 
-def build_exp(k,pos_dict,est_dict, name = None) : 
+def build_exp(pos_dict,est_dict, name = None) : 
     d = {}
     if name is None : 
         d["name"] = pos_dict["method"]
     else : 
         d["name"] = name
     d["method"] = pos_dict["method"]
-    k_dict = {"n_components" : k}
+    d["input_file"] = pos_dict["input_file"]
+    d["g_type"] = pos_dict["g_type"]
     estimator_dict = {}
     for key in est_dict.keys() : 
         if conf.ESTIMATOR_ARGS[key][3] is None : 
@@ -133,7 +118,7 @@ def build_exp(k,pos_dict,est_dict, name = None) :
             estimator_dict[key] = est_dict[key]
         else : 
             pass
-    d["params"] = {**k_dict, **estimator_dict}
+    d["params"] = {"n_components" : pos_dict["k"], **estimator_dict}
     return d
 
 def store_in_file(file,metrics,matrices_tuple,losses) :
@@ -174,6 +159,26 @@ def fill_exp_dict(input_dict) :
     default_dict =  vars(args)
 
     return u.arg_helper(input_dict,default_dict)
+
+def get_ROI_ranges(spim,ROI) : 
+    scale_h, offset_h = spim.axes_manager[0].scale, spim.axes_manager[0].offset
+    scale_v, offset_v = spim.axes_manager[1].scale, spim.axes_manager[1].offset
+    left = int((ROI.left - offset_h)/scale_h)
+    right = int((ROI.right - offset_h)/scale_h)
+    top = int((ROI.top - offset_v)/scale_v)
+    bottom = int((ROI.bottom - offset_v)/scale_v)
+    return left, right, top, bottom
+
+def build_index_list (left,right,top,bottom, size_h) : 
+    ind_list = []
+    for i in range(left,right) : 
+        for j in range(top,bottom) : 
+            ind_list.append(num_indices((i,j),size_h))
+    ind_list.sort()
+    return ind_list
+
+def num_indices (ij, size_h) : 
+    return ij[0] + size_h*ij[1]
 
 # def gather_results(file_list,output,folder = conf.RESULTS_PATH,output_folder = conf.RESULTS_PATH) : 
 #     string_list = []

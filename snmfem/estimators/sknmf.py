@@ -12,7 +12,7 @@ class SKNMF(NMF):
         self.P_ = None
         self.A_ = None
         
-    def  fit_transform(self, X, y=None, G=None, P=None, A=None, shape_2d = None,true_D = None, true_A = None, **kwargs):
+    def  fit_transform(self, X, y=None, P=None, A=None):
         W = super().fit_transform(X, y=y, W=P, H=A)
         H = self.components_
         GP, A = rescaled_DA(W,H)

@@ -1,11 +1,7 @@
-from re import A
-from snmfem import models
 import numpy as np
 from snmfem.conf import log_shift, dicotomy_tol
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
 from snmfem.laplacian import sigmaL
-import snmfem.utils as u
-from scipy import sparse
 # test
 
 def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
@@ -198,8 +194,9 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
     return new_A
 
 
-def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_simplex, fixed_A_inds = None ):
+def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_simplex, fixed_A_inds = None):
     # Handle initialization
+
     if G is None : 
         skip_second = True
         # G = sparse.diags(np.ones(X.shape[0]).astype(X.dtype))        
@@ -222,6 +219,7 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
                 scale = np.sum(A, axis=0, keepdims=True)
                 A = A/scale 
         D = np.abs(np.linalg.lstsq(A.T, X.T,rcond=None)[0].T)
+        print(D.shape)
         if skip_second:
             P = D
         else:
@@ -239,7 +237,6 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
         vec[0] = 1
         fixed_A = np.tile(vec[:,np.newaxis],(len(fixed_A_inds),))
         A[:,fixed_A_inds] = fixed_A
-        
 
     return G, P, A
 

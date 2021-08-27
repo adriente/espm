@@ -3,16 +3,20 @@ import numpy as np
 
 class MCRLLM() : 
 
-    def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,verbose=1,mcr_method = True) :
+    def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,verbose=1,mcr_method = True, hspy_comp = True) :
         self.n_components = n_components
         self.init = init
         self.tol = tol
         self.max_iter = max_iter
         self.verbose = verbose
         self.mcr_method = mcr_method
+        self.hspy_comp = hspy_comp
 
-    def fit_transform(self, X, y=None, G=None, P=None, A=None, shape_2d = None,true_D = None, true_A = None, **kwargs) : 
-        Xt = X.T
+    def fit_transform(self, X, y=None, P=None, A=None) : 
+        if self.hspy_comp :
+            Xt = X
+        else : 
+            Xt = X.T
         if self.mcr_method : 
             method = "variable"
         else : 
@@ -29,4 +33,5 @@ class MCRLLM() :
         return self
 
     def get_losses(self):
+        # To be implemented eventually
         return None

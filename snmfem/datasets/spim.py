@@ -12,11 +12,15 @@ class EDXSsnmfem (Signal1D) :
         # self.phases_parameters, self.misc_parameters = self.get_truth()
         # self.phases, self.weights = self.build_truth()
 
-    def extract_truth(self) : 
-        mod_pars, _ = get_metadata(self)
+    def extract_truth(self,reshape = True) : 
+        mod_pars = get_metadata(self)
         phases_pars, misc_pars = get_truth(self)
-        self.phases, self.weights = build_truth(self, mod_pars, phases_pars, misc_pars)
-        return self.phases, self.weights
+        phases, weights = build_truth(self, mod_pars, phases_pars, misc_pars)
+        self.phases, self.weights = phases, weights
+        if reshape : 
+            phases = phases.T
+            weights = weights.reshape((weights.shape[0]*weights.shape[1], weights.shape[2])).T
+        return phases, weights
 
     def extract_params(self, g_type = "bremsstrahlung") :
         self.g_type = g_type
@@ -33,13 +37,17 @@ class EDXSsnmfem (Signal1D) :
 
     def get_P(self) : 
         D = self.get_decomposition_factors().data.T
-        P = np.abs(np.linalg.lstsq(self.G, D,rcond=None)[0])
+        if self.g_type == "bremsstrahlung" : 
+            G = self.G()
+        else : 
+            G = self.G
+        P = np.abs(np.linalg.lstsq(G, D,rcond=None)[0])
         return P
 
-    def update_G(P=None, G=None):
+    def update_G(self, part_P=None, G=None):
         model_params = get_metadata(self)
         g_params = {"g_type" : self.g_type, "elements" : self.metadata.Sample.elements}
-        G = G_EDXS(model_params, g_params, P=P, G=G)
+        G = G_EDXS(model_params, g_params, part_P=part_P, G=G)
         return G
     
     # def plot() : 
@@ -121,7 +129,7 @@ def build_truth(spim, model_params, phases_params, misc_params ) :
         model = EDXS(**model_params)
         model.generate_phases(phases_params)
         phases = model.phases
-        phases = phases* misc_params["N"] / np.sum(phases, axis=1, keepdims=True)
+        phases = phases * misc_params["N"] / np.sum(phases, axis=1, keepdims=True)
         weights = generate_weights(misc_params["weight_type"],shape_2d, len(phases_params) , misc_params["seed"] )
         return phases, weights
     else : 
