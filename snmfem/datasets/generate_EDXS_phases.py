@@ -35,7 +35,7 @@ def generate_brem_params (seed) :
 def generate_elts_dict (seed, nb_elements = 3) : 
     np.random.seed(seed)
     elts = np.random.choice(np.arange(6,82,dtype = int),nb_elements,replace=False)
-    elts = [int(elt) for elt in elts]
+    elts = [str(elt) for elt in elts]
     frac = np.random.rand(nb_elements)
     elt_dict = dict(zip(elts,frac))
     return elt_dict

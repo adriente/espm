@@ -1,0 +1,45 @@
+from snmfem.datasets.base import generate_dataset
+
+dataset_particles  = {'N': 100,
+ 'seed' : 91
+ 'densities': [0.6030107883539217, 0.9870613994765459, 0.8894990661032164],
+ 'data_folder': 'aspim41_3_random_phases',
+ 'weight_type': 'sphere',
+ 'shape_2D': [80, 80],
+ 'phases_parameters': [{'b0': 7.408513360414626e-08,
+   'b1': 6.606903143185911e-08,
+   'elements_dict': {'23': 0.04704309583693933,
+    '37': 0.914954275584854,
+    '74': 0.06834271611694454},
+   'scale': 1.0},
+  {'b0': 7.317975736931391e-08,
+   'b1': 5.2126092148294355e-08,
+   'elements_dict': {'7': 0.4517936299777999,
+    '70': 0.39973013314240835,
+    '78': 0.08298592142537742},
+   'scale': 1.0},
+  {'b0': 2.2664567599307173e-08,
+   'b1': 3.1627208027847766e-08,
+   'elements_dict': {'13': 0.43306626599937914,
+    '22': 0.3985896640183708,
+    '57': 0.8994030840372912},
+   'scale': 1.0}],
+ 'model_parameters': {'e_offset': 0.2,
+  'e_size': 1980,
+  'e_scale': 0.01,
+  'width_slope': 0.01,
+  'width_intercept': 0.065,
+  'db_name': 'default_xrays.json',
+  'E0': 200,
+  'params_dict': {'Abs': {'thickness': 1e-05,
+    'toa': 22,
+    'density': None,
+    'atomic_fraction': False},
+   'Det': 'SDD_efficiency.txt',
+   'E0': 200}},
+ 'shape_2d': (80, 80),
+ 'model': 'EDXS'}
+
+def generate_built_in () : 
+    print("Generating 2 particles + one matrix built-in dataset. This will take a minute")
+    generate_dataset(**dataset_particles)
