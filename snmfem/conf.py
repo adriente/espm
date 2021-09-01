@@ -28,7 +28,6 @@ SCRIPT_CONFIG_PATH = BASE_PATH.parent / Path("scripts/config/")
 HSPY_MAC = macs.ffast_mac
 
 DEFAULT_EDXS_PARAMS = {
-    "E0" : 200,
     "Det" : DEFAULT_SDD_EFF,
     "Abs" : {
             "thickness" : 100.0e-7,
@@ -63,6 +62,7 @@ DEFAULT_SYNTHETIC_DATA_DICT = {
     "phases_parameters" : DEFAULT_PHASE_PARAMS,
     "shape_2d" : (80,80),
     "weight_type" : "sphere",
+    "weights_params" : {},
     "N" : 100,
     "densities" : [2.33,19.3],
     "model" : "EDXS"

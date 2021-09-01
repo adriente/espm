@@ -1,6 +1,6 @@
 import numpy as np
 from skimage.filters import median
-
+from snmfem.models.EDXS_function import gaussian
 
 class Material(object):
     
@@ -70,12 +70,23 @@ class Material(object):
             self.weights[:, :, phase_id] += circle
         else:
             print("the phases concentrations add up to more than one")
+
+    def gaussian_ripple(self, center, width, conc_max, phase_id) :
+        x = np.arange(self.shape_2D[1])
+        gauss_line = gaussian(x,center,width/2.355)
+        norm_gauss = conc_max*(gauss_line - np.min(gauss_line))/(np.max(gauss_line) - np.min(gauss_line))
+        gaussian_ripple = np.tile(norm_gauss,(self.shape_2D[0],1))
+        if self.check_add_weights(gaussian_ripple) : 
+            self.weights[:,:,phase_id] += gaussian_ripple
+        else : 
+            print("the phases concentrations add up to more than one")
+
             
     def check_add_weights(self, val):
         # Construct the sum of weigths of each phase to evaluate later if they add up to more than one
         s = self.weights.sum(axis=2)
         s += val
-        test = s < 1
+        test = s <= 1
         return np.all(test)
     
     def finalize_weight(self):
@@ -98,8 +109,20 @@ def laplacian_weights(shape_2D, n_phases=3, seed=0) :
     rnd_f = np.array(rnd_f).transpose([1,2,0])
     weights = rnd_f/np.sum(rnd_f, axis=2, keepdims=True)
     return weights
+
+def gaussian_ripple_weights(shape_2D, width = 1, seed = 0, **kwargs) : 
+    mat = Material(shape_2D, 2)
+    np.random.seed(seed)
+    if seed == 0 : 
+        mat.gaussian_ripple(center = shape_2D[1]//2, width = width, conc_max= 1, phase_id=1)
+    else : 
+        c = np.random.randint(1,shape_2D[1])
+        mat.gaussian_ripple(center = c, width = width, conc_max= 1, phase_id= 1)
+
+    return mat.finalize_weight()
     
-def spheres_weights(shape_2D=[80, 80], n_phases=3,  seed=0):
+    
+def spheres_weights(shape_2D=[80, 80], n_phases=3,  seed=0, radius = 2.5, **kwargs):
     mat = Material(shape_2D, n_phases)
     
     if seed == 0 and n_phases==3 and shape_2D == [80, 80]:
@@ -110,16 +133,18 @@ def spheres_weights(shape_2D=[80, 80], n_phases=3,  seed=0):
         for i in range(1, n_phases):
             p1 = np.random.randint(1, shape_2D[0])
             p2 = np.random.randint(1, shape_2D[1])
-            mat.sphere([p1,p2], 2.5, 2.5, 0.0, 0.5, i)     
+            mat.sphere([p1,p2], radius, radius, 0.0, 0.5, i)     
     return mat.finalize_weight()
 
-def generate_weights(weight_type, shape_2D, n_phases=3, seed=0):
+def generate_weights(weight_type, shape_2D, n_phases=3, seed=0, **params):
     if weight_type=="random":
         return random_weights(shape_2D, n_phases, seed) 
     elif weight_type=="laplacian":
         return laplacian_weights(shape_2D, n_phases, seed) 
     elif weight_type=="sphere":
-        return spheres_weights(shape_2D, n_phases, seed) 
+        return spheres_weights(shape_2D, n_phases, seed, **params) 
+    elif weight_type == "gaussian_ripple" : 
+        return gaussian_ripple_weights(shape_2D = shape_2D, seed = seed , **params)
     # elif weight_type=="gradient":
     #     return spheres_gradient(shape_2D, n_phases, seed) 
     else:

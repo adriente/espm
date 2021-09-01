@@ -13,6 +13,7 @@ DEFAULT_PARAMS = {
     "e_offset" : 0.200,
     "e_size" : 1980,
     "e_scale" : 0.01,
+    "E0" : 200,
     "db_name" : "default_xrays.json",
     "params_dict": {
 "Abs" : {

@@ -33,7 +33,7 @@ class EDXSsnmfem (Signal1D) :
         
         self.G = G
         
-        return self.G, (self.axes_manager[0].size, self.axes_manager[1].size)
+        return self.G, (self.axes_manager[1].size, self.axes_manager[0].size)
 
     def get_P(self) : 
         D = self.get_decomposition_factors().data.T
@@ -54,20 +54,24 @@ class EDXSsnmfem (Signal1D) :
     #     pass
 
     def get_Xflat(self) : 
-        shape = self.axes_manager[0].size, self.axes_manager[1].size, self.axes_manager[2].size
+        shape = self.axes_manager[1].size, self.axes_manager[0].size, self.axes_manager[2].size
         return self.data.reshape((shape[0]*shape[1], shape[2])).T
 
     def set_analysis_parameters (self,beam_energy = 200, azimuth_angle = 0.0, elevation_angle = 22.0, tilt_stage = 0.0, elements = [], thickness = 200e-7, density = 3.5, detector_type = "SDD_efficiency.txt", width_slope = 0.01, width_intercept = 0.065, xray_db = "default_xrays.json") :
         self.set_microscope_parameters(beam_energy = beam_energy, azimuth_angle = azimuth_angle, elevation_angle = elevation_angle,tilt_stage = tilt_stage)
-        self.add_elements(elements)
+        self.add_elements(elements = elements)
         self.metadata.Sample.thickness = thickness
         self.metadata.Sample.density = density
-        self.metadata.Acquisition_instrument.TEM.Detector.type = detector_type
-        self.metadata.Acquisition_instrument.TEM.Detector.width_slope = width_slope
-        self.metadata.Acquisition_instrument.TEM.Detector.width_intercept = width_intercept
+        try : 
+            del self.metadata.Acquisition_instrument.TEM.Detector.EDS.type
+        except AttributeError : 
+            pass
+        self.metadata.Acquisition_instrument.TEM.Detector.EDS.type = detector_type
+        self.metadata.Acquisition_instrument.TEM.Detector.EDS.width_slope = width_slope
+        self.metadata.Acquisition_instrument.TEM.Detector.EDS.width_intercept = width_intercept
         self.metadata.xray_db = xray_db
 
-        self.metadata.Acquisition_instrument.TEM.Detector.take_off_angle = take_off_angle(tilt_stage,azimuth_angle,elevation_angle)
+        self.metadata.Acquisition_instrument.TEM.Detector.EDS.take_off_angle = take_off_angle(tilt_stage,azimuth_angle,elevation_angle)
     
     @number_to_symbol_list
     def add_elements(self, *, elements = []) :
@@ -124,13 +128,14 @@ def get_metadata(spim) :
     return mod_pars
 
 def build_truth(spim, model_params, phases_params, misc_params ) : 
-    shape_2d = [spim.axes_manager[0].size , spim.axes_manager[1].size]
+    # axes manager does not respect the original order of the input data shape
+    shape_2d = [spim.axes_manager[1].size , spim.axes_manager[0].size]
     if (not(phases_params is None)) and (not(misc_params is None)) :
         model = EDXS(**model_params)
         model.generate_phases(phases_params)
         phases = model.phases
-        phases = phases * misc_params["N"] / np.sum(phases, axis=1, keepdims=True)
-        weights = generate_weights(misc_params["weight_type"],shape_2d, len(phases_params) , misc_params["seed"] )
+        phases = phases / np.sum(phases, axis=1, keepdims=True)
+        weights = generate_weights(misc_params["weight_type"],shape_2d, len(phases_params),misc_params["seed"], **misc_params["weights_params"])
         return phases, weights
     else : 
         print("This dataset contains no ground truth. Nothing was done.")

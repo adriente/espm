@@ -6,7 +6,7 @@ import numpy as np
 
 class PhysicalModel(ABC) :
 
-    def __init__(self, e_offset, e_size, e_scale, params_dict,db_name=None,**kwargs) :
+    def __init__(self, e_offset, e_size, e_scale, params_dict,db_name="default_xrays.json", E0 = 200, **kwargs) :
         self.x = self.build_energy_scale(e_offset, e_size, e_scale)
         self.params_dict = params_dict
         if db_name is None :
@@ -19,6 +19,7 @@ class PhysicalModel(ABC) :
         self.spectrum = np.zeros_like(self.x)
         self.G = np.diag(np.ones_like(self.x))
         self.phases = None
+        self.E0 = E0
 
     @abstractmethod
     def generate_g_matr (self, g_parameters) :

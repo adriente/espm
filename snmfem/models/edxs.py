@@ -95,7 +95,7 @@ class EDXS(PhysicalModel):
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
                 approx_elts = {key : 1.0/len(elements) for key in elements}
-                brstlg_spectrum = G_bremsstrahlung(self.x,self.params_dict,elements_dict=approx_elts)
+                brstlg_spectrum = G_bremsstrahlung(self.x,self.E0,self.params_dict,elements_dict=approx_elts)
                 if np.max(brstlg_spectrum) > 0.0 : 
                     self.G = np.concatenate((self.G, brstlg_spectrum), axis=1)
                 else : 
@@ -115,9 +115,10 @@ class EDXS(PhysicalModel):
             # p.update({"elements_dict" : unique_elts})
             self.phases.append(self.generate_spectrum(**p,abs_elts_dict = unique_elts))
         self.phases = np.array(self.phases)
+        self.phases /= self.phases.sum(axis = 1)[:,np.newaxis]
 
     @symbol_to_number_dict
-    def generate_spectrum(self, b0=0, b1 = 0, E0=200, scale = 1.0,abs_elts_dict = {},*,elements_dict = {}):
+    def generate_spectrum(self, b0=0, b1 = 0, scale = 1.0,abs_elts_dict = {},*,elements_dict = {}):
         """
         Generates an EDXS spectrum with the specified elements. The continuum x-rays are added and scaled to the gaussian peaks.
         :elements_dict: dictionnary of elements with concentration in that way {"integer":concentration}
@@ -145,9 +146,9 @@ class EDXS(PhysicalModel):
                     )*A*D
         temp /= temp.sum()
         if abs_elts_dict == {} : 
-            temp += continuum_xrays(self.x,self.params_dict,b0,b1,E0,elements_dict=elements_dict) * scale
+            temp += continuum_xrays(self.x,self.params_dict,b0,b1,self.E0,elements_dict=elements_dict) * scale
         else : 
-            temp += continuum_xrays(self.x,self.params_dict,b0,b1,E0,elements_dict=abs_elts_dict) * scale
+            temp += continuum_xrays(self.x,self.params_dict,b0,b1,self.E0,elements_dict=abs_elts_dict) * scale
         
         return temp
 

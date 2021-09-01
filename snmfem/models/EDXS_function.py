@@ -70,7 +70,7 @@ def continuum_xrays(x,params_dict={},b0= 0, b1 = 0, E0 = 200,*,elements_dict = {
     
     return B * A * D 
 
-def G_bremsstrahlung(x,params_dict,*,elements_dict = {}):
+def G_bremsstrahlung(x,E0,params_dict,*,elements_dict = {}):
     """
     Computes the continuum X-ray based on the brstlg_pars set during init.
     The function is built in a way so that even an incomplete brstlg_pars dict is not a problem.
@@ -86,13 +86,13 @@ def G_bremsstrahlung(x,params_dict,*,elements_dict = {}):
     B0 = A*D*lifshin_bremsstrahlung_b0(
             x,
             b0 = 1,
-            E0 = params_dict["E0"]
+            E0 = E0
         )
 
     B1 = A*D*lifshin_bremsstrahlung_b1(
         x,
         b1=1,
-        E0 = params_dict["E0"]
+        E0 = E0
     )
 
     B = np.vstack((B0,B1)).T

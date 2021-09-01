@@ -79,6 +79,7 @@ def save_generated_spim(filename, spim, model_params, phases_params, misc_params
 def generate_dataset(base_path=DATASETS_PATH,seeds_range = 10, **kwargs):
     
     # Handle paramters
+
     data_folder = kwargs["data_folder"]
     model_parameters = kwargs["model_parameters"]
     phases_parameters = kwargs["phases_parameters"]
@@ -87,7 +88,8 @@ def generate_dataset(base_path=DATASETS_PATH,seeds_range = 10, **kwargs):
         "N" : kwargs["N"],
         "densities" : kwargs["densities"],
         "model" : kwargs["model"],
-        "seed" : kwargs["seed"]
+        "seed" : kwargs["seed"],
+        "weights_params" : kwargs["weights_params"]
     }
 
     Model = getattr(models, kwargs["model"]) 
@@ -104,9 +106,10 @@ def generate_dataset(base_path=DATASETS_PATH,seeds_range = 10, **kwargs):
     
     # list of densities which will give different total number of events per spectra
     fixed_seed = misc_parameters["seed"]
+
     for seed in tqdm(range(misc_parameters["seed"],seeds_range+misc_parameters["seed"])):
 
-        weights = generate_weights(kwargs["weight_type"],kwargs["shape_2d"], n_phases=n_phases, seed=seed)
+        weights = generate_weights(kwargs["weight_type"],kwargs["shape_2d"], **kwargs["weights_params"], n_phases=n_phases, seed=seed)
         spim = generate_spim(phases, weights, kwargs["densities"], kwargs["N"], seed=seed)
         filename = folder / Path("sample_{}".format(seed - fixed_seed))
         misc_parameters.update({"seed" : seed})
