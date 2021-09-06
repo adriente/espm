@@ -1695,7 +1695,7 @@ WE CAN DO LINESEARCH OVER GAMMA
 An algorithm?
 \end_layout
 
-\begin_layout Paragraph
+\begin_layout Standard
 Let us define our loss function as
 \begin_inset Formula 
 \begin{align*}
@@ -2107,6 +2107,832 @@ Question: can we just use
 \begin{align*}
 \left\langle \nabla_{A}\mathcal{L}_{J}(A^{t},D^{t},\dot{Q^{t}}),A-A^{t}\right\rangle  & =\sum_{\ell,p}\left(\sum_{i}D_{i,\ell}^{t}-\frac{\sum_{i}X_{i,p}\dot{Q_{i,p,\ell}^{t}}}{A_{\ell,p}^{t}}\right)\left(A_{\ell,p}-A_{\ell,p}^{t}\right)\\
 \end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Taking the bremstrahlung out of G
+\end_layout
+
+\begin_layout Standard
+Let us consider the loss
+\begin_inset Formula 
+\begin{align*}
+L(P,B) & =-\left\langle X,\log\left(\left(GP+B\right)A\right)\right\rangle +\left\langle \mathbf{1}^{\ell,p},\left(GP+B\right)A\right\rangle \\
+ & =-\left\langle X,\log\left(\left(GP+B\right)A\right)\right\rangle +\left\langle \mathbf{1}^{\ell,p},GPA\right\rangle +\left\langle \mathbf{1}^{\ell,p},BA\right\rangle 
+\end{align*}
+
+\end_inset
+
+The gradient with respect of 
+\begin_inset Formula $P$
+\end_inset
+
+ and 
+\begin_inset Formula $B$
+\end_inset
+
+ are
+\begin_inset Formula 
+\[
+\nabla_{P}\mathcal{L}=-G^{T}\left(X\oslash\left(\left(GP+B\right)A\right)\right)A^{T}+G^{T}\mathbf{1}^{\ell,p}A^{T}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\nabla_{B}\mathcal{L}=-\left(X\oslash\left(\left(GP+B\right)A\right)\right)A^{T}+\mathbf{1}^{\ell,p}A^{T}
+\]
+
+\end_inset
+
+Now let 
+\begin_inset Formula $B=G_{2}P_{2}=\left(\begin{array}{ccc}
+\frac{1}{\mathbf{e}} & \mathbf{1}^{\ell} & \mathbf{e}\end{array}\right)P_{2}$
+\end_inset
+
+ where 
+\begin_inset Formula $G_{2}\in\mathbb{R}^{\ell\times3}$
+\end_inset
+
+ and 
+\begin_inset Formula $P_{2}\in\mathbb{R}^{3\times c}$
+\end_inset
+
+.
+\begin_inset Formula 
+\[
+\nabla_{P_{2}}\mathcal{L}=-G_{2}^{T}\left(X\oslash\left(\left(GP+G_{2}P_{2}\right)A\right)\right)A^{T}+G_{2}^{T}\mathbf{1}^{\ell,p}A^{T}
+\]
+
+\end_inset
+
+To update 
+\begin_inset Formula $P$
+\end_inset
+
+, we use an multiplicative step (almost no change)
+\begin_inset Formula 
+\begin{align*}
+P_{t+1} & =P_{t}-\gamma\circ\nabla_{P}\mathcal{L}\vert_{A_{t},P_{t}}\\
+ & =P_{t}-\gamma\circ\left(-G^{T}\left(X\oslash\left(\left(GP+B\right)A\right)\right)A^{T}+G^{T}\mathbf{1}^{\ell,p}A^{T}\right)\\
+ & =\left(P_{t}\oslash G^{T}\mathbf{1}^{\ell,p}A^{T}\right)\circ\left(G^{T}\left(X\oslash\left(\left(GP+B\right)A\right)\right)A^{T}\right)
+\end{align*}
+
+\end_inset
+
+For 
+\begin_inset Formula $P_{2,t}$
+\end_inset
+
+, 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ is constant.
+ What should be its value?
+\begin_inset Formula 
+\begin{align*}
+P_{2,t+1} & =P_{2,t}-\gamma\circ\nabla_{P_{2}}\mathcal{L}\vert_{A_{t},P_{t}}\\
+ & =P_{2,t}-\gamma\circ\left(-G_{2}^{T}\left(X\oslash\left(\left(GP+G_{2}P_{2}\right)A\right)\right)A^{T}+G_{2}^{T}\mathbf{1}^{\ell,p}A^{T}\right)\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Projection onto the convex set
+\end_layout
+
+\begin_layout Standard
+Let us consider the convex set 
+\begin_inset Formula 
+\[
+\mathcal{S}=\left\{ \left(a,b,c\right)\in\mathbb{R}^{3}|a\geq0,c\geq0,b^{2}\leq4ac\right\} 
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Convexity
+\end_layout
+
+\begin_layout Standard
+Let us verify the convexity of the set.
+ Given
+\begin_inset Formula 
+\[
+\left(a_{1},b_{1},c_{1}\right),\left(a_{2},b_{2},c_{2}\right)\in\mathcal{S},
+\]
+
+\end_inset
+
+we see that 
+\begin_inset Formula $\left(\frac{a_{1}+a_{2}}{2},\frac{b_{1}+b_{2}}{2},\frac{c_{1}+c_{2}}{2}\right)\in\mathcal{S}.$
+\end_inset
+
+ It is trivial to see that 
+\begin_inset Formula $\frac{a_{1}+a_{2}}{2}\ge0$
+\end_inset
+
+ and 
+\begin_inset Formula $\frac{c_{1}+c_{2}}{2}\geq0$
+\end_inset
+
+.
+ let us check that 
+\begin_inset Formula 
+\[
+\left(\frac{b_{1}+b_{2}}{2}\right)^{2}\le4\frac{\left(a_{1}+a_{2}\right)}{2}\frac{\left(c_{1}+c_{2}\right)}{2}=\left(a_{1}+a_{2}\right)\left(c_{1}+c_{2}\right)=a_{1}c_{1}+a_{2}c_{2}+a_{1}c_{2}+a_{2}c_{1}.
+\]
+
+\end_inset
+
+If we prove the case for 
+\begin_inset Formula $b_{1},b_{2}\geq0$
+\end_inset
+
+, then all other case are trivially proved.
+ So let us assume 
+\begin_inset Formula $b_{1},b_{2}\geq0$
+\end_inset
+
+.
+ We have
+\begin_inset Formula 
+\begin{align*}
+\left(\frac{b_{1}+b_{2}}{2}\right)^{2} & =\frac{1}{4}\left(b_{1}^{2}+b_{2}^{2}+2b_{1}b_{2}\right)\\
+ & \leq a_{1}c_{1}+a_{2}c_{2}+2\sqrt{a_{1}c_{1}a_{2}c_{2}}\\
+ & \leq a_{1}c_{1}+a_{2}c_{2}+a_{1}c_{2}+a_{2}c_{1}
+\end{align*}
+
+\end_inset
+
+The last line follow from the AM–GM inequality.
+ 
+\begin_inset Formula 
+\[
+\sqrt{a_{1}c_{2}\cdot a_{2}c_{1}}\leq\frac{a_{1}c_{2}+a_{2}c_{1}}{2}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Projection
+\end_layout
+
+\begin_layout Standard
+Let us consider the following problem
+\begin_inset Formula 
+\[
+\dot{x}=\arg\min_{x\in\mathcal{S}}\frac{1}{2}\left\Vert x-x_{0}\right\Vert ^{2}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+General case
+\end_layout
+
+\begin_layout Standard
+The lagrangian is written
+\begin_inset Formula 
+\[
+\mathcal{L}(a,b,c,\lambda)=\frac{1}{2}\left\Vert \left(\begin{array}{c}
+a_{0}\\
+b_{0}\\
+c_{0}
+\end{array}\right)-\left(\begin{array}{c}
+a\\
+b\\
+c
+\end{array}\right)\right\Vert ^{2}+\lambda\left(b^{2}-4ac\right)
+\]
+
+\end_inset
+
+The KKT conditions are
+\begin_inset Formula 
+\[
+\nabla\mathcal{L}=0,
+\]
+
+\end_inset
+
+i.e.
+ 
+\begin_inset Formula 
+\[
+\left(a-a_{0}\right)-\lambda4c=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\left(c-c_{0}\right)-\lambda4a=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\left(b-b_{0}\right)+2\lambda b=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\lambda\left(b^{2}-4ac\right)=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\lambda\geq0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\left(b^{2}-4ac\right)\leq0
+\]
+
+\end_inset
+
+Let us consider the case where 
+\begin_inset Formula $b_{0}^{2}-4a_{0}c_{0}\geq0$
+\end_inset
+
+, i.e.
+ when the constraint is not satisfied.
+ In that case, we know that 
+\begin_inset Formula $\left(b^{2}-4ac\right)=0$
+\end_inset
+
+, i.e.
+\begin_inset Formula 
+\[
+a=\frac{b^{2}}{4c},c=\frac{b^{2}}{4a}.
+\]
+
+\end_inset
+
+We find 
+\begin_inset Formula $\left(a-a_{0}\right)-\lambda\frac{b^{2}}{a}=0$
+\end_inset
+
+ and 
+\begin_inset Formula $\left(c-c_{0}\right)-\lambda\frac{b^{2}}{c}=0.$
+\end_inset
+
+ Thus 
+\begin_inset Formula 
+\[
+a^{2}-aa_{0}-\lambda b^{2}=0
+\]
+
+\end_inset
+
+and 
+\begin_inset Formula $a=\frac{a_{0}+\sqrt{a_{0}^{2}+4\lambda b^{2}}}{2},$
+\end_inset
+
+ 
+\begin_inset Formula $c=\frac{c_{0}+\sqrt{c_{0}^{2}+4\lambda b^{2}}}{2}.$
+\end_inset
+
+(We discard the other solution as we know that 
+\begin_inset Formula $a,c\geq$
+\end_inset
+
+0).
+ Now we know from 
+\begin_inset Formula $\left(b-b_{0}\right)+2\lambda b=0$
+\end_inset
+
+ that 
+\begin_inset Formula 
+\[
+\lambda=\frac{b_{0}-b}{2b}
+\]
+
+\end_inset
+
+We observe that if 
+\begin_inset Formula $b_{0}\geq0$
+\end_inset
+
+, 
+\begin_inset Formula $b\leq b_{0}$
+\end_inset
+
+ as 
+\begin_inset Formula $\lambda\ge0.$
+\end_inset
+
+ If 
+\begin_inset Formula $b_{0}\leq0,$
+\end_inset
+
+ then 
+\begin_inset Formula $b\geq b_{0}.$
+\end_inset
+
+ Now we have 
+\begin_inset Formula $4\lambda b^{2}=4\frac{b_{0}-b}{2b}b^{2}=2b_{0}b-2b^{2}$
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+b^{2} & =4ac\\
+ & =\left(a_{0}+\sqrt{a_{0}^{2}+2b_{0}b-2b^{2}}\right)\left(c_{0}+\sqrt{c_{0}^{2}+2b_{0}b-2b^{2}}\right)\\
+ & =a_{0}c_{0}+c_{0}\sqrt{a_{0}^{2}+2b_{0}b-b^{2}}+a_{0}\sqrt{c_{0}^{2}+2b_{0}b-b^{2}}+\sqrt{a_{0}^{2}+2b_{0}b-b^{2}}\sqrt{c_{0}^{2}+2b_{0}b-b^{2}}\\
+ & =a_{0}c_{0}+c_{0}\sqrt{a_{0}^{2}+2b_{0}b-b^{2}}+a_{0}\sqrt{c_{0}^{2}+2b_{0}b-b^{2}}+\sqrt{\left(2b_{0}b-b^{2}\right)^{2}+\left(2b_{0}b-b^{2}\right)\left(c_{0}^{2}+a_{0}^{2}\right)+\left(c_{0}^{2}a_{0}^{2}\right)}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Case 
+\begin_inset Formula $a=1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The lagrangian is written
+\begin_inset Formula 
+\[
+\mathcal{L}(a,b,c,\lambda)=\frac{1}{2}\left\Vert \left(\begin{array}{c}
+c\\
+b
+\end{array}\right)-\left(\begin{array}{c}
+c_{0}\\
+b_{0}
+\end{array}\right)\right\Vert ^{2}+\lambda\left(b^{2}-4c\right)
+\]
+
+\end_inset
+
+And the KKT conditions are
+\begin_inset Formula 
+\[
+\left(c-c_{0}\right)-\lambda4=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\left(b-b_{0}\right)+2\lambda b=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\lambda\left(b^{2}-4c\right)=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\lambda\geq0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\left(b^{2}-4c\right)\leq0
+\]
+
+\end_inset
+
+Let us assume that the constraint is not satisfied.
+ Then we know that 
+\begin_inset Formula $\left(b^{2}-4c\right)=0$
+\end_inset
+
+.
+ As a result, 
+\begin_inset Formula $c=\frac{b^{2}}{4}$
+\end_inset
+
+.
+ Using the fact that 
+\begin_inset Formula $\frac{c-c_{0}}{4}=\lambda$
+\end_inset
+
+, we obtain
+\begin_inset Formula 
+\[
+b^{3}+b\left(8-4c_{0}\right)-8b_{0}=0
+\]
+
+\end_inset
+
+which is a depressed cubic equation.
+ The discriminant is
+\begin_inset Formula 
+\[
+\Delta=4\left(8-4c_{0}\right)^{3}+27\left(8b_{0}\right)^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Other parametrization
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+b_{0}\frac{\left(E_{0}-E\right)}{E}+b_{1}\frac{\left(E_{0}-E\right)^{2}}{E} & =\frac{1}{E}\left[b_{0}\left(E_{0}-E\right)+b_{1}\left(E_{0}-E\right)^{2}\right]\\
+ & =\frac{1}{E}\left[b_{1}E^{2}-E\left(b_{0}+2b_{1}E_{0}\right)+\left(b_{0}E_{0}+b_{1}E_{0}^{2}\right)\right]\\
+\end{align*}
+
+\end_inset
+
+We need that 
+\begin_inset Formula $b_{1}\geq0$
+\end_inset
+
+ and that 
+\begin_inset Formula 
+\begin{align*}
+\Delta & =\left(b_{0}+2b_{1}E_{0}\right)^{2}-4b_{1}\left(b_{0}E_{0}+b_{1}E_{0}^{2}\right)\\
+ & =b_{0}^{2}+4E_{0}b_{0}b_{1}+4E_{0}^{2}b_{1}^{2}-4b_{1}b_{0}E_{0}-4b_{1}^{2}E_{0}^{2}\\
+ & =b_{0}^{2}\leq0\\
+\end{align*}
+
+\end_inset
+
+Let us rewrite the expression and assume that 
+\begin_inset Formula $0\leq E\leq E_{0}.$
+\end_inset
+
+ We need that 
+\begin_inset Formula $b_{0}\left(E_{0}-E\right)+b_{1}\left(E_{0}-E\right)^{2}\geq0$
+\end_inset
+
+ implies with a simple change of variable that 
+\begin_inset Formula 
+\[
+b_{0}E+b_{1}E^{2}\geq0\hspace{1em}\text{for }0\leq E\leq E_{0}.
+\]
+
+\end_inset
+
+So we need 
+\begin_inset Formula $b_{0}+b_{1}E\geq0$
+\end_inset
+
+ for 
+\begin_inset Formula $E=0$
+\end_inset
+
+ and 
+\begin_inset Formula $E=E_{0}.$
+\end_inset
+
+ As a result, we need 
+\begin_inset Formula 
+\[
+b_{0}\geq0,\hspace{1em}b_{1}\geq-\frac{b_{0}}{E_{0}}
+\]
+
+\end_inset
+
+Let us search for the projection operator
+\begin_inset Formula 
+\[
+\mathcal{L}(a,b,c,\lambda)=\frac{1}{2}\left\Vert \left(\begin{array}{c}
+a\\
+b
+\end{array}\right)-\left(\begin{array}{c}
+a_{0}\\
+b_{0}
+\end{array}\right)\right\Vert ^{2}-\lambda\left(a+bE_{0}\right)
+\]
+
+\end_inset
+
+The KKT conditions are
+\begin_inset Formula 
+\[
+\left(a-a_{0}\right)-\lambda=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\left(b-b_{0}\right)-\lambda E_{0}=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\lambda\left(a+bE_{0}\right)=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\lambda\geq0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+a+bE_{0}\ge0
+\]
+
+\end_inset
+
+We assume that 
+\begin_inset Formula $a_{0}\geq0.$
+\end_inset
+
+ If 
+\begin_inset Formula $a+bE_{0}\ge0$
+\end_inset
+
+, then 
+\begin_inset Formula $\lambda=0$
+\end_inset
+
+ and 
+\begin_inset Formula $a=a_{0},b=b_{0}.$
+\end_inset
+
+ If 
+\begin_inset Formula $a_{0}+b_{0}E_{0}\leq0$
+\end_inset
+
+, we have 
+\begin_inset Formula $a=-bE_{0}$
+\end_inset
+
+ .
+ So 
+\begin_inset Formula $-\left(bE_{0}+a_{0}\right)=\lambda$
+\end_inset
+
+ and 
+\begin_inset Formula $\left(b-b_{0}\right)+\left(bE_{0}+a_{0}\right)E_{0}=0$
+\end_inset
+
+.
+ As a result, we find
+\begin_inset Formula 
+\[
+b=\frac{b_{0}-a_{0}E_{0}}{\left(1+E_{0}^{2}\right)}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\lambda=-\left(\frac{b_{0}-a_{0}E_{0}}{\left(1+E_{0}^{2}\right)}E_{0}+a_{0}\right)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+a=a_{0}-\frac{a_{0}+b_{0}E_{0}}{\left(1+E_{0}^{2}\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Using a different normalization
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+b_{0}\frac{\left(E_{0}-E\right)}{E}+b_{1}\frac{\left(E_{0}-E\right)^{2}}{E_{0}E} & =\frac{1}{E}\left[b_{0}\left(E_{0}-E\right)+b_{1}\frac{\left(E_{0}-E\right)^{2}}{E_{0}}\right]\\
+ & =\frac{1}{E}\left[b_{1}\frac{E^{2}}{E_{0}}-E\left(b_{0}+2b_{1}\right)+\left(b_{0}E_{0}+b_{1}E_{0}\right)\right]\\
+\end{align*}
+
+\end_inset
+
+Let us rewrite the expression and assume that 
+\begin_inset Formula $0\leq E\leq E_{0}.$
+\end_inset
+
+ We need that 
+\begin_inset Formula $b_{0}\left(E_{0}-E\right)+b_{1}\frac{\left(E_{0}-E\right)^{2}}{E_{0}}\geq0$
+\end_inset
+
+ implies with a simple change of variable that 
+\begin_inset Formula 
+\[
+b_{0}EE_{0}+b_{1}E^{2}\geq0\hspace{1em}\text{for }0\leq E\leq E_{0}.
+\]
+
+\end_inset
+
+So we need 
+\begin_inset Formula $b_{0}E_{0}+b_{1}E\geq0$
+\end_inset
+
+ for 
+\begin_inset Formula $E=0$
+\end_inset
+
+ and 
+\begin_inset Formula $E=E_{0}.$
+\end_inset
+
+ As a result, we need 
+\begin_inset Formula 
+\[
+b_{0}\geq0,\hspace{1em}b_{1}\geq-b_{0}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Using an auxiliary function
+\end_layout
+
+\begin_layout Standard
+The lagrangian is given by
+\begin_inset Formula 
+\begin{align*}
+\mathcal{L}(A,P) & ={\color{magenta}-\langle X,\log(GPA)\rangle+\langle\mathbf{1}^{\ell,p},GPA\rangle}{\color{green}-\lambda\left(b_{0}+b_{1}E_{0}\right)}\\
+ & ={\color{magenta}-\sum_{\ell,p}X_{\ell,p}\log\left(\sum_{c,k}G_{\ell,k}A_{c,p}P_{c,k}\right)+\sum_{\ell,p,c,k}G_{\ell,k}A_{c,p}P_{c,k}}{\color{green}-\sum_{c}\lambda_{c}\left(b_{0,c}+b_{1,c}E_{0}\right)}
+\end{align*}
+
+\end_inset
+
+The auxiliary function becomes
+\begin_inset Formula 
+\begin{align*}
+G(P,P^{t}) & ={\color{magenta}\sum_{\ell,p,c,k}G_{\ell,k}A_{c,p}P_{c,k}}{\color{green}-\sum_{c}\lambda_{c}\left(b_{0,c}+b_{1,c}E_{0}\right)}\\
+ & {\color{purple}-\sum_{\ell,p,i,j}X_{\ell,p}\frac{G_{\ell,j}A_{i,p}P_{i,j}^{t}}{\sum_{c,k}G_{\ell,k}A_{c,p}P_{c,k}^{t}}\left(\log\left(G_{\ell,j}A_{i,p}P_{i,j}\right)-\log\left(\frac{G_{\ell,j}A_{i,p}P_{i,j}^{t}}{\sum_{c,k}G_{\ell,k}A_{c,p}P_{c,k}^{t}}\right)\right)}
+\end{align*}
+
+\end_inset
+
+Here 
+\begin_inset Formula $b_{0,c},b_{1,c}=P_{c,1},P_{c,2}$
+\end_inset
+
+.
+ Now let us take the gradient of the auxiliary function 
+\begin_inset Formula 
+\begin{align*}
+\left.\nabla_{P}G(P,P^{t})\right|_{c_{0},k_{0}} & ={\color{magenta}\sum_{\ell,p}G_{\ell,k_{0}}A_{c_{0},p}}{\color{green}-\lambda_{c_{0}}\left(\delta_{k_{0}=1}+\delta_{k_{0}=2}E_{0}\right)}\\
+ & {\color{purple}-\frac{1}{P_{c_{0},k_{0}}}\sum_{\ell,p}X_{\ell,p}\frac{G_{\ell,k_{0}}A_{c_{0},p}P_{c_{0},k_{0}}^{t}}{\sum_{c,k}G_{\ell,k}A_{c,p}P_{c,k}^{t}}}\\
+ & =0
+\end{align*}
+
+\end_inset
+
+Here 
+\begin_inset Formula $\delta_{k_{0}=i}=\begin{cases}
+0 & \text{if }k_{0}\neq i\\
+1 & \text{if }k_{0}=i.
+\end{cases}$
+\end_inset
+
+ As a result we find
+\begin_inset Formula 
+\begin{align*}
+P_{c_{0},k_{0}} & =P_{c_{0},k_{0}}^{t}\frac{\sum_{\ell,p}G_{\ell,c_{0}}\frac{X_{\ell,p}}{\sum_{c,k}G_{\ell,k}A_{c,p}P_{c,k}^{t}}A_{k_{0},p}}{\sum_{\ell,p}G_{\ell,k_{0}}A_{c_{0},p}{\color{green}-\lambda_{c_{0}}\left(\delta_{k_{0}=1}+\delta_{k_{0}=2}E_{0}\right)}}\\
+ & {\color{purple}}\\
+\end{align*}
+
+\end_inset
+
+If the previous iteration satisfies the constraint, we have 
+\begin_inset Formula $\sum_{c,k}G_{\ell,k}A_{c,p}P_{c,k}^{t}>0$
+\end_inset
+
+.
+ As a result, for 
+\begin_inset Formula $k_{0}>2$
+\end_inset
+
+, nothing is changed from the previous algorithm.
+ 
+\end_layout
+
+\begin_layout Standard
+Let us now care about the case 
+\begin_inset Formula $k_{0}=1,2$
+\end_inset
+
+.
+ If the constraint is satisfied for 
+\begin_inset Formula $c_{0}$
+\end_inset
+
+, i.e., if 
+\begin_inset Formula 
+\[
+\frac{\sum_{\ell,p}X_{\ell,p}\frac{G_{\ell,1}A_{c_{0},p}P_{c_{0},1}^{t}}{\sum_{c,k}G_{\ell,c}A_{k,p}P_{c,k}^{t}}}{\sum_{\ell,p}G_{\ell,c_{0}}A_{k_{0},p}}+\frac{\sum_{\ell,p}X_{\ell,p}\frac{G_{\ell,1}A_{c_{0},p}P_{c_{0},2}^{t}}{\sum_{c,k}G_{\ell,c}A_{k,p}P_{c,k}^{t}}}{\sum_{\ell,p}G_{\ell,c_{0}}A_{k_{0},p}}E_{0}\geq0
+\]
+
+\end_inset
+
+, then 
+\begin_inset Formula $\lambda_{c_{0}}=0$
+\end_inset
+
+ and nothing in green matters.
+ Otherwise we know that the constraint need to be satisfied, i.e.
+\begin_inset Formula 
+\[
+\frac{\sum_{\ell,p}X_{\ell,p}\frac{G_{\ell,1}A_{c_{0},p}P_{c_{0},1}^{t}}{\sum_{c,k}G_{\ell,c}A_{k,p}P_{c,k}^{t}}}{\sum_{\ell,p}G_{\ell,c_{0}}A_{k_{0},p}-\lambda_{c_{0}}E_{0}}+\frac{\sum_{\ell,p}X_{\ell,p}\frac{G_{\ell,1}A_{c_{0},p}P_{c_{0},2}^{t}}{\sum_{c,k}G_{\ell,c}A_{k,p}P_{c,k}^{t}}}{\sum_{\ell,p}G_{\ell,c_{0}}A_{k_{0},p}-\lambda_{c_{0}}E_{0}}E_{0}=0
+\]
+
+\end_inset
+
+As a result, we have to solve:
+\begin_inset Formula 
+\[
+\frac{n_{1}}{d_{1}-\lambda}+\frac{n_{2}}{d_{2}-\lambda}=0.
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $n_{1},d_{1},d_{2}\geq0,$
+\end_inset
+
+ 
+\begin_inset Formula $n_{2}\leq0$
+\end_inset
+
+.
+ Obviously, 
+\begin_inset Formula $0\leq\lambda\leq d_{1}.$
+\end_inset
+
+ We find
+\begin_inset Formula 
+\[
+\lambda=\frac{n_{1}d_{2}+n_{2}d_{1}}{n_{1}+n_{2}}.
+\]
 
 \end_inset
 
