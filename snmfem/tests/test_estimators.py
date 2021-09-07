@@ -91,11 +91,11 @@ def generate_one_sample():
     return G, P, A, D, w, X, X_cont, N
 
 
-# def test_generate_one_sample():
-#     G, P, A, D, w, X, Xdot, N = generate_one_sample()
-#     np.testing.assert_allclose(G @ P , D, atol=1e-3)
-#     np.testing.assert_allclose( N * D @ np.diag(w) @ A , Xdot)
-#     np.testing.assert_allclose(N * G @ P @ np.diag(w) @ A , Xdot, atol=5e-2)
+def test_generate_one_sample():
+    G, P, A, D, w, X, Xdot, N = generate_one_sample()
+    np.testing.assert_allclose(G @ P , D, atol=1e-3)
+    np.testing.assert_allclose( N * D @ np.diag(w) @ A , Xdot)
+    np.testing.assert_allclose(N * G @ P @ np.diag(w) @ A , Xdot, atol=5e-2)
 
 # def test_NMF_scikit () : 
 #     estimator = NMF(n_components= 5,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0,hspy_comp = False)
@@ -103,49 +103,49 @@ def generate_one_sample():
 #     estimator = SmoothNMF( n_components= 5,lambda_L=2,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0,hspy_comp = False)
 #     check_estimator(estimator)
 
-# def test_general():
-#     G, P, A, D, w, X, Xdot, N = generate_one_sample()
+def test_general():
+    G, P, A, D, w, X, Xdot, N = generate_one_sample()
 
-#     estimator = NMF(G=G,n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
-#     D2 = estimator.fit_transform(A=A, X=Xdot)
-#     np.testing.assert_allclose(N*D@np.diag(w), D2, atol=5e-2)
+    estimator = NMF(G=G,n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
+    D2 = estimator.fit_transform(A=A, X=Xdot)
+    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=5e-2)
 
-#     estimator = NMF(n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
-#     D2 = estimator.fit_transform(A=A, X=Xdot)
-#     np.testing.assert_allclose(N*D@np.diag(w), D2, atol=5e-2)
+    estimator = NMF(n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
+    D2 = estimator.fit_transform(A=A, X=Xdot)
+    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=5e-2)
 
-#     estimator = NMF(G=G,n_components= 2,max_iter=200,force_simplex = False,mu = 0, epsilon_reg = 1, hspy_comp = False)
-#     D2 = estimator.fit_transform( P=P@np.diag(w), X=Xdot)
-#     np.testing.assert_allclose(N*D@np.diag(w), D2, atol=5e-2)
+    estimator = NMF(G=G,n_components= 2,max_iter=200,force_simplex = False,mu = 0, epsilon_reg = 1, hspy_comp = False)
+    D2 = estimator.fit_transform( P=P@np.diag(w), X=Xdot)
+    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=5e-2)
 
-#     estimator = NMF(G =G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
-#     D2 = estimator.fit_transform(P=N*P@np.diag(w), X=Xdot)
-#     np.testing.assert_allclose(N*D@np.diag(w), D2, atol=5e-2)
+    estimator = NMF(G =G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
+    D2 = estimator.fit_transform(P=N*P@np.diag(w), X=Xdot)
+    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=5e-2)
 
-#     estimator = NMF(G=G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
-#     estimator.fit_transform(X=Xdot)
-#     P2, A2 = estimator.P_, estimator.A_ 
-#     np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
+    estimator = NMF(G=G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
+    estimator.fit_transform(X=Xdot)
+    P2, A2 = estimator.P_, estimator.A_ 
+    np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
 
-#     estimator = NMF(G=G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
-#     estimator.fit_transform(X=X)
-#     P2, A2 = estimator.P_, estimator.A_ 
-#     np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
+    estimator = NMF(G=G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
+    estimator.fit_transform(X=X)
+    P2, A2 = estimator.P_, estimator.A_ 
+    np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
 
-#     estimator = SmoothNMF(G=G, shape_2d=[10,20], lambda_L=0, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
-#     estimator.fit_transform(X=X)
-#     P2, A2 = estimator.P_, estimator.A_ 
-#     np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
+    estimator = SmoothNMF(G=G, shape_2d=[10,20], lambda_L=0, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
+    estimator.fit_transform(X=X)
+    P2, A2 = estimator.P_, estimator.A_ 
+    np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
 
-#     estimator = SmoothNMF(G=G, lambda_L=0.1, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, shape_2d=[10,20], hspy_comp = False)
-#     estimator.fit_transform(X=X)
-#     P3, A3 = estimator.P_, estimator.A_ 
-#     np.testing.assert_allclose(G @ P3 @ A3,  Xdot, atol=1)
-#     L = create_laplacian_matrix(10, 20)
+    estimator = SmoothNMF(G=G, lambda_L=0.1, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, shape_2d=[10,20], hspy_comp = False)
+    estimator.fit_transform(X=X)
+    P3, A3 = estimator.P_, estimator.A_ 
+    np.testing.assert_allclose(G @ P3 @ A3,  Xdot, atol=1)
+    L = create_laplacian_matrix(10, 20)
 
-#     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A2.T))
-#     # assert(trace_xtLx(L, A.T) < trace_xtLx(L, A2.T) )
-#     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A.T) )
+    assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A2.T))
+    # assert(trace_xtLx(L, A.T) < trace_xtLx(L, A2.T) )
+    assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A.T) )
 
 
 # def test_losses():
