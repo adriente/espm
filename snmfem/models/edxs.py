@@ -90,8 +90,6 @@ class EDXS(PhysicalModel):
                 else : 
                     print("No peak is present in the energy range for element : {}".format(elt))
             
-            if norm : 
-                self.G /= self.G.sum(axis=0)
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
                 approx_elts = {key : 1.0/len(elements) for key in elements}
@@ -101,6 +99,9 @@ class EDXS(PhysicalModel):
                 else : 
                     print("Bremsstrahlung parameters were not provided, bkgd not added in G")
                     self.bkgd_in_G = False
+
+            if norm : 
+                self.G /= self.G.sum(axis=0)
         else : 
             print("g_type has to be one of those : \"bremsstrahlung\", \"no_brstlg\" or \"identity\". G will be None, corresponding to \"identity\". ")
 

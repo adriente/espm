@@ -237,6 +237,16 @@ def test_spim () :
 
     shutil.rmtree(str(gen_folder))
 
+def test_generate_toy () : 
+    c_DATA_DICT = DATA_DICT.copy()
+    c_DATA_DICT["model"] = "Toy"
+    c_DATA_DICT["params_dict"] = {"k" : 4, "c" : 25}
+
+    generate_dataset(seeds_range=1,**c_DATA_DICT)
+    gen_folder = DATASETS_PATH / Path(c_DATA_DICT["data_folder"])
+
+    shutil.rmtree(gen_folder)
+
 
 
 

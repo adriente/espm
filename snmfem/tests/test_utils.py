@@ -27,6 +27,7 @@ def test_number_symbols () :
 
     mixed_list = ["Fe","Si",27,"83",8]
     number_list = [26,14,27,83,8]
+    symbol_list = ["Fe", "Si", "Co", "Bi", "O"]
 
     @u.symbol_to_number_dict
     def s_to_n (elements_dict = {}) : 
@@ -37,12 +38,17 @@ def test_number_symbols () :
         return elements_dict
 
     @u.symbol_to_number_list
-    def s_to_n_list (elements_list = []) : 
-        return elements_list
+    def s_to_n_list (elements = []) : 
+        return elements
+
+    @u.number_to_symbol_list
+    def n_to_s_list (elements = []) : 
+        return elements
 
     assert s_to_n(elements_dict = mixed_dict) == number_dict
     assert n_to_s(elements_dict = mixed_dict) == symbol_dict
-    assert s_to_n_list(elements_list=mixed_list) == number_list
+    assert s_to_n_list(elements=mixed_list) == number_list
+    assert n_to_s_list(elements = mixed_list) == symbol_list
 
     
 def test_is_symbol () : 
@@ -67,3 +73,43 @@ def test_hspy_wrappers () :
 
     assert res_dens == hspy_dens
 
+def test_arg_helper () : 
+    default_dict = {
+        "chou" : "non",
+        "carottes" : 3,
+        "salades" : {"roquette" : 2, "batavia" : 5},
+        "tubercules" : {
+            "oignons" : {"jaune" : [1,2,3], "blanc" : [3,2,1]},
+             "echalottes" : 5
+             }
+        }
+
+    input_dict = {
+        "chou" : 4,
+        "navets" : 3,
+        "salades" : {"clous" : 3, "roquette" : 2},
+        "tubercules" : {
+            "oignons" : {"jaune" : 9},
+            "vis" : {"cruciformes" : 3, "hexagonales" : 6}
+        }
+    }
+
+    result_dict = {
+        "chou" : 4,
+        "carottes" : 3,
+        "navets" : 3,
+        "salades" : {"clous" : 3, "roquette" : 2, "batavia" : 5},
+        "tubercules" : {
+            "oignons" : {"jaune" : 9, "blanc" : [3,2,1]},
+            "echalottes" : 5,
+            "vis" : {"cruciformes" : 3, "hexagonales" : 6}
+        } 
+    }
+
+    assert u.arg_helper(input_dict,default_dict) == result_dict
+
+def test_bin_spim () : 
+    array = np.random.rand(100,20,30)
+
+    assert u.bin_spim(array,50,10).shape == (50,10,30)
+    assert u.bin_spim(array,30,6).shape == (30,6,30)

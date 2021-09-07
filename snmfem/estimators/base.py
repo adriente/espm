@@ -17,7 +17,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     loss_names_ = ["KL_div_loss"]
     const_KL_ = None
     
-    def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,
+    def __init__(self, n_components=2, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
                  force_simplex=True, l2=False,  G=None, shape_2d = None,
                  eval_print=10, true_D = None, true_A = None, fixed_A_inds = None, hspy_comp = True
@@ -88,6 +88,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             self.X_ = self._validate_data(X.T, dtype=[np.float64, np.float32])
         else : 
             self.X_ = self._validate_data(X, dtype=[np.float64, np.float32])
+
+        self.X_ = self.remove_zeros_lines(self.X_, self.log_shift)
         self.const_KL_ = None
 
         if callable(self.G): 
@@ -95,8 +97,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         else : 
             G = self.G
         
-        self.G_, self.P_, self.A_ = initialize_algorithms(self.X_, G, P, A, self.n_components, self.init, self.random_state, self.force_simplex, fixed_A_inds = self.fixed_A_inds)
-
+        self.G_, self.P_, self.A_ = initialize_algorithms(X = self.X_, G = G, P = P, A = A, n_components = self.n_components, init = self.init, random_state = self.random_state, force_simplex = self.force_simplex, fixed_A_inds = self.fixed_A_inds)
 
         if not(self.shape_2d is None) :
             self.L_ = create_laplacian_matrix(*self.shape_2d)
@@ -305,3 +306,12 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             array = np.array(tup_list,dtype=dt)
 
         return array
+
+    def remove_zeros_lines (self, X, epsilon) : 
+        new_X = X.copy()
+        sum_cols = X.sum(axis = 0)
+        sum_rows = X.sum(axis = 1)
+        new_X[:,np.where(sum_cols == 0)] = epsilon
+        new_X[np.where(sum_rows == 0),:] = epsilon
+        return new_X
+

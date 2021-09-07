@@ -12,9 +12,10 @@ def run_single_exp(pos_dict,est_dict,eval_dict) :
     e.store_in_file(eval_dict["file"], metrics[0], matrices_tuple,losses)
 
 if __name__ == "__main__" : 
+    print(sys.argv[1:])
     pos, est, eval = e.experiment_parser(sys.argv[1:])
     print(pos,est,eval)
-    run_single_exp(pos,est,eval)
+    # run_single_exp(pos,est,eval)
     # run_exp(a,default_opt)
     # params_dict = parse_args(sys.argv[1:],default_params)
     # run_exp(params_dict)

@@ -18,6 +18,7 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
     # denum = denum.astype("float64")
 
     # do some test
+
     assert((num>=0).all())
     assert((denum>=0).all())
     assert((np.sum(num, axis=0)>0).all())
@@ -161,6 +162,7 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
         num = A * PGX
         denum = PGGP @ A
     else:
+        
         GPA = GP @ A
         # Split to debug timing...
         num = A * (GP.T @ (X / (GPA+eps)))
@@ -217,9 +219,8 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
             # D, A = u.rescaled_DA(D,A)
             if force_simplex:
                 scale = np.sum(A, axis=0, keepdims=True)
-                A = A/scale 
+                A = np.nan_to_num(A/scale, nan = 1.0/A.shape[0] )
         D = np.abs(np.linalg.lstsq(A.T, X.T,rcond=None)[0].T)
-        print(D.shape)
         if skip_second:
             P = D
         else:

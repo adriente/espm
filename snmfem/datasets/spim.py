@@ -1,5 +1,6 @@
 from  hyperspy._signals.signal1d import Signal1D
 from snmfem.models import EDXS
+from snmfem import models
 from snmfem.models.edxs import G_EDXS
 from snmfem.datasets.generate_weights import generate_weights
 from hyperspy.misc.eds.utils import take_off_angle
@@ -131,7 +132,8 @@ def build_truth(spim, model_params, phases_params, misc_params ) :
     # axes manager does not respect the original order of the input data shape
     shape_2d = [spim.axes_manager[1].size , spim.axes_manager[0].size]
     if (not(phases_params is None)) and (not(misc_params is None)) :
-        model = EDXS(**model_params)
+        Model = getattr(models,misc_params["model"])
+        model = Model(**model_params)
         model.generate_phases(phases_params)
         phases = model.phases
         phases = phases / np.sum(phases, axis=1, keepdims=True)
@@ -147,7 +149,7 @@ def get_truth(spim) :
         phases_pars = spim.metadata.Truth.phases
         misc_pars = spim.metadata.Truth.Params.as_dictionary()
     except AttributeError : 
-        # print("This dataset contain no ground truth.")
+        print("This dataset contain no ground truth.")
         return None, None
 
     return phases_pars, misc_pars

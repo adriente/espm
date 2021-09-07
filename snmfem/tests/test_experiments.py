@@ -1,108 +1,134 @@
 import snmfem.experiments as exps
 from pathlib import Path
-from snmfem.conf import BASE_PATH
-from snmfem.datasets import generate_dataset
+from snmfem.conf import DATASETS_PATH
+from snmfem.datasets import generate_dataset, spim
 import shutil
-import json
-import os
-import numpy as np
+from snmfem import estimators
+from snmfem import datasets
 
-params = {
-        "seeds_range" : 4,
-        "weights_parameters" : {"weight_type": "laplacian",
-                                "shape_2D": [14, 23]},
-        "N": 35,
-        "model" : "Toy",
-        "model_parameters" :{"params_dict" : {"c" : 25, 
-                                            "k" : 4},
-                            "db_name" : "default_xrays.json",
-                            "e_offset" : 0.208,
-                            "e_scale" : 0.01,
-                            "e_size": 50,
-                            "seed" : 1},
-        "densities" : [1,1,1,1], 
-        "g_parameters" : {"elements_list" : [8,13,14,12,26,29,31,72,71,62,60,92,20],
-                        "brstlg" : 1},
-        "phases_parameters" : [{}, {}, {}, {}],
-        "data_folder" : "test"
-    }
+DATA_DICT = {
+    "model_parameters" : {
+        "e_offset" : 0.2,
+        "e_size" : 1000,
+        "e_scale" : 0.02,
+        "width_slope" : 0.02,
+        "width_intercept" : 0.065,
+        "db_name" : "default_xrays.json",
+        "E0" : 200,
+        "params_dict" : {
+            "Abs" : {
+                "thickness" : 100.0e-7,
+                "toa" : 35,
+                "density" : 5
+            },
+            "Det" : "SDD_efficiency.txt"
+        }
+    },
+    "N" : 40,
+    "densities" : [1.3,1.6,1.9,1.0],
+    "data_folder" : "test_gen_data",
+    "seed" : 42,
+    "weight_type" : "laplacian",
+    "shape_2d" : (30,40),
+    "weights_params" : {},
+    "model" : "EDXS",
+    "phases_parameters" : [{"b0" : 5e-5,
+                            "b1" : 3e-4,
+                            "scale" : 3e-6,
+                            "elements_dict" : {"Fe" : 0.54860348,
+                                      "Pt" : 0.38286879,
+                                      "Mo" : 0.03166235,
+                                      "O" : 0.03686538}},
+                            {"b0" : 7e-4,
+                            "b1" : 5e-4,
+                            "scale" : 3e-6,
+                            "elements_dict" : {"Ca" : 0.54860348,
+                                      "Si" : 0.38286879,
+                                      "O" : 0.15166235}},
+                            {"b0" : 3e-5,
+                            "b1" : 5e-5,
+                            "scale" : 3e-6,
+                            "elements_dict" : {
+                                "Cu" : 0.34,
+                                "Mo" : 0.12,
+                                "Au" : 0.54
+                            }},
+                             {"b0" : 1e-4,
+                            "b1" : 5e-6,
+                            "scale" : 3e-6,
+                            "elements_dict" : {
+                                "Fe" : 0.14,
+                                "Ni" : 0.12,
+                                "S" : 0.74
+                            }}]
+}
 
-base_path = BASE_PATH / Path("tests/ressources/") 
-folder = base_path / Path(params["data_folder"])
-script_file = Path("test.json")
+# base_path = BASE_PATH / Path("tests/ressources/") 
+folder = DATASETS_PATH / Path(DATA_DICT["data_folder"])
+
+def test_experiment_parser () : 
+    inputs = ["file.hspy", "NMF", "bremsstrahlung", "3", "-mi" , '1000', "--verbose", "--tol", '200', "-u"]
+    result_dicts = {'input_file': 'file.hspy', 'method': 'NMF', 'g_type': 'bremsstrahlung', 'k': 3}, {'max_iter': 1000, 'verbose': False, 'init': 'random', 'tol': 200, 'mu': 0.0, 'force_simplex': True, 'lambda_L': 0.0, 'l2': False, 'beta_loss': 'frobenius', 'solver': 'mu', 'alpha': 0.0, 'l1_ratio': 1.0, 'regularization': 'components', 'mcr_method': True}, {'u': False, 'output_file': 'dump.npz'}
+
+    assert exps.experiment_parser(inputs) == result_dicts
+
+def test_build_exp () : 
+    inputs = ["file.hspy", "NMF", "bremsstrahlung", "3", "-mi" , '1000', "--verbose", "--tol", '200', "-u"]
+    pos_dict, est_dict, _ = exps.experiment_parser(inputs)
+    exp = exps.build_exp(pos_dict,est_dict,name = "dummy")
+    assert exp == {'g_type' : 'bremsstrahlung', 'input_file' : 'file.hspy', 'name' : 'dummy', 'method' : 'NMF', 
+    'params' : {'force_simplex' : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'n_components' : 3,
+    'tol' : 200.0, 'verbose' : False}}
+
+    inputs = ["file.hspy", "SKNMF", "bremsstrahlung", "3", "-mi" , '1000', "--verbose", "--tol", '200', "-mu", "1.0", "-bl", "frobenius", '--alpha', '10.0' ]
+    pos_dict, est_dict, _ = exps.experiment_parser(inputs)
+    exp = exps.build_exp(pos_dict,est_dict)
+    assert exp == {'g_type' : 'bremsstrahlung', 'input_file' : 'file.hspy', 'name' : 'SKNMF', 'method' : 'SKNMF', 
+    'params' : {'beta_loss' : 'frobenius', 'init' : 'random', 'max_iter' : 1000, 'alpha' : 10.0, 'n_components' : 3,
+    'tol' : 200.0, 'verbose' : False, 'l1_ratio' : 1.0, 'regularization' : 'components', 'solver' : 'mu'}}
+
+def test_fill_exp_dict () : 
+    exp = {"force_simplex" : True, "max_iter" : 1000, "alpha" : 10.0}
+    filled_exp = exps.fill_exp_dict(exp)
+    assert filled_exp == {'force_simplex' : True, "verbose" : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'tol' : 1e-6, 'alpha' : 10.0, "lambda_L" : 0.0, "beta_loss" : "frobenius", "solver" : "mu", "l1_ratio" : 1.0, "regularization" : "components", "mcr_method" : True}
+
+def test_quick_load () : 
     
-def test_generate_dataset():
-    with open(base_path / script_file,"w") as f :
-        json.dump(params,f)
-    generate_dataset(base_path=base_path , **params)
-    
-def test_load_samples() : 
-    samples , k, g, mod  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
-    assert(k == params["model_parameters"]["params_dict"]["k"])
-    assert(len(samples) == params["seeds_range"])
-    assert(g == params["g_parameters"])
-    assert(mod == params["model_parameters"])
+    generate_dataset(seeds_range=1,**DATA_DICT)
+    file = folder / Path("sample_0.hspy")
+    experiment1 = {'g_type' : 'bremsstrahlung', 'input_file' : file , 'name' : 'dummy', 'method' : 'NMF', 
+    'params' : {'force_simplex' : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'n_components' : 3,
+    'tol' : 200.0, 'verbose' : False}}
 
-def test_load_data() : 
-    samples , k, g, mod  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
-    for r in range(params["seeds_range"]):
-        Xflat, true_spectra_flat, true_maps_flat, G, shape_2d = exps.load_data(samples[r],G_func = False)
-        # The following line does not work because the order is not the same!
-        data_path = folder / Path("sample_{}.npz".format(r))
-        data = np.load(data_path)
-        shape_2d_test = tuple(params["weights_parameters"]["shape_2D"])
-        Xflat_test = (data["X"].reshape(shape_2d_test[0]*shape_2d_test[1],params["model_parameters"]["e_size"])).T
+    spim1, estimator1 = exps.quick_load(experiment1)
+    assert callable(estimator1.G)
+    assert isinstance(estimator1,estimators.NMF)
+    assert estimator1.shape_2d == (30,40)
+    assert estimator1.max_iter == 1000
+    assert isinstance(spim1, datasets.EDXSsnmfem)
+    assert spim1.data.shape == (30,40,1000)
 
-        true_spectra_test = data["phases"]*params["N"]*np.array(params["densities"])[:,np.newaxis]
-        true_maps_test = (data["weights"].reshape(shape_2d_test[0]*shape_2d_test[1],k)).T
-        assert(tuple(shape_2d) == shape_2d_test)
-        np.testing.assert_array_equal(Xflat, Xflat_test)
-        np.testing.assert_array_equal(data["G"],G)
-        np.testing.assert_array_equal(true_spectra_test,true_spectra_flat)
-        np.testing.assert_array_equal(true_maps_test,true_maps_flat)
-
-def test_run_experiments () :
-    samples , k, g, mod  = exps.load_samples(script_file, base_path_conf=base_path, base_path_dataset=base_path)
-    r = np.random.randint(params["seeds_range"])
-    Xflat, true_spectra_flat, true_maps_flat, G, shape_2d = exps.load_data(samples[r],G_func = False)
-    default_params = {
-    "n_components" : k,
-    "tol" : 1e-3,
-    "max_iter" : 10000,
-    "init" : "random",
-    "random_state" : 1,
-    "verbose" : 0
-    }
-
-    params_snmf = {
-        "force_simplex" : True,
-        "skip_G" : False,
-        "mu": 0
-    }
-
-    params_evalution = {
-        "u" : True,
-    }
-    experiment = {"name": "snmfem smooth 3", "method": "SmoothNMF", "params": {**default_params, **params_snmf, "lambda_L" : 3.0}}
-    m, (GP, A), loss = exps.run_experiment(Xflat, true_spectra_flat, true_maps_flat, G, experiment, params_evalution, shape_2d = shape_2d, g_pars= g, mod_pars= mod)
-    
-    assert(len(m) == 3)
-    assert(len(m[0])==k)
-    assert(np.array(m[0]).dtype=="float64")
-    assert(np.array(m[2]).dtype=="int64")
-
-    assert(GP.shape == (params["model_parameters"]["e_size"],k))
-    assert(A.shape == (k,shape_2d[0]*shape_2d[1]))
-    
-    l_loss = 0
-    for i in loss.dtype.names : 
-        l_loss += 1
-    assert(l_loss == 7 + 2*k)
-    
-def test_delete_dataset():
     shutil.rmtree(folder)
-    os.remove(base_path / script_file)
 
+def test_run_experiment () : 
+    generate_dataset(seeds_range=1,**DATA_DICT)
+    file = folder / Path("sample_0.hspy")
+    experiment1 = {'g_type' : 'bremsstrahlung', 'input_file' : file , 'name' : 'dummy', 'method' : 'NMF', 
+    'params' : {'force_simplex' : True, 'init' : 'random', 'l2' : False, 'max_iter' : 3, 'mu' : 0.0, 'n_components' : 4,
+    'tol' : 0.0001, 'verbose' : False}}
 
+    spim1, estimator1 = exps.quick_load(experiment1, simulated=True)
+    metrics, (G, P, A), losses = exps.run_experiment(spim1, estimator1, experiment1, simulated=True)
 
+    assert G.shape == (1000, 12)
+    assert P.shape == (12,4)
+    assert A.shape == (4, 1200)
+    assert losses.shape == (3,)
+    assert losses.dtype.names == ('full_loss', 'KL_div_loss', 'log_reg_loss', 'rel_P', 'rel_A', 'ang_p0', 'ang_p1', 'ang_p2', 'ang_p3', 'mse_p0', 'mse_p1', 'mse_p2', 'mse_p3', 'true_KL_loss')
+    assert len(metrics) == 3
+    assert len(metrics[0]) == 4
+    assert len(metrics[1]) == 4
+    assert len(metrics[2][0]) == 4
+    assert len(metrics[2][1]) == 4
 
+    shutil.rmtree(folder)

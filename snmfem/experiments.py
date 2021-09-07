@@ -5,29 +5,32 @@ import snmfem.conf as conf
 import snmfem.utils as u
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
+import hyperspy.api as hs
 
 def compute_metrics(true_spectra, true_maps, GP, A, u = True):
     angle, ind1 = measures.find_min_angle(true_spectra, GP.T, True, unique=u)
     mse, ind2 = measures.find_min_MSE(true_maps, A, True, unique=u)
     return angle, mse, (ind1, ind2)
 
-def run_experiment(estimator,experiment,simulated = False) : 
-    spim.decomposition(estimator)
+def run_experiment(spim,estimator,experiment,simulated = False) : 
+    out = spim.decomposition(algorithm = estimator, return_info = True)
     
-    P = spim.get_P()
-    A = spim.get_decomposition_loadings().data.reshape((experiment["params"]["n_components"],spim.axes_manager[0]*spim.axes_manager[1]))
+    P = out.P_
+    A = out.A_
+    G = out.G_
     
     losses = estimator.get_losses()
     if simulated :
-        metrics = compute_metrics(true_spectra, true_maps, G@P, A)
+        true_spectra, true_maps = spim.extract_truth(reshape = True)
+        metrics = compute_metrics(true_spectra.T, true_maps, G@P, A)
     else : 
         temp = np.zeros((experiment["params"]["n_components"],))
         metrics = (temp, temp, (temp,temp))
     return metrics, (G, P, A), losses
 
-def quick_load(experiment) : 
-    loaded = hs.load(experiment["input_file"])
-    spim = loaded.set_signal_type("EDXSsnmfem")
+def quick_load(experiment, simulated = False) : 
+    spim = hs.load(experiment["input_file"])
+    spim.set_signal_type("EDXSsnmfem")
     G, shape_2d = spim.extract_params(g_type = experiment["g_type"])
     Estimator = getattr(estimators, experiment["method"]) 
     if simulated : 
@@ -35,7 +38,7 @@ def quick_load(experiment) :
         estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"])
     else : 
         estimator = Estimator(G = G, shape_2d = shape_2d, **experiment["params"])
-    return estimator
+    return spim, estimator
 
 
 # To be verified ...

@@ -75,7 +75,7 @@ seed_max = 4294967295
 POS_ARGS = {
     "input_file" : ["input_file",{"help" : "str : Name of the file containing the data."}],
     "method" : ["method",{"choices":  ["NMF","SmoothNMF","SKNMF","MCRLLM"], "help" : "str : Name of the estimator for the decomposition"}],
-    "g_type" : ["-gm", "--g_type", {"choices" : ["bremsstrahlung","no_brstlg", "identity"], "default" : "bremsstrahlung", "help" : "str : method to generate the G matrix from the metadata"}],
+    "g_type" : ["g_type", {"choices" : ["bremsstrahlung","no_brstlg", "identity"], "default" : "bremsstrahlung", "help" : "str : method to generate the G matrix from the metadata"}],
     "k" : ["k",{"type" : int,"help" : "int : expected number of phases"}]
 }
 

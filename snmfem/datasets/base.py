@@ -60,7 +60,7 @@ def save_generated_spim(filename, spim, model_params, phases_params, misc_params
     s.axes_manager[-1].scale = model_params["e_scale"]
 
     s.set_microscope_parameters(beam_energy = model_params["E0"])
-
+    
     s.add_elements(elements = unique_elts(phases_params))
     s.metadata.Sample.thickness = model_params["params_dict"]["Abs"]["thickness"]
     s.metadata.Sample.density = model_params["params_dict"]["Abs"]["density"]
