@@ -97,11 +97,11 @@ def test_generate_one_sample():
     np.testing.assert_allclose( N * D @ np.diag(w) @ A , Xdot)
     np.testing.assert_allclose(N * G @ P @ np.diag(w) @ A , Xdot, atol=5e-2)
 
-# def test_NMF_scikit () : 
-#     estimator = NMF(n_components= 5,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0,hspy_comp = False)
-#     check_estimator(estimator)
-#     estimator = SmoothNMF( n_components= 5,lambda_L=2,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0,hspy_comp = False)
-#     check_estimator(estimator)
+def test_NMF_scikit () : 
+    estimator = NMF(n_components= 5,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0,hspy_comp = False)
+    check_estimator(estimator)
+    estimator = SmoothNMF( n_components= 5,lambda_L=2,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0,hspy_comp = False)
+    check_estimator(estimator)
 
 def test_general():
     G, P, A, D, w, X, Xdot, N = generate_one_sample()
@@ -146,7 +146,6 @@ def test_general():
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A2.T))
     # assert(trace_xtLx(L, A.T) < trace_xtLx(L, A2.T) )
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A.T) )
-
 
 # def test_losses():
 #     G, P, A, D, w, X, Xdot, N = generate_one_sample()

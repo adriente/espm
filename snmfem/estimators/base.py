@@ -20,7 +20,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     def __init__(self, n_components=2, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
                  force_simplex=True, l2=False,  G=None, shape_2d = None,
-                 eval_print=10, true_D = None, true_A = None, fixed_A_inds = None, hspy_comp = True
+                 eval_print=10, true_D = None, true_A = None, fixed_A_inds = None, hspy_comp = False
                  ):
         self.n_components = n_components
         self.init = init
@@ -308,10 +308,13 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         return array
 
     def remove_zeros_lines (self, X, epsilon) : 
-        new_X = X.copy()
-        sum_cols = X.sum(axis = 0)
-        sum_rows = X.sum(axis = 1)
-        new_X[:,np.where(sum_cols == 0)] = epsilon
-        new_X[np.where(sum_rows == 0),:] = epsilon
-        return new_X
+        if np.all(X >= 0) : 
+            new_X = X.copy()
+            sum_cols = X.sum(axis = 0)
+            sum_rows = X.sum(axis = 1)
+            new_X[:,np.where(sum_cols == 0)] = epsilon
+            new_X[np.where(sum_rows == 0),:] = epsilon
+            return new_X
+        else : 
+            raise ValueError("There are negative values in X")
 
