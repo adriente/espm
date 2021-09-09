@@ -29,6 +29,8 @@ class EDXSsnmfem (Signal1D) :
         self.weights_ = None
         self.X_ = None
         self.Xdot_ = None
+        self.phases_2d_ = None
+        self.weights_2d_ = None
 
     @property
     def shape_2d (self) : 
@@ -73,9 +75,9 @@ class EDXSsnmfem (Signal1D) :
 
     @property
     def weights_2d (self) : 
-        if self.phases_2d_ is None : 
-            self.phases_2d_ = self.build_ground_truth(reshape = False)[1]
-        return self.phases_2d_
+        if self.weights_2d_ is None : 
+            self.weights_2d_ = self.build_ground_truth(reshape = False)[1]
+        return self.weights_2d_
 
     def build_ground_truth(self,reshape = True) : 
         mod_pars = get_metadata(self)

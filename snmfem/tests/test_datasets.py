@@ -100,10 +100,12 @@ def test_generate():
     save_generated_spim(filename, spim, DATA_DICT["model_parameters"], DATA_DICT["phases_parameters"], MISC_DICT)
     si = hs.load(filename)
     si.set_signal_type("EDXSsnmfem")
-    G, _ = si.extract_params(g_type = "bremsstrahlung")
+    G = si.build_G(problem_type = "bremsstrahlung")
     G = G()
-    phases, weights = si.extract_truth(reshape = False)
-    weights = weights.reshape((100,120,n_phases))
+    phases, weights = si.phases_2d, si.weights_2d
+    print(phases.shape)
+    print(weights.shape)
+    # weights = weights.reshape((100,120,n_phases))
     X = si.data
     P = np.linalg.lstsq(G,X.sum(axis = (0,1)),rcond = None)[0]
     
@@ -193,10 +195,11 @@ def test_spim () :
 
     assert DATA_DICT["model_parameters"] == mod_pars
 
-    G1, shape = gen_si.extract_params(g_type = "identity")
-    G2, shape = gen_si.extract_params(g_type = "no_brstlg")
-    G3, shape = gen_si.extract_params(g_type = "bremsstrahlung")
-    Xflat = gen_si.get_Xflat()
+    shape = gen_si.shape_2d
+    G1 = gen_si.build_G(problem_type = "identity")
+    G2 = gen_si.build_G(problem_type = "no_brstlg")
+    G3 = gen_si.build_G(problem_type = "bremsstrahlung")
+    Xflat = gen_si.X
 
     assert shape == (100,120)
     np.testing.assert_array_equal(G1,np.diag(np.ones((1900,))))

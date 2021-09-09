@@ -21,7 +21,7 @@ def run_experiment(spim,estimator,experiment,simulated = False) :
     
     losses = estimator.get_losses()
     if simulated :
-        true_spectra, true_maps = spim.extract_truth(reshape = True)
+        true_spectra, true_maps = spim.phases, spim.weights
         metrics = compute_metrics(true_spectra.T, true_maps, G@P, A)
     else : 
         temp = np.zeros((experiment["params"]["n_components"],))
@@ -30,14 +30,15 @@ def run_experiment(spim,estimator,experiment,simulated = False) :
 
 def quick_load(experiment, simulated = False) : 
     spim = hs.load(experiment["input_file"])
-    spim.set_signal_type("EDXSsnmfem")
-    G, shape_2d = spim.extract_params(g_type = experiment["g_type"])
+    # spim.set_signal_type("EDXSsnmfem")
+    G = spim.build_G(problem_type = experiment["g_type"])
+    shape_2d = spim.shape_2d
     Estimator = getattr(estimators, experiment["method"]) 
     if simulated : 
-        D, A = spim.extract_truth()
-        estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"])
+        D, A = spim.phases, spim.weights
+        estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"],hspy_comp = True)
     else : 
-        estimator = Estimator(G = G, shape_2d = shape_2d, **experiment["params"])
+        estimator = Estimator(G = G, shape_2d = shape_2d, **experiment["params"], hspy_comp = True)
     return spim, estimator
 
 
@@ -54,6 +55,7 @@ def perform_simulations(exp_list,n_samples = 10, simulated = False):
     
     metrics = []
     for augm_exp in augm_exp_list :
+        m = []
         for exp in augm_exp : 
             estim = quick_load(exp)
             m.append(run_experiment(estimator = estim, experiment=exp, simulated= simulated)[0][:-1])

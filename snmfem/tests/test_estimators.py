@@ -75,8 +75,8 @@ def generate_one_sample():
     spim_cont = hs.signals.Signal1D(cont)
     spim_cont.set_signal_type("EDXSsnmfem")
 
-    X = spim_stoch.get_Xflat()
-    X_cont = spim_cont.get_Xflat()
+    X = spim_stoch.X
+    X_cont = spim_cont.X
     
     D = phases.T
     A = weights.reshape((misc_params["shape_2d"][0]*misc_params["shape_2d"][1],len(phases_parameters))).T
