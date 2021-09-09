@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 cython = "*"
-snmfem = {editable = true, extras = ["testing"], path = "."}
+snmfem = {editable = true, path = "."}
 pyunlocbox = {editable = true, path = "./pyunlocbox"}
 torch = "*"
 argparse = "*"

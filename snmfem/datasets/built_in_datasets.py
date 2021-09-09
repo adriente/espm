@@ -2,6 +2,7 @@ from snmfem.datasets.base import generate_dataset
 from snmfem.conf import DATASETS_PATH
 from pathlib import Path
 import hyperspy.api as hs
+import os
 
 dataset_particles  = {'N': 100,
     'seed' : 91,
@@ -91,10 +92,12 @@ dataset_grain_boundary = {
 }
 
 def generate_built_in_datasets (seeds_range = 2) : 
-    print("Generating 2 particles + one matrix built-in dataset. This will take a minute.")
-    generate_dataset(**dataset_particles,seeds_range=seeds_range)
-    print("Generating a grain boundary with Sr segregation. This will take a minute.")
-    generate_dataset(**dataset_grain_boundary, seeds_range = seeds_range)
+    if not(os.path.isdir(DATASETS_PATH / Path(dataset_particles["data_folder"]))) : 
+        print("Generating 2 particles + one matrix built-in dataset. This will take a minute.")
+        generate_dataset(**dataset_particles,seeds_range=seeds_range)
+    if not(os.path.isdir(DATASETS_PATH / Path(dataset_grain_boundary["data_folder"]))) :
+        print("Generating a grain boundary with Sr segregation. This will take a minute.")
+        generate_dataset(**dataset_grain_boundary, seeds_range = seeds_range)
 
 def load_particules (sample = 0) : 
     filename = DATASETS_PATH / Path("{}/sample_{}.hspy".format(dataset_particles["data_folder"],sample))

@@ -1,4 +1,5 @@
 from  hyperspy._signals.signal1d import Signal1D
+from numpy.core.fromnumeric import reshape
 from snmfem.models import EDXS
 from snmfem import models
 from snmfem.models.edxs import G_EDXS
@@ -6,39 +7,101 @@ from snmfem.datasets.generate_weights import generate_weights
 from hyperspy.misc.eds.utils import take_off_angle
 from snmfem.utils import number_to_symbol_list
 import numpy as np
+# import hyperspy.extensions as e
+
+# # Temporary fix
+
+# e.ALL_EXTENSIONS["signals"]["EDXSsnmfem"] = {'signal_type': 'EDXSsnmfem',
+#    'signal_dimension': 1,
+#    'dtype': 'real',
+#    'lazy': False,
+#    'module': 'snmfem.datasets.spim'}
 
 class EDXSsnmfem (Signal1D) : 
         # self.shape_2d = self.axes_manager[0].size, self.axes_manager[1].size
         # self.model_parameters, self.g_parameters = self.get_metadata()
         # self.phases_parameters, self.misc_parameters = self.get_truth()
         # self.phases, self.weights = self.build_truth()
+    def __init__ (self,*args,**kwargs) : 
+        super().__init__(*args,**kwargs)
+        self.shape_2d_ = None
+        self.phases_ = None
+        self.weights_ = None
+        self.X_ = None
+        self.Xdot_ = None
 
-    def extract_truth(self,reshape = True) : 
+    @property
+    def shape_2d (self) : 
+        if self.shape_2d_ is None : 
+            self.shape_2d_ = self.axes_manager[1].size, self.axes_manager[0].size
+        return self.shape_2d_
+
+    @property
+    def X (self) :
+        if self.X_ is None :  
+            shape = self.axes_manager[1].size, self.axes_manager[0].size, self.axes_manager[2].size
+            self.X_ = self.data.reshape((shape[0]*shape[1], shape[2])).T
+        return self.X_
+
+    @property
+    def Xdot (self) : 
+        if self.Xdot_ is None : 
+            try : 
+                self.Xdot_ = self.metadata.Truth.Params.N * self.phases @ np.diag(self.metadata.Truth.Params.densities) @ self.weights
+            except AttributeError : 
+                print("This dataset contains no ground truth. Nothing was done.")
+        return self.Xdot_
+
+
+    @property
+    def weights (self) : 
+        if self.weights_ is None : 
+            self.weights_ = self.build_ground_truth()[1]
+        return self.weights_
+
+    @property
+    def phases (self) : 
+        if self.phases_ is None : 
+            self.phases_ = self.build_ground_truth()[0]
+        return self.phases_
+
+    @property
+    def phases_2d (self) : 
+        if self.phases_2d_ is None : 
+            self.phases_2d_ = self.build_ground_truth(reshape = False)[0]
+        return self.phases_2d_
+
+    @property
+    def weights_2d (self) : 
+        if self.phases_2d_ is None : 
+            self.phases_2d_ = self.build_ground_truth(reshape = False)[1]
+        return self.phases_2d_
+
+    def build_ground_truth(self,reshape = True) : 
         mod_pars = get_metadata(self)
         phases_pars, misc_pars = get_truth(self)
         phases, weights = build_truth(self, mod_pars, phases_pars, misc_pars)
-        self.phases, self.weights = phases, weights
         if reshape : 
             phases = phases.T
             weights = weights.reshape((weights.shape[0]*weights.shape[1], weights.shape[2])).T
         return phases, weights
 
-    def extract_params(self, g_type = "bremsstrahlung") :
-        self.g_type = g_type
-        g_pars = {"g_type" : g_type, "elements" : self.metadata.Sample.elements}
+    def build_G(self, problem_type = "bremsstrahlung") :
+        self.problem_type = problem_type
+        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements}
         mod_pars = get_metadata(self)
-        if g_type == "bremsstrahlung" : 
+        if problem_type == "bremsstrahlung" : 
             G = self.update_G
         else : 
             G = build_G(mod_pars,g_pars)
         
         self.G = G
         
-        return self.G, (self.axes_manager[1].size, self.axes_manager[0].size)
+        return self.G
 
     def get_P(self) : 
         D = self.get_decomposition_factors().data.T
-        if self.g_type == "bremsstrahlung" : 
+        if self.problem_type == "bremsstrahlung" : 
             G = self.G()
         else : 
             G = self.G
@@ -47,16 +110,9 @@ class EDXSsnmfem (Signal1D) :
 
     def update_G(self, part_P=None, G=None):
         model_params = get_metadata(self)
-        g_params = {"g_type" : self.g_type, "elements" : self.metadata.Sample.elements}
+        g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements}
         G = G_EDXS(model_params, g_params, part_P=part_P, G=G)
         return G
-    
-    # def plot() : 
-    #     pass
-
-    def get_Xflat(self) : 
-        shape = self.axes_manager[1].size, self.axes_manager[0].size, self.axes_manager[2].size
-        return self.data.reshape((shape[0]*shape[1], shape[2])).T
 
     def set_analysis_parameters (self,beam_energy = 200, azimuth_angle = 0.0, elevation_angle = 22.0, tilt_stage = 0.0, elements = [], thickness = 200e-7, density = 3.5, detector_type = "SDD_efficiency.txt", width_slope = 0.01, width_intercept = 0.065, xray_db = "default_xrays.json") :
         self.set_microscope_parameters(beam_energy = beam_energy, azimuth_angle = azimuth_angle, elevation_angle = elevation_angle,tilt_stage = tilt_stage)
@@ -124,7 +180,7 @@ def get_metadata(spim) :
         mod_pars["params_dict"] = pars_dict
 
     except AttributeError : 
-        print("You need to define the relevant parameters for the analysis. Use the set_analysis function.")
+        print("You need to define the relevant parameters for the analysis. Use the set_analysis_parameters function.")
 
     return mod_pars
 

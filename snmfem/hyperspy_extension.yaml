@@ -1,0 +1,7 @@
+signals : 
+  EDXSsnmfem:
+    signal_type: EDXSsnmfem
+    signal_dimension : 1
+    dtype : real
+    lazy : False
+    module : snmfem.datasets.spim
