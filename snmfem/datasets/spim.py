@@ -88,9 +88,10 @@ class EDXSsnmfem (Signal1D) :
             weights = weights.reshape((weights.shape[0]*weights.shape[1], weights.shape[2])).T
         return phases, weights
 
-    def build_G(self, problem_type = "bremsstrahlung") :
+    def build_G(self, problem_type = "bremsstrahlung", norm = True) :
         self.problem_type = problem_type
-        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements}
+        self.norm = norm
+        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements, "norm" : norm}
         mod_pars = get_metadata(self)
         if problem_type == "bremsstrahlung" : 
             G = self.update_G
@@ -112,7 +113,7 @@ class EDXSsnmfem (Signal1D) :
 
     def update_G(self, part_P=None, G=None):
         model_params = get_metadata(self)
-        g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements}
+        g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "norm" : self.norm}
         G = G_EDXS(model_params, g_params, part_P=part_P, G=G)
         return G
 
@@ -151,6 +152,16 @@ class EDXSsnmfem (Signal1D) :
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.azimuth_angle = azimuth_angle
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.elevation_angle = elevation_angle
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.energy_resolution_MnKa = 130.0
+
+    def set_fixed_P (self,phases_dict) : 
+        elements = self.metadata.Sample.elements
+        P = -1* np.ones((len(elements)+2, len(phases_dict.keys())))
+        for p, phase in enumerate(phases_dict) : 
+            for e, elt in enumerate(elements) : 
+                for key in phases_dict[phase] : 
+                    if key == elt : 
+                        P[e,p] = phases_dict[phase][key]
+        return P
 
 ######################
 # Axiliary functions #

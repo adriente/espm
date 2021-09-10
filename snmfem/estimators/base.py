@@ -20,7 +20,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     def __init__(self, n_components=2, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
                  force_simplex=True, l2=False,  G=None, shape_2d = None,
-                 eval_print=10, true_D = None, true_A = None, fixed_A_inds = None, hspy_comp = False
+                 eval_print=10, true_D = None, true_A = None, fixed_A_inds = None, fixed_P = None, hspy_comp = False
                  ):
         self.n_components = n_components
         self.init = init
@@ -38,6 +38,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.true_D = true_D
         self.true_A = true_A
         self.fixed_A_inds = fixed_A_inds
+        self.fixed_P = fixed_P
         self.hspy_comp = hspy_comp
 
     def _more_tags(self):

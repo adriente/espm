@@ -74,7 +74,7 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
     return new
 
 
-def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True, l2=False):
+def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True, l2=False, fixed_P = None):
     """
     Multiplicative step in P.
     """
@@ -92,7 +92,7 @@ def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True, l2=False):
 
         GXA = G.T @ (X @ A.T)
 
-        return P / GGPAA * GXA
+        new_P = P / GGPAA * GXA
     else:
         GP = G @ P
         GPA = GP @ A
@@ -103,7 +103,13 @@ def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True, l2=False):
         mult1 = G.T @ op1
         term1 = (mult1 @ A.T)
         term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(A, axis=1,  keepdims=True).T
-        return P / term2 * term1
+        new_P = P / term2 * term1
+    
+    if fixed_P is None : 
+        return new_P
+    else : 
+        new_P[fixed_P >= 0] = fixed_P[fixed_P >=0]
+        return new_P
 
 # import torch
 # def multiplicative_step_p_torch(X, G, P, A, eps=log_shift):

@@ -113,12 +113,14 @@ def elts_dict_from_dict_list (dict_list) :
         unique_elts_dict[e] /= sum_elts
     return unique_elts_dict
 
-def update_bremsstrahlung (G,part_P,model_parameters,elements_list) : 
+def update_bremsstrahlung (G,part_P,model_parameters,elements_list, norm = True) : 
     elts = elts_dict_from_P(part_P,elements_list)
     model = e.EDXS(**model_parameters)
     B = G_bremsstrahlung(model.x,model.E0,model.params_dict,elements_dict=elts)
     new_G = G.copy()
     new_G[:,-2:] = B
+    if norm : 
+        new_G = new_G / new_G.sum(axis = 0)
     return new_G
 
 
