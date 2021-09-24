@@ -168,8 +168,8 @@ def test_generate_gaussian_ripple() :
 def test_gen_EDXS () : 
     
     b_dict = generate_brem_params(42)
-    assert b_dict["b0"] <= 1e-7 
-    assert b_dict["b1"] <= 1e-7
+    assert b_dict["b0"] <= 1.0 
+    assert b_dict["b1"] <= 1.0
 
     phases, dicts = generate_random_phases(n_phases=3,seed = 42)
     np.testing.assert_array_less(-1e-30, phases)
