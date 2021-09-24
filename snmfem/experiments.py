@@ -7,6 +7,7 @@ from pathlib import Path
 from argparse import ArgumentParser, Namespace
 import hyperspy.api as hs
 from snmfem.utils import number_to_symbol_list
+from snmfem.models.EDXS_function import elts_dict_from_dict_list
 
 @number_to_symbol_list
 def zeros_dict (elements = "Si") :
@@ -58,9 +59,9 @@ def quick_load(experiment, P_type = None , simulated = False) :
     G = spim.build_G(problem_type = experiment["g_type"])
     shape_2d = spim.shape_2d
     if P_type == "full" : 
-        P_in = e.build_fixed_P(spim)
+        P_in = build_fixed_P(spim)
     elif P_type == "partial" : 
-        P_in = e.build_fixed_P(spim, col1 = True)
+        P_in = build_fixed_P(spim, col1 = True)
     else : 
         P_in = None
     Estimator = getattr(estimators, experiment["method"]) 
