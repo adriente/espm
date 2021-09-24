@@ -2,17 +2,11 @@ from snmfem import estimators
 import snmfem.experiments as e
 import sys
 
-fixed_P = 0
+fixed_P = "full"
 
 def run_single_exp(pos_dict,est_dict,eval_dict) :
     exp = e.build_exp(pos_dict, est_dict)
-    if fixed_P == 0 : 
-        P_in = e.build_fixed_P(spim)
-    elif fixed_P == 1 : 
-        P_in = e.build_fixed_P(spim, col1 = True)
-    else : 
-        P_in = None
-    spim, estim = e.quick_load(exp,P_input = P_in, simulated=True)
+    spim, estim = e.quick_load(exp,P_type = fixed_P, simulated=True)
     metrics, mat_tuple, losses = e.run_experiment(spim, estim, exp, simulated=True)
     e.store_in_file(eval_dict["file"], metrics, mat_tuple, losses)
 

@@ -52,15 +52,21 @@ def run_experiment(spim,estimator,experiment,simulated = False) :
         metrics = (temp, temp, (temp,temp))
     return metrics, (G, P, A), losses
 
-def quick_load(experiment, P_input , simulated = False) : 
+def quick_load(experiment, P_type = None , simulated = False) : 
     spim = hs.load(experiment["input_file"])
     # spim.set_signal_type("EDXSsnmfem")
     G = spim.build_G(problem_type = experiment["g_type"])
     shape_2d = spim.shape_2d
+    if P_type == "full" : 
+        P_in = e.build_fixed_P(spim)
+    elif P_type == "partial" : 
+        P_in = e.build_fixed_P(spim, col1 = True)
+    else : 
+        P_in = None
     Estimator = getattr(estimators, experiment["method"]) 
     if simulated : 
         D, A = spim.phases, spim.weights
-        estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"],fixed_P = P_input,hspy_comp = True)
+        estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"],fixed_P = P_in,hspy_comp = True)
     else : 
         estimator = Estimator(G = G, shape_2d = shape_2d, **experiment["params"], hspy_comp = True)
     return spim, estimator
