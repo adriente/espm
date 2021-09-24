@@ -42,15 +42,15 @@ def generate_one_sample():
     "model" : "EDXS"}
     
     
-    phases_parameters = [{"b0" : 5e-5,
-                            "b1" : 3e-4,
-                            "scale" : 3e-4,
+    phases_parameters = [{"b0" : 5e-3,
+                            "b1" : 3e-2,
+                            "scale" : 0.05,
                             "elements_dict" : {"Fe" : 0.54860348,
                                       "Pt" : 0.38286879,
                                       "Mo" : 0.03166235}},
-                            {"b0" : 7e-4,
-                            "b1" : 5e-4,
-                            "scale" : 3e-4,
+                            {"b0" : 7e-3,
+                            "b1" : 5e-2,
+                            "scale" : 0.05,
                             "elements_dict" : {"Ca" : 0.54860348,
                                       "Si" : 0.38286879,
                                       "O" : 0.15166235}}]
@@ -137,7 +137,7 @@ def test_general():
     P2, A2 = estimator.P_, estimator.A_ 
     np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
 
-    estimator = SmoothNMF(G=G, lambda_L=0.1, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, shape_2d=[10,20], hspy_comp = False)
+    estimator = SmoothNMF(G=G, lambda_L=100, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, shape_2d=[10,20], hspy_comp = False)
     estimator.fit_transform(X=X)
     P3, A3 = estimator.P_, estimator.A_ 
     np.testing.assert_allclose(G @ P3 @ A3,  Xdot, atol=1)

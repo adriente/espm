@@ -39,22 +39,22 @@ DATA_DICT = {
         "radius" : 1.5
     },
     "model" : "EDXS",
-    "phases_parameters" : [{"b0" : 5e-5,
-                            "b1" : 3e-4,
-                            "scale" : 3e-6,
+    "phases_parameters" : [{"b0" : 5e-3,
+                            "b1" : 3e-2,
+                            "scale" : 0.05,
                             "elements_dict" : {"Fe" : 0.54860348,
                                       "Pt" : 0.38286879,
                                       "Mo" : 0.03166235,
                                       "O" : 0.03686538}},
-                            {"b0" : 7e-4,
-                            "b1" : 5e-4,
-                            "scale" : 3e-6,
+                            {"b0" : 7e-3,
+                            "b1" : 5e-2,
+                            "scale" : 0.05,
                             "elements_dict" : {"Ca" : 0.54860348,
                                       "Si" : 0.38286879,
                                       "O" : 0.15166235}},
-                            {"b0" : 3e-5,
-                            "b1" : 5e-5,
-                            "scale" : 3e-6,
+                            {"b0" : 3e-3,
+                            "b1" : 5e-2,
+                            "scale" : 0.05,
                             "elements_dict" : {
                                 "Cu" : 0.34,
                                 "Mo" : 0.12,
@@ -87,14 +87,14 @@ def test_generate():
     spim = generate_spim(phases, weights, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = False)
     cont_spim = generate_spim(phases, weights, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = True)
     Xdot = DATA_DICT["N"]* weights @ np.diag(densities)@ phases
-    P = np.linalg.lstsq(G,spim.sum(axis = (0,1)),rcond = None)[0]
+    P = np.abs(np.linalg.lstsq(G,spim.sum(axis = (0,1)),rcond = None)[0])
     
     assert phases.shape == (3, 1900)
     assert weights.shape == (100,120,3)
     assert spim.shape == (100,120,1900)
     np.testing.assert_allclose(np.sum(phases, axis=1), np.ones([3]))
     np.testing.assert_allclose( Xdot, cont_spim)
-    np.testing.assert_allclose( Xdot.sum(axis=(0,1)), G@P, rtol = 0.2 )
+    np.testing.assert_allclose( Xdot.sum(axis=(0,1)), G@P, rtol = 0.1 )
 
     filename = "test.hspy"
     save_generated_spim(filename, spim, DATA_DICT["model_parameters"], DATA_DICT["phases_parameters"], MISC_DICT)
@@ -103,8 +103,6 @@ def test_generate():
     G = si.build_G(problem_type = "bremsstrahlung")
     G = G()
     phases, weights = si.phases_2d, si.weights_2d
-    print(phases.shape)
-    print(weights.shape)
     # weights = weights.reshape((100,120,n_phases))
     X = si.data
     P = np.linalg.lstsq(G,X.sum(axis = (0,1)),rcond = None)[0]
