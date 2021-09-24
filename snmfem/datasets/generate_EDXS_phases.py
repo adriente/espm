@@ -2,7 +2,7 @@ import numpy as np
 from snmfem.models import EDXS
 from copy import deepcopy
 
-DEFAULT_ELTS = [{"b0" : 4.3298e-09 , "b1" : 6.7732e-07, "elements_dict" :  {"8": 1.0, "12": 0.51, "14": 0.61, "13": 0.07, "20": 0.04, "62": 0.02,
+DEFAULT_ELTS = [{"b0" : 4.3298e-04 , "b1" : 6.7732e-02, "elements_dict" :  {"8": 1.0, "12": 0.51, "14": 0.61, "13": 0.07, "20": 0.04, "62": 0.02,
                         "26": 0.028, "60": 0.002, "71": 0.003, "72": 0.003, "29": 0.02}},
                     {"b0" : 1.3298e-09 , "b1" : 7.7732e-07, "elements_dict" : {"8": 0.54, "26": 0.15, "12": 1.0, "29": 0.038,
                         "92": 0.0052, "60": 0.004, "31": 0.03, "71": 0.003}},
@@ -29,8 +29,8 @@ DEFAULT_PARAMS = {
 
 def generate_brem_params (seed) : 
     np.random.seed(seed)
-    b0 = float(np.random.rand(1)*1e-7)
-    b1 = float(np.random.rand(1)*1e-7)
+    b0 = float(np.random.rand(1)*1e-2)
+    b1 = float(np.random.rand(1)*1e-1)
     return {"b0" : b0,"b1" : b1}
 
 def generate_elts_dict (seed, nb_elements = 3) : 
