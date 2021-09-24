@@ -1,6 +1,5 @@
 import numpy as np
 import snmfem.experiments as e
-import snmfem.data_analysis as da
 import sys
 
 ind_list_file = "somefilename"

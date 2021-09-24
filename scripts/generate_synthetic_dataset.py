@@ -1,6 +1,4 @@
-from snmfem.datasets import generate_dataset_from_json
+import snmfem.datasets as ds
 
 if __name__ == "__main__":
-    generate_dataset_from_json("dataset_Toy.json")
-    generate_dataset_from_json("dataset_EDXS.json")
-    generate_dataset_from_json("dataset_EDXS_small.json")
+    ds.generate_built_in_datasets(seeds_range=5)

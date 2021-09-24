@@ -6,6 +6,30 @@ import snmfem.utils as u
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
 import hyperspy.api as hs
+from snmfem.utils import number_to_symbol_list
+
+@number_to_symbol_list
+def zeros_dict (elements = "Si") :
+    d = {} 
+    for elt in elements : 
+        d[elt] = 0.0
+    return d
+
+def build_fixed_P (spim, col1 = False) : 
+    phases_pars = spim.metadata.Truth.phases
+    unique_elts = list((elts_dict_from_dict_list([x["elements_dict"] for x in phases_pars])).keys())
+    P_dict = {}
+    for i, phase in enumerate(phases_pars) : 
+        elts_list = list(phase["elements_dict"].keys())
+        other_elts = list(set(unique_elts) - set(elts_list))
+        if col1 and (i!=0) : 
+            d = {}
+        else : 
+            d = zeros_dict(elements=other_elts)
+        P_dict[str(i)] = d
+        print(P_dict)
+    P = spim.set_fixed_P(P_dict)
+    return P
 
 def compute_metrics(true_spectra, true_maps, GP, A, u = True):
     angle, ind1 = measures.find_min_angle(true_spectra, GP.T, True, unique=u)
@@ -28,7 +52,7 @@ def run_experiment(spim,estimator,experiment,simulated = False) :
         metrics = (temp, temp, (temp,temp))
     return metrics, (G, P, A), losses
 
-def quick_load(experiment, simulated = False) : 
+def quick_load(experiment, P_input , simulated = False) : 
     spim = hs.load(experiment["input_file"])
     # spim.set_signal_type("EDXSsnmfem")
     G = spim.build_G(problem_type = experiment["g_type"])
@@ -36,7 +60,7 @@ def quick_load(experiment, simulated = False) :
     Estimator = getattr(estimators, experiment["method"]) 
     if simulated : 
         D, A = spim.phases, spim.weights
-        estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"],hspy_comp = True)
+        estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"],fixed_P = P_input,hspy_comp = True)
     else : 
         estimator = Estimator(G = G, shape_2d = shape_2d, **experiment["params"], hspy_comp = True)
     return spim, estimator
@@ -128,8 +152,9 @@ def build_exp(pos_dict,est_dict, name = None) :
 
 def store_in_file(file,metrics,matrices_tuple,losses) :
     d = {}
-    d["GP"] = matrices_tuple[0]
-    d["A"] = matrices_tuple[1]
+    d["G"] = matrices_tuple[0]
+    d["P"] = matrices_tuple[1]
+    d["A"] = matrices_tuple[2]
     d["metrics"] = metrics
     d["losses"] = losses
     filename = conf.RESULTS_PATH / Path(file)

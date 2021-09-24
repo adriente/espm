@@ -37,11 +37,12 @@ def lifshin_bremsstrahlung(x, b0, b1, E0 = 200):
 
 def lifshin_bremsstrahlung_b0(x, b0, E0 = 200):
     assert np.inf not in 1/x, "You have 0.0 in your energy scale. Retry with a cropped energy scale"
-    return b0*(E0 - x)/x
+    # return b0*((E0 - x)/x - np.power(E0 - x, 2)/(E0*x))
+    return b0/E0*(1 - x/E0)
 
 def lifshin_bremsstrahlung_b1(x, b1, E0 = 200):
     assert np.inf not in 1/x, "You have 0.0 in your energy scale. Retry with a cropped energy scale"
-    return b1*np.power((E0 - x),2)/x
+    return b1*np.power((E0 - x),2)/(E0*E0*x)
 
 def shelf(x, height, length):
     return height * erfc(x - length)

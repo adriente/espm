@@ -3,6 +3,7 @@ from snmfem.datasets.generate_EDXS_phases import generate_elts_dict
 import numpy as np
 import snmfem.models.EDXS_function as ef
 from snmfem.models import EDXS
+from snmfem.models.EDXS_function import lifshin_bremsstrahlung, lifshin_bremsstrahlung_b0, lifshin_bremsstrahlung_b1
 
 x = np.linspace(0.2,19,num = 2000)
 det_dict = {
@@ -41,6 +42,21 @@ model_parameters = {
             "Det" : det_dict
         }
     }
+
+def test_lifshin_bremsstrahlung () : 
+    E0 = 200
+    x = np.linspace(0.2,E0-0.1, num = 2000 )
+    for i in range(10) : 
+        b0 = np.random.rand()
+        b1 = np.random.rand()
+        y0 = lifshin_bremsstrahlung_b0(x,b0,E0)
+        y1 = lifshin_bremsstrahlung_b1(x,b1,E0)
+        y = lifshin_bremsstrahlung (x,b0,b1,E0)
+
+        np.testing.assert_array_less(1e-30, y0)
+        np.testing.assert_array_less(1e-30, y1)
+        np.testing.assert_array_less(1e-30, y)
+        np.testing.assert_allclose(y, y1 + y0)
 
 def test_efficiency () : 
     det = det_efficiency(x,det_dict) 

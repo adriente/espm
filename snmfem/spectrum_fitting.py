@@ -75,7 +75,7 @@ def ndict_to_params (input_dict) :
             #All positive expect for b1 which is negative
             if elt_match : 
                 params.add(par[0],value = par[1], vary=False)
-            elif par[0] == "b1" : 
+            elif par[0] == "b0" : 
                 params.add(par[0],value = par[1])
             else : 
                 params.add(par[0],value = par[1], min = 0)
