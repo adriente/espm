@@ -2781,7 +2781,7 @@ Let us rewrite the expression and assume that
  implies with a simple change of variable that 
 \begin_inset Formula 
 \[
-b_{0}EE_{0}+b_{1}E^{2}\geq0\hspace{1em}\text{for }0\leq E\leq E_{0}.
+b_{0}E^{\prime}E_{0}+b_{1}E^{\prime}^{2}\geq0\hspace{1em}\text{for }0\leq E^{\prime}\leq E_{0}.
 \]
 
 \end_inset
@@ -2810,7 +2810,7 @@ b_{0}\geq0,\hspace{1em}b_{1}\geq-b_{0}
 \end_layout
 
 \begin_layout Subsection
-Using an auxiliary function
+Using an auxiliary function (not working)
 \end_layout
 
 \begin_layout Standard
@@ -2832,6 +2832,13 @@ G(P,P^{t}) & ={\color{magenta}\sum_{\ell,p,c,k}G_{\ell,k}A_{c,p}P_{c,k}}{\color{
 
 \end_inset
 
+
+\series bold
+\color red
+This last step is not allowed as we have the log of potential negative terms!
+ 
+\series default
+\color inherit
 Here 
 \begin_inset Formula $b_{0,c},b_{1,c}=P_{c,1},P_{c,2}$
 \end_inset
@@ -2933,6 +2940,65 @@ with
 \[
 \lambda=\frac{n_{1}d_{2}+n_{2}d_{1}}{n_{1}+n_{2}}.
 \]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Different parametrization
+\end_layout
+
+\begin_layout Standard
+Let us use a different, yet equivalent parametrization that has the property
+ to always have positive terms inside the accepted domain.
+ As a reminder, we have:
+\begin_inset Formula 
+\[
+b_{0}\frac{\left(E_{0}-E\right)}{E}+b_{1}\frac{\left(E_{0}-E\right)^{2}}{E_{0}E}\geq0\hspace{1em}\forall0<E\leq E_{0}
+\]
+
+\end_inset
+
+which implies
+\begin_inset Formula 
+\[
+b_{0}\geq0,\hspace{1em}b_{0}+b_{1}\geq0.
+\]
+
+\end_inset
+
+Let us consider the parametrization
+\begin_inset Formula 
+\[
+b_{1}^{\prime}=b_{0}+b_{1}\geq0
+\]
+
+\end_inset
+
+ and 
+\begin_inset Formula $b_{0}^{\prime}=b_{0}\geq0.$
+\end_inset
+
+ We find that 
+\begin_inset Formula $b_{1}=b_{1}^{\prime}-b_{0}^{\prime}.$
+\end_inset
+
+ The new polynome becomes
+\begin_inset Formula 
+\[
+b_{0}^{\prime}\frac{\left(E_{0}-E\right)}{E}+\left(b_{1}^{\prime}-b_{0}^{\prime}\right)\frac{\left(E_{0}-E\right)^{2}}{E_{0}E}=b_{0}^{\prime}\left[\frac{\left(E_{0}-E\right)}{E}-\frac{\left(E_{0}-E\right)^{2}}{E_{0}E}\right]+b_{1}^{\prime}\frac{\left(E_{0}-E\right)^{2}}{E_{0}E}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\frac{\left(E_{0}-E\right)}{E}-\frac{\left(E_{0}-E\right)^{2}}{E_{0}E} & =\frac{1}{E}\left(E-\frac{E^{2}}{E_{0}}\right)\\
+ & =1-\frac{E}{E_{0}}
+\end{align*}
 
 \end_inset
 
