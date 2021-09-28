@@ -101,7 +101,7 @@ class EDXS(PhysicalModel):
                     self.bkgd_in_G = False
 
             if norm : 
-                self.G /= np.sqrt(np.sum(self.G**2, axis=0, keep_dims=True))
+                self.G /= np.sqrt(np.sum(self.G**2, axis=0, keepdims=True))
         else : 
             print("g_type has to be one of those : \"bremsstrahlung\", \"no_brstlg\" or \"identity\". G will be None, corresponding to \"identity\". ")
 
