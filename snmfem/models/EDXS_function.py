@@ -121,7 +121,7 @@ def update_bremsstrahlung (G,part_P,model_parameters,elements_list, norm = True)
     new_G = G.copy()
     new_G[:,-2:] = B
     if norm : 
-        new_G = new_G / new_G.sum(axis = 0)
+        new_G = new_G / np.sqrt(np.sum(new_G**2, axis=0, keep_dims=True))
     return new_G
 
 
