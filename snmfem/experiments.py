@@ -53,7 +53,7 @@ def run_experiment(spim,estimator,experiment,simulated = False) :
         metrics = (temp, temp, (temp,temp))
     return metrics, (G, P, A), losses
 
-def quick_load(experiment, P_type = None , simulated = False) : 
+def simulation_quick_load(experiment, P_type = None) : 
     spim = hs.load(experiment["input_file"])
     # spim.set_signal_type("EDXSsnmfem")
     G = spim.build_G(problem_type = experiment["g_type"])
@@ -64,14 +64,19 @@ def quick_load(experiment, P_type = None , simulated = False) :
         P_in = build_fixed_P(spim, col1 = True)
     else : 
         P_in = None
-    Estimator = getattr(estimators, experiment["method"]) 
-    if simulated : 
-        D, A = spim.phases, spim.weights
-        estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"],fixed_P = P_in,hspy_comp = True)
-    else : 
-        estimator = Estimator(G = G, shape_2d = shape_2d, **experiment["params"], hspy_comp = True)
+    Estimator = getattr(estimators, experiment["method"])  
+    D, A = spim.phases, spim.weights
+    estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"],fixed_P = P_in,hspy_comp = True)
     return spim, estimator
 
+def experimental_quick_load(experiment, P_dict = None) : 
+    spim = hs.load(experiment["input_file"])
+    G = spim.build_G(problem_type = experiment["g_type"])
+    shape_2d = spim.shape_2d
+    P = spim.set_fixed_P(P_dict)
+    Estimator = getattr(estimators, experiment["method"])  
+    estimator = Estimator(G = G, shape_2d = shape_2d, **experiment["params"],fixed_P = P,hspy_comp = True)
+    return spim, estimator
 
 # To be verified ...
 def perform_simulations(exp_list,n_samples = 10, simulated = False):

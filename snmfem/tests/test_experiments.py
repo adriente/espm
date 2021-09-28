@@ -100,7 +100,7 @@ def test_quick_load () :
     'params' : {'force_simplex' : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'n_components' : 3,
     'tol' : 200.0, 'verbose' : False}}
 
-    spim1, estimator1 = exps.quick_load(experiment1)
+    spim1, estimator1 = exps.simulation_quick_load(experiment1)
     assert callable(estimator1.G)
     assert isinstance(estimator1,estimators.NMF)
     assert estimator1.shape_2d == (30,40)
@@ -117,7 +117,7 @@ def test_run_experiment () :
     'params' : {'force_simplex' : True, 'init' : 'random', 'l2' : False, 'max_iter' : 3, 'mu' : 0.0, 'n_components' : 4,
     'tol' : 0.0001, 'verbose' : False}}
 
-    spim1, estimator1 = exps.quick_load(experiment1, simulated=True)
+    spim1, estimator1 = exps.simulation_quick_load(experiment1)
     metrics, (G, P, A), losses = exps.run_experiment(spim1, estimator1, experiment1, simulated=True)
 
     assert G.shape == (1000, 12)
