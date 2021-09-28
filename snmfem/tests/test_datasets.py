@@ -110,7 +110,7 @@ def test_generate():
     assert phases.shape == (3, 1900)
     assert weights.shape == (100,120,3)
     assert si.data.shape == (100,120,1900)
-    np.testing.assert_allclose( Xdot, si.metadata.Truth.Params.N * weights @ np.diag(si.metadata.Truth.Params.densities)@ phases)
+    np.testing.assert_allclose( Xdot, weights @ phases)
     np.testing.assert_allclose( Xdot.sum(axis=(0,1)), G@P, rtol = 0.2 )
 
     os.remove(filename)

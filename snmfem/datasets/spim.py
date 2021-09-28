@@ -1,5 +1,4 @@
 from  hyperspy._signals.signal1d import Signal1D
-from numpy.core.fromnumeric import reshape
 from snmfem.models import EDXS
 from snmfem import models
 from snmfem.models.edxs import G_EDXS
@@ -83,6 +82,9 @@ class EDXSsnmfem (Signal1D) :
         mod_pars = get_metadata(self)
         phases_pars, misc_pars = get_truth(self)
         phases, weights = build_truth(self, mod_pars, phases_pars, misc_pars)
+        if not(phases is None) : 
+            Ns = self.metadata.Truth.Params.N * np.array(self.metadata.Truth.Params.densities)
+            phases = phases*Ns[:,np.newaxis]
         if reshape : 
             phases = phases.T
             weights = weights.reshape((weights.shape[0]*weights.shape[1], weights.shape[2])).T
