@@ -6,7 +6,7 @@ fixed_P_dict = {"p0" : {"Al" : 0.0}, "p1" : {"Nd" : 0.0, "Ni" : 0.0}}
 def run_single_exp(pos_dict,est_dict,eval_dict, fixed_P = "True") :
     exp = e.build_exp(pos_dict, est_dict)
     if fixed_P == "True"  : 
-        spim, estim = e.experimental_quick_load(exp,P_type = fixed_P_dict)
+        spim, estim = e.experimental_quick_load(exp,P_dict = fixed_P_dict)
     else : 
         spim, estim = e.experimental_quick_load(exp,P_dict = None)
     metrics, mat_tuple, losses = e.run_experiment(spim, estim, exp, simulated=False)

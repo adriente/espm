@@ -178,19 +178,19 @@ def get_metadata(spim) :
         mod_pars["e_scale"] = spim.axes_manager[-1].scale
         mod_pars["e_size"] = spim.axes_manager[-1].size
         mod_pars["db_name"] = spim.metadata.xray_db
-        mod_pars["width_slope"] = spim.metadata.Acquisition_instrument.TEM.Detector.width_slope
-        mod_pars["width_intercept"] = spim.metadata.Acquisition_instrument.TEM.Detector.width_intercept
+        mod_pars["width_slope"] = spim.metadata.Acquisition_instrument.TEM.Detector.EDS.width_slope
+        mod_pars["width_intercept"] = spim.metadata.Acquisition_instrument.TEM.Detector.EDS.width_intercept
     
         pars_dict = {}
         pars_dict["Abs"] = {
             "thickness" : spim.metadata.Sample.thickness,
-            "toa" : spim.metadata.Acquisition_instrument.TEM.Detector.take_off_angle,
+            "toa" : spim.metadata.Acquisition_instrument.TEM.Detector.EDS.take_off_angle,
             "density" : spim.metadata.Sample.density
         }
         try : 
-            pars_dict["Det"] = spim.metadata.Acquisition_instrument.TEM.Detector.type.as_dictionary()
+            pars_dict["Det"] = spim.metadata.Acquisition_instrument.TEM.Detector.EDS.type.as_dictionary()
         except AttributeError : 
-            pars_dict["Det"] = spim.metadata.Acquisition_instrument.TEM.Detector.type
+            pars_dict["Det"] = spim.metadata.Acquisition_instrument.TEM.Detector.EDS.type
 
         mod_pars["params_dict"] = pars_dict
 

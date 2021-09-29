@@ -79,25 +79,26 @@ def experimental_quick_load(experiment, P_dict = None) :
     return spim, estimator
 
 # To be verified ...
-def perform_simulations(exp_list,n_samples = 10, simulated = False):
-    augm_exp_list = []
-    for exp in exp_list : 
-        files = [exp["input_file"] / Path("sample_{}.hspy".format(i)) for i in range(n_samples)]
-        new_exps = []
-        for f in files : 
-            exp["input_file"] = f
-            new_exps.append(exp)
-        augm_exp_list.append(new_exps)
+# def perform_simulations(exp_list,n_samples = 10, simulated = False):
+#     augm_exp_list = []
+#     for exp in exp_list : 
+#         files = [exp["input_file"] / Path("sample_{}.hspy".format(i)) for i in range(n_samples)]
+#         new_exps = []
+#         for f in files : 
+#             exp["input_file"] = f
+#             new_exps.append(exp)
+#         augm_exp_list.append(new_exps)
     
-    metrics = []
-    for augm_exp in augm_exp_list :
-        m = []
-        for exp in augm_exp : 
-            estim = quick_load(exp)
-            m.append(run_experiment(estimator = estim, experiment=exp, simulated= simulated)[0][:-1])
-            metrics.append(m)
-    metrics = np.array(metrics)
-    return metrics
+#     metrics = []
+#     for augm_exp in augm_exp_list :
+#         m = []
+#         for exp in augm_exp :
+#             if simulated :  
+#             estim = simulation_quick_load(exp)
+#             m.append(run_experiment(estimator = estim, experiment=exp, simulated= simulated)[0][:-1])
+#             metrics.append(m)
+#     metrics = np.array(metrics)
+#     return metrics
 
 
 def print_results(exp_list, metrics, metrics_names=["Phase angles", "Map MSE"]):
