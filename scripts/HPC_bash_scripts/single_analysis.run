@@ -7,5 +7,5 @@
 #SBATCH --time 72:00:00
 
 echo STARTING at `date`
-python /home/teurtrie/SNMF_EDXS/scripts/HPC_single_data_analysis.py "$@"
+python /home/teurtrie/SNMF_EDXS/scripts/HPC_exp_data_single.py "$@"
 echo FINISHED at `date`

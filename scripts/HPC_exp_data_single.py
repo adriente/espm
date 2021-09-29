@@ -8,7 +8,7 @@ def run_single_exp(pos_dict,est_dict,eval_dict, fixed_P = "True") :
     if fixed_P == "True"  : 
         spim, estim = e.experimental_quick_load(exp,P_dict = fixed_P_dict)
     else : 
-        spim, estim = e.experimental_quick_load(exp,P_dict = None)
+        spim, estim = e.experimental_quick_load(exp,P_dict = {})
     metrics, mat_tuple, losses = e.run_experiment(spim, estim, exp, simulated=False)
     e.store_in_file(eval_dict["output_file"], metrics, mat_tuple, losses)
 
