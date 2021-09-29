@@ -11,13 +11,13 @@ default_dict = {
     "tol" : 0.0001,
     "max_iter" : 200,
     "random_state" : None,
-    "alpha" : "deprecated",
-    "alpha_W" : 0.0,
-    "alpha_H" : "same",
+    "alpha" : 0.0,
+    # "alpha_W" : 0.0,
+    # "alpha_H" : "same",
     "l1_ratio" : 0.0,
     "verbose" : 0,
     "shuffle" : False,
-    "regularization" : "deprecated" 
+    "regularization" : "both" 
 }
 
 class SKNMF(NMF):
@@ -35,8 +35,8 @@ class SKNMF(NMF):
             max_iter = filled_kwargs["max_iter"],
             random_state = filled_kwargs["random_state"],
             alpha = filled_kwargs["alpha"],
-            alpha_W = filled_kwargs["alpha_W"],
-            alpha_H = filled_kwargs["alpha_H"],
+            # alpha_W = filled_kwargs["alpha_W"],
+            # alpha_H = filled_kwargs["alpha_H"],
             l1_ratio = filled_kwargs["l1_ratio"],
             verbose = filled_kwargs["verbose"],
             shuffle = filled_kwargs["shuffle"],
