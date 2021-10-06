@@ -10,12 +10,14 @@ def absorption_coefficient (x,atomic_fraction = False,*,elements_dict = {"Si" : 
     mu = np.zeros_like(x)
     if atomic_fraction : 
         elements_dict = atomic_to_weight_dict(elements_dict = elements_dict)
+
+    sum_elts = sum(elements_dict.values())
     
     for key in elements_dict.keys() : 
         x_db = HSPY_MAC[key]["energies (keV)"]
         y_db = HSPY_MAC[key]["mass_absorption_coefficient (cm2/g)"]
         interp_func = interp1d(x_db,y_db,kind="cubic")
-        mu += elements_dict[key]*interp_func(x)
+        mu += elements_dict[key]*interp_func(x)/sum_elts
 
     if len(elements_dict.keys()) == 0 :
         mu = 1 / np.power(x,3)

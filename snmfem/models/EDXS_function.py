@@ -3,6 +3,10 @@ from scipy.special import erfc
 from snmfem.models.absorption_edxs import det_efficiency_from_curve,det_efficiency,absorption_correction
 from snmfem.models import edxs as e
 from collections import Counter
+from snmfem.conf import SYMBOLS_PERIODIC_TABLE
+import json
+
+from snmfem.utils import number_to_symbol_list
     
 def gaussian(x, mu, sigma):
     """
@@ -99,13 +103,28 @@ def G_bremsstrahlung(x,E0,params_dict,*,elements_dict = {}):
     B = np.vstack((B0,B1)).T
     
     return B
-    
-def elts_dict_from_P (part_P,elements_list) : 
-    flat_P = np.sum(part_P,axis = 1)/np.sum(part_P)
+
+@number_to_symbol_list    
+def elts_dict_from_P (part_P,*,elements = []) : 
+    norm_P = concentrations_from_P(part_P= part_P, elements= elements)
     elements_dict = {}
-    for i,elt in enumerate(elements_list) :
-        elements_dict[elt] = flat_P[i] 
+    with open(SYMBOLS_PERIODIC_TABLE,"r") as f : 
+        SPT = json.load(f)["table"]
+    for i,elt in enumerate(elements) :
+        elements_dict[elt] = norm_P[i] * SPT[elt]["atomic_mass"]
     return elements_dict
+
+@number_to_symbol_list
+def concentrations_from_P (part_P,*, elements = []) : 
+    avg_P = np.sum(part_P,axis = 1)/part_P.shape[1]
+    weighted_P = np.zeros((part_P.shape[0],))
+    with open(SYMBOLS_PERIODIC_TABLE,"r") as f : 
+        SPT = json.load(f)["table"]
+    for i,elt in enumerate(elements) :
+        weighted_P[i] = avg_P[i]*SPT[elt]["atomic_mass"]
+    norm_P = weighted_P / np.sum(weighted_P)
+    return norm_P
+
 
 def elts_dict_from_dict_list (dict_list) : 
     unique_elts_dict = sum((Counter(x) for x in dict_list),Counter())
@@ -115,7 +134,7 @@ def elts_dict_from_dict_list (dict_list) :
     return unique_elts_dict
 
 def update_bremsstrahlung (G,part_P,model_parameters,elements_list, norm = True) : 
-    elts = elts_dict_from_P(part_P,elements_list)
+    elts = elts_dict_from_P(part_P,elements = elements_list)
     model = e.EDXS(**model_parameters)
     B = G_bremsstrahlung(model.x,model.E0,model.params_dict,elements_dict=elts)
     new_G = G.copy()
