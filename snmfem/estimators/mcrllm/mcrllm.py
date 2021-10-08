@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from sklearn.cluster import KMeans
 from sklearn.cluster import MiniBatchKMeans
-import pysptools.eea.eea
+# import pysptools.eea.eea
 import math
 from tqdm import tqdm
         

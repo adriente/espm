@@ -157,7 +157,12 @@ class EDXSsnmfem (Signal1D) :
 
     def set_fixed_P (self,phases_dict) : 
         elements = self.metadata.Sample.elements
-        P = -1* np.ones((len(elements)+2, len(phases_dict.keys())))
+        if self.problem_type == "no_brstlg" : 
+            P = -1* np.ones((len(elements), len(phases_dict.keys())))
+        elif self.problem_type == "bremsstrahlung" : 
+            P = -1* np.ones((len(elements), len(phases_dict.keys())))
+        else : 
+            raise ValueError("problem type should be either no_brstlg or bremsstrahlung")
         for p, phase in enumerate(phases_dict) : 
             for e, elt in enumerate(elements) : 
                 for key in phases_dict[phase] : 

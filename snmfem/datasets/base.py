@@ -111,6 +111,6 @@ def generate_dataset(base_path=DATASETS_PATH,seeds_range = 10, **kwargs):
 
         weights = generate_weights(kwargs["weight_type"],kwargs["shape_2d"], **kwargs["weights_params"], n_phases=n_phases, seed=seed)
         spim = generate_spim(phases, weights, kwargs["densities"], kwargs["N"], seed=seed)
-        filename = folder / Path("sample_{}".format(seed - fixed_seed))
+        filename = str(folder / Path("sample_{}".format(seed - fixed_seed)))
         misc_parameters.update({"seed" : seed})
         save_generated_spim(filename, spim, model_parameters, phases_parameters, misc_parameters)
