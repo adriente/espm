@@ -106,24 +106,31 @@ def G_bremsstrahlung(x,E0,params_dict,*,elements_dict = {}):
 
 @number_to_symbol_list    
 def elts_dict_from_P (part_P,*,elements = []) : 
-    norm_P = concentrations_from_P(part_P= part_P, elements= elements)
+    norm_P = np.mean(part_P / part_P.sum(axis = 0),axis=1)
     elements_dict = {}
     with open(SYMBOLS_PERIODIC_TABLE,"r") as f : 
         SPT = json.load(f)["table"]
     for i,elt in enumerate(elements) :
         elements_dict[elt] = norm_P[i] * SPT[elt]["atomic_mass"]
-    return elements_dict
+    factor =  sum(elements_dict.values())
+    return {key:elements_dict[key]/factor for key in elements_dict}
 
 @number_to_symbol_list
-def concentrations_from_P (part_P,*, elements = []) : 
-    avg_P = np.sum(part_P,axis = 1)/part_P.shape[1]
-    weighted_P = np.zeros((part_P.shape[0],))
-    with open(SYMBOLS_PERIODIC_TABLE,"r") as f : 
-        SPT = json.load(f)["table"]
-    for i,elt in enumerate(elements) :
-        weighted_P[i] = avg_P[i]*SPT[elt]["atomic_mass"]
-    norm_P = weighted_P / np.sum(weighted_P)
-    return norm_P
+def print_concentrations_from_P (part_P, *, elements = []) : 
+    norm_P = part_P / part_P.sum(axis = 0)
+    print("Concentrations report")
+    title_string = ""
+
+    for i in range(norm_P.shape[1]) : 
+        title_string += "{:>7}".format("p" + str(i))
+    print(title_string)
+    
+    for j in range(norm_P.shape[0]) : 
+        main_string = ""
+        main_string += "{:2}".format(elements[j]) + " : "
+        for i in range(norm_P.shape[1]) :
+            main_string += "{:05.4f} ".format(norm_P[j,i])
+        print(main_string)
 
 
 def elts_dict_from_dict_list (dict_list) : 
