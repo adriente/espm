@@ -160,7 +160,7 @@ class EDXSsnmfem (Signal1D) :
         if self.problem_type == "no_brstlg" : 
             P = -1* np.ones((len(elements), len(phases_dict.keys())))
         elif self.problem_type == "bremsstrahlung" : 
-            P = -1* np.ones((len(elements), len(phases_dict.keys())))
+            P = -1* np.ones((len(elements)+2, len(phases_dict.keys())))
         else : 
             raise ValueError("problem type should be either no_brstlg or bremsstrahlung")
         for p, phase in enumerate(phases_dict) : 
