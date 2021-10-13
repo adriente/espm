@@ -1,6 +1,7 @@
 from snmfem.utils import arg_helper
 from snmfem.datasets.base import generate_dataset
 from snmfem.datasets.generate_EDXS_phases import generate_modular_phases
+from snmfem.conf import DEFAULT_SYNTHETIC_DATA_DICT
 
 n_phases = 3
 seed = 91
