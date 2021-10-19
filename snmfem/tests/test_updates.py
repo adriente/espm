@@ -1,6 +1,6 @@
 import numpy as np
 
-from snmfem.updates import dichotomy_simplex, multiplicative_step_p, multiplicative_step_a, update_q, dichotomy_simplex_aq
+from snmfem.updates import dichotomy_simplex, multiplicative_step_p, multiplicative_step_a, update_q, dichotomy_simplex_aq, multiplicative_step_aq
 from snmfem.measures import KLdiv_loss, log_reg, Frobenius_loss
 from snmfem.conf import log_shift, dicotomy_tol
 
@@ -443,6 +443,51 @@ def test_multiplicative_step_a():
         val2 = Frobenius_loss(X, GP, Ap) + log_reg(A, 3*mu, epsilon_reg)
         np.testing.assert_array_less(0, Ap)
         assert(val1 > val2)
+
+def test_multiplicative_step_aq():
+
+    l = 26
+    k = 5
+    p = 100
+    c = 17
+
+    A = np.random.rand(k,p)
+    A = A/np.sum(A, axis=0, keepdims=True)
+
+    G = np.random.rand(l,c)
+    P = np.random.rand(c,k)
+    GP = G @ P
+
+    X = GP @ A
+    np.testing.assert_allclose(np.sum(A, axis=0), np.ones([A.shape[1]]), atol=dicotomy_tol)
+
+    Ap = multiplicative_step_aq(X, G, P, A, force_simplex=False,eps=0,safe=True)
+    np.testing.assert_array_almost_equal(A, Ap)
+    np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
+
+    Ap = multiplicative_step_aq(X, G, P, A, force_simplex=True, eps=0, safe=True)
+    np.testing.assert_allclose(A, Ap, atol=dicotomy_tol)        
+
+    for _ in range(10):
+        A = np.random.rand(k,p)
+        A = A/np.sum(A, axis=1, keepdims=True)
+        Ap =  multiplicative_step_aq(X, G, P, A, force_simplex=False,  eps=0, safe=True)
+        val1 = KLdiv_loss(X, GP, A)
+        val2 = KLdiv_loss(X, GP, Ap)
+        np.testing.assert_array_less(0, Ap)
+        assert(val1 > val2)
+
+        Ap =  multiplicative_step_aq(X, G, P, A, force_simplex=True, eps=log_shift, safe=True)
+        Ap2 =  make_step_a(X, G, P, A, mu_sparse=0, eps=log_shift, eps_sparse=1, mask=None)
+        np.testing.assert_array_almost_equal(Ap2, Ap)
+        np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
+
+        val1 = KLdiv_loss(X, GP, A)
+        val2 = KLdiv_loss(X, GP, Ap)
+        np.testing.assert_array_less(0, Ap)
+        assert(val1 > val2)
+
+
 
 
 def test_Q_step():

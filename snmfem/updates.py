@@ -55,7 +55,7 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
 
     return dicotomy(a, b, func, maxit, tol)
 
-def dichotomy_simplex_aq(a, b, minus_c, tol=dicotomy_tol, maxit=40):
+def dichotomy_simplex_aq(a, b, minus_c, tol=dicotomy_tol, maxit=100):
     """
     Function to solve the dicotomy for the function:
     f(nu) = n_p * nu_k + 2a - sum_p sqrt ( (b_p + nu)^2 - 4 a c_p) + sum_p b_p
