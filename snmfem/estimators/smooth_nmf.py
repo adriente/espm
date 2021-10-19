@@ -50,12 +50,12 @@ class SmoothNMF(NMF):
             A = multiplicative_step_a(self.X_, self.G_, P, A, force_simplex=self.force_simplex, eps=self.log_shift, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, sigmaL=self.sigmaL_)
             P = multiplicative_step_p(self.X_, self.G_, P, A, eps=self.log_shift, safe=self.debug, l2=self.l2)
             if self.linesearch:
-                d = diff_surrogate(Aold, A, L=self.L_, sigmaL=self.sigmaL )
+                d = diff_surrogate(Aold, A, L=self.L_, sigmaL=self.sigmaL_ )
                 if d>0:
-                    self.sigmaL  = self.sigmaL / 1.2
+                    self.sigmaL_  = self.sigmaL_ / 1.2
                 else:
-                    self.sigmaL  = self.sigmaL * 1.5
-                self.gamma.append(self.sigmaL )
+                    self.sigmaL_  = self.sigmaL_ * 1.5
+                self.gamma.append(self.sigmaL_ )
         else:
             A = multiplicative_step_a(self.X_, self.G_, P, A, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_A_inds=self.fixed_A_inds)
             P = multiplicative_step_p(self.X_, self.G_, P, A, eps=self.log_shift, safe=self.debug, l2=self.l2)
