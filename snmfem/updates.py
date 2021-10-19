@@ -349,7 +349,7 @@ def multiplicative_step_aq(X, G, P, A, force_simplex=True, eps=log_shift, safe=T
         b = b + lambda_L * A @ L - lambda_L * sigmaL  * A 
         a = lambda_L * sigmaL
         if force_simplex:
-            nu = dichotomy_simplex_q(a, b, minus_c)
+            nu = dichotomy_simplex_aq(a, b, minus_c)
             b = b + nu
         return (-b + np.sqrt(b**2 + 4* a *minus_c)) / (2*a)
     else: # We recover the classic case: multiplicative_step_a
