@@ -1,6 +1,7 @@
 from operator import gt
 from sklearn.utils.estimator_checks import check_estimator
 from snmfem import estimators
+from snmfem.estimators.smooth_nmf import diff_surrogate, smooth_l2_surrogate
 from snmfem.estimators import NMF, SmoothNMF
 import numpy as np
 from snmfem.models import EDXS
@@ -146,6 +147,25 @@ def test_general():
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A2.T))
     # assert(trace_xtLx(L, A.T) < trace_xtLx(L, A2.T) )
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A.T) )
+
+def test_surrogate_smooth_nmf():
+    L = create_laplacian_matrix(4, 3)
+    for i in range(10):
+        A1 = np.random.randn(3, 12)
+        v1 = smooth_l2_surrogate(A1, L)
+        v2 = smooth_l2_surrogate(A1, L, A1)
+        v3 = trace_xtLx(L, A1.T) / 2
+        np.testing.assert_almost_equal(v1, v2)
+        np.testing.assert_almost_equal(v1, v3)
+
+        for j in range(10):
+            A2 = np.random.randn(3, 12)
+            v4 = smooth_l2_surrogate(A1, L, A2)
+            v5 = trace_xtLx(L, A2.T) / 2
+            assert v4 >= v5
+            d = diff_surrogate(A1, A2, L=L)
+            np.testing.assert_almost_equal(v4 - v5 , d)
+
 
 # def test_losses():
 #     G, P, A, D, w, X, Xdot, N = generate_one_sample()
