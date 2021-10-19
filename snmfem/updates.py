@@ -64,13 +64,13 @@ def dichotomy_simplex_aq(a, b, minus_c, tol=dicotomy_tol, maxit=40):
     The second part applies the dichotomy algorithm to solve the equation.
     """
     # do some test
-    assert(a>0)
-    assert((minus_c>0).all())
+    assert(a>=0)
+    assert((minus_c>=0).all())
 
     n_p = len(b) 
-    nu_max =n_p * np.max(b**2/a+2*a+2*(b+ minus_c), axis=0) 
+    nu_max = n_p * np.max(b**2/a+2*a+2*(b+ minus_c), axis=0) * 1.5 + 1e-3
 
-    nu_min = - (2 * a + np.sum(b, axis=0))/ n_p
+    nu_min = - (2 * a + np.sum(b, axis=0))/ n_p  * 1.1 - 1e-3
     
     def func(x):
         return n_p * x + 2*a + np.sum( - np.sqrt( (b + x)**2 + 4*a*minus_c) + b, axis=0)
