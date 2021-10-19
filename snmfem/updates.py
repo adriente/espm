@@ -2,15 +2,12 @@ import numpy as np
 from snmfem.conf import log_shift, dicotomy_tol
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
 from snmfem.laplacian import sigmaL
-# test
 
 def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
     """
     Function to solve the num/(x+denum) -1 = 0 equation. Here, x is the Lagragian multiplier which is used to apply the simplex constraint.
-    The first part consists in finding a and b such that num/(a+denum) -1 > 0 and num/(b+denum) -1  < 0. (line search)
-    In this function, the largest root is found.
+    The first part consists in finding a and b such that num/(a+denum) -1 > 0 and num/(b+denum) -1  < 0. 
     The second part applies the dichotomy algorithm to solve the equation.
-    In the future a vectorized version of Dekker Brent could be implemented.
     """
     # The function has exactly one root at the right of the first singularity (the singularity at min(denum))
     
@@ -44,35 +41,86 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
     # b[r>=1] = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))[r>=1]
     
     b = len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0)
-    assert(np.sum((np.sum(num / (b + denum), axis=0) - 1)>=0)==0)
-    assert(np.sum((np.sum(num / (a + denum), axis=0) - 1)<=0)==0)
-    assert(np.sum(np.isnan(np.sum(num / (a + denum), axis=0)))==0)
-    assert(np.sum(np.isnan(np.sum(num / (b + denum), axis=0)))==0)
 
-    new = (a + b)/2
+    def func(x):
+        return np.sum(num / (x + denum), axis=0) - 1
+    func_a = func(a)
+    func_b = func(b)
+    
+    assert(np.sum(func_b>=0)==0)
+    assert(np.sum(func_a<=0)==0)
+    assert(np.sum(np.isnan(func_a))==0)
+    assert(np.sum(np.isnan(func_b))==0)
 
+
+    return dicotomy(a, b, func, maxit, tol)
+
+def dichotomy_simplex_aq(a, b, minus_c, tol=dicotomy_tol, maxit=40):
+    """
+    Function to solve the dicotomy for the function:
+    f(nu) = n_p * nu_k + 2a - sum_p sqrt ( (b_p + nu)^2 - 4 a c_p) + sum_p b_p
+
+    The first part consists in finding nu_max and nu_min such that f(nu_max) > 0 and f(nu_min) < 0. 
+    The second part applies the dichotomy algorithm to solve the equation.
+    """
+    # do some test
+    assert(a>0)
+    assert((minus_c>0).all())
+
+    n_p = len(b) 
+    nu_max =n_p * np.max(b**2/a+2*a+2*(b+ minus_c), axis=0) 
+
+    nu_min = - (2 * a + np.sum(b, axis=0))/ n_p
+    
+    def func(x):
+        return n_p * x + 2*a + np.sum( - np.sqrt( (b + x)**2 + 4*a*minus_c) + b, axis=0)
+    func_max = func(nu_max)
+    func_min = func(nu_min)
+    
+    assert(np.sum(func_min>=0)==0)
+    assert(np.sum(func_max<=0)==0)
+    assert(np.sum(np.isnan(func_max))==0)
+    assert(np.sum(np.isnan(func_min))==0)
+
+    return dicotomy(nu_max, nu_min, func, maxit, tol)     
+
+def dicotomy(a, b, func, maxit, tol):
+    """
+    Dicotomy algorithm searching for func(x)=0.
+
+    Inputs:
+    * a: bound such that func(a) > 0
+    * b: bound such that func(b) < 0
+    * maxit: maximum number of iteration
+    * tol: tolerance - the algorithm stops if |func(sol)| < tol
+    
+    This algorithm work for number or numpy array of any size.
+    """
     # Dichotomy algorithm to solve the equation
     it = 0
-    while (np.max(np.abs(np.sum(num / (new + denum), axis=0) - 1))) > tol:
+    new = (a + b)/2
+    func_new = func(new)
+    while np.max(np.abs(func_new)) > tol:
         
         it=it+1
+        func_a = func(a)
+        # func_b = func(b)
+
         # if f(a)*f(new) <0 then f(new) < 0 --> store in b
-        minus_bool = (np.sum(num / (a + denum), axis=0) - 1) * (
-            np.sum(num / (new + denum), axis=0) - 1
-        ) <= 0
+        minus_bool = func_a * func_new <= 0
+        
         # if f(a)*f(new) > 0 then f(new) > 0 --> store in a
-        plus_bool = (np.sum(num / (a + denum), axis=0) - 1) * (
-            np.sum(num / (new + denum), axis=0) - 1
-        ) > 0
+        # plus_bool = func_a * func_new > 0
+        plus_bool = np.logical_not(minus_bool)
 
         b[minus_bool] = new[minus_bool]
         a[plus_bool] = new[plus_bool]
         new = (a + b) / 2
+        func_new = func(new)
         if it>=maxit:
             print("Dicotomy stopped for maximum number of iterations")
             break
     return new
-
 
 def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True, l2=False, fixed_P = None):
     """
@@ -191,8 +239,8 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
     else:
         nu = 0
     if safe:
-        assert(np.sum(denum<0)==0)
-        assert(np.sum(num<0)==0)
+        assert np.sum(denum<0)==0
+        assert np.sum(num<0)==0
 
     if fixed_A_inds is None : 
         new_A = num/(denum+nu)
@@ -253,26 +301,59 @@ def update_q(D, A, eps=log_shift):
     Dtmp = np.expand_dims(D, axis=1)
     Ntmp = np.expand_dims(D @ A, axis=2) 
     return Atmp * (Dtmp / (Ntmp+eps))
-    
+   
 def multiplicative_step_pq(X, G, P, A, eps=log_shift, safe=True):
     """
     Multiplicative step in P using the PQ technique.
+
+    This function does exactly the same as `multiplicative_step_p` and is probably slower.
     """
 
     if safe:
         # Allow for very small negative values!
-        assert(np.sum(A<-log_shift/2)==0)
-        assert(np.sum(P<-log_shift/2)==0)
-        assert(np.sum(G<-log_shift/2)==0)
-
+        assert np.sum(A<-log_shift/2)==0
+        assert np.sum(P<-log_shift/2)==0
+        assert np.sum(G<-log_shift/2)==0
 
     GP = G @ P
     Q = update_q(GP, A, eps=log_shift)
-    
+
     XQ = np.sum(np.expand_dims(X, axis=2) * Q, axis=1)
-    
+
     term1 = G.T @ (XQ / (GP + eps)) 
-    
+
     term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(A, axis=1,  keepdims=True).T
-    
     return P / term2 * term1
+
+def multiplicative_step_aq(X, G, P, A, force_simplex=True, eps=log_shift, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, sigmaL=sigmaL):
+    """
+    Multiplicative step in A.
+    """
+    if not lambda_L==0:
+        if L is None:
+            raise ValueError("Please provide the laplacian")
+
+    if safe:
+        # Allow for very small negative values!
+        assert np.sum(A<-log_shift/2)==0
+        assert np.sum(P<-log_shift/2)==0
+        assert np.sum(G<-log_shift/2)==0
+
+    GP = G @ P # Also called D
+    GPA = GP @ A
+
+    minus_c = A * (GP.T @ (X / (GPA+eps)))
+
+    b = np.sum(GP, axis=0, keepdims=True).T 
+    if not lambda_L==0 :
+        b = b + lambda_L * A @ L - lambda_L * sigmaL  * A 
+        a = lambda_L * sigmaL
+        if force_simplex:
+            nu = dichotomy_simplex_q(a, b, minus_c)
+            b = b + nu
+        return (-b + np.sqrt(b**2 + 4* a *minus_c)) / (2*a)
+    else: # We recover the classic case: multiplicative_step_a
+        if force_simplex:
+            nu = dichotomy_simplex(minus_c, b, dicotomy_tol)
+            b = b + nu
+        return minus_c / b

@@ -1,6 +1,6 @@
 import numpy as np
 
-from snmfem.updates import dichotomy_simplex, multiplicative_step_p, multiplicative_step_a, update_q
+from snmfem.updates import dichotomy_simplex, multiplicative_step_p, multiplicative_step_a, update_q, dichotomy_simplex_aq
 from snmfem.measures import KLdiv_loss, log_reg, Frobenius_loss
 from snmfem.conf import log_shift, dicotomy_tol
 
@@ -183,6 +183,37 @@ def test_dicotomy2():
         sol = dichotomy_simplex(num, denum, tol, maxit=100)
         v = np.sum(num/(denum + sol), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
+
+def test_dicotomy_aq():
+    def func_abc(x, a, b, minus_c):
+        n_p = len(b)
+        return n_p * x + 2*a + np.sum( - np.sqrt( (b + x)**2 + 4*a*minus_c) + b, axis=0)
+
+    # def func_abc_onedim(x, a, b, minus_c):
+    #     return x + 2*a + b - np.sqrt( (b + x)**2 + 4*a*minus_c) 
+
+    a = np.random.rand() 
+    b = np.random.rand(1,1)
+    minus_c = np.random.rand(1,1)
+    sol = minus_c - a - b
+    tol = 1e-8
+    sol2 = dichotomy_simplex_aq(a, b, minus_c, tol )
+    assert(np.abs(sol -sol2 )< 2*tol)
+
+    n = 10
+    a = np.random.rand() 
+    b = np.random.rand(1,n)
+    minus_c = np.random.rand(1,n)
+    sol = np.squeeze(minus_c - a - b)
+    sol2 = dichotomy_simplex_aq(a, b, minus_c, tol )
+    np.testing.assert_allclose(sol2, sol, atol=tol)
+
+    a = np.random.rand() 
+    b = np.random.rand(n,6)
+    minus_c = np.random.rand(n,6)
+    tol = 1e-6
+    sol = dichotomy_simplex_aq(a, b, minus_c, tol )
+    np.testing.assert_allclose(func_abc(sol, a, b, minus_c), np.zeros([6]), atol=tol)
 
 def test_multiplicative_step_p():
     l = 26

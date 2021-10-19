@@ -1708,6 +1708,10 @@ Let us define our loss function as
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Paragraph
 A update: 
 \end_layout
 
@@ -2008,6 +2012,100 @@ We simply do
 \begin_inset Formula 
 \[
 Q_{\ell,p,k}=\frac{A_{k,p}^{t}D_{\ell,k}^{t}}{\sum_{j}A_{j,p}^{t}D_{\ell,j}^{t}}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph
+Dicotomy
+\end_layout
+
+\begin_layout Standard
+We have the equation
+\begin_inset Formula 
+\[
+f_{k}(\nu_{k})=\nu_{k}-\frac{1}{n_{p}}\sum_{p}\sqrt{\left(s_{k,p}+\nu_{k}\right)^{2}-4ac_{k,p}}+\frac{2a+\sum_{p}s_{k,p}}{n_{p}}
+\]
+
+\end_inset
+
+Let us rewrite the function
+\begin_inset Formula 
+\[
+f(\nu)=\nu-\frac{1}{n_{p}}\sum_{p}\sqrt{\left(s_{p}+\nu\right)^{2}-4ac_{p}}+d
+\]
+
+\end_inset
+
+We bound 
+\begin_inset Formula $f(\nu)$
+\end_inset
+
+ above and find
+\begin_inset Formula 
+\begin{align*}
+f(\nu) & =\nu-\frac{1}{n_{p}}\sum_{p}\sqrt{\left(s_{p}+\nu\right)^{2}-4ac_{p}}+d\\
+ & \leq\nu+d
+\end{align*}
+
+\end_inset
+
+which implies that for 
+\begin_inset Formula $\nu=-d$
+\end_inset
+
+ then 
+\begin_inset Formula $f(\nu)\leq0.$
+\end_inset
+
+ Now let us bound it from below.
+ To do so, we start by considering only one square root.
+\begin_inset Formula 
+\begin{align*}
+f(\nu) & =\nu-\sqrt{\left(s_{p}+\nu\right)^{2}-4ac_{p}}+\frac{2a}{n_{p}}+s_{p}\geq0\\
+\end{align*}
+
+\end_inset
+
+if 
+\begin_inset Formula 
+\begin{align*}
+v+\frac{2a}{n_{p}}+s_{p} & \geq\sqrt{\left(s_{p}+\nu\right)^{2}-4ac_{p}}\\
+ & \geq\sqrt{\left(s_{p}+\nu\right)^{2}-4ac_{p}}\\
+\end{align*}
+
+\end_inset
+
+Let us write 
+\begin_inset Formula $d=\frac{2a}{n_{p}}+s_{p},$
+\end_inset
+
+we find
+\begin_inset Formula 
+\[
+\nu^{2}+2\nu d+d^{2}\geq\nu^{2}+s_{p}^{2}+2\nu s_{p}-4ac_{p}
+\]
+
+\end_inset
+
+which leads to
+\begin_inset Formula 
+\begin{align*}
+\nu & \geq\frac{s_{p}^{2}-4ac_{p}+d^{2}}{d-s_{p}}\\
+ & =\frac{s_{p}^{2}-4ac_{p}+4a^{2}+4as_{p}+s_{p}^{2}}{\frac{2a}{n_{p}}}\\
+ & =n_{p}\left(\frac{s_{p}^{2}}{a}+2a+2\left(s_{p}-c_{p}\right)\right)
+\end{align*}
+
+\end_inset
+
+At this point, we need to consider the worse case which give us a global
+ bound
+\begin_inset Formula 
+\[
+\nu\geq n_{p}\max_{p}\left[\frac{s_{p}^{2}}{a}+2a+2\left(s_{p}-c_{p}\right)\right]
 \]
 
 \end_inset
@@ -2781,7 +2879,7 @@ Let us rewrite the expression and assume that
  implies with a simple change of variable that 
 \begin_inset Formula 
 \[
-b_{0}E^{\prime}E_{0}+b_{1}E^{\prime}^{2}\geq0\hspace{1em}\text{for }0\leq E^{\prime}\leq E_{0}.
+b_{0}E^{\prime}E_{0}+b_{1}E^{\prime}{}^{2}\geq0\hspace{1em}\text{for }0\leq E^{\prime}\leq E_{0}.
 \]
 
 \end_inset
