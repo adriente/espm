@@ -24,7 +24,6 @@ ipykernel = "*"
 pylint = "*"
 line-profiler = "*"
 memory-profiler = "*"
-pysptools = "*"
 
 [requires]
 python_version = "3.8"

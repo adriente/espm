@@ -38,7 +38,7 @@ class SmoothNMF(NMF):
             assert not self.l2
             self.sigmaL_ = sigmaL
             if self.linesearch:
-                self.gamma = [self.sigmaL]
+                self.gamma = [self.sigmaL_]
                 
 
 
