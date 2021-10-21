@@ -68,7 +68,7 @@ folder = DATASETS_PATH / Path(DATA_DICT["data_folder"])
 
 def test_experiment_parser () : 
     inputs = ["file.hspy", "NMF", "bremsstrahlung", "3", "-mi" , '1000', "--verbose", "--tol", '200', "-u"]
-    result_dicts = {'input_file': 'file.hspy', 'method': 'NMF', 'g_type': 'bremsstrahlung', 'k': 3}, {'max_iter': 1000, 'verbose': False, 'init': 'random', 'tol': 200, 'mu': 0.0, 'force_simplex': True, 'lambda_L': 0.0, 'l2': False, 'beta_loss': 'frobenius', 'solver': 'mu', 'alpha': 0.0, 'l1_ratio': 1.0, 'regularization': 'components', 'mcr_method': True}, {'u': False, 'output_file': 'dump.npz'}
+    result_dicts = {'input_file': 'file.hspy', 'method': 'NMF', 'g_type': 'bremsstrahlung', 'k': 3}, {'max_iter': 1000, 'verbose': False, 'init': 'random', 'tol': 200, 'mu': 0.0, 'force_simplex': True, 'lambda_L': 0.0, 'l2': False, 'beta_loss': 'frobenius', 'solver': 'mu', 'alpha': 0.0, 'l1_ratio': 1.0, 'regularization': 'components', 'mcr_method': True, "accelerate" : False, "linesearch" : False}, {'u': False, 'output_file': 'dump.npz'}
 
     assert exps.experiment_parser(inputs) == result_dicts
 
@@ -90,7 +90,7 @@ def test_build_exp () :
 def test_fill_exp_dict () : 
     exp = {"force_simplex" : True, "max_iter" : 1000, "alpha" : 10.0}
     filled_exp = exps.fill_exp_dict(exp)
-    assert filled_exp == {'force_simplex' : True, "verbose" : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'tol' : 1e-6, 'alpha' : 10.0, "lambda_L" : 0.0, "beta_loss" : "frobenius", "solver" : "mu", "l1_ratio" : 1.0, "regularization" : "components", "mcr_method" : True}
+    assert filled_exp == {'force_simplex' : True, "verbose" : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'tol' : 1e-6, 'alpha' : 10.0, "lambda_L" : 0.0, "beta_loss" : "frobenius", "solver" : "mu", "l1_ratio" : 1.0, "regularization" : "components", "mcr_method" : True, "accelerate" : False, "linesearch" : False}
 
 def test_quick_load () : 
     

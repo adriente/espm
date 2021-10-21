@@ -96,6 +96,8 @@ ESTIMATOR_ARGS = {
     "force_simplex" : ["-fs","--force_simplex",{"action" : "store_false", "help" : "None : Activate simplex constraint"},["NMF","SmoothNMF"]],
     "lambda_L" : ["-l","--lambda_L",{"type" : float, "default" : 0.0,"help":"float : strengh of the Laplacian reg"},["SmoothNMF"]],
     "l2" : ["-l2","--l2",{"action" : "store_true","help" : "None : Sets the loss function to frobenius when activated"}, ["NMF","SmoothNMF"]],
+    "accelerate" : ["-acc","--accelerate",{"action" : "store_true","help" : "None : Sets the algorithm type to the accelerated one"}, ["SmoothNMF"]],
+    "linesearch" : ["-ls","--linesearch",{"action" : "store_true","help" : "None : activates the linesearch for the accelerated algorithm"}, ["SmoothNMF"]],
 
     # Scikit parameters
     "beta_loss" : ["-bl","--beta_loss",{"choices" : ["frobenius","kullback-leibler"], "default" : "frobenius", "help" : "str : Type of loss to be optimized"},["SKNMF"]],
