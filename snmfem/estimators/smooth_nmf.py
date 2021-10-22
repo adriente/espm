@@ -48,7 +48,7 @@ class SmoothNMF(NMF):
             if self.linesearch:
                 Aold = A.copy()            
             A = multiplicative_step_aq(self.X_, self.G_, P, A, force_simplex=self.force_simplex, eps=self.log_shift, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, sigmaL=self.sigmaL_)
-            P = multiplicative_step_p(self.X_, self.G_, P, A, eps=self.log_shift, safe=self.debug, l2=self.l2)
+            P = multiplicative_step_p(self.X_, self.G_, P, A, eps=self.log_shift, safe=self.debug, l2=self.l2, fixed_P=self.fixed_P)
             if self.linesearch:
                 d = diff_surrogate(Aold, A, L=self.L_, sigmaL=self.sigmaL_ )
                 if d>0:
