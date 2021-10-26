@@ -62,6 +62,8 @@ def simulation_quick_load(experiment, P_type = None) :
         P_in = build_fixed_P(spim)
     elif P_type == "partial" : 
         P_in = build_fixed_P(spim, col1 = True)
+    elif type(P_type) == type({}):
+        P_in = spim.set_fixed_P(P_type)
     else : 
         P_in = None
     Estimator = getattr(estimators, experiment["method"])  
