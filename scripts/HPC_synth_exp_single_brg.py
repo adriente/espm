@@ -2,7 +2,9 @@ from snmfem import estimators
 import snmfem.experiments as e
 import sys
 
-cst_fixed_P = {"p0" : {"Fe" : 3.29160862e+00, "Al" : 1.57731834e+00, "Nd" : 0.0, "Mg" : 1.56346985e+01, "Sm" : 0.0, "Cu" : 5.92151062e+00, "Si" : 1.44423294e+01, "Ca" : 2.14438707e+00, "Lu" : 0.0, "Hf" : 1.98268294e+00, "O" : 1.67923235e+01, "Ti" : 0.0}, "p1" : {}, "p2" : {}}
+cst_fixed_P = {"p0" : {"Fe" : 9.30863951e-02, "Al" : 1.98373399e-01, "Nd" : 0.0, "Mg" : 9.50741708e-01, "Sm" : 0.0, "Cu" : 3.65761409e-01, "Si" : 8.98830700e-01, "Ca" : 1.24602716e-01, "Lu" : 0.0, "Hf" : 1.24219589e-01, "O" : 1.03563732e+00, "Ti" : 0.0}, "p1" : {}, "p2" : {}}
+
+# cst_fixed_P = {"p0" : {"Fe" : 3.29160862e+00, "Al" : 1.57731834e+00, "Nd" : 0.0, "Mg" : 1.56346985e+01, "Sm" : 0.0, "Cu" : 5.92151062e+00, "Si" : 1.44423294e+01, "Ca" : 2.14438707e+00, "Lu" : 0.0, "Hf" : 1.98268294e+00, "O" : 1.67923235e+01, "Ti" : 0.0}, "p1" : {}, "p2" : {}}
 
 def run_single_exp(pos_dict,est_dict,eval_dict, fixed_P = "None") :
     exp = e.build_exp(pos_dict, est_dict)

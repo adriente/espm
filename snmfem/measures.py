@@ -97,6 +97,12 @@ def find_min_MSE(true_maps, algo_maps, get_ind = False, unique=False):
     else : 
         return ordered_maps[0]
 
+def ordered_mse (true_maps, algo_maps, input_inds) :
+    ordered_maps = []
+    for i,j in enumerate(input_inds) : 
+        ordered_maps.append(float(square_distance(true_maps[j], algo_maps[i])/square_distance(true_maps[j],np.zeros_like(true_maps)[j])))
+    return ordered_maps
+
 
 # This function gives the residuals between the model determined by snmf and the data that were fitted
 def residuals(data, model):
