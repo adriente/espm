@@ -109,19 +109,19 @@ def test_general():
 
     estimator = NMF(G=G,n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform(A=A, X=Xdot)
-    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=1e-1)
+    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=3e-1)
 
     estimator = NMF(n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform(A=A, X=Xdot)
-    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=1e-1)
+    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=3e-1)
 
     estimator = NMF(G=G,n_components= 2,max_iter=200,force_simplex = False,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform( P=P@np.diag(w), X=Xdot)
-    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=1e-1)
+    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=3e-1)
 
     estimator = NMF(G =G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform(P=N*P@np.diag(w), X=Xdot)
-    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=1e-1)
+    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=3e-1)
 
     estimator = NMF(G=G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     estimator.fit_transform(X=Xdot)
