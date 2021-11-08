@@ -1787,18 +1787,18 @@ Let us define
 
 .
  It is easy to see that 
-\begin_inset Formula $a>0,c<0$
+\begin_inset Formula $a\geq0,c\leq0$
 \end_inset
 
 .
  So 
-\begin_inset Formula $ac<0$
+\begin_inset Formula $ac\leq0$
 \end_inset
 
  and 
 \begin_inset Formula 
 \[
-b^{2}-4ac>b^{2}>0
+b^{2}-4ac\geq b^{2}\geq0
 \]
 
 \end_inset
