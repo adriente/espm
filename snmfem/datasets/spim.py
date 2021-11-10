@@ -170,6 +170,10 @@ class EDXSsnmfem (Signal1D) :
                         P[e,p] = phases_dict[phase][key]
         return P
 
+    def add_constant (self,epsilon = 1e-10) : 
+        self.change_dtype("float64")
+        self.data += epsilon
+
 ######################
 # Axiliary functions #
 ######################

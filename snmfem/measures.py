@@ -1,6 +1,7 @@
 import numpy as np
 from snmfem.conf import log_shift
 import warnings as w
+from itertools import permutations
 
 def spectral_angle(v1, v2):
     """
@@ -68,15 +69,48 @@ def global_min (matr) :
     
 
 def unique_min (matr) : 
-    mins= []
-    ind_mins = []
-    for vec in matr :
-        mins.append(np.min(vec))
-        ind_min = np.argmin(vec)
-        ind_mins.append(ind_min)
-        matr[:,ind_min] = np.inf * np.ones(matr.shape[0])
+    '''
+    input : N x N matrix of floats
+    output : list of N unique min values and corresponding indices in the same order
+    %-----------------------------------%
+    From a N x N matrix of float values, finds the combination of elements with different lines which mimises the sum of elements.
+    From :
+    1.2  1.3  3.5
+    4.9  2.2  6.5
+    9.0  4.1  1.8
 
-    return mins, ind_mins
+    it returns : 
+    [1.2, 2.2, 1.8], [0, 1, 2]
+
+    It is a very simple brute force algorithm, it is not recommended to input a matrix bigger than 20 x 20
+    '''
+    shape = matr.shape[0]
+    perms = list(permutations(range(shape),shape))
+    list_sum_angles = []
+    for perm in perms : 
+        sum_angles = 0
+        for i in range(shape) :
+            sum_angles += matr[perm[i],i]
+        list_sum_angles.append(sum_angles)
+    
+    min_ind = list_sum_angles.index(min(list_sum_angles))
+    mins = []
+    for i in range(shape) : 
+        mins.append(matr[perms[min_ind][i],i])
+
+    return mins, perms[min_ind]
+    
+
+# def unique_min (matr) : 
+#     mins= []
+#     ind_mins = []
+#     for vec in matr :
+#         mins.append(np.min(vec))
+#         ind_min = np.argmin(vec)
+#         ind_mins.append(ind_min)
+#         matr[:,ind_min] = np.inf * np.ones(matr.shape[0])
+
+#     return mins, ind_mins
 
 
 # This function works but can probably greatly improved
@@ -98,10 +132,27 @@ def find_min_MSE(true_maps, algo_maps, get_ind = False, unique=False):
         return ordered_maps[0]
 
 def ordered_mse (true_maps, algo_maps, input_inds) :
+    '''
+    input : p x Npx matrix of floats, p x Npx matrix of floats, list of integers
+    output : list of floats
+    %-------------------------%
+    Takes true maps of p phases and Npx pixels, reconstructed maps of the same size and
+    indices of the correspondance between true phases and reconstructed phases
+    returns the mean squared errors of each phase in truth order.
+    '''
     ordered_maps = []
     for i,j in enumerate(input_inds) : 
         ordered_maps.append(float(square_distance(true_maps[j], algo_maps[i])/square_distance(true_maps[j],np.zeros_like(true_maps)[j])))
     return ordered_maps
+
+def ordered_angles (true_spectra, algo_spectra, input_inds) :
+    '''
+    See ordered mse
+    '''
+    ordered_angles = []
+    for i,j in enumerate(input_inds) : 
+        ordered_angles.append(spectral_angle(true_spectra[j],algo_spectra[i]))
+    return ordered_angles
 
 
 # This function gives the residuals between the model determined by snmf and the data that were fitted

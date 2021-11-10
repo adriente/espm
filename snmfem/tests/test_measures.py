@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.lib.function_base import kaiser
-from snmfem.measures import mse, spectral_angle, KLdiv_loss, KLdiv, square_distance, find_min_MSE, find_min_angle, trace_xtLx, Frobenius_loss
+from snmfem.measures import mse, spectral_angle, KLdiv_loss, KLdiv, square_distance, find_min_MSE, find_min_angle, trace_xtLx, Frobenius_loss, ordered_angles, ordered_mse
 import pytest
 from snmfem.conf import log_shift
 from snmfem.laplacian import create_laplacian_matrix
@@ -56,42 +56,6 @@ def test_distance () :
     d_matr_2 = square_distance(a,b)
     np.testing.assert_allclose(d_matr,d_matr_2)
 
-    d_matr_c = d_matr.copy() / square_distance(a,np.zeros_like(a))
-
-    unique_mins= []
-    unique_inds = []
-    for vec in d_matr_c :
-        unique_mins.append(np.min(vec))
-        ind_min = np.argmin(vec)
-        unique_inds.append(ind_min)
-        d_matr_c[:,ind_min] = np.inf * np.ones(d_matr_c.shape[0])
-
-    unique_mins = np.array(unique_mins)
-    unique_inds = np.array(unique_inds)
-    unique_mins_2 = find_min_MSE(a,b,unique=True) 
-    _, unique_inds_2 = find_min_MSE(a,b,get_ind=True,unique=True)
-    np.testing.assert_allclose(unique_mins,unique_mins_2)
-    np.testing.assert_allclose(unique_inds, unique_inds_2)
-
-    d_matr_c = d_matr.copy() / square_distance(a,np.zeros_like(a))
-
-    global_mins= []
-    global_inds = []
-    for vec in d_matr_c :
-        global_mins.append(np.min(vec))
-        global_inds.append(np.argmin(vec))
-
-    global_mins = np.array(global_mins)
-    global_inds = np.array(global_inds)
-    global_mins_2 = find_min_MSE(a,b) 
-    _, global_inds_2 = find_min_MSE(a,b,get_ind=True)
-    np.testing.assert_allclose(global_mins,global_mins_2)
-    np.testing.assert_allclose(global_inds,global_inds_2)
-
-
-
-
-
 def test_spectral_angle():
     v1 = np.random.randn(10)
     v2 = np.random.randn(10)
@@ -127,35 +91,79 @@ def test_spectral_angle():
 
     np.testing.assert_allclose(spectral_angle(a, b), res)
 
-    res_c = res.copy()
 
-    unique_mins= []
-    unique_inds = []
-    for vec in res_c :
-        unique_mins.append(np.min(vec))
-        ind_min = np.argmin(vec)
-        unique_inds.append(ind_min)
-        res_c[:,ind_min] = np.inf * np.ones(res_c.shape[0])
+def test_find_min_angle () : 
+    np.random.seed(42)
+    p1 = np.random.rand(4,34)
+    p2 = np.random.rand(4,34)
 
-    unique_mins = np.array(unique_mins)
-    unique_inds = np.array(unique_inds)
-    unique_mins_2 = find_min_angle(a,b,unique=True) 
-    _, unique_inds_2 = find_min_angle(a,b,get_ind=True,unique=True)
-    np.testing.assert_allclose(unique_mins,unique_mins_2)
-    np.testing.assert_allclose(unique_inds,unique_inds_2)
+    true_res_u = ([41.100923139683005,
+    41.29114572254828,
+    44.37587131209638,
+    38.446115521694054],
+    (1, 2, 3, 0))
 
-    global_mins= []
-    global_inds = []
-    for vec in res :
-        global_mins.append(np.min(vec))
-        global_inds.append(np.argmin(vec))
+    mins_u, ind_mins_u = find_min_angle(p1,p2,get_ind=True,unique=True)
+    np.testing.assert_allclose(mins_u,true_res_u[0])
+    np.testing.assert_allclose(ind_mins_u,true_res_u[1])
 
-    global_mins = np.array(global_mins)
-    global_inds = np.array(global_inds)
-    global_mins_2 = find_min_angle(a,b) 
-    _, global_inds_2 = find_min_angle(a,b,get_ind=True)
-    np.testing.assert_allclose(global_mins,global_mins_2)
-    np.testing.assert_allclose(global_inds,global_inds_2)
+    true_res_g = ([38.446115521694054,
+    38.95264025554747,
+    41.22519848513551,
+    38.446748219852694],
+    [3, 3, 0, 3])
+ 
+    mins_g, ind_mins_g = find_min_angle(p1,p2,get_ind=True)
+    np.testing.assert_allclose(mins_g,true_res_g[0])
+    np.testing.assert_allclose(ind_mins_g,true_res_g[1])
+
+def test_find_min_mse () : 
+    np.random.seed(42)
+    p1 = np.random.rand(4,34)
+    p2 = np.random.rand(4,34)
+
+    true_res_u = ([0.4700214874275558,
+    0.5496556111420093,
+    0.5358278122971686,
+    0.6350175164272782],
+    (1, 2, 3, 0))
+
+    mins_u, ind_mins_u = find_min_MSE(p1,p2,get_ind=True,unique=True)
+    np.testing.assert_allclose(mins_u,true_res_u[0])
+    np.testing.assert_allclose(ind_mins_u,true_res_u[1])
+
+    true_res_g = ([0.6344767006931911,
+    0.4700214874275558,
+    0.4862674591919179,
+    0.530211881001339],
+    [0, 0, 0, 3])
+ 
+    mins_g, ind_mins_g = find_min_MSE(p1,p2,get_ind=True)
+    np.testing.assert_allclose(mins_g,true_res_g[0])
+    np.testing.assert_allclose(ind_mins_g,true_res_g[1])
+
+def test_ordered_functions () : 
+    np.random.seed(42)
+    p1 = np.random.rand(4,34)
+    p2 = np.random.rand(4,34)
+
+    true_ang_u = ([41.100923139683005,
+    41.29114572254828,
+    44.37587131209638,
+    38.446115521694054],
+    (1, 2, 3, 0))
+
+    angles = ordered_angles(p1,p2,true_ang_u[1])
+    np.testing.assert_allclose(angles,true_ang_u[0])
+
+    true_mse_u = ([0.4700214874275558,
+    0.5496556111420093,
+    0.5358278122971686,
+    0.6350175164272782],
+    (1, 2, 3, 0))
+
+    mse = ordered_mse(p1,p2,true_mse_u[1])
+    np.testing.assert_allclose(mse,true_mse_u[0])
 
 def test_base_loss():
     l = 26

@@ -8,119 +8,11 @@ from argparse import ArgumentParser, Namespace
 import hyperspy.api as hs
 from snmfem.utils import number_to_symbol_list
 from snmfem.models.EDXS_function import elts_dict_from_dict_list
+import numpy.lib.recfunctions as rfn
 
-@number_to_symbol_list
-def zeros_dict (elements = "Si") :
-    d = {} 
-    for elt in elements : 
-        d[elt] = 0.0
-    return d
-
-def build_fixed_P (spim, col1 = False) : 
-    phases_pars = spim.metadata.Truth.phases
-    unique_elts = list((elts_dict_from_dict_list([x["elements_dict"] for x in phases_pars])).keys())
-    P_dict = {}
-    for i, phase in enumerate(phases_pars) : 
-        elts_list = list(phase["elements_dict"].keys())
-        other_elts = list(set(unique_elts) - set(elts_list))
-        if col1 and (i!=0) : 
-            d = {}
-        else : 
-            d = zeros_dict(elements=other_elts)
-        P_dict[str(i)] = d
-        print(P_dict)
-    P = spim.set_fixed_P(P_dict)
-    return P
-
-def compute_metrics(true_spectra, true_maps, GP, A, u = True):
-    angle, ind1 = measures.find_min_angle(true_spectra, GP.T, True, unique=u)
-    mse, ind2 = measures.find_min_MSE(true_maps, A, True, unique=u)
-    return angle, mse, (ind1, ind2)
-
-def run_experiment(spim,estimator,experiment,simulated = False) : 
-    out = spim.decomposition(algorithm = estimator, return_info = True)
-    
-    P = out.P_
-    A = out.A_
-    G = out.G_
-    
-    losses = estimator.get_losses()
-    if simulated :
-        true_spectra, true_maps = spim.phases, spim.weights
-        metrics = compute_metrics(true_spectra.T, true_maps, G@P, A)
-    else : 
-        temp = np.zeros((experiment["params"]["n_components"],))
-        metrics = (temp, temp, (temp,temp))
-    return metrics, (G, P, A), losses
-
-def simulation_quick_load(experiment, P_type = None) : 
-    spim = hs.load(experiment["input_file"])
-    # spim.set_signal_type("EDXSsnmfem")
-    G = spim.build_G(problem_type = experiment["g_type"])
-    shape_2d = spim.shape_2d
-    if P_type == "full" : 
-        P_in = build_fixed_P(spim)
-    elif P_type == "partial" : 
-        P_in = build_fixed_P(spim, col1 = True)
-    elif type(P_type) == type({}):
-        P_in = spim.set_fixed_P(P_type)
-    else : 
-        P_in = None
-    Estimator = getattr(estimators, experiment["method"])  
-    D, A = spim.phases, spim.weights
-    estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"],fixed_P = P_in,hspy_comp = True)
-    return spim, estimator
-
-def experimental_quick_load(experiment, P_dict = None) : 
-    spim = hs.load(experiment["input_file"])
-    G = spim.build_G(problem_type = experiment["g_type"])
-    shape_2d = spim.shape_2d
-    P = spim.set_fixed_P(P_dict)
-    Estimator = getattr(estimators, experiment["method"])  
-    estimator = Estimator(G = G, shape_2d = shape_2d, **experiment["params"],fixed_P = P,hspy_comp = True)
-    return spim, estimator
-
-# To be verified ...
-# def perform_simulations(exp_list,n_samples = 10, simulated = False):
-#     augm_exp_list = []
-#     for exp in exp_list : 
-#         files = [exp["input_file"] / Path("sample_{}.hspy".format(i)) for i in range(n_samples)]
-#         new_exps = []
-#         for f in files : 
-#             exp["input_file"] = f
-#             new_exps.append(exp)
-#         augm_exp_list.append(new_exps)
-    
-#     metrics = []
-#     for augm_exp in augm_exp_list :
-#         m = []
-#         for exp in augm_exp :
-#             if simulated :  
-#             estim = simulation_quick_load(exp)
-#             m.append(run_experiment(estimator = estim, experiment=exp, simulated= simulated)[0][:-1])
-#             metrics.append(m)
-#     metrics = np.array(metrics)
-#     return metrics
-
-
-def print_results(exp_list, metrics, metrics_names=["Phase angles", "Map MSE"]):
-    std = np.std(metrics, axis=0)
-    mean = np.mean(metrics, axis=0)
-    tc = 25
-    ec = 18
-    nc = metrics.shape[3]*ec //2
-    txt = ""
-    for j, metrics_name in enumerate(metrics_names):
-        txt += "="*nc + metrics_name.center(tc) +"="*nc +"=\n"
-        for i, exp in enumerate(exp_list):
-            txt += "| {}".format(exp["name"]).ljust(tc)
-            for a,b in zip(mean[i,j], std[i,j]):
-                txt += "| {:.2f} ± {:.2f}".format(a, b).ljust(ec)
-            txt += "|\n"
-        txt += "\n"
-    # print(txt)
-    return txt
-
+#####################################################################
+# For HPC use, parser and building experiments to run the algorithm #
+#####################################################################
 
 def experiment_parser (argv) : 
     parser = ArgumentParser()
@@ -165,6 +57,170 @@ def build_exp(pos_dict,est_dict, name = None) :
     d["params"] = {"n_components" : pos_dict["k"], **estimator_dict}
     return d
 
+def fill_exp_dict(input_dict) :
+
+    parser = ArgumentParser()
+    for key in conf.ESTIMATOR_ARGS.keys(): 
+        parser.add_argument(conf.ESTIMATOR_ARGS[key][0],conf.ESTIMATOR_ARGS[key][1],**conf.ESTIMATOR_ARGS[key][2])
+    args = parser.parse_args([])
+    default_dict =  vars(args)
+
+    return u.arg_helper(input_dict,default_dict)
+
+##########################################
+# Loading data and running the algorithm #
+##########################################
+
+def compute_metrics(true_spectra, true_maps, GP, A, u = True):
+    angle, ind1 = measures.find_min_angle(true_spectra, GP.T, True, unique=u)
+    mse = measures.ordered_mse(true_maps, A, ind1)
+    return angle, mse, ind1
+
+def run_experiment(spim,estimator,experiment,sim = False) : 
+    out = spim.decomposition(algorithm = estimator, return_info = True)
+    
+    P = out.P_
+    A = out.A_
+    G = out.G_
+    
+    losses = estimator.get_losses()
+    if sim :
+        true_spectra, true_maps = spim.phases, spim.weights
+        metrics = compute_metrics(true_spectra.T, true_maps, G@P, A)
+    else : 
+        temp = np.zeros((experiment["params"]["n_components"],))
+        metrics = (temp, temp, temp)
+    return metrics, (G, P, A), losses
+
+def quick_load(experiment,sim = True, P_dict = None) : 
+    spim = hs.load(experiment["input_file"])
+    # spim.set_signal_type("EDXSsnmfem")
+    G = spim.build_G(problem_type = experiment["g_type"])
+    shape_2d = spim.shape_2d
+    Estimator = getattr(estimators, experiment["method"]) 
+    if sim :  
+        D, A = spim.phases, spim.weights
+    else : 
+        D, A = None, None
+    if P_dict is None : 
+        P = None
+    else : 
+        P = spim.set_fixed_P(P_dict)
+    estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"],fixed_P = P,hspy_comp = True)
+    return spim, estimator
+
+def run_several_experiments(experiment,n_samples = 10, P_dict = None) :
+    metrics_summary = []
+    folder = experiment["input_file"]
+    for i in range(n_samples) : 
+        # Load parameters and data
+        file = str(Path(folder) / Path("sample_{}.hspy".format(i)))
+        spim = hs.load(file)
+        G = spim.build_G(problem_type = experiment["g_type"])
+        shape_2d = spim.shape_2d
+        Estimator = getattr(estimators, experiment["method"])
+        D, A = spim.phases, spim.weights
+        if P_dict is None : 
+            P = None
+        else : 
+            P = spim.set_fixed_P(P_dict)
+        estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"],fixed_P = P,hspy_comp = True)
+        
+        # Decomposition
+        out = spim.decomposition(algorithm = estimator, return_info = True)
+
+        # Results
+        P = out.P_
+        A = out.A_
+        G = out.G_
+    
+        true_spectra, true_maps = spim.phases, spim.weights
+        metrics_summary.append(compute_metrics(true_spectra.T, true_maps, G@P, A))
+
+    k = experiment["params"]["n_components"]
+    names_a = []
+    names_m = []
+    formats = (k)*["float64"]
+    for i in range(k) : 
+        names_a.append("angle_p{}".format(i))
+        names_m.append("mse_p{}".format(i))
+    
+    angles_array = np.zeros((n_samples,),dtype = {"names" : names_a, "formats" : formats})
+    mse_array = np.zeros((n_samples,),dtype = {"names" : names_m, "formats" : formats})
+    for j,metrics in enumerate(metrics_summary) :
+        for i in range(k) : 
+            key_a = "angle_p{}".format(i)
+            key_m = "mse_p{}".format(i)
+            angles_array[key_a][j] = metrics[0][metrics[2][i]]
+            mse_array[key_m][j] = metrics[1][i]
+
+    output = rfn.merge_arrays((angles_array,mse_array), flatten = True, usemask = False)
+
+    return output
+
+#################################################
+# Function to save the results or printing them #
+#################################################
+
+def struct_arr_mean (struct_array) : 
+    '''
+    Function to compute the mean of elements of every column of a named array
+    Note : In the future it may be better to use pandas
+    '''
+    mean_array = np.zeros((1,),dtype = struct_array.dtype)
+    for name in struct_array.dtype.names : 
+        mean_array[name] = np.mean(struct_array[name])
+    return mean_array
+
+def struct_arr_std (struct_array) : 
+    '''
+    Function to compute the std of elements of every column of a named array
+    Note : In the future it may be better to use pandas
+    '''
+    std_array = np.zeros((1,),dtype = struct_array.dtype)
+    for name in struct_array.dtype.names : 
+        std_array[name] = np.std(struct_array[name])
+    return std_array
+
+
+def results_string(experiment, metrics):
+    std = struct_arr_std(metrics)
+    mean = struct_arr_mean(metrics)
+
+    title = ' ' + experiment["name"] + '\n'
+    top = ' Metrics |'
+    sep = '%----------'
+    means = ' Means   |'
+    stds = ' StDs    |'
+    for name in metrics.dtype.names : 
+        len_name = len(name)
+        top += ' ' + name + ' '
+        sep += (2 + len_name)*'-' 
+        fmt = "{:" + str(len_name)+ '.2f}'
+        means += ' ' + str(fmt.format(mean[name][0])) + ' '
+        stds +=  ' ' + str(fmt.format(std[name][0])) + ' '
+    top += '|\n'
+    sep += '%\n'
+    means += '|\n'
+    stds += '|\n'
+
+    return title + top + sep + means + stds
+    
+
+    # tc = 25
+    # ec = 18
+    # nc = metrics.shape[3]*ec //2
+    # for j, metrics_name in enumerate(metrics_names):
+    #     txt += "="*nc + metrics_name.center(tc) +"="*nc +"=\n"
+    #     for i, exp in enumerate(exp_list):
+    #         txt += "| {}".format(exp["name"]).ljust(tc)
+    #         for a,b in zip(mean[i,j], std[i,j]):
+    #             txt += "| {:.2f} ± {:.2f}".format(a, b).ljust(ec)
+    #         txt += "|\n"
+    #     txt += "\n"
+    # print(txt)
+    # return txt
+
 def store_in_file(file,metrics,matrices_tuple,losses) :
     d = {}
     d["G"] = matrices_tuple[0]
@@ -175,35 +231,30 @@ def store_in_file(file,metrics,matrices_tuple,losses) :
     filename = conf.RESULTS_PATH / Path(file)
     np.savez(filename, **d)
 
-def print_in_file(exp_list,metrics,out_file,estimator_dict = {}) :
+def print_in_file(experiment, metrics, out_file) :
     output_file = conf.RESULTS_PATH / Path(out_file)
-    results = print_results(exp_list,metrics) 
-    txt =100*"#" + "\n"
-    if estimator_dict == {} :
-        txt += "Using default parameters\n"
-        txt += "\n"
-    else : 
-        txt += "Estimator parameters\n"
-        txt += 20*"-" + "\n"
-        for elt in estimator_dict.keys() :
-            txt += "|{:10} : {:>5}|".format(elt,estimator_dict[elt])
-        txt +="\n"
+    results = results_string(experiment, metrics)
+    # txt =100*"#" + "\n"
+    # if estimator_dict == {} :
+    #     txt += "Using default parameters\n"
+    #     txt += "\n"
+    # else : 
+    #     txt += "Estimator parameters\n"
+    #     txt += 20*"-" + "\n"
+    #     for elt in estimator_dict.keys() :
+    #         txt += "|{:10} : {:>5}|".format(elt,estimator_dict[elt])
+    #     txt +="\n"
 
-    print(txt)
-    print(results)
+    # print(txt)
+    # print(results)
     with open(output_file,"a") as f : 
-        f.write(txt)
         f.write(results)
 
-def fill_exp_dict(input_dict) :
 
-    parser = ArgumentParser()
-    for key in conf.ESTIMATOR_ARGS.keys(): 
-        parser.add_argument(conf.ESTIMATOR_ARGS[key][0],conf.ESTIMATOR_ARGS[key][1],**conf.ESTIMATOR_ARGS[key][2])
-    args = parser.parse_args([])
-    default_dict =  vars(args)
 
-    return u.arg_helper(input_dict,default_dict)
+###################################################
+# Functions for selecting and initalising fixed_A #
+###################################################
 
 def get_ROI_ranges(spim,ROI) : 
     scale_h, offset_h = spim.axes_manager[0].scale, spim.axes_manager[0].offset
@@ -225,6 +276,37 @@ def build_index_list (left,right,top,bottom, size_h) :
 def num_indices (ij, size_h) : 
     return ij[0] + size_h*ij[1]
 
+###################################################
+# Function to initalise fixed_P of simulated data #
+###################################################
+
+@number_to_symbol_list
+def zeros_dict (elements = "Si") :
+    d = {} 
+    for elt in elements : 
+        d[elt] = 0.0
+    return d
+
+def build_fixed_P (spim, col1 = False) : 
+    phases_pars = spim.metadata.Truth.phases
+    unique_elts = list((elts_dict_from_dict_list([x["elements_dict"] for x in phases_pars])).keys())
+    P_dict = {}
+    for i, phase in enumerate(phases_pars) : 
+        elts_list = list(phase["elements_dict"].keys())
+        other_elts = list(set(unique_elts) - set(elts_list))
+        if col1 and (i!=0) : 
+            d = {}
+        else : 
+            d = zeros_dict(elements=other_elts)
+        P_dict[str(i)] = d
+        print(P_dict)
+    P = spim.set_fixed_P(P_dict)
+    return P
+
+############################################################################
+# Function for HPC use, its purpose is to merge txt results files into one #
+############################################################################
+
 # def gather_results(file_list,output,folder = conf.RESULTS_PATH,output_folder = conf.RESULTS_PATH) : 
 #     string_list = []
 #     path_list = [folder / Path(a) for a in file_list]
@@ -242,3 +324,26 @@ def num_indices (ij, size_h) :
 #     for file in path_list : 
 #         os.remove(file)
 
+################################################################################################################
+# Several experiments on several samples : Is that necessary ?  Replaced by one experiment on several samples. #
+################################################################################################################
+# def perform_simulations(exp_list,n_samples = 10, simulated = False):
+#     augm_exp_list = []
+#     for exp in exp_list : 
+#         files = [exp["input_file"] / Path("sample_{}.hspy".format(i)) for i in range(n_samples)]
+#         new_exps = []
+#         for f in files : 
+#             exp["input_file"] = f
+#             new_exps.append(exp)
+#         augm_exp_list.append(new_exps)
+    
+#     metrics = []
+#     for augm_exp in augm_exp_list :
+#         m = []
+#         for exp in augm_exp :
+#             if simulated :  
+#             estim = simulation_quick_load(exp)
+#             m.append(run_experiment(estimator = estim, experiment=exp, simulated= simulated)[0][:-1])
+#             metrics.append(m)
+#     metrics = np.array(metrics)
+#     return metrics

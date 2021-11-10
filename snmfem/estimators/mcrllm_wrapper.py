@@ -3,10 +3,9 @@ import numpy as np
 
 class MCRLLM() : 
 
-    def __init__(self, n_components=None, init='warn', tol=1e-4, max_iter=200,verbose=1,mcr_method = True, hspy_comp = True) :
+    def __init__(self, n_components=None, init='Kmeans', tol=1e-4, max_iter=200,verbose=1,mcr_method = True, hspy_comp = True) :
         self.n_components = n_components
         self.init = init
-        self.tol = tol
         self.max_iter = max_iter
         self.verbose = verbose
         self.mcr_method = mcr_method
@@ -23,10 +22,13 @@ class MCRLLM() :
             method = ""
         mcr = mcrllm(Xt,self.n_components,self.init,self.max_iter,method)
         GP, A = mcr.S.T, mcr.C.T
-        self.G_ = np.eye(mcr.S.shape[1])
-        self.P_ = GP
-        self.A_ = A
-        return GP
+        
+        if self.hspy_comp : 
+            self.components_ = GP.T
+            return A.T
+        else : 
+            self.components_ = A
+            return GP
 
     def fit(self, X, y=None, **params) : 
         self.fit_transform(X, **params)

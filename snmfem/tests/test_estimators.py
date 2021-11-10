@@ -1,15 +1,12 @@
-from operator import gt
 from sklearn.utils.estimator_checks import check_estimator
-from snmfem import estimators
 from snmfem.estimators.smooth_nmf import diff_surrogate, smooth_l2_surrogate
 from snmfem.estimators import NMF, SmoothNMF
 import numpy as np
 from snmfem.models import EDXS
 from snmfem.datasets.generate_weights import generate_weights
 from snmfem.datasets.base import generate_spim
-from snmfem.measures import trace_xtLx, KL
+from snmfem.measures import trace_xtLx
 from snmfem.laplacian import create_laplacian_matrix
-from snmfem.experiments import run_experiment
 from snmfem.models.edxs import G_EDXS
 import hyperspy.api as hs
 

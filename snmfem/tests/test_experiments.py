@@ -5,6 +5,7 @@ from snmfem.datasets import generate_dataset, spim
 import shutil
 from snmfem import estimators
 from snmfem import datasets
+import numpy as np
 
 DATA_DICT = {
     "model_parameters" : {
@@ -26,7 +27,7 @@ DATA_DICT = {
     },
     "N" : 40,
     "densities" : [1.3,1.6,1.9,1.0],
-    "data_folder" : "test_gen_data",
+    "data_folder" : "test_experiment_data",
     "seed" : 42,
     "weight_type" : "laplacian",
     "shape_2d" : (30,40),
@@ -67,30 +68,23 @@ DATA_DICT = {
 folder = DATASETS_PATH / Path(DATA_DICT["data_folder"])
 
 def test_experiment_parser () : 
-    inputs = ["file.hspy", "NMF", "bremsstrahlung", "3", "-mi" , '1000', "--verbose", "--tol", '200', "-u"]
-    result_dicts = {'input_file': 'file.hspy', 'method': 'NMF', 'g_type': 'bremsstrahlung', 'k': 3}, {'max_iter': 1000, 'verbose': False, 'init': 'random', 'tol': 200, 'mu': 0.0, 'force_simplex': True, 'lambda_L': 0.0, 'l2': False, 'beta_loss': 'frobenius', 'solver': 'mu', 'alpha': 0.0, 'l1_ratio': 1.0, 'regularization': 'components', 'mcr_method': True, "accelerate" : False, "linesearch" : False}, {'u': False, 'output_file': 'dump.npz'}
+    inputs = ["file.hspy", "NMF", "bremsstrahlung", "3", "-mi" , '100', "--verbose", "--tol", '200', "-fpjs", "/path/to/json"]
+    result_dicts = {'input_file': 'file.hspy', 'method': 'NMF', 'g_type': 'bremsstrahlung', 'k': 3}, {'max_iter': 100, 'verbose': False, 'init': 'random', 'tol': 200, 'mu': 0.0, 'force_simplex': True, 'lambda_L': 0.0, 'l2': False, "accelerate" : False, "linesearch" : False}, {'output_file': 'dump.npz', "simulated" : False, "fixed_P_json" : "/path/to/json"}
 
     assert exps.experiment_parser(inputs) == result_dicts
 
 def test_build_exp () : 
-    inputs = ["file.hspy", "NMF", "bremsstrahlung", "3", "-mi" , '1000', "--verbose", "--tol", '200', "-u"]
+    inputs = ["file.hspy", "NMF", "bremsstrahlung", "3", "-mi" , '1000', "--verbose", "--tol", '200']
     pos_dict, est_dict, _ = exps.experiment_parser(inputs)
     exp = exps.build_exp(pos_dict,est_dict,name = "dummy")
     assert exp == {'g_type' : 'bremsstrahlung', 'input_file' : 'file.hspy', 'name' : 'dummy', 'method' : 'NMF', 
     'params' : {'force_simplex' : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'n_components' : 3,
     'tol' : 200.0, 'verbose' : False}}
 
-    inputs = ["file.hspy", "SKNMF", "bremsstrahlung", "3", "-mi" , '1000', "--verbose", "--tol", '200', "-mu", "1.0", "-bl", "frobenius", '--alpha', '10.0' ]
-    pos_dict, est_dict, _ = exps.experiment_parser(inputs)
-    exp = exps.build_exp(pos_dict,est_dict)
-    assert exp == {'g_type' : 'bremsstrahlung', 'input_file' : 'file.hspy', 'name' : 'SKNMF', 'method' : 'SKNMF', 
-    'params' : {'beta_loss' : 'frobenius', 'init' : 'random', 'max_iter' : 1000, 'alpha' : 10.0, 'n_components' : 3,
-    'tol' : 200.0, 'verbose' : False, 'l1_ratio' : 1.0, 'regularization' : 'components', 'solver' : 'mu'}}
-
 def test_fill_exp_dict () : 
-    exp = {"force_simplex" : True, "max_iter" : 1000, "alpha" : 10.0}
+    exp = {"force_simplex" : True, "max_iter" : 1000, "linesearch" : True}
     filled_exp = exps.fill_exp_dict(exp)
-    assert filled_exp == {'force_simplex' : True, "verbose" : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'tol' : 1e-6, 'alpha' : 10.0, "lambda_L" : 0.0, "beta_loss" : "frobenius", "solver" : "mu", "l1_ratio" : 1.0, "regularization" : "components", "mcr_method" : True, "accelerate" : False, "linesearch" : False}
+    assert filled_exp == {'force_simplex' : True, "verbose" : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'tol' : 1e-6, "lambda_L" : 0.0, "accelerate" : False, "linesearch" : True}
 
 def test_quick_load () : 
     
@@ -100,13 +94,15 @@ def test_quick_load () :
     'params' : {'force_simplex' : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'n_components' : 3,
     'tol' : 200.0, 'verbose' : False}}
 
-    spim1, estimator1 = exps.simulation_quick_load(experiment1)
+    spim1, estimator1 = exps.quick_load(experiment1)
     assert callable(estimator1.G)
     assert isinstance(estimator1,estimators.NMF)
     assert estimator1.shape_2d == (30,40)
     assert estimator1.max_iter == 1000
     assert isinstance(spim1, datasets.EDXSsnmfem)
     assert spim1.data.shape == (30,40,1000)
+    assert estimator1.true_A.shape == (4,30*40)
+    assert estimator1.true_D.shape == (1000,4)
 
     shutil.rmtree(folder)
 
@@ -117,8 +113,8 @@ def test_run_experiment () :
     'params' : {'force_simplex' : True, 'init' : 'random', 'l2' : False, 'max_iter' : 3, 'mu' : 0.0, 'n_components' : 4,
     'tol' : 0.0001, 'verbose' : False}}
 
-    spim1, estimator1 = exps.simulation_quick_load(experiment1)
-    metrics, (G, P, A), losses = exps.run_experiment(spim1, estimator1, experiment1, simulated=True)
+    spim1, estimator1 = exps.quick_load(experiment1)
+    metrics, (G, P, A), losses = exps.run_experiment(spim1, estimator1, experiment1, sim=True)
 
     assert G.shape == (1000, 12)
     assert P.shape == (12,4)
@@ -128,7 +124,7 @@ def test_run_experiment () :
     assert len(metrics) == 3
     assert len(metrics[0]) == 4
     assert len(metrics[1]) == 4
-    assert len(metrics[2][0]) == 4
-    assert len(metrics[2][1]) == 4
+    assert len(metrics[2]) == 4
+    assert np.array(metrics[2]).dtype == int
 
     shutil.rmtree(folder)

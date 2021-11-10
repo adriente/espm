@@ -80,15 +80,16 @@ POS_ARGS = {
 }
 
 EVAL_ARGS = {
-    "u" : ["-u", "--u", {"action" : "store_false", "help" : "None : Activate so that each result is uniquely matched with a ground truth."}],
     "output_file" : ["-of","--output_file",{"default" : "dump.npz", "help" : "str : Name of the npz file where the data are stored"}],
+    "simulated" : ["-sim", "--simulated", {"action" : "store_true", "help" : "None : Activate to use the ground truth stored in the spim object. It will produce errors if no ground truth is available."}],
+    "fixed_P_json" : ["-fpjs","--fixed_P_json",{"default" : "None", "help" : "str : Name of the json file containing the dictionnary to build fixed_P"}]
 }
 
 ESTIMATOR_ARGS = {
     # Common parameters
     "max_iter" : ["-mi","--max_iter",{"type" : int, "default" : 10000, "help" : "int : Max number of iterations for the algorithm"},None],
     "verbose" : ["-v","--verbose",{"action" : "store_false", "help" : "None : Activate to prevent display details about the algorithm"},None],
-    "init" : ["-i","--init",{"choices" : ["random","nndsvd","nndsvda","nndsvdar","custom","Kmeans","MBKmeans","NFindr","RobustNFindr","ATGP","FIPPI","nKmeans"],"default" : "random", "help" : "str : Initialisation method"}, None],
+    "init" : ["-i","--init",{"choices" : ["random","nndsvd","nndsvda","nndsvdar","custom"],"default" : "random", "help" : "str : Initialisation method"}, None],
     "tol" : ["-t", "--tol", {"type" : float, "default" : 1e-6, "help" : "float : Stopping criterion"}, None],
 
     # SNMFEM parameters
@@ -100,16 +101,12 @@ ESTIMATOR_ARGS = {
     "linesearch" : ["-ls","--linesearch",{"action" : "store_true","help" : "None : activates the linesearch for the accelerated algorithm"}, ["SmoothNMF"]],
 
     # Scikit parameters
-    "beta_loss" : ["-bl","--beta_loss",{"choices" : ["frobenius","kullback-leibler"], "default" : "frobenius", "help" : "str : Type of loss to be optimized"},["SKNMF"]],
-    "solver" : ["-s", "--solver", {"choices" : ["mu", "cd"], "default" : "mu", "help" : "str : Type of updates for the optimization"},["SKNMF"]],
-    "alpha" : ["-a", "--alpha",{"type" : float, "default" : 0.0, "help" : "float : strength of the regularization L1, L2 or both depending on the value of l1_ratio"}, ["SKNMF"]],
-    "l1_ratio" : ["-l1","--l1_ratio",{"type" : float, "default" : 1.0, "help" : "float : ratio between L1 and L2 regularization, 1.0 is full L1 regularization"},["SKNMF"]],
-    "regularization" : ["-r","--regularization",{"choices" : ["both","components","transformation"], "default" : "components", "help" : "str : determines on what the regularization is applied, W, H or both"},["SKNMF"]],
+    # "beta_loss" : ["-bl","--beta_loss",{"choices" : ["frobenius","kullback-leibler"], "default" : "frobenius", "help" : "str : Type of loss to be optimized"},["SKNMF"]],
+    # "solver" : ["-s", "--solver", {"choices" : ["mu", "cd"], "default" : "mu", "help" : "str : Type of updates for the optimization"},["SKNMF"]],
+    # "alpha" : ["-a", "--alpha",{"type" : float, "default" : 0.0, "help" : "float : strength of the regularization L1, L2 or both depending on the value of l1_ratio"}, ["SKNMF"]],
+    # "l1_ratio" : ["-l1","--l1_ratio",{"type" : float, "default" : 1.0, "help" : "float : ratio between L1 and L2 regularization, 1.0 is full L1 regularization"},["SKNMF"]],
+    # "regularization" : ["-r","--regularization",{"choices" : ["both","components","transformation"], "default" : "components", "help" : "str : determines on what the regularization is applied, W, H or both"},["SKNMF"]],
 
-    # MCR
-    "mcr_method" : ["-mm","--mcr_method",{"action" : "store_false","help" : "None : to be written"},["MCRLLM"]]
+    # # MCR
+    # "mcr_method" : ["-mm","--mcr_method",{"action" : "store_false","help" : "None : to be written"},["MCRLLM"]]
 }
-
-# DATASET_A = {...}
-# SYNTHETIC_DATASETS = [DATASET_A, DATASET_B, DATASET_C]
-# DATASETS = SYNTHETIC_DATASETS + [DATASET_REAL]
