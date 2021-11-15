@@ -200,12 +200,13 @@ def results_string(experiment, metrics):
         means += ' ' + str(fmt.format(mean[name][0])) + ' '
         stds +=  ' ' + str(fmt.format(std[name][0])) + ' '
 
-    middle = '         | '
+    middle = ''
     for i in range(metrics.shape[0]) : 
+        middle += '         |'
         for name in metrics.dtype.names  : 
             len_name = len(name)
             fmt = "{:" + str(len_name)+ '.2f}'
-            middle += str(fmt.format(metrics[name][i])) + ' '
+            middle += ' ' + str(fmt.format(metrics[name][i])) + ' '
         middle += "|\n"
 
     
@@ -214,7 +215,7 @@ def results_string(experiment, metrics):
     means += '|\n'
     stds += '|\n'
 
-    return title + top + sep + means + stds
+    return title + top + sep + middle + means + stds
     
 
     # tc = 25
