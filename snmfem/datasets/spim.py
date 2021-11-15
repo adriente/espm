@@ -172,7 +172,8 @@ class EDXSsnmfem (Signal1D) :
 
     def add_constant (self,epsilon = 1e-10) : 
         self.change_dtype("float64")
-        self.data += epsilon
+        mask = self.data.sum(axis=2) == 0
+        self.data[mask] += epsilon
 
 ######################
 # Axiliary functions #
