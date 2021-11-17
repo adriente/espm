@@ -69,7 +69,7 @@ folder = DATASETS_PATH / Path(DATA_DICT["data_folder"])
 
 def test_experiment_parser () : 
     inputs = ["file.hspy", "NMF", "bremsstrahlung", "3", "-mi" , '100', "--verbose", "--tol", '200', "-fpjs", "/path/to/json"]
-    result_dicts = {'input_file': 'file.hspy', 'method': 'NMF', 'g_type': 'bremsstrahlung', 'k': 3}, {'max_iter': 100, 'verbose': False, 'init': 'random', 'tol': 200, 'mu': 0.0, 'force_simplex': True, 'lambda_L': 0.0, 'l2': False, "accelerate" : False, "linesearch" : False}, {'output_file': 'dump.npz', "simulated" : False, "fixed_P_json" : "/path/to/json"}
+    result_dicts = {'input_file': 'file.hspy', 'method': 'NMF', 'g_type': 'bremsstrahlung', 'k': 3}, {'max_iter': 100, 'verbose': False, 'init': 'nndsvdar', 'tol': 200, 'mu': 0.0, 'force_simplex': True, 'lambda_L': 0.0, 'l2': False, "accelerate" : False, "linesearch" : False}, {'output_file': 'dump.npz', "simulated" : False, "fixed_P_json" : "/path/to/json"}
 
     assert exps.experiment_parser(inputs) == result_dicts
 
@@ -78,13 +78,13 @@ def test_build_exp () :
     pos_dict, est_dict, _ = exps.experiment_parser(inputs)
     exp = exps.build_exp(pos_dict,est_dict,name = "dummy")
     assert exp == {'g_type' : 'bremsstrahlung', 'input_file' : 'file.hspy', 'name' : 'dummy', 'method' : 'NMF', 
-    'params' : {'force_simplex' : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'n_components' : 3,
+    'params' : {'force_simplex' : True, 'init' : 'nndsvdar', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'n_components' : 3,
     'tol' : 200.0, 'verbose' : False}}
 
 def test_fill_exp_dict () : 
     exp = {"force_simplex" : True, "max_iter" : 1000, "linesearch" : True}
     filled_exp = exps.fill_exp_dict(exp)
-    assert filled_exp == {'force_simplex' : True, "verbose" : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'tol' : 1e-6, "lambda_L" : 0.0, "accelerate" : False, "linesearch" : True}
+    assert filled_exp == {'force_simplex' : True, "verbose" : True, 'init' : 'nndsvdar', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'tol' : 1e-6, "lambda_L" : 0.0, "accelerate" : False, "linesearch" : True}
 
 def test_quick_load () : 
     
