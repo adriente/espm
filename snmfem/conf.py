@@ -90,7 +90,9 @@ ESTIMATOR_ARGS = {
     "max_iter" : ["-mi","--max_iter",{"type" : int, "default" : 10000, "help" : "int : Max number of iterations for the algorithm"},None],
     "verbose" : ["-v","--verbose",{"action" : "store_false", "help" : "None : Activate to prevent display details about the algorithm"},None],
     "init" : ["-i","--init",{"choices" : ["random","nndsvd","nndsvda","nndsvdar","custom"],"default" : "nndsvdar", "help" : "str : Initialisation method"}, None],
+    "random_state" : ["-rs","--random_state",{"type" : int,"default" : 42, "help" : "int : seed for the random initialisations"}, None],
     "tol" : ["-t", "--tol", {"type" : float, "default" : 1e-6, "help" : "float : Stopping criterion"}, None],
+    "normalize" : ["-n", "--normalize", {"action" : "store_true", "help" : "None : Activate the normalization of the data, it is mostly useful for having stable values of lambda_L among datasets."}, None],
 
     # SNMFEM parameters
     "mu" : ["-mu","--mu",{"type" : float,"default" : 0.0, "help" : "float : strenght of the log regularization"},["NMF","SmoothNMF"]],

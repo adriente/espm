@@ -20,6 +20,10 @@ def bin_spim(data,n,m):
     k = data.shape[2]
     return np.reshape(np.array([np.sum(data[k1*bs[0]:(k1+1)*bs[0],k2*bs[1]:(k2+1)*bs[1]],axis=(0,1)) for k1 in range(n) for k2 in range(m)]),(n,m,k))
 
+def normalization_factor (X, nc) : 
+    m = np.mean(X)
+    return nc/(m*X.shape[0])
+
 def number_to_symbol_dict (func) : 
     """
     Decorator

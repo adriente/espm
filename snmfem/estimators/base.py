@@ -4,7 +4,7 @@ from sklearn.utils.validation import check_is_fitted
 from snmfem.updates import initialize_algorithms
 from snmfem.measures import KLdiv_loss, Frobenius_loss, find_min_angle, find_min_MSE
 from snmfem.conf import log_shift
-from snmfem.utils import rescaled_DA
+from snmfem.utils import rescaled_DA, normalization_factor
 import time
 from abc import ABC, abstractmethod
 from snmfem.laplacian import create_laplacian_matrix 
@@ -19,7 +19,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     
     def __init__(self, n_components=2, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
-                 force_simplex=True, l2=False,  G=None, shape_2d = None,
+                 force_simplex=True, l2=False,  G=None, shape_2d = None, normalize = False,
                  eval_print=10, true_D = None, true_A = None, fixed_A_inds = None, fixed_P = None, hspy_comp = False
                  ):
         self.n_components = n_components
@@ -40,6 +40,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.fixed_A_inds = fixed_A_inds
         self.fixed_P = fixed_P
         self.hspy_comp = hspy_comp
+        self.normalize = normalize
 
     def _more_tags(self):
         return {'requires_positive_X': True}
@@ -92,6 +93,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
         self.X_ = self.remove_zeros_lines(self.X_, self.log_shift)
         self.const_KL_ = None
+        if self.normalize : 
+            self.norm_factor_ = normalization_factor(self.X_,self.n_components)
+            self.X_ = self.norm_factor_ * self.X_
+        
 
         if callable(self.G): 
             G = self.G()
@@ -212,6 +217,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             f"and {np.round(algo_time) % 60} seconds."
         )
         self.reconstruction_err_ = self.loss(self.P_, self.A_)
+
+        if self.normalize : 
+            self.P_ = self.P_ / self.norm_factor_
         
         GP = self.G_ @ self.P_
         self.n_components_ = self.A_.shape[0]
