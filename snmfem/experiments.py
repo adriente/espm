@@ -94,6 +94,7 @@ def run_experiment(spim,estimator,experiment,sim = False) :
 
 def quick_load(experiment,sim = True, P_dict = None) : 
     spim = hs.load(experiment["input_file"])
+    spim.change_dtype("float64")
     # spim.set_signal_type("EDXSsnmfem")
     G = spim.build_G(problem_type = experiment["g_type"])
     shape_2d = spim.shape_2d
