@@ -96,6 +96,7 @@ ESTIMATOR_ARGS = {
 
     # SNMFEM parameters
     "mu" : ["-mu","--mu",{"type" : float,"default" : 0.0, "help" : "float : strenght of the log regularization"},["NMF","SmoothNMF"]],
+    "epsilon_reg" : ["-er","--epsilon_reg",{"type" : float, "default" : 1.0, "help" : "float : slope of the log regularization"}, ["NMF","SmoothNMF"]],
     "force_simplex" : ["-fs","--force_simplex",{"action" : "store_false", "help" : "None : Activate simplex constraint"},["NMF","SmoothNMF"]],
     "lambda_L" : ["-l","--lambda_L",{"type" : float, "default" : 0.0,"help":"float : strengh of the Laplacian reg"},["SmoothNMF"]],
     "l2" : ["-l2","--l2",{"action" : "store_true","help" : "None : Sets the loss function to frobenius when activated"}, ["NMF","SmoothNMF"]],
