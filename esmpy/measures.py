@@ -1,5 +1,5 @@
 import numpy as np
-from snmfem.conf import log_shift
+from esmpy.conf import log_shift
 import warnings as w
 from itertools import permutations
 

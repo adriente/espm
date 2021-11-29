@@ -1,12 +1,12 @@
 import numpy as np
 from scipy.special import erfc
-from snmfem.models.absorption_edxs import det_efficiency_from_curve,det_efficiency,absorption_correction
-from snmfem.models import edxs as e
+from esmpy.models.absorption_edxs import det_efficiency_from_curve,det_efficiency,absorption_correction
+from esmpy.models import edxs as e
 from collections import Counter
-from snmfem.conf import SYMBOLS_PERIODIC_TABLE
+from esmpy.conf import SYMBOLS_PERIODIC_TABLE
 import json
 
-from snmfem.utils import number_to_symbol_list
+from esmpy.utils import number_to_symbol_list
     
 def gaussian(x, mu, sigma):
     """

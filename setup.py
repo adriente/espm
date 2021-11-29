@@ -15,7 +15,7 @@ setuptools.setup(
     zip_safe=False,
     long_description=long_description,
     long_description_content_type="text/markdown",
-    entry_points={'hyperspy.extensions': 'snmfem = snmfem'},
+    entry_points={'hyperspy.extensions': 'esmpy = esmpy'},
     extras_require={'testing': ['flake8', 'pytest', 'jupyterlab', 'twine', 'setuptools', 'wheel', 'hyperspy-gui-ipywidgets', 'hyperspy-gui-traitsui', 'PyQt5']},
     classifiers=[
         'Development Status :: 5 - Production/Stable',

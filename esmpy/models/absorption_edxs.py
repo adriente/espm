@@ -1,9 +1,9 @@
 from scipy.interpolate import interp1d
-from snmfem.utils import number_to_symbol_dict, atomic_to_weight_dict, approx_density
-from snmfem.conf import HSPY_MAC
+from esmpy.utils import number_to_symbol_dict, atomic_to_weight_dict, approx_density
+from esmpy.conf import HSPY_MAC
 import numpy as np
 from pathlib import Path
-from snmfem.conf import DB_PATH
+from esmpy.conf import DB_PATH
 
 @number_to_symbol_dict
 def absorption_coefficient (x,atomic_fraction = False,*,elements_dict = {"Si" : 1.0}) : 

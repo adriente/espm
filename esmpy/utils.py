@@ -1,10 +1,11 @@
 import numpy as np
 from scipy.optimize import nnls
-from snmfem.conf import SYMBOLS_PERIODIC_TABLE, NUMBER_PERIODIC_TABLE
+from esmpy.conf import SYMBOLS_PERIODIC_TABLE, NUMBER_PERIODIC_TABLE
 import json
 from hyperspy.misc.material import atomic_to_weight, density_of_mixture
 
-def rescaled_DA(D,A) : 
+def rescaled_DA(D,A) :
+    """Rescale the matrices D and A such that the columns of A sums approximately to one."""
     _, p = A.shape
     o = np.ones((p,))
     s = np.linalg.lstsq(A.T, o, rcond=None)[0]
@@ -15,14 +16,16 @@ def rescaled_DA(D,A) :
     return D_rescale, A_rescale
 
 def bin_spim(data,n,m):
+    """
+    
+    Take a 3D array of size (x,y,k) [px, py, e]
+    Returns a 3D array of size (n,m,k) [new_px, new_py, e]
+    """
     # return a matrix of shape (n,m,k)
     bs = data.shape[0]//n,data.shape[1]//m  # blocksize averaged over
     k = data.shape[2]
     return np.reshape(np.array([np.sum(data[k1*bs[0]:(k1+1)*bs[0],k2*bs[1]:(k2+1)*bs[1]],axis=(0,1)) for k1 in range(n) for k2 in range(m)]),(n,m,k))
-
-def normalization_factor (X, nc) : 
-    m = np.mean(X)
-    return nc/(m*X.shape[0])
+00
 
 def number_to_symbol_dict (func) : 
     """

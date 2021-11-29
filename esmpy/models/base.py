@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 import json
-import snmfem.conf as conf
+import esmpy.conf as conf
 import numpy as np
 
 class PhysicalModel(ABC) :

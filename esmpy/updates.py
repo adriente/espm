@@ -1,7 +1,7 @@
 import numpy as np
-from snmfem.conf import log_shift, dicotomy_tol
+from esmpy.conf import log_shift, dicotomy_tol
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
-from snmfem.laplacian import sigmaL
+from esmpy.laplacian import sigmaL
 
 def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
     """
@@ -55,7 +55,7 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
 
     return dicotomy(a, b, func, maxit, tol)
 
-def dichotomy_simplex_aq(a, b, minus_c, tol=dicotomy_tol, maxit=100):
+def dichotomy_simplex_acc(a, b, minus_c, tol=dicotomy_tol, maxit=100):
     """
     Function to solve the dicotomy for the function:
     f(nu) = n_p * nu_k + 2a - sum_p sqrt ( (b_p + nu)^2 - 4 a c_p) + sum_p b_p
@@ -122,62 +122,44 @@ def dicotomy(a, b, func, maxit, tol):
             break
     return new
 
-def multiplicative_step_p(X, G, P, A, eps=log_shift, safe=True, l2=False, fixed_P = None):
+def multiplicative_step_w(X, G, W, H, eps=log_shift, safe=True, l2=False, fixed_W = None):
     """
-    Multiplicative step in P.
+    Multiplicative step in W.
     """
 
     if safe:
         # Allow for very small negative values!
-        assert(np.sum(A<-log_shift/2)==0)
-        assert(np.sum(P<-log_shift/2)==0)
+        assert(np.sum(H<-log_shift/2)==0)
+        assert(np.sum(W<-log_shift/2)==0)
         assert(np.sum(G<-log_shift/2)==0)
 
     if l2:
         GG = G.T @ G
-        AA = A @ A.T
-        GGPAA = GG @ P @ AA
+        HH = H @ H.T
+        GGWHH = GG @ W @ HH
 
-        GXA = G.T @ (X @ A.T)
+        GXH = G.T @ (X @ H.T)
 
-        new_P = P / GGPAA * GXA
+        new_W = W / GGWHH * GXH
     else:
-        GP = G @ P
-        GPA = GP @ A
+        GW = G @ W
+        GWH = GW @ H
         # Split to debug timing...
         # term1 = G.T @ (X / (GPA + eps)) @ A.T
-        op1 = X / (GPA + eps)
+        op1 = X / (GWH + eps)
         
         mult1 = G.T @ op1
-        term1 = (mult1 @ A.T)
-        term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(A, axis=1,  keepdims=True).T
-        new_P = P / term2 * term1
+        term1 = (mult1 @ H.T)
+        term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(H, axis=1,  keepdims=True).T
+        new_W = W / term2 * term1
     
-    if fixed_P is None : 
-        return new_P
+    if fixed_W is None : 
+        return new_W
     else : 
-        new_P[fixed_P >= 0] = fixed_P[fixed_P >=0]
-        return new_P
+        new_W[fixed_W >= 0] = fixed_W[fixed_W >=0]
+        return new_W
 
-# import torch
-# def multiplicative_step_p_torch(X, G, P, A, eps=log_shift):
-#     """
-#     Multiplicative step in P.
-#     """
-
-#     GP = G.matmul(P)
-#     GPA = GP.matmul(A)
-#     # Split to debug timing...
-#     # term1 = G.T @ (X / (GPA + eps)) @ A.T
-#     op1 = X / (GPA + eps)
-    
-#     mult1 = G.T.matmul(op1)
-#     term1 = mult1.matmul(A.T)
-#     term2 = (torch.sum(A, axis=1,  keepdims=True).matmul(torch.sum(G, axis=0,  keepdims=True))).T 
-#     new_P = (P / term2 * term1)
-#     return new_P
-
-def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, fixed_A_inds = None, sigmaL=sigmaL):
+def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, fixed_H_inds = None, sigmaL=sigmaL):
     """
     Multiplicative step in A.
     The main terms are calculated first.
@@ -191,48 +173,48 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
         if L is None:
             raise ValueError("Please provide the laplacian")
 
-    if not(fixed_A_inds is None) : 
-        not_fixed_inds = [x for x in range(A.shape[1]) if not(x in fixed_A_inds)]    
+    if not(fixed_H_inds is None) : 
+        not_fixed_inds = [x for x in range(H.shape[1]) if not(x in fixed_H_inds)]    
         if not(lambda_L==0):
-            AL = (A@L)[:,not_fixed_inds]
-        new_A = A.copy()
-        A = A[:,not_fixed_inds]
+            HL = (H@L)[:,not_fixed_inds]
+        new_H = H.copy()
+        H = H[:,not_fixed_inds]
         X = X[:,not_fixed_inds]
     else : 
         if not(lambda_L==0):
-            AL = A @ L
+            HL = H @ L
 
     if safe:
         # Allow for very small negative values!
-        assert(np.sum(A<-log_shift/2)==0)
-        assert(np.sum(P<-log_shift/2)==0)
+        assert(np.sum(H<-log_shift/2)==0)
+        assert(np.sum(W<-log_shift/2)==0)
         assert(np.sum(G<-log_shift/2)==0)
 
-    GP = G @ P # Also called D
+    GW = G @ W # Also called D
     
     if l2:
-        PGGP = GP.T @ GP
-        PGX = GP.T @ X
-        num = A * PGX
-        denum = PGGP @ A
+        WGGW = GW.T @ GW
+        WGX = GW.T @ X
+        num = H * WGX
+        denum = WGGW @ H
     else:
         
-        GPA = GP @ A
+        GWH = GW @ H
         # Split to debug timing...
-        num = A * (GP.T @ (X / (GPA+eps)))
+        num = H * (GW.T @ (X / (GWH+eps)))
         # op1 = X / (GPA+eps)
         # op2 = GP.T @ op1
         # num = A * op2
-        denum = np.sum(GP, axis=0, keepdims=True).T 
+        denum = np.sum(GW, axis=0, keepdims=True).T 
 
     if not(np.isscalar(mu) and mu==0):
         if len(np.shape(mu))==1:
             mu = np.expand_dims(mu, axis=1)
-        denum = denum + mu / (A + epsilon_reg)
+        denum = denum + mu / (H + epsilon_reg)
     if not(lambda_L==0):
-        maxA = np.max(A)
-        num = num + lambda_L * sigmaL * A * maxA
-        denum = denum + lambda_L * sigmaL * maxA + lambda_L * AL 
+        maxH = np.max(H)
+        num = num + lambda_L * sigmaL * H * maxH
+        denum = denum + lambda_L * sigmaL * maxH + lambda_L * HL 
 
     if force_simplex:
         nu = dichotomy_simplex(num, denum,dicotomy_tol)
@@ -242,15 +224,15 @@ def multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, e
         assert np.sum(denum<0)==0
         assert np.sum(num<0)==0
 
-    if fixed_A_inds is None : 
-        new_A = num/(denum+nu)
+    if fixed_H_inds is None : 
+        new_H = num/(denum+nu)
     else : 
-        new_A[:,not_fixed_inds] = num/(denum+nu)
+        new_H[:,not_fixed_inds] = num/(denum+nu)
 
-    return new_A
+    return new_H
 
 
-def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_simplex, fixed_A_inds = None):
+def initialize_algorithms(X, G, W, H, n_components, init, random_state, force_simplex, fixed_H_inds = None):
     # Handle initialization
 
     if G is None : 
@@ -267,72 +249,72 @@ def initialize_algorithms(X, G, P, A, n_components, init, random_state, force_si
     else:
         skip_second = False
 
-    if P is None:
-        if A is None:
-            D, A = initialize_nmf(X, n_components=n_components, init=init, random_state=random_state)
+    if W is None:
+        if H is None:
+            D, H = initialize_nmf(X, n_components=n_components, init=init, random_state=random_state)
             # D, A = u.rescaled_DA(D,A)
             if force_simplex:
-                scale = np.sum(A, axis=0, keepdims=True)
-                A = np.nan_to_num(A/scale, nan = 1.0/A.shape[0] )
-        D = np.abs(np.linalg.lstsq(A.T, X.T,rcond=None)[0].T)
+                scale = np.sum(H, axis=0, keepdims=True)
+                H = np.nan_to_num(H/scale, nan = 1.0/H.shape[0] )
+        D = np.abs(np.linalg.lstsq(H.T, X.T,rcond=None)[0].T)
         if skip_second:
-            P = D
+            W = D
         else:
             # Divide in two parts the initial fitting, otherwise the bremsstrahlung (which has a low intensity) tends to be poorly learned
             # First fit the caracteristic Xrays, then subtract that contribution to obtain a rough estimate of the bremsstralung parameters
-            Pcarac = (np.linalg.lstsq(G[:,:-2],D,rcond = None)[0]).clip(min = 0)
-            Pbrem = (np.linalg.lstsq(G[:,-2:],D - G[:,:-2]@Pcarac,rcond = None)[0]).clip(min = 0)
-            P = np.vstack((Pcarac, Pbrem))
+            Wcarac = (np.linalg.lstsq(G[:,:-2],D,rcond = None)[0]).clip(min = 0)
+            Wbrem = (np.linalg.lstsq(G[:,-2:],D - G[:,:-2]@Wcarac,rcond = None)[0]).clip(min = 0)
+            W = np.vstack((Wcarac, Wbrem))
             # P = np.abs(np.linalg.lstsq(G, D,rcond=None)[0])
 
-    elif A is None:
-        D = G @ P
-        A = np.abs(np.linalg.lstsq(D, X, rcond=None)[0])
+    elif H is None:
+        D = G @ W
+        H = np.abs(np.linalg.lstsq(D, X, rcond=None)[0])
         if force_simplex:
-            scale = np.sum(A, axis=0, keepdims=True)
-            A = A/scale
+            scale = np.sum(H, axis=0, keepdims=True)
+            H = H/scale
     
-    if not(fixed_A_inds is None) : 
-        vec = np.zeros_like(A[:,0])
+    if not(fixed_H_inds is None) : 
+        vec = np.zeros_like(H[:,0])
         vec[0] = 1
-        fixed_A = np.tile(vec[:,np.newaxis],(len(fixed_A_inds),))
-        A[:,fixed_A_inds] = fixed_A
+        fixed_H = np.tile(vec[:,np.newaxis],(len(fixed_H_inds),))
+        H[:,fixed_H_inds] = fixed_H
 
-    return G, P, A
+    return G, W, H
 
-def update_q(D, A, eps=log_shift):
+def update_q(D, H, eps=log_shift):
     """Perform a Q step."""
-    Atmp = np.expand_dims(A.T, axis=0)
+    Htmp = np.expand_dims(H.T, axis=0)
     Dtmp = np.expand_dims(D, axis=1)
-    Ntmp = np.expand_dims(D @ A, axis=2) 
-    return Atmp * (Dtmp / (Ntmp+eps))
+    Ntmp = np.expand_dims(D @ H, axis=2) 
+    return Htmp * (Dtmp / (Ntmp+eps))
    
-def multiplicative_step_pq(X, G, P, A, eps=log_shift, safe=True):
+def multiplicative_step_wq(X, G, W, H, eps=log_shift, safe=True):
     """
-    Multiplicative step in P using the PQ technique.
+    Multiplicative step in W using the WQ technique.
 
-    This function does exactly the same as `multiplicative_step_p` and is probably slower.
+    This function does exactly the same as `multiplicative_step_w` and is probably slower.
     """
 
     if safe:
         # Allow for very small negative values!
-        assert np.sum(A<-log_shift/2)==0
-        assert np.sum(P<-log_shift/2)==0
+        assert np.sum(H<-log_shift/2)==0
+        assert np.sum(W<-log_shift/2)==0
         assert np.sum(G<-log_shift/2)==0
 
-    GP = G @ P
-    Q = update_q(GP, A, eps=log_shift)
+    GW = G @ W
+    Q = update_q(GW, H, eps=log_shift)
 
     XQ = np.sum(np.expand_dims(X, axis=2) * Q, axis=1)
 
-    term1 = G.T @ (XQ / (GP + eps)) 
+    term1 = G.T @ (XQ / (GW + eps)) 
 
-    term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(A, axis=1,  keepdims=True).T
-    return P / term2 * term1
+    term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(H, axis=1,  keepdims=True).T
+    return W / term2 * term1
 
-def multiplicative_step_aq(X, G, P, A, force_simplex=True, eps=log_shift, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, sigmaL=sigmaL):
+def multiplicative_step_hq(X, G, W, H, force_simplex=True, eps=log_shift, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, sigmaL=sigmaL):
     """
-    Multiplicative step in A.
+    Multiplicative step in H.
     """
     if not lambda_L==0:
         if L is None:
@@ -340,18 +322,18 @@ def multiplicative_step_aq(X, G, P, A, force_simplex=True, eps=log_shift, safe=T
 
     if safe:
         # Allow for very small negative values!
-        assert np.sum(A<-log_shift/2)==0
-        assert np.sum(P<-log_shift/2)==0
+        assert np.sum(H<-log_shift/2)==0
+        assert np.sum(W<-log_shift/2)==0
         assert np.sum(G<-log_shift/2)==0
 
-    GP = G @ P # Also called D
-    GPA = GP @ A
+    GW = G @ W # Also called D
+    GWH = GW @ H
 
-    minus_c = A * (GP.T @ (X / (GPA+eps)))
+    minus_c = H * (GW.T @ (X / (GWH+eps)))
 
-    b = np.sum(GP, axis=0, keepdims=True).T 
+    b = np.sum(GW, axis=0, keepdims=True).T 
     if not lambda_L==0 :
-        b = b + lambda_L * A @ L - lambda_L * sigmaL  * A 
+        b = b + lambda_L * H @ L - lambda_L * sigmaL  * H 
         a = lambda_L * sigmaL
         if force_simplex:
             nu = dichotomy_simplex_aq(a, b, minus_c)

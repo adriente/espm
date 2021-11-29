@@ -1,8 +1,8 @@
-from snmfem import models
+from esmpy import models
 import numpy as np
-import snmfem.models.EDXS_function as ef
-from snmfem.conf import DEFAULT_EDXS_PARAMS
-from snmfem.utils import arg_helper
+import esmpy.models.EDXS_function as ef
+from esmpy.conf import DEFAULT_EDXS_PARAMS
+from esmpy.utils import arg_helper
 import lmfit as lm
 import re
 

@@ -1,13 +1,13 @@
-from snmfem import estimators 
-from  snmfem import  measures
+from esmpy import estimators 
+from  esmpy import  measures
 import numpy as np
-import snmfem.conf as conf
-import snmfem.utils as u
+import esmpy.conf as conf
+import esmpy.utils as u
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
 import hyperspy.api as hs
-from snmfem.utils import number_to_symbol_list
-from snmfem.models.EDXS_function import elts_dict_from_dict_list
+from esmpy.utils import number_to_symbol_list
+from esmpy.models.EDXS_function import elts_dict_from_dict_list
 import numpy.lib.recfunctions as rfn
 
 #####################################################################
@@ -314,48 +314,3 @@ def build_fixed_P (spim, col1 = False) :
         print(P_dict)
     P = spim.set_fixed_P(P_dict)
     return P
-
-############################################################################
-# Function for HPC use, its purpose is to merge txt results files into one #
-############################################################################
-
-# def gather_results(file_list,output,folder = conf.RESULTS_PATH,output_folder = conf.RESULTS_PATH) : 
-#     string_list = []
-#     path_list = [folder / Path(a) for a in file_list]
-    
-#     for file in path_list : 
-#         with open(file,"r") as f : 
-#             string_list.append(f.read())
-
-#     output_path = output_folder / Path(output)
-#     for elt in string_list : 
-#         with open(output_path, "a") as o :
-#             o.write(elt)
-#             o.write("\n")
-
-#     for file in path_list : 
-#         os.remove(file)
-
-################################################################################################################
-# Several experiments on several samples : Is that necessary ?  Replaced by one experiment on several samples. #
-################################################################################################################
-# def perform_simulations(exp_list,n_samples = 10, simulated = False):
-#     augm_exp_list = []
-#     for exp in exp_list : 
-#         files = [exp["input_file"] / Path("sample_{}.hspy".format(i)) for i in range(n_samples)]
-#         new_exps = []
-#         for f in files : 
-#             exp["input_file"] = f
-#             new_exps.append(exp)
-#         augm_exp_list.append(new_exps)
-    
-#     metrics = []
-#     for augm_exp in augm_exp_list :
-#         m = []
-#         for exp in augm_exp :
-#             if simulated :  
-#             estim = simulation_quick_load(exp)
-#             m.append(run_experiment(estimator = estim, experiment=exp, simulated= simulated)[0][:-1])
-#             metrics.append(m)
-#     metrics = np.array(metrics)
-#     return metrics

@@ -1,9 +1,9 @@
 import numpy as np
-from snmfem.models import PhysicalModel
-from snmfem.models.EDXS_function import G_bremsstrahlung, continuum_xrays, gaussian, read_lines_db, read_compact_db, update_bremsstrahlung, elts_dict_from_dict_list
-from snmfem.conf import DEFAULT_EDXS_PARAMS
-from snmfem.utils import arg_helper, symbol_to_number_dict, symbol_to_number_list
-from snmfem.models.absorption_edxs import absorption_correction, det_efficiency, det_efficiency_from_curve
+from esmpy.models import PhysicalModel
+from esmpy.models.EDXS_function import G_bremsstrahlung, continuum_xrays, gaussian, read_lines_db, read_compact_db, update_bremsstrahlung, elts_dict_from_dict_list
+from esmpy.conf import DEFAULT_EDXS_PARAMS
+from esmpy.utils import arg_helper, symbol_to_number_dict, symbol_to_number_list
+from esmpy.models.absorption_edxs import absorption_correction, det_efficiency, det_efficiency_from_curve
 # Class to model the EDXS spectra. This is a temporary version since there are some design issues.
 
 
@@ -164,94 +164,3 @@ def G_EDXS (model_params, g_params, part_P = None, G = None) :
     else : 
         new_G = update_bremsstrahlung(G,part_P,model_params,g_params["elements"])
         return new_G
-
- # def generate_abs_coeff(self, elements_dict = None):
-    #     """
-    #     Function to update self.abs based on the given database. This function is working as intended but it can't be used as it is for SNMF.
-    #     The way it was coded is probably over-complicated ...
-    #     """
-    #     temp = np.zeros_like(self.x)
-    #     sum_mass = 0
-    #     for elt in elements_dict.keys():
-    #         sum_mass += 2 * int(elt)*elements_dict[elt]
-
-    #     for elt in elements_dict.keys():
-    #         H = np.ones_like(self.x)
-    #         d = np.ones_like(self.x)
-    #         k = np.ones_like(self.x)
-    #         H_tups = []
-    #         dk_tups = []
-    #         list_L_shells = []
-    #         list_M_shells = []
-    #         max_ind_L = 0
-    #         max_ind_M = 0
-    #         for shell in self.abs_db[elt]:
-    #             regex = re.match(r"([K-M])([1-5]?)", shell)
-    #             if regex:
-    #                 if regex.group(1) == "L":
-    #                     list_L_shells.append(int(regex.group(2)))
-    #                 if regex.group(1) == "M":
-    #                     list_M_shells.append(int(regex.group(2)))
-    #             if list_L_shells:
-    #                 max_ind_L = max(list_L_shells)
-    #             if list_M_shells:
-    #                 max_ind_M = max(list_M_shells)
-    #         for shell in self.abs_db[elt]:
-    #             regex = re.match(r"([K-M])([1-5]?)", shell)
-    #             if regex:
-    #                 tup = self.abs_db[elt][shell]
-    #                 ind_H = np.argmin(np.abs(self.x - tup[0]))
-    #                 H_tups.append((ind_H, tup[1]))
-
-    #             if regex:
-    #                 if regex.group(1) == "K":
-    #                     en = self.abs_db[elt][shell][0]
-    #                     ind_dk = np.argmin(np.abs(self.x - en))
-    #                     dk_tups.append(
-    #                         (
-    #                             ind_dk,
-    #                             self.abs_db[elt]["d"][0],
-    #                             self.abs_db[elt]["exp"][0],
-    #                         )
-    #                     )
-
-    #                 if regex.group(0) == "L" + str(max_ind_L):
-    #                     en = self.abs_db[elt][shell][0]
-    #                     ind_dk = np.argmin(np.abs(self.x - en))
-    #                     dk_tups.append(
-    #                         (
-    #                             ind_dk,
-    #                             self.abs_db[elt]["d"][1],
-    #                             self.abs_db[elt]["exp"][1],
-    #                         )
-    #                     )
-
-    #                 if regex.group(0) == "M" + str(max_ind_M):
-    #                     en = self.abs_db[elt][shell][0]
-    #                     ind_dk = np.argmin(np.abs(self.x - en))
-    #                     dk_tups.append(
-    #                         (
-    #                             ind_dk,
-    #                             self.abs_db[elt]["d"][2],
-    #                             self.abs_db[elt]["exp"][2],
-    #                         )
-    #                     )
-
-    #         sort_key = lambda x: x[0]
-    #         dk_tups.sort(key=sort_key)
-    #         H_tups.sort(key=sort_key)
-    #         d[0 : dk_tups[0][0]] = self.abs_db[elt]["d"][-1]
-    #         k[0 : dk_tups[0][0]] = self.abs_db[elt]["exp"][-1]
-    #         for i in range(len(dk_tups) - 1):
-    #             d[dk_tups[i][0] : dk_tups[i + 1][0]] = dk_tups[i][1]
-    #             k[dk_tups[i][0] : dk_tups[i + 1][0]] = dk_tups[i][2]
-    #         d[dk_tups[-1][0] :] = self.abs_db[elt]["d"][0]
-    #         k[dk_tups[-1][0] :] = self.abs_db[elt]["exp"][0]
-    #         for i in range(len(H_tups) - 1):
-    #             H[H_tups[i][0] : H_tups[i + 1][0]] = H_tups[i][1]
-
-    #         temp += (H
-    #             * np.exp(d + k * np.log(self.x))*elements_dict[elt]*(2* int(elt)/sum_mass)
-    #         )
-
-    #     self.abs = temp

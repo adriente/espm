@@ -1,7 +1,7 @@
 signals : 
-  EDXSsnmfem:
-    signal_type: EDXSsnmfem
+  EDS_ESMPY:
+    signal_type: EDS_ESMPY
     signal_dimension : 1
     dtype : real
     lazy : False
-    module : snmfem.datasets.spim
+    module : esmpy.datasets.spim

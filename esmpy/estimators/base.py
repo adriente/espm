@@ -11,6 +11,9 @@ from snmfem.laplacian import create_laplacian_matrix
 from scipy.sparse import lil_matrix
 
 
+def normalization_factor (X, nc) : 
+    m = np.mean(X)
+    return nc/(m*X.shape[0])
 
 class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     
