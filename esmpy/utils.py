@@ -4,16 +4,16 @@ from esmpy.conf import SYMBOLS_PERIODIC_TABLE, NUMBER_PERIODIC_TABLE
 import json
 from hyperspy.misc.material import atomic_to_weight, density_of_mixture
 
-def rescaled_DA(D,A) :
-    """Rescale the matrices D and A such that the columns of A sums approximately to one."""
-    _, p = A.shape
+def rescaled_DH(D,H) :
+    """Rescale the matrices D and H such that the columns of H sums approximately to one."""
+    _, p = H.shape
     o = np.ones((p,))
-    s = np.linalg.lstsq(A.T, o, rcond=None)[0]
+    s = np.linalg.lstsq(H.T, o, rcond=None)[0]
     if (s<=0).any():
-        s = np.maximum(nnls(A.T, o)[0], 1e-10)
+        s = np.maximum(nnls(H.T, o)[0], 1e-10)
     D_rescale = D@np.diag(1/s)
-    A_rescale = np.diag(s)@A
-    return D_rescale, A_rescale
+    H_rescale = np.diag(s)@H
+    return D_rescale, H_rescale
 
 def bin_spim(data,n,m):
     """
@@ -25,7 +25,7 @@ def bin_spim(data,n,m):
     bs = data.shape[0]//n,data.shape[1]//m  # blocksize averaged over
     k = data.shape[2]
     return np.reshape(np.array([np.sum(data[k1*bs[0]:(k1+1)*bs[0],k2*bs[1]:(k2+1)*bs[1]],axis=(0,1)) for k1 in range(n) for k2 in range(m)]),(n,m,k))
-00
+
 
 def number_to_symbol_dict (func) : 
     """

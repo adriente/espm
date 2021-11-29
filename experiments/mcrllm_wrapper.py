@@ -1,4 +1,4 @@
-from snmfem.estimators.mcrllm.mcrllm import mcrllm
+from mcrllm import mcrllm
 import numpy as np
 
 class MCRLLM() : 

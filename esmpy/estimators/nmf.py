@@ -1,8 +1,8 @@
 
-from snmfem.updates import multiplicative_step_a, multiplicative_step_p
-from snmfem.measures import KLdiv, log_reg
-from snmfem.conf import log_shift, dicotomy_tol
-from snmfem.estimators import NMFEstimator
+from esmpy.updates import multiplicative_step_h, multiplicative_step_w
+from esmpy.measures import KLdiv, log_reg
+from esmpy.conf import log_shift, dicotomy_tol
+from esmpy.estimators import NMFEstimator
 
 
 class NMF(NMFEstimator):
@@ -20,21 +20,21 @@ class NMF(NMFEstimator):
         self.log_shift = log_shift
         self.dicotomy_tol = dicotomy_tol
 
-    def _iteration(self, P, A):
-        A = multiplicative_step_a(self.X_, self.G_, P, A, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, l2=self.l2,fixed_A_inds=self.fixed_A_inds)
-        P = multiplicative_step_p(self.X_, self.G_, P, A, eps=self.log_shift, safe=self.debug, l2=self.l2, fixed_P=self.fixed_P)
+    def _iteration(self, W, H):
+        H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, l2=self.l2,fixed_H_inds=self.fixed_H_inds)
+        W = multiplicative_step_w(self.X_, self.G_, W, H, eps=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W)
         if callable(self.G) : 
-            self.G_ = self.G(part_P = P[:-2,:],G = self.G_)
+            self.G_ = self.G(part_W = W[:-2,:],G = self.G_)
 
-        return  P, A
+        return  W, H
 
-    def loss(self, P, A, average=True, X = None):
-        lkl = super().loss(P, A, average=average, X = X)
+    def loss(self, W, H, average=True, X = None):
+        lkl = super().loss(W, H, average=average, X = X)
         # GP = self.G_ @ P
         # kl = KLdiv(self.X_, GP, A, self.log_shift, safe=self.debug) 
-        reg = log_reg(A, self.mu, self.epsilon_reg, average=True)
+        reg = log_reg(H, self.mu, self.epsilon_reg, average=True)
         if average:
-            reg = reg / self.GPA_numel_
+            reg = reg / self.GWH_numel_
         self.detailed_loss_.append(reg)
         return lkl + reg
 

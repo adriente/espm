@@ -165,21 +165,21 @@ def residuals(data, model):
     )
     return X_sum - model_sum
 
-def Frobenius_loss(X, D, A, average=False):
+def Frobenius_loss(X, W, H, average=False):
     """
     Compute the generalized KL divergence.
 
-    \sum_{ji} | X_{ij} - (D A)_{ij} |^2
+    \sum_{ji} | X_{ij} - (D H)_{ij} |^2
     """
     
-    DA = D @ A
+    DH = W @ H
 
     if average:
-        return np.mean((DA - X)**2)
+        return np.mean((DH - X)**2)
     else:
-        return np.sum((DA - X)**2)
+        return np.sum((DH - X)**2)
 
-def KLdiv(X, D, A, eps=log_shift, safe=True, average=False):
+def KLdiv(X, D, H, eps=log_shift, safe=True, average=False):
     """
     Compute the generalized KL divergence.
 
@@ -187,54 +187,54 @@ def KLdiv(X, D, A, eps=log_shift, safe=True, average=False):
     """
     if safe:
         # Allow for very small negative values!
-        assert(np.sum(A<-log_shift/2)==0)
+        assert(np.sum(H<-log_shift/2)==0)
         assert(np.sum(D<-log_shift/2)==0)
     
-    DA = D @ A
-    return KL(X, DA, log_shift, average)
+    DH = D @ H
+    return KL(X, DH, log_shift, average)
 
-def KL(X, DA, eps=log_shift, average=False):
+def KL(X, DH, eps=log_shift, average=False):
     if average:
-        x_lin = np.mean(DA) - np.mean(X)
-        x_log = np.mean(X*np.log(X+ eps)) - np.mean(X*np.log(DA + eps))                
+        x_lin = np.mean(DH) - np.mean(X)
+        x_log = np.mean(X*np.log(X+ eps)) - np.mean(X*np.log(DH + eps))                
     else:
-        x_lin = np.sum(DA) - np.sum(X)
-        x_log = np.sum(X*np.log(X+ eps)) - np.sum(X*np.log(DA + eps))
+        x_lin = np.sum(DH) - np.sum(X)
+        x_log = np.sum(X*np.log(X+ eps)) - np.sum(X*np.log(DH + eps))
     return x_lin + x_log
 
-def KLdiv_loss(X, D, A, eps=log_shift, safe=True, average=False):
+def KLdiv_loss(X, D, H, eps=log_shift, safe=True, average=False):
     """
     Compute the loss based on the generalized KL divergence.
 
-    \sum_{ji} X_{ij} \log (D A)_{ij} + (D A)_{ij}
+    \sum_{ji} X_{ij} \log (D W)_{ij} + (D W)_{ij}
 
     This does not contains all the term of the KL divergence, only the ones
     depending on D and A.
     """
     if safe:
         # Allow for very small negative values!
-        assert(np.sum(A<-log_shift/2)==0)
+        assert(np.sum(H<-log_shift/2)==0)
         assert(np.sum(D<-log_shift/2)==0)
     
-    DA = D @ A
+    DH = D @ H
     if average:
-        x_lin = np.mean(DA)
-        x_log = np.mean(X*np.log(DA + eps))        
+        x_lin = np.mean(DH)
+        x_log = np.mean(X*np.log(DH + eps))        
     else:
-        x_lin = np.sum(DA)
-        x_log = np.sum(X*np.log(DA + eps))
+        x_lin = np.sum(DH)
+        x_log = np.sum(X*np.log(DH + eps))
     return x_lin - x_log
 
-def log_reg(A, mu, epsilon, average=False):
+def log_reg(H, mu, epsilon, average=False):
     """
     Compute the regularization loss: \sum_ij mu_i \log(A_{ij})
     """
     if not(np.isscalar(mu)):
         mu = np.expand_dims(mu, axis=1)
     if average:
-        return np.mean(mu* np.log(A+epsilon))        
+        return np.mean(mu* np.log(H+epsilon))        
     else:
-        return np.sum(mu* np.log(A+epsilon))
+        return np.sum(mu* np.log(H+epsilon))
 
 def trace_xtLx(L, x, average=False):
     if average:
@@ -283,23 +283,4 @@ def square_distance(x, y=None):
     d = abs(np.kron(np.ones((ry, 1)), xx).T +np.kron(np.ones((rx, 1)), yy) - 2 * xy)    
     
     return d
-
-##########################################
-# old version of the unique min function #
-##########################################
-
-# def unique_min (matr, angles) : 
-#     # Recursive way to find the minimum values in a matrice, line by line.
-#     # For each line, the column of the min is removed at every iteration. This ensures that a min is found for each column once.
-#     # the input matrix should be n_comps*n_comps
-#     if matr.size==0 :
-#         return angles, None
-#     else :
-#         ind_min = np.argmin(matr[0,:])
-#         angles.append(np.min(matr[0,:]))
-#         reduced1 = np.delete(matr,ind_min,axis = 1)
-#         reduced2 = np.delete(reduced1,0,axis = 0)
-#         return unique_min(reduced2,angles)
-
-
 

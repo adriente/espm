@@ -1,4 +1,3 @@
-from snmfem.estimators.base import NMFEstimator
-from snmfem.estimators.nmf import NMF
-from snmfem.estimators.smooth_nmf import SmoothNMF
-from snmfem.estimators.mcrllm_wrapper import MCRLLM
+from esmpy.estimators.base import NMFEstimator
+from esmpy.estimators.nmf import NMF
+from esmpy.estimators.smooth_nmf import SmoothNMF

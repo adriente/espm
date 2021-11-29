@@ -16,7 +16,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     entry_points={'hyperspy.extensions': 'esmpy = esmpy'},
-    extras_require={'testing': ['flake8', 'pytest', 'jupyterlab', 'twine', 'setuptools', 'wheel', 'hyperspy-gui-ipywidgets', 'hyperspy-gui-traitsui', 'PyQt5']},
+    extras_require={'testing': ['flake8', 'pytest', 'jupyterlab', 'twine', 'setuptools', 'wheel', 'hyperspy-gui-ipywidgets', 'hyperspy-gui-traitsui', 'PyQt5',  'pysptools']},
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
@@ -32,7 +32,7 @@ setuptools.setup(
         'Topic :: Scientific/Engineering'
     ],
     install_requires=[
-        'hyperspy', 'tqdm', 'pysptools'
+        'hyperspy', 'tqdm'
     ],
     python_requires='>=3.6',
 )
