@@ -5,13 +5,13 @@ name = "pypi"
 
 [packages]
 cython = "*"
-snmfem = {editable = true, path = "."}
-pyunlocbox = {editable = true, path = "./pyunlocbox"}
+esmpy = {editable = true, path = "."}
 torch = "*"
 argparse = "*"
 pypstools = "*"
 memory-profiler = "*"
 lmfit = "*"
+hyperspy = "*"
 
 [dev-packages]
 jupyter = "*"

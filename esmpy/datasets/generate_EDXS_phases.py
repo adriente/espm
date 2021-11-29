@@ -1,6 +1,7 @@
 import numpy as np
-from snmfem.models import EDXS
+from esmpy.models import EDXS
 from copy import deepcopy
+from esmpy.conf import DEFAULT_SYNTHETIC_DATA_DICT
 
 DEFAULT_ELTS = [{"b0" : 4.3298e-04 , "b1" : 6.7732e-02, "elements_dict" :  {"8": 1.0, "12": 0.51, "14": 0.61, "13": 0.07, "20": 0.04, "62": 0.02,
                         "26": 0.028, "60": 0.002, "71": 0.003, "72": 0.003, "29": 0.02}},
@@ -8,24 +9,6 @@ DEFAULT_ELTS = [{"b0" : 4.3298e-04 , "b1" : 6.7732e-02, "elements_dict" :  {"8":
                         "92": 0.0052, "60": 0.004, "31": 0.03, "71": 0.003}},
                     {"b0" : 5.3298e-04 , "b1" : 3.7732e-02, "elements_dict" : {"8": 1.0, "14": 0.12, "13": 0.18, "20": 0.47,
                         "62": 0.04, "26": 0.004, "60": 0.008, "72": 0.004, "29": 0.01}}]
-
-DEFAULT_PARAMS = {
-    "e_offset" : 0.200,
-    "e_size" : 1980,
-    "e_scale" : 0.01,
-    "E0" : 200,
-    "db_name" : "default_xrays.json",
-    "params_dict": {
-"Abs" : {
-            "thickness" : 100e-7,
-            "density" : None,
-            "toa" : 22,
-            "atomic_fraction" : True 
-    }
-    }
-    
-    
-}
 
 def generate_brem_params (seed) : 
     np.random.seed(seed)
@@ -50,7 +33,7 @@ def unique_elts (dict_list) :
 
 def generate_random_phases(n_phases = 3, seed = 0):
     dict_list = []
-    def_pars = deepcopy(DEFAULT_PARAMS)
+    def_pars = deepcopy(DEFAULT_SYNTHETIC_DATA_DICT["model_parameters"])
     model = EDXS(**def_pars)
     if seed == 0 and n_phases==3 :
         for i in range(3) : 
@@ -82,7 +65,7 @@ def generate_modular_phases (elts_dicts = 3, brstlg_pars = None, scales = None, 
     else : 
         n_phases = len(elts_dicts)
     if model_params is None :
-        full_dict["model_parameters"] = deepcopy(DEFAULT_PARAMS)
+        full_dict["model_parameters"] = deepcopy(DEFAULT_SYNTHETIC_DATA_DICT["model_parameters"])
     else : 
         full_dict["model_parameters"].update(model_params)
     model = EDXS(**full_dict["model_parameters"])
@@ -110,7 +93,7 @@ def generate_modular_phases (elts_dicts = 3, brstlg_pars = None, scales = None, 
     return model.phases, full_dict
 
 def G_from_phases (dict_list) : 
-    def_pars = deepcopy(DEFAULT_PARAMS)
+    def_pars = deepcopy(DEFAULT_SYNTHETIC_DATA_DICT["model_parameters"])
     model = EDXS(**def_pars)
     elts_list = unique_elts(dict_list)
     model.generate_g_matr(brstlg = True,**def_pars["Abs"],elements_list=elts_list)

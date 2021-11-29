@@ -1,5 +1,5 @@
-from snmfem.datasets.base import generate_dataset
-from snmfem.conf import DATASETS_PATH
+from esmpy.datasets.base import generate_dataset
+from esmpy.conf import DATASETS_PATH
 from pathlib import Path
 import hyperspy.api as hs
 import os

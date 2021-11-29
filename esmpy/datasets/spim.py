@@ -1,22 +1,22 @@
 from  hyperspy._signals.signal1d import Signal1D
-from snmfem.models import EDXS
-from snmfem import models
-from snmfem.models.edxs import G_EDXS
-from snmfem.datasets.generate_weights import generate_weights
+from esmpy.models import EDXS
+from esmpy import models
+from esmpy.models.edxs import G_EDXS
+from esmpy.datasets.generate_weights import generate_weights
 from hyperspy.misc.eds.utils import take_off_angle
-from snmfem.utils import number_to_symbol_list
+from esmpy.utils import number_to_symbol_list
 import numpy as np
 # import hyperspy.extensions as e
 
 # # Temporary fix
 
-# e.ALL_EXTENSIONS["signals"]["EDXSsnmfem"] = {'signal_type': 'EDXSsnmfem',
+# e.ALL_EXTENSIONS["signals"]["EDXSesmpy"] = {'signal_type': 'EDXSesmpy',
 #    'signal_dimension': 1,
 #    'dtype': 'real',
 #    'lazy': False,
 #    'module': 'snmfem.datasets.spim'}
 
-class EDXSsnmfem (Signal1D) : 
+class EDS_ESMPY (Signal1D) : 
         # self.shape_2d = self.axes_manager[0].size, self.axes_manager[1].size
         # self.model_parameters, self.g_parameters = self.get_metadata()
         # self.phases_parameters, self.misc_parameters = self.get_truth()
@@ -104,15 +104,6 @@ class EDXSsnmfem (Signal1D) :
         
         return self.G
 
-    def get_P(self) : 
-        D = self.get_decomposition_factors().data.T
-        if self.problem_type == "bremsstrahlung" : 
-            G = self.G()
-        else : 
-            G = self.G
-        P = np.abs(np.linalg.lstsq(G, D,rcond=None)[0])
-        return P
-
     def update_G(self, part_P=None, G=None):
         model_params = get_metadata(self)
         g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "norm" : self.norm}
@@ -155,20 +146,20 @@ class EDXSsnmfem (Signal1D) :
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.elevation_angle = elevation_angle
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.energy_resolution_MnKa = 130.0
 
-    def set_fixed_P (self,phases_dict) : 
+    def set_fixed_W (self,phases_dict) : 
         elements = self.metadata.Sample.elements
         if self.problem_type == "no_brstlg" : 
-            P = -1* np.ones((len(elements), len(phases_dict.keys())))
+            W = -1* np.ones((len(elements), len(phases_dict.keys())))
         elif self.problem_type == "bremsstrahlung" : 
-            P = -1* np.ones((len(elements)+2, len(phases_dict.keys())))
+            W = -1* np.ones((len(elements)+2, len(phases_dict.keys())))
         else : 
             raise ValueError("problem type should be either no_brstlg or bremsstrahlung")
         for p, phase in enumerate(phases_dict) : 
             for e, elt in enumerate(elements) : 
                 for key in phases_dict[phase] : 
                     if key == elt : 
-                        P[e,p] = phases_dict[phase][key]
-        return P
+                        W[e,p] = phases_dict[phase][key]
+        return W
 
 
 ######################

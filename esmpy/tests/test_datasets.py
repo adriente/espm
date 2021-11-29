@@ -1,13 +1,13 @@
-from snmfem.datasets.spim import get_metadata
+from esmpy.datasets.spim import get_metadata
 import numpy as np
-from snmfem.datasets.base import generate_dataset, generate_spim, save_generated_spim
-from snmfem.models import EDXS
-from snmfem.datasets.generate_weights import generate_weights, random_weights, laplacian_weights, spheres_weights, gaussian_ripple_weights
-from snmfem.datasets.generate_EDXS_phases import generate_brem_params, generate_random_phases, DEFAULT_PARAMS, unique_elts
+from esmpy.datasets.base import generate_dataset, generate_spim, save_generated_spim
+from esmpy.models import EDXS
+from esmpy.datasets.generate_weights import generate_weights, random_weights, laplacian_weights, spheres_weights, gaussian_ripple_weights
+from esmpy.datasets.generate_EDXS_phases import generate_brem_params, generate_random_phases, DEFAULT_PARAMS, unique_elts
 import os
 import hyperspy.api as hs
 import shutil
-from snmfem.conf import DATASETS_PATH
+from esmpy.conf import DATASETS_PATH
 from pathlib import Path
 from hyperspy.misc.eds.utils import take_off_angle
 
@@ -87,14 +87,14 @@ def test_generate():
     spim = generate_spim(phases, weights, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = False)
     cont_spim = generate_spim(phases, weights, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = True)
     Xdot = DATA_DICT["N"]* weights @ np.diag(densities)@ phases
-    P = np.abs(np.linalg.lstsq(G,spim.sum(axis = (0,1)),rcond = None)[0])
+    W = np.abs(np.linalg.lstsq(G,spim.sum(axis = (0,1)),rcond = None)[0])
     
     assert phases.shape == (3, 1900)
     assert weights.shape == (100,120,3)
     assert spim.shape == (100,120,1900)
     np.testing.assert_allclose(np.sum(phases, axis=1), np.ones([3]))
     np.testing.assert_allclose( Xdot, cont_spim)
-    np.testing.assert_allclose( Xdot.sum(axis=(0,1)), G@P, rtol = 0.1 )
+    np.testing.assert_allclose( Xdot.sum(axis=(0,1)), G@W, rtol = 0.1 )
 
     filename = "test.hspy"
     save_generated_spim(filename, spim, DATA_DICT["model_parameters"], DATA_DICT["phases_parameters"], MISC_DICT)
@@ -105,13 +105,13 @@ def test_generate():
     phases, weights = si.phases_2d, si.weights_2d
     # weights = weights.reshape((100,120,n_phases))
     X = si.data
-    P = np.linalg.lstsq(G,X.sum(axis = (0,1)),rcond = None)[0]
+    W = np.linalg.lstsq(G,X.sum(axis = (0,1)),rcond = None)[0]
     
     assert phases.shape == (3, 1900)
     assert weights.shape == (100,120,3)
     assert si.data.shape == (100,120,1900)
     np.testing.assert_allclose( Xdot, weights @ phases)
-    np.testing.assert_allclose( Xdot.sum(axis=(0,1)), G@P, rtol = 0.2 )
+    np.testing.assert_allclose( Xdot.sum(axis=(0,1)), G@W, rtol = 0.2 )
 
     os.remove(filename)
 

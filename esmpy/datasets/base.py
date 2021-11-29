@@ -1,11 +1,11 @@
-from snmfem import models
+from esmpy import models
 import numpy as np
-from snmfem.conf import DATASETS_PATH
+from esmpy.conf import DATASETS_PATH
 from pathlib import Path
 from tqdm import tqdm
-from snmfem.datasets.generate_weights import generate_weights
+from esmpy.datasets.generate_weights import generate_weights
 import hyperspy.api as hs
-from snmfem.datasets.generate_EDXS_phases import unique_elts
+from esmpy.datasets.generate_EDXS_phases import unique_elts
 
 def generate_spim(phases, weights, densities, N, seed=0,continuous = False):
     """

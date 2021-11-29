@@ -1,6 +1,6 @@
 import numpy as np
 from skimage.filters import median
-from snmfem.models.EDXS_function import gaussian
+from esmpy.models.EDXS_function import gaussian
 
 class Material(object):
     
