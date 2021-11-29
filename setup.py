@@ -4,9 +4,9 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='snmfem',
+    name='esmpy',
     version='0.0.1',
-    description='Simplex non-negative matrix factorization for Electron Microscopy',
+    description='Electron Spectro-Microscopy Python Library',
     url='https://github.com/adriente/SNMF_EDXS',
     author='Adrien Teurtie, Nathanael Perraudin',
     author_email='nathanael.perraudin@sdsc.ethz.ch',
@@ -16,7 +16,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     entry_points={'hyperspy.extensions': 'snmfem = snmfem'},
-    extras_require={'testing': ['flake8', 'pytest', 'jupyterlab', 'twine', 'setuptools', 'wheel']},
+    extras_require={'testing': ['flake8', 'pytest', 'jupyterlab', 'twine', 'setuptools', 'wheel', 'hyperspy-gui-ipywidgets', 'hyperspy-gui-traitsui', 'PyQt5']},
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
@@ -32,7 +32,7 @@ setuptools.setup(
         'Topic :: Scientific/Engineering'
     ],
     install_requires=[
-        'numpy', 'matplotlib', 'hyperspy', 'tqdm', 'hyperspy-gui-ipywidgets', 'PyQt5' ,'hyperspy-gui-traitsui', 'sklearn', 'pysptools'
+        'hyperspy', 'tqdm', 'pysptools'
     ],
     python_requires='>=3.6',
 )
