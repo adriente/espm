@@ -55,7 +55,7 @@ def generate_spim(phases, weights, densities, N, seed=0,continuous = False):
 
 def save_generated_spim(filename, spim, model_params, phases_params, misc_params) : 
     s = hs.signals.Signal1D(spim)
-    s.set_signal_type("EDXSsnmfem")
+    s.set_signal_type("EDS_ESMPY")
     s.axes_manager[-1].offset = model_params["e_offset"]
     s.axes_manager[-1].scale = model_params["e_scale"]
 

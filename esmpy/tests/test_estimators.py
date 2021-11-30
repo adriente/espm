@@ -1,6 +1,7 @@
 from sklearn.utils.estimator_checks import check_estimator
 from esmpy.estimators.smooth_nmf import diff_surrogate, smooth_l2_surrogate
 from esmpy.estimators import NMF, SmoothNMF
+from esmpy.estimators.base import normalization_factor
 import numpy as np
 from esmpy.models import EDXS
 from esmpy.datasets.generate_weights import generate_weights
@@ -68,32 +69,32 @@ def generate_one_sample():
     cont = generate_spim(phases, weights, misc_params["densities"], misc_params["N"], seed=misc_params["seed"],continuous = True)
 
     spim_stoch = hs.signals.Signal1D(stoch)
-    spim_stoch.set_signal_type("EDXSsnmfem")
+    spim_stoch.set_signal_type("EDS_ESMPY")
 
     spim_cont = hs.signals.Signal1D(cont)
-    spim_cont.set_signal_type("EDXSsnmfem")
+    spim_cont.set_signal_type("EDS_ESMPY")
 
     X = spim_stoch.X
     X_cont = spim_cont.X
     
     D = phases.T
-    A = weights.reshape((misc_params["shape_2d"][0]*misc_params["shape_2d"][1],len(phases_parameters))).T
+    H = weights.reshape((misc_params["shape_2d"][0]*misc_params["shape_2d"][1],len(phases_parameters))).T
     
-    P = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
+    W = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
     for i in range(10) : 
-        G = G_EDXS(model_parameters, {"g_type" : "bremsstrahlung", "elements" : ["Fe", "Mo", "Ca", "Si", "O", "Pt"]},P[:-2,:],G)
-        P = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
+        G = G_EDXS(model_parameters, {"g_type" : "bremsstrahlung", "elements" : ["Fe", "Mo", "Ca", "Si", "O", "Pt"]},W[:-2,:],G)
+        W = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
 
     w = np.array(misc_params["densities"])
 
-    return G, P, A, D, w, X, X_cont, N
+    return G, W, H, D, w, X, X_cont, N
 
 
 def test_generate_one_sample():
-    G, P, A, D, w, X, Xdot, N = generate_one_sample()
-    np.testing.assert_allclose(G @ P , D, atol=1e-3)
-    np.testing.assert_allclose( N * D @ np.diag(w) @ A , Xdot)
-    np.testing.assert_allclose(N * G @ P @ np.diag(w) @ A , Xdot, atol=1e-1)
+    G, W, H, D, w, X, Xdot, N = generate_one_sample()
+    np.testing.assert_allclose(G @ W , D, atol=1e-3)
+    np.testing.assert_allclose( N * D @ np.diag(w) @ H , Xdot)
+    np.testing.assert_allclose(N * G @ W @ np.diag(w) @ H , Xdot, atol=1e-1)
 
 def test_NMF_scikit () : 
     estimator = NMF(n_components= 5,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0,hspy_comp = False)
@@ -102,48 +103,48 @@ def test_NMF_scikit () :
     check_estimator(estimator)
 
 def test_general():
-    G, P, A, D, w, X, Xdot, N = generate_one_sample()
+    G, W, H, D, w, X, Xdot, N = generate_one_sample()
 
     estimator = NMF(G=G,n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
-    D2 = estimator.fit_transform(A=A, X=Xdot)
+    D2 = estimator.fit_transform(H=H, X=Xdot)
     np.testing.assert_allclose(N*D@np.diag(w), D2, atol=3e-1)
 
     estimator = NMF(n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
-    D2 = estimator.fit_transform(A=A, X=Xdot)
+    D2 = estimator.fit_transform(H=H, X=Xdot)
     np.testing.assert_allclose(N*D@np.diag(w), D2, atol=3e-1)
 
     estimator = NMF(G=G,n_components= 2,max_iter=200,force_simplex = False,mu = 0, epsilon_reg = 1, hspy_comp = False)
-    D2 = estimator.fit_transform( P=P@np.diag(w), X=Xdot)
+    D2 = estimator.fit_transform( W=W@np.diag(w), X=Xdot)
     np.testing.assert_allclose(N*D@np.diag(w), D2, atol=3e-1)
 
     estimator = NMF(G =G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
-    D2 = estimator.fit_transform(P=N*P@np.diag(w), X=Xdot)
+    D2 = estimator.fit_transform(W=N*W@np.diag(w), X=Xdot)
     np.testing.assert_allclose(N*D@np.diag(w), D2, atol=3e-1)
 
     estimator = NMF(G=G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     estimator.fit_transform(X=Xdot)
-    P2, A2 = estimator.P_, estimator.A_ 
+    P2, A2 = estimator.W_, estimator.H_ 
     np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
 
     estimator = NMF(G=G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     estimator.fit_transform(X=X)
-    P2, A2 = estimator.P_, estimator.A_ 
+    P2, A2 = estimator.W_, estimator.H_ 
     np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
 
     estimator = SmoothNMF(G=G, shape_2d=[10,20], lambda_L=0, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     estimator.fit_transform(X=X)
-    P2, A2 = estimator.P_, estimator.A_ 
+    P2, A2 = estimator.W_, estimator.H_ 
     np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
 
     estimator = SmoothNMF(G=G, lambda_L=100, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, shape_2d=[10,20], hspy_comp = False)
     estimator.fit_transform(X=X)
-    P3, A3 = estimator.P_, estimator.A_ 
+    P3, A3 = estimator.W_, estimator.H_ 
     np.testing.assert_allclose(G @ P3 @ A3,  Xdot, atol=1)
     L = create_laplacian_matrix(10, 20)
 
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A2.T))
     # assert(trace_xtLx(L, A.T) < trace_xtLx(L, A2.T) )
-    assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A.T) )
+    assert(trace_xtLx(L, A3.T) < trace_xtLx(L, H.T) )
 
 def test_surrogate_smooth_nmf():
     L = create_laplacian_matrix(4, 3)
@@ -176,6 +177,18 @@ def test_X_normalize () :
     GP_plus = estim.fit_transform(X_plus)
 
     np.testing.assert_allclose(GP_plus*fac, np.concatenate([GP, GP], axis=0))
+
+def test_normalization_factor () : 
+    X_high = np.random.rand(10,32)
+    fac = np.random.rand()*50
+    X_low = X_high / fac
+
+    nc = 5
+
+    X_high_norm = normalization_factor(X_high,nc) * X_high
+    X_low_norm = normalization_factor(X_low,nc) * X_low
+
+    np.testing.assert_allclose(X_high_norm, X_low_norm)
 
 
 # def test_losses():

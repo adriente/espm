@@ -9,28 +9,16 @@ def test_rescale() :
         # for k small
         W = np.random.rand(27,5)
         H = np.random.rand(5,150)
-        W_r, H_r = u.rescaled_DA(W,H)
+        W_r, H_r = u.rescaled_DH(W,H)
         assert(np.abs(np.mean(H_r.sum(axis=0)) -1) < np.abs(np.mean(H.sum(axis=0)) -1))
         np.testing.assert_array_almost_equal(W@H,W_r@H_r)
 
         # for k large
         W = np.random.rand(50,10)
         H = np.random.rand(10,5)
-        W_r, H_r = u.rescaled_DA(W,H)
+        W_r, H_r = u.rescaled_DH(W,H)
         np.testing.assert_array_almost_equal(W@H,W_r@H_r)
         np.testing.assert_allclose(H_r.sum(axis=0),1, atol=0.2)
-
-def test_normalization_factor () : 
-    X_high = np.random.rand(10,32)
-    fac = np.random.rand()*50
-    X_low = X_high / fac
-
-    nc = 5
-
-    X_high_norm = u.normalization_factor(X_high,nc) * X_high
-    X_low_norm = u.normalization_factor(X_low,nc) * X_low
-
-    np.testing.assert_allclose(X_high_norm, X_low_norm)
 
 def test_number_symbols () : 
     mixed_dict = {"Fe" : 1.0, "Si" : 2.0, 27 : 3.0, "83" : 4.0, 8 : 5.0}

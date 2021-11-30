@@ -25,11 +25,11 @@ class EDS_ESMPY (Signal1D) :
         super().__init__(*args,**kwargs)
         self.shape_2d_ = None
         self.phases_ = None
-        self.weights_ = None
+        self.maps_ = None
         self.X_ = None
         self.Xdot_ = None
         self.phases_2d_ = None
-        self.weights_2d_ = None
+        self.maps_2d_ = None
 
     @property
     def shape_2d (self) : 
@@ -48,17 +48,17 @@ class EDS_ESMPY (Signal1D) :
     def Xdot (self) : 
         if self.Xdot_ is None : 
             try : 
-                self.Xdot_ = self.metadata.Truth.Params.N * self.phases @ np.diag(self.metadata.Truth.Params.densities) @ self.weights
+                self.Xdot_ = self.metadata.Truth.Params.N * self.phases @ np.diag(self.metadata.Truth.Params.densities) @ self.maps
             except AttributeError : 
                 print("This dataset contains no ground truth. Nothing was done.")
         return self.Xdot_
 
 
     @property
-    def weights (self) : 
-        if self.weights_ is None : 
-            self.weights_ = self.build_ground_truth()[1]
-        return self.weights_
+    def maps (self) : 
+        if self.maps_ is None : 
+            self.maps_ = self.build_ground_truth()[1]
+        return self.maps_
 
     @property
     def phases (self) : 
@@ -67,16 +67,10 @@ class EDS_ESMPY (Signal1D) :
         return self.phases_
 
     @property
-    def phases_2d (self) : 
-        if self.phases_2d_ is None : 
-            self.phases_2d_ = self.build_ground_truth(reshape = False)[0]
-        return self.phases_2d_
-
-    @property
-    def weights_2d (self) : 
-        if self.weights_2d_ is None : 
-            self.weights_2d_ = self.build_ground_truth(reshape = False)[1]
-        return self.weights_2d_
+    def maps_2d (self) : 
+        if self.maps_2d_ is None : 
+            self.maps_2d_ = self.build_ground_truth(reshape = False)[1]
+        return self.maps_2d_
 
     def build_ground_truth(self,reshape = True) : 
         mod_pars = get_metadata(self)
@@ -125,7 +119,7 @@ class EDS_ESMPY (Signal1D) :
         self.metadata.xray_db = xray_db
 
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.take_off_angle = take_off_angle(tilt_stage,azimuth_angle,elevation_angle)
-    
+
     @number_to_symbol_list
     def add_elements(self, *, elements = []) :
         try : 

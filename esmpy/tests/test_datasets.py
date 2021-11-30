@@ -3,11 +3,11 @@ import numpy as np
 from esmpy.datasets.base import generate_dataset, generate_spim, save_generated_spim
 from esmpy.models import EDXS
 from esmpy.datasets.generate_weights import generate_weights, random_weights, laplacian_weights, spheres_weights, gaussian_ripple_weights
-from esmpy.datasets.generate_EDXS_phases import generate_brem_params, generate_random_phases, DEFAULT_ELTS, unique_elts
+from esmpy.datasets.generate_EDXS_phases import generate_brem_params, generate_random_phases, unique_elts
 import os
 import hyperspy.api as hs
 import shutil
-from esmpy.conf import DATASETS_PATH
+from esmpy.conf import DATASETS_PATH, DEFAULT_SYNTHETIC_DATA_DICT
 from pathlib import Path
 from hyperspy.misc.eds.utils import take_off_angle
 
@@ -82,15 +82,15 @@ def test_generate():
     phases = model.phases
     G = model.G
     n_phases = len(DATA_DICT["phases_parameters"])
-    weights = generate_weights(weight_type=DATA_DICT["weight_type"], shape_2D= DATA_DICT["shape_2d"], n_phases=n_phases, seed=DATA_DICT["seed"], **DATA_DICT["weights_params"])
+    maps = generate_weights(weight_type=DATA_DICT["weight_type"], shape_2D= DATA_DICT["shape_2d"], n_phases=n_phases, seed=DATA_DICT["seed"], **DATA_DICT["weights_params"])
     densities = np.array([1.3, 1.6, 1.9])
-    spim = generate_spim(phases, weights, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = False)
-    cont_spim = generate_spim(phases, weights, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = True)
-    Xdot = DATA_DICT["N"]* weights @ np.diag(densities)@ phases
+    spim = generate_spim(phases, maps, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = False)
+    cont_spim = generate_spim(phases, maps, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = True)
+    Xdot = DATA_DICT["N"]* maps @ np.diag(densities)@ phases
     W = np.abs(np.linalg.lstsq(G,spim.sum(axis = (0,1)),rcond = None)[0])
     
     assert phases.shape == (3, 1900)
-    assert weights.shape == (100,120,3)
+    assert maps.shape == (100,120,3)
     assert spim.shape == (100,120,1900)
     np.testing.assert_allclose(np.sum(phases, axis=1), np.ones([3]))
     np.testing.assert_allclose( Xdot, cont_spim)
@@ -99,18 +99,18 @@ def test_generate():
     filename = "test.hspy"
     save_generated_spim(filename, spim, DATA_DICT["model_parameters"], DATA_DICT["phases_parameters"], MISC_DICT)
     si = hs.load(filename)
-    si.set_signal_type("EDXSsnmfem")
+    si.set_signal_type("EDS_ESMPY")
     G = si.build_G(problem_type = "bremsstrahlung")
     G = G()
-    phases, weights = si.phases_2d, si.weights_2d
+    phases, maps = si.phases, si.maps_2d
     # weights = weights.reshape((100,120,n_phases))
     X = si.data
     W = np.linalg.lstsq(G,X.sum(axis = (0,1)),rcond = None)[0]
     
-    assert phases.shape == (3, 1900)
-    assert weights.shape == (100,120,3)
+    assert phases.shape == (1900, 3)
+    assert maps.shape == (100,120,3)
     assert si.data.shape == (100,120,1900)
-    np.testing.assert_allclose( Xdot, weights @ phases)
+    np.testing.assert_allclose( Xdot, maps @ phases.T)
     np.testing.assert_allclose( Xdot.sum(axis=(0,1)), G@W, rtol = 0.2 )
 
     os.remove(filename)
@@ -173,7 +173,7 @@ def test_gen_EDXS () :
 
     phases, dicts = generate_random_phases(n_phases=3,seed = 42)
     np.testing.assert_array_less(-1e-30, phases)
-    model = EDXS(**DEFAULT_ELTS)
+    model = EDXS(**DEFAULT_SYNTHETIC_DATA_DICT["model_parameters"])
     model.generate_phases(dicts)
     np.testing.assert_almost_equal(model.phases,phases)
 
@@ -186,7 +186,7 @@ def test_spim () :
     gen_folder = DATASETS_PATH / Path(DATA_DICT["data_folder"])
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
 
-    assert gen_si.metadata.Signal.signal_type == "EDXSsnmfem"
+    assert gen_si.metadata.Signal.signal_type == "EDS_ESMPY"
 
     mod_pars = get_metadata(gen_si)
     mod_pars["params_dict"]["Abs"]["atomic_fraction"] = False
@@ -237,16 +237,6 @@ def test_spim () :
     assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.width_intercept == 65.0
 
     shutil.rmtree(str(gen_folder))
-
-def test_generate_toy () : 
-    c_DATA_DICT = DATA_DICT.copy()
-    c_DATA_DICT["model"] = "Toy"
-    c_DATA_DICT["params_dict"] = {"k" : 4, "c" : 25}
-
-    generate_dataset(seeds_range=1,**c_DATA_DICT)
-    gen_folder = DATASETS_PATH / Path(c_DATA_DICT["data_folder"])
-
-    shutil.rmtree(gen_folder)
 
 
 
