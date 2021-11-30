@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='esmpy',
-    version='0.0.1',
+    version='0.1.1',
     description='Electron Spectro-Microscopy Python Library',
     url='https://github.com/adriente/SNMF_EDXS',
     author='Adrien Teurtie, Nathanael Perraudin',

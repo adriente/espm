@@ -1,8 +1,8 @@
 import numpy as np
 
-from snmfem.updates import dichotomy_simplex, multiplicative_step_p, multiplicative_step_a, update_q, dichotomy_simplex_aq, multiplicative_step_aq
-from snmfem.measures import KLdiv_loss, log_reg, Frobenius_loss
-from snmfem.conf import log_shift, dicotomy_tol
+from esmpy.updates import dichotomy_simplex, multiplicative_step_w, multiplicative_step_h, update_q, dichotomy_simplex_acc, multiplicative_step_hq
+from esmpy.measures import KLdiv_loss, log_reg, Frobenius_loss
+from esmpy.conf import log_shift, dicotomy_tol
 
 
 def make_step_a(x_matr, g_matr, p_matr , a_matr, mu_sparse=0, eps=log_shift, eps_sparse=1, mask=None):
@@ -291,7 +291,7 @@ def test_dicotom_aq2():
         sol = dichotomy_simplex_aq(a, b, minus_c, tol, maxit=maxit )
         np.testing.assert_allclose(func_abc(sol, a, b, minus_c), np.zeros([p]), atol=tol)
 
-def test_multiplicative_step_p():
+def test_multiplicative_step_w():
     l = 26
     k = 5
     p = 100
@@ -306,15 +306,15 @@ def test_multiplicative_step_p():
 
     X = GP @ A
 
-    Pp = multiplicative_step_p(X, G, P, A, eps=0)
+    Pp = multiplicative_step_w(X, G, P, A, eps=0)
     np.testing.assert_array_almost_equal(Pp, P)
 
-    Pp = multiplicative_step_p(X, G, P, A, eps=0, l2=True)
+    Pp = multiplicative_step_w(X, G, P, A, eps=0, l2=True)
     np.testing.assert_array_almost_equal(Pp, P)
 
     for _ in range(10):
         P = np.random.rand(c,k)
-        Pp = multiplicative_step_p(X, G, P, A)
+        Pp = multiplicative_step_w(X, G, P, A)
         Pp2 = make_step_p(X, G, P, A)
         np.testing.assert_array_almost_equal(Pp, Pp2)
         GP = G @ P
@@ -327,7 +327,7 @@ def test_multiplicative_step_p():
 
     for _ in range(10):
         P = np.random.rand(c,k)
-        Pp = multiplicative_step_p(X, G, P, A, l2=True)
+        Pp = multiplicative_step_w(X, G, P, A, l2=True)
         GP = G @ P
         GPp = G @ Pp
         val1 = Frobenius_loss(X, GP, A)
@@ -336,7 +336,7 @@ def test_multiplicative_step_p():
         assert(val1 > val2)
 
 
-def test_multiplicative_step_a():
+def test_multiplicative_step_h():
     l = 26
     k = 5
     p = 100
@@ -352,31 +352,31 @@ def test_multiplicative_step_a():
     X = GP @ A
     np.testing.assert_allclose(np.sum(A, axis=0), np.ones([A.shape[1]]), atol=dicotomy_tol)
 
-    Ap = multiplicative_step_a(X, G, P, A, force_simplex=False, mu=0, eps=0, epsilon_reg=1, safe=True)
+    Ap = multiplicative_step_h(X, G, P, A, force_simplex=False, mu=0, eps=0, epsilon_reg=1, safe=True)
     np.testing.assert_array_almost_equal(A, Ap)
     np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
 
-    Ap = multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=0, epsilon_reg=1, safe=True)
+    Ap = multiplicative_step_h(X, G, P, A, force_simplex=True, mu=0, eps=0, epsilon_reg=1, safe=True)
     np.testing.assert_allclose(A, Ap, atol=dicotomy_tol)        
 
     # Same test for l2
-    Ap = multiplicative_step_a(X, G, P, A, force_simplex=False, mu=0, eps=0, epsilon_reg=1, safe=True, l2=True)
+    Ap = multiplicative_step_h(X, G, P, A, force_simplex=False, mu=0, eps=0, epsilon_reg=1, safe=True, l2=True)
     np.testing.assert_array_almost_equal(A, Ap)
     np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
 
-    Ap = multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=0, epsilon_reg=1, safe=True, l2=True)
+    Ap = multiplicative_step_h(X, G, P, A, force_simplex=True, mu=0, eps=0, epsilon_reg=1, safe=True, l2=True)
     np.testing.assert_allclose(A, Ap, atol=dicotomy_tol)       
 
     for _ in range(10):
         A = np.random.rand(k,p)
         A = A/np.sum(A, axis=1, keepdims=True)
-        Ap =  multiplicative_step_a(X, G, P, A, force_simplex=False, mu=0, eps=0, epsilon_reg=1, safe=True)
+        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=False, mu=0, eps=0, epsilon_reg=1, safe=True)
         val1 = KLdiv_loss(X, GP, A)
         val2 = KLdiv_loss(X, GP, Ap)
         np.testing.assert_array_less(0, Ap)
         assert(val1 > val2)
 
-        Ap =  multiplicative_step_a(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True)
+        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True)
         Ap2 =  make_step_a(X, G, P, A, mu_sparse=0, eps=log_shift, eps_sparse=1, mask=None)
         np.testing.assert_array_almost_equal(Ap2, Ap)
         np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
@@ -389,13 +389,13 @@ def test_multiplicative_step_a():
         epsilon_reg = 1
         mu = np.ones(k)
         mu[0] = 0
-        Ap =  multiplicative_step_a(X, G, P, A, force_simplex=True, mu=mu, eps=log_shift, epsilon_reg=epsilon_reg, safe=True)
+        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=mu, eps=log_shift, epsilon_reg=epsilon_reg, safe=True)
         Ap2 =  make_step_a(X, G, P, A, mu_sparse=1, eps=log_shift, eps_sparse=epsilon_reg, mask=None)
         np.testing.assert_array_almost_equal(Ap2, Ap)
         np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
 
 
-        Ap =  multiplicative_step_a(X, G, P, A, force_simplex=True, mu=3*mu, eps=log_shift, epsilon_reg=epsilon_reg, safe=True)
+        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=3*mu, eps=log_shift, epsilon_reg=epsilon_reg, safe=True)
         Ap2 =  make_step_a(X, G, P, A, mu_sparse=3, eps=log_shift, eps_sparse=epsilon_reg, mask=None)
         np.testing.assert_array_almost_equal(Ap2, Ap)
         np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)

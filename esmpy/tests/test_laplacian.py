@@ -1,5 +1,5 @@
 import numpy as np
-from snmfem.laplacian import create_laplacian_matrix, sigmaL
+from esmpy.laplacian import create_laplacian_matrix, sigmaL
 from scipy.sparse.linalg import eigs
 
 def my_laplacian_op(image):

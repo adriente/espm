@@ -1,10 +1,10 @@
-import snmfem.experiments as exps
+import experiments as exps
 from pathlib import Path
-from snmfem.conf import DATASETS_PATH
-from snmfem.datasets import generate_dataset, spim
+from esmpy.conf import DATASETS_PATH
+from esmpy.datasets import generate_dataset, spim
 import shutil
-from snmfem import estimators
-from snmfem import datasets
+from esmpy import estimators
+from esmpy import datasets
 import numpy as np
 
 DATA_DICT = {

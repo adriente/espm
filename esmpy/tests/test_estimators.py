@@ -1,13 +1,13 @@
 from sklearn.utils.estimator_checks import check_estimator
-from snmfem.estimators.smooth_nmf import diff_surrogate, smooth_l2_surrogate
-from snmfem.estimators import NMF, SmoothNMF
+from esmpy.estimators.smooth_nmf import diff_surrogate, smooth_l2_surrogate
+from esmpy.estimators import NMF, SmoothNMF
 import numpy as np
-from snmfem.models import EDXS
-from snmfem.datasets.generate_weights import generate_weights
-from snmfem.datasets.base import generate_spim
-from snmfem.measures import trace_xtLx
-from snmfem.laplacian import create_laplacian_matrix
-from snmfem.models.edxs import G_EDXS
+from esmpy.models import EDXS
+from esmpy.datasets.generate_weights import generate_weights
+from esmpy.datasets.base import generate_spim
+from esmpy.measures import trace_xtLx
+from esmpy.laplacian import create_laplacian_matrix
+from esmpy.models.edxs import G_EDXS
 import hyperspy.api as hs
 
 def generate_one_sample():

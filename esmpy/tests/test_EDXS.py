@@ -1,9 +1,9 @@
-from snmfem.models.absorption_edxs import det_efficiency, absorption_correction
-from snmfem.datasets.generate_EDXS_phases import generate_elts_dict
+from esmpy.models.absorption_edxs import det_efficiency, absorption_correction
+from esmpy.datasets.generate_EDXS_phases import generate_elts_dict
 import numpy as np
-import snmfem.models.EDXS_function as ef
-from snmfem.models import EDXS
-from snmfem.models.EDXS_function import lifshin_bremsstrahlung, lifshin_bremsstrahlung_b0, lifshin_bremsstrahlung_b1
+import esmpy.models.EDXS_function as ef
+from esmpy.models import EDXS
+from esmpy.models.EDXS_function import lifshin_bremsstrahlung, lifshin_bremsstrahlung_b0, lifshin_bremsstrahlung_b1
 
 x = np.linspace(0.2,19,num = 2000)
 det_dict = {

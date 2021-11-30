@@ -3,7 +3,7 @@ import numpy as np
 from esmpy.datasets.base import generate_dataset, generate_spim, save_generated_spim
 from esmpy.models import EDXS
 from esmpy.datasets.generate_weights import generate_weights, random_weights, laplacian_weights, spheres_weights, gaussian_ripple_weights
-from esmpy.datasets.generate_EDXS_phases import generate_brem_params, generate_random_phases, DEFAULT_PARAMS, unique_elts
+from esmpy.datasets.generate_EDXS_phases import generate_brem_params, generate_random_phases, DEFAULT_ELTS, unique_elts
 import os
 import hyperspy.api as hs
 import shutil
@@ -173,7 +173,7 @@ def test_gen_EDXS () :
 
     phases, dicts = generate_random_phases(n_phases=3,seed = 42)
     np.testing.assert_array_less(-1e-30, phases)
-    model = EDXS(**DEFAULT_PARAMS)
+    model = EDXS(**DEFAULT_ELTS)
     model.generate_phases(dicts)
     np.testing.assert_almost_equal(model.phases,phases)
 

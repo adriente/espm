@@ -1,9 +1,9 @@
 import numpy as np
 from numpy.lib.function_base import kaiser
-from snmfem.measures import mse, spectral_angle, KLdiv_loss, KLdiv, square_distance, find_min_MSE, find_min_angle, trace_xtLx, Frobenius_loss, ordered_angles, ordered_mse
+from esmpy.measures import mse, spectral_angle, KLdiv_loss, KLdiv, square_distance, find_min_MSE, find_min_angle, trace_xtLx, Frobenius_loss, ordered_angles, ordered_mse
 import pytest
-from snmfem.conf import log_shift
-from snmfem.laplacian import create_laplacian_matrix
+from esmpy.conf import log_shift
+from esmpy.laplacian import create_laplacian_matrix
 
 def base_loss(x_matr, d_matr, a_matr, eps=log_shift):
     """
