@@ -5,6 +5,35 @@
 \save_transient_properties true
 \origin unavailable
 \textclass article
+\begin_preamble
+\usepackage{xcolor}
+\usepackage{bm}
+
+\definecolor{green3}{rgb}{0,0.6,0}
+\definecolor{orange}{rgb}{0.7,0.4,0.1}
+\definecolor{indigo}{rgb}{0.3,0.0,0.5}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator{\Pois}{Pois}
+\DeclareMathOperator{\Likelihood}{Likelihood}
+\DeclareMathOperator{\LogLikelihood}{LL}
+
+\newcommand{\Rbb}[0]{\mathbb{R}}
+\newcommand{\Mat}[1]{\bm{#1}}
+\newcommand{\MH}[0]{\Mat{H}}
+\newcommand{\MW}[0]{\Mat{W}}
+\newcommand{\MG}[0]{\Mat{G}}
+\newcommand{\MD}[0]{\Mat{D}}
+\newcommand{\MY}[0]{\Mat{Y}}
+
+
+\newcommand{\GO}[1]{\textcolor{green3}{Guillaume: \textit{#1}}}
+\title{MLATEM notes}
+\newcommand{\AT}[1]{\textcolor{indigo}{Adrien: \textit{#1}}}
+\newcommand{\nati}[1]{\textcolor{orange}{Nati: \textit{#1}}}
+\newcommand{\todo}[1]{\textcolor{red}{{#1}}}
+\end_preamble
 \use_default_options true
 \maintain_unincluded_children false
 \language english
@@ -29,6 +58,7 @@
 \bibtex_command default
 \index_command default
 \paperfontsize default
+\spacing single
 \use_hyperref false
 \papersize default
 \use_geometry false
@@ -44,6 +74,7 @@
 \use_package undertilde 1
 \cite_engine basic
 \cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
@@ -804,22 +835,18 @@ We create an auxiliary function
 
 \begin_layout Enumerate
 For 
-\begin_inset Formula ${\color{magenta}\mathcal{L}(A,P)}$
+\begin_inset Formula ${\color{magenta}F(\MW,\MH)}$
 \end_inset
 
 , we set 
-\begin_inset Formula $w_{i}^{t,\ell,k}=\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}}$
-\end_inset
-
- and 
-\begin_inset Formula $D_{\ell,i}^{\prime}A_{i,p}=Z_{i}^{\ell,p}$
+\begin_inset Formula $u_{\ell,k,p}^{t}=\frac{\MD_{\ell,k}\MH_{k,p}^{t}}{\sum_{i}\MD_{\ell,i}\MH_{i,p}^{t}}$
 \end_inset
 
  and obtain
 \begin_inset Formula 
 \begin{align*}
-{\color{magenta}\mathcal{L}(A,P)} & \leq\sum_{\ell,p}\left[X_{\ell,p}\sum_{i}w_{i}^{t,\ell,k}\log\left(\frac{w_{i}^{t,\ell,k}}{Z_{i}^{\ell,p}}\right)+\sum_{i}Z_{i}^{\ell,p}\right]\\
- & =\sum_{\ell,p}\left[-\sum_{i}X_{\ell,p}\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}}\left(\log\left(D_{\ell,i}^{\prime}A_{i,p}\right)-\log\left(\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}}\right)\right)+\sum_{i}D_{\ell,i}^{\prime}A_{i,p}\right]
+{\color{magenta}{\color{magenta}F(\MW,\MH)}} & \leq\sum_{\ell,p}\left[\MY_{\ell,p}\sum_{k}u_{\ell,k,p}^{t}\log\left(\frac{u_{\ell,k,p}^{t}}{\MD_{\ell,k}\MH_{k,p}}\right)+\sum_{k}\MD_{\ell,k}\MH_{k,p}^{t}\right]\\
+ & =\sum_{\ell,p}\left[-\sum_{k}\MY_{\ell,p}\frac{\MD_{\ell,k}\MH_{k,p}^{t}}{\sum_{i}\MD_{\ell,i}\MH_{i,p}^{t}}\left(\log\left(\MD_{\ell,k}\MH_{k,p}\right)-\log\left(\frac{\MD_{\ell,k}\MH_{k,p}^{t}}{\sum_{i}\MD_{\ell,i}\MH_{i,p}^{t}}\right)\right)+\sum_{k}\MD_{\ell,k}\MH_{k,p}^{t}\right]\\
 \end{align*}
 
 \end_inset
@@ -827,7 +854,7 @@ For
 This comes from the fact that
 \begin_inset Formula 
 \[
--\sum_{\ell,p}X_{\ell,p}\log\left(\sum_{i}Z_{i}^{\ell,p}\right)\leq-\sum_{\ell,p}X_{\ell,p}\sum_{i}w_{\ell ip}^{t}\log\left(\frac{Z_{i}^{\ell,p}}{w_{\ell ip}^{t}}\right)
+-\MY_{\ell,p}\log\left(\sum_{k}\MD_{\ell,k}\MH_{k,p}^{t}\right)\leq-\MY_{\ell,p}\sum_{k}u_{\ell,k,p}^{t}\log\left(\frac{\MD_{\ell,k}\MH_{k,p}^{t}}{u_{\ell,k,p}^{t}}\right)
 \]
 
 \end_inset
@@ -863,7 +890,7 @@ For
  we use the key computation presented bellow
 \begin_inset Formula 
 \begin{align*}
-{\color{blue}R_{2}(A)} & =\frac{\lambda}{2}\text{tr}\left(A^{T}\Delta A\right)\\
+{\color{blue}R_{2}(A)} & =\frac{\lambda}{2}\text{tr}\left(\MH^{T}\Delta A\right)\\
  & =\frac{\lambda}{2}\sum_{k}A_{k}^{T}\Delta A_{k}\\
  & \leq\frac{\lambda}{2}\sum_{k}A_{k}^{t}{}^{T}\Delta A_{k}^{t}+2\left(A_{k}-A_{k}^{t}\right)^{T}\Delta A_{k}^{t}+2\lambda\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)\sum_{p,k}\left(A_{k,p}^{t}\log\left(\frac{A_{k,p}^{t}}{A_{k,p}}\right)-A_{k,p}^{t}+A_{k,p}\right)
 \end{align*}
@@ -1728,7 +1755,7 @@ The Lagrangian is given by
 \end_layout
 
 \begin_layout Standard
-A direct optimization with respec of 
+A direct optimization with respect of 
 \begin_inset Formula $A$
 \end_inset
 

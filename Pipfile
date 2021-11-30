@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 cython = "*"
-esmpy = {editable = true, path = ".[dev]"}
+esmpy = {editable = true, path = ".[testing]"}
 
 [dev-packages]
 jupyterlab = "*"

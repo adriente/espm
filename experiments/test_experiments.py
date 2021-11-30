@@ -99,7 +99,7 @@ def test_quick_load () :
     assert isinstance(estimator1,estimators.NMF)
     assert estimator1.shape_2d == (30,40)
     assert estimator1.max_iter == 1000
-    assert isinstance(spim1, datasets.EDXSsnmfem)
+    assert isinstance(spim1, datasets.EDS_ESMPY)
     assert spim1.data.shape == (30,40,1000)
     assert estimator1.true_A.shape == (4,30*40)
     assert estimator1.true_D.shape == (1000,4)

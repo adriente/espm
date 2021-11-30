@@ -76,7 +76,7 @@ def save_generated_spim(filename, spim, model_params, phases_params, misc_params
 
     s.save(filename)
 
-def generate_dataset(base_path=DATASETS_PATH,seeds_range = 10, **kwargs):
+def generate_dataset(base_path=DATASETS_PATH, seeds_range = 10, **kwargs):
     
     # Handle paramters
 
