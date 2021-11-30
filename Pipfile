@@ -5,22 +5,14 @@ name = "pypi"
 
 [packages]
 cython = "*"
-esmpy = {editable = true, path = "."}
-torch = "*"
-argparse = "*"
-pypstools = "*"
-memory-profiler = "*"
-lmfit = "*"
-hyperspy = "*"
+esmpy = {editable = true, path = ".[dev]"}
 
 [dev-packages]
-jupyter = "*"
-notebook = "*"
+jupyterlab = "*"
 isort = "*"
 jedi = "*"
 black = "==20.8b1"
 yapf = "*"
-ipykernel = "*"
 pylint = "*"
 line-profiler = "*"
 memory-profiler = "*"

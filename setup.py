@@ -32,7 +32,7 @@ setuptools.setup(
         'Topic :: Scientific/Engineering'
     ],
     install_requires=[
-        'hyperspy', 'tqdm', 'lmfit'
+        'hyperspy', 'tqdm', 'lmfit', 'scikit-learn'
     ],
     python_requires='>=3.6',
 )
