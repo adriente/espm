@@ -58,7 +58,7 @@ class SmoothNMF(NMF):
                 self.gamma.append(self.sigmaL_ )
         else:
             H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H_inds=self.fixed_H_inds)
-            W = multiplicative_step_w(X, G, W, H)(self.X_, self.G_, W, H, eps=self.log_shift, safe=self.debug, l2=self.l2,fixed_W=self.fixed_W)
+            W = multiplicative_step_w(self.X_, self.G_, W, H, eps=self.log_shift, safe=self.debug, l2=self.l2,fixed_W=self.fixed_W)
 
         if callable(self.G) : 
             self.G_ = self.G(part_W = W[:-2,:],G = self.G_)
