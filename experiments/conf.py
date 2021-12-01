@@ -19,7 +19,7 @@ POS_ARGS = {
 EVAL_ARGS = {
     "output_file" : ["-of","--output_file",{"default" : "dump.npz", "help" : "str : Name of the npz file where the data are stored"}],
     "simulated" : ["-sim", "--simulated", {"action" : "store_true", "help" : "None : Activate to use the ground truth stored in the spim object. It will produce errors if no ground truth is available."}],
-    "fixed_P_json" : ["-fpjs","--fixed_P_json",{"default" : "None", "help" : "str : Name of the json file containing the dictionnary to build fixed_P"}]
+    "fixed_W_json" : ["-fwjs","--fixed_W_json",{"default" : "None", "help" : "str : Name of the json file containing the dictionnary to build fixed_W"}]
 }
 
 ESTIMATOR_ARGS = {

@@ -106,7 +106,7 @@ def quick_load(experiment,sim = True, W_dict = None) :
     if W_dict is None : 
         W = None
     else : 
-        W = spim.set_fixed_P(W_dict)
+        W = spim.set_fixed_W(W_dict)
     estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_H = H, **experiment["params"],fixed_W = W,hspy_comp = True)
     return spim, estimator
 
@@ -124,7 +124,7 @@ def run_several_experiments(experiment,n_samples = 10, W_dict = None) :
         if W_dict is None : 
             W = None
         else : 
-            W = spim.set_fixed_P(W_dict)
+            W = spim.set_fixed_W(W_dict)
         estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_H = H, **experiment["params"],fixed_W = W,hspy_comp = True)
         
         # Decomposition

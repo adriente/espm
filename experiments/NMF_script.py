@@ -1,8 +1,8 @@
 import hyperspy.api as hs
 import numpy as np
 from pathlib import Path
-from snmfem.utils import rescaled_DA
-from snmfem.experiments import compute_metrics, results_string
+from esmpy.utils import rescaled_DH
+from experiments import compute_metrics, results_string
 import numpy.lib.recfunctions as rfn
 import sys
 
@@ -29,8 +29,8 @@ def metrics_statistics (k,metrics_summary,n_samples) :
 
 def run_batch (k,true_filename, folder, init, output, random_state) : 
     true_spim = hs.load(true_filename)
-    true_spectra = true_spim.phases_2d
-    true_maps = true_spim.weights
+    true_spectra = true_spim.phases.T
+    true_maps = true_spim.maps
     shape_2d = true_spim.shape_2d
 
     n_samples = 3
@@ -45,7 +45,7 @@ def run_batch (k,true_filename, folder, init, output, random_state) :
         spim.decomposition(True,algorithm = "NMF", max_iter = 50000, tol = 1e-9, solver = "mu", beta_loss = "kullback-leibler", output_dimension = k,print_info= True, init = init, random_state = random_state)
         factors = spim.get_decomposition_factors().data.T
         loadings = spim.get_decomposition_loadings().data.reshape((k,shape_2d[0]*shape_2d[1]))
-        r_factors, r_loadings = rescaled_DA(factors,loadings)
+        r_factors, r_loadings = rescaled_DH(factors,loadings)
         metrics_list.append(compute_metrics(true_spectra,true_maps,r_factors,r_loadings))
 
     summary = metrics_statistics(k,metrics_list,n_samples)

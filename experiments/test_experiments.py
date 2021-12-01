@@ -68,8 +68,8 @@ DATA_DICT = {
 folder = DATASETS_PATH / Path(DATA_DICT["data_folder"])
 
 def test_experiment_parser () : 
-    inputs = ["file.hspy", "NMF", "bremsstrahlung", "3", "-mi" , '100', "--verbose", "--tol", '200', "-fpjs", "/path/to/json"]
-    result_dicts = {'input_file': 'file.hspy', 'method': 'NMF', 'g_type': 'bremsstrahlung', 'k': 3}, {'max_iter': 100, 'verbose': False, 'init': 'nndsvdar', 'tol': 200, 'mu': 0.0, 'force_simplex': True, 'lambda_L': 0.0, 'l2': False, "accelerate" : False, "linesearch" : False, "normalize" : False, "random_state" : 42, "epsilon_reg" : 1.0}, {'output_file': 'dump.npz', "simulated" : False, "fixed_P_json" : "/path/to/json"}
+    inputs = ["file.hspy", "NMF", "bremsstrahlung", "3", "-mi" , '100', "--verbose", "--tol", '200', "-fwjs", "/path/to/json"]
+    result_dicts = {'input_file': 'file.hspy', 'method': 'NMF', 'g_type': 'bremsstrahlung', 'k': 3}, {'max_iter': 100, 'verbose': False, 'init': 'nndsvdar', 'tol': 200, 'mu': 0.0, 'force_simplex': True, 'lambda_L': 0.0, 'l2': False, "accelerate" : False, "linesearch" : False, "normalize" : False, "random_state" : 42, "epsilon_reg" : 1.0}, {'output_file': 'dump.npz', "simulated" : False, "fixed_W_json" : "/path/to/json"}
 
     assert exps.experiment_parser(inputs) == result_dicts
 

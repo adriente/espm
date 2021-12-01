@@ -1,14 +1,14 @@
 import hyperspy.api as hs
 import numpy as np
-from snmfem.conf import RESULTS_PATH, DATASETS_PATH
+from conf import RESULTS_PATH, DATASETS_PATH
 from pathlib import Path
 import sys
+from mcrllm_wrapper import MCRLLM
 
 def experiment (input_file, output_file) : 
     dataset_path = DATASETS_PATH / Path(input_file)
     true_spim = hs.load(str(dataset_path))
 
-    from snmfem.estimators.mcrllm_wrapper import MCRLLM
 
     estimator = MCRLLM(n_components=3, init="Kmeans", tol = 1e-9, max_iter=50000,hspy_comp=True)
 
