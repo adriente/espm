@@ -5,7 +5,7 @@ import hyperspy.misc.eds.ffast_mac as macs
 BASE_PATH = Path(__file__).parent
 
 # Path of the db
-DB_PATH = BASE_PATH / Path("data/")
+DB_PATH = BASE_PATH / Path("tables/")
 
 NUMBER_PERIODIC_TABLE = DB_PATH / Path("periodic_table_number.json")
 
