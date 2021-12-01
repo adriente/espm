@@ -6,21 +6,10 @@ from esmpy.datasets.generate_weights import generate_weights
 from hyperspy.misc.eds.utils import take_off_angle
 from esmpy.utils import number_to_symbol_list
 import numpy as np
-# import hyperspy.extensions as e
 
-# # Temporary fix
-
-# e.ALL_EXTENSIONS["signals"]["EDXSesmpy"] = {'signal_type': 'EDXSesmpy',
-#    'signal_dimension': 1,
-#    'dtype': 'real',
-#    'lazy': False,
-#    'module': 'snmfem.datasets.spim'}
 
 class EDS_ESMPY (Signal1D) : 
-        # self.shape_2d = self.axes_manager[0].size, self.axes_manager[1].size
-        # self.model_parameters, self.g_parameters = self.get_metadata()
-        # self.phases_parameters, self.misc_parameters = self.get_truth()
-        # self.phases, self.weights = self.build_truth()
+
     def __init__ (self,*args,**kwargs) : 
         super().__init__(*args,**kwargs)
         self.shape_2d_ = None
@@ -98,10 +87,10 @@ class EDS_ESMPY (Signal1D) :
         
         return self.G
 
-    def update_G(self, part_P=None, G=None):
+    def update_G(self, part_W=None, G=None):
         model_params = get_metadata(self)
         g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "norm" : self.norm}
-        G = G_EDXS(model_params, g_params, part_P=part_P, G=G)
+        G = G_EDXS(model_params, g_params, part_W=part_W, G=G)
         return G
 
     def set_analysis_parameters (self,beam_energy = 200, azimuth_angle = 0.0, elevation_angle = 22.0, tilt_stage = 0.0, elements = [], thickness = 200e-7, density = 3.5, detector_type = "SDD_efficiency.txt", width_slope = 0.01, width_intercept = 0.065, xray_db = "default_xrays.json") :

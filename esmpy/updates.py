@@ -336,7 +336,7 @@ def multiplicative_step_hq(X, G, W, H, force_simplex=True, eps=log_shift, safe=T
         b = b + lambda_L * H @ L - lambda_L * sigmaL  * H 
         a = lambda_L * sigmaL
         if force_simplex:
-            nu = dichotomy_simplex_aq(a, b, minus_c)
+            nu = dichotomy_simplex_acc(a, b, minus_c)
             b = b + nu
         return (-b + np.sqrt(b**2 + 4* a *minus_c)) / (2*a)
     else: # We recover the classic case: multiplicative_step_a

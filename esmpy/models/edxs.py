@@ -34,9 +34,7 @@ class EDXS(PhysicalModel):
         
         self.lines = self.db_mdata["lines"]
 
-        # e_offset=0.20805000000000007,
-        # e_size=1980,
-        # e_scale=0.01,
+
     @symbol_to_number_list
     def generate_g_matr(self, g_type="bremsstrahlung", norm = True,*,elements=[], **kwargs):
         """
@@ -153,14 +151,14 @@ class EDXS(PhysicalModel):
         
         return temp
 
-def G_EDXS (model_params, g_params, part_P = None, G = None) : 
+def G_EDXS (model_params, g_params, part_W = None, G = None) : 
     if G is None : 
         model = EDXS(**model_params)
         model.generate_g_matr(**g_params)
         G = model.G
 
-    if part_P is None : 
+    if part_W is None : 
         return G
     else : 
-        new_G = update_bremsstrahlung(G,part_P,model_params,g_params["elements"])
+        new_G = update_bremsstrahlung(G,part_W,model_params,g_params["elements"])
         return new_G

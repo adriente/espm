@@ -105,8 +105,8 @@ def G_bremsstrahlung(x,E0,params_dict,*,elements_dict = {}):
     return B
 
 @number_to_symbol_list    
-def elts_dict_from_P (part_P,*,elements = []) : 
-    norm_P = np.mean(part_P / part_P.sum(axis = 0),axis=1)
+def elts_dict_from_W (part_W,*,elements = []) : 
+    norm_P = np.mean(part_W / part_W.sum(axis = 0),axis=1)
     elements_dict = {}
     with open(SYMBOLS_PERIODIC_TABLE,"r") as f : 
         SPT = json.load(f)["table"]
@@ -116,20 +116,20 @@ def elts_dict_from_P (part_P,*,elements = []) :
     return {key:elements_dict[key]/factor for key in elements_dict}
 
 @number_to_symbol_list
-def print_concentrations_from_P (part_P, *, elements = []) : 
-    norm_P = part_P / part_P.sum(axis = 0)
+def print_concentrations_from_W (part_W, *, elements = []) : 
+    norm_W = part_W / part_W.sum(axis = 0)
     print("Concentrations report")
     title_string = ""
 
-    for i in range(norm_P.shape[1]) : 
+    for i in range(norm_W.shape[1]) : 
         title_string += "{:>7}".format("p" + str(i))
     print(title_string)
     
-    for j in range(norm_P.shape[0]) : 
+    for j in range(norm_W.shape[0]) : 
         main_string = ""
         main_string += "{:2}".format(elements[j]) + " : "
-        for i in range(norm_P.shape[1]) :
-            main_string += "{:05.4f} ".format(norm_P[j,i])
+        for i in range(norm_W.shape[1]) :
+            main_string += "{:05.4f} ".format(norm_W[j,i])
         print(main_string)
 
 
@@ -140,8 +140,8 @@ def elts_dict_from_dict_list (dict_list) :
         unique_elts_dict[e] /= sum_elts
     return unique_elts_dict
 
-def update_bremsstrahlung (G,part_P,model_parameters,elements_list, norm = True) : 
-    elts = elts_dict_from_P(part_P,elements = elements_list)
+def update_bremsstrahlung (G,part_W,model_parameters,elements_list, norm = True) : 
+    elts = elts_dict_from_W(part_W,elements = elements_list)
     model = e.EDXS(**model_parameters)
     B = G_bremsstrahlung(model.x,model.E0,model.params_dict,elements_dict=elts)
     new_G = G.copy()

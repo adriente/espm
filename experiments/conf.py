@@ -1,3 +1,6 @@
+from pathlib import Path
+
+BASE_PATH = Path(__file__).parent
 
 RESULTS_PATH = BASE_PATH.parent / Path("results")
 # Ensure that the folder DATASETS_PATH exists

@@ -1,7 +1,7 @@
 from esmpy import estimators 
 from  esmpy import  measures
 import numpy as np
-import esmpy.conf as conf
+import conf
 import esmpy.utils as u
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
@@ -71,28 +71,28 @@ def fill_exp_dict(input_dict) :
 # Loading data and running the algorithm #
 ##########################################
 
-def compute_metrics(true_spectra, true_maps, GP, A, u = True):
-    angle, ind1 = measures.find_min_angle(true_spectra, GP.T, True, unique=u)
-    mse = measures.ordered_mse(true_maps, A, ind1)
+def compute_metrics(true_spectra, true_maps, GW, H, u = True):
+    angle, ind1 = measures.find_min_angle(true_spectra, GW.T, True, unique=u)
+    mse = measures.ordered_mse(true_maps, H, ind1)
     return angle, mse, ind1
 
 def run_experiment(spim,estimator,experiment,sim = False) : 
     out = spim.decomposition(algorithm = estimator, return_info = True)
     
-    P = out.P_
-    A = out.A_
+    W = out.W_
+    H = out.H_
     G = out.G_
     
     losses = estimator.get_losses()
     if sim :
-        true_spectra, true_maps = spim.phases, spim.weights
-        metrics = compute_metrics(true_spectra.T, true_maps, G@P, A)
+        true_spectra, true_maps = spim.phases, spim.maps
+        metrics = compute_metrics(true_spectra.T, true_maps, G@W, H)
     else : 
         temp = np.zeros((experiment["params"]["n_components"],))
         metrics = (temp, temp, temp)
-    return metrics, (G, P, A), losses
+    return metrics, (G, W, H), losses
 
-def quick_load(experiment,sim = True, P_dict = None) : 
+def quick_load(experiment,sim = True, W_dict = None) : 
     spim = hs.load(experiment["input_file"])
     spim.change_dtype("float64")
     # spim.set_signal_type("EDXSsnmfem")
@@ -100,17 +100,17 @@ def quick_load(experiment,sim = True, P_dict = None) :
     shape_2d = spim.shape_2d
     Estimator = getattr(estimators, experiment["method"]) 
     if sim :  
-        D, A = spim.phases, spim.weights
+        D, H = spim.phases, spim.maps
     else : 
-        D, A = None, None
-    if P_dict is None : 
-        P = None
+        D, H = None, None
+    if W_dict is None : 
+        W = None
     else : 
-        P = spim.set_fixed_P(P_dict)
-    estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"],fixed_P = P,hspy_comp = True)
+        W = spim.set_fixed_P(W_dict)
+    estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_H = H, **experiment["params"],fixed_W = W,hspy_comp = True)
     return spim, estimator
 
-def run_several_experiments(experiment,n_samples = 10, P_dict = None) :
+def run_several_experiments(experiment,n_samples = 10, W_dict = None) :
     metrics_summary = []
     folder = experiment["input_file"]
     for i in range(n_samples) : 
@@ -120,23 +120,23 @@ def run_several_experiments(experiment,n_samples = 10, P_dict = None) :
         G = spim.build_G(problem_type = experiment["g_type"])
         shape_2d = spim.shape_2d
         Estimator = getattr(estimators, experiment["method"])
-        D, A = spim.phases, spim.weights
-        if P_dict is None : 
-            P = None
+        D, H = spim.phases, spim.weights
+        if W_dict is None : 
+            W = None
         else : 
-            P = spim.set_fixed_P(P_dict)
-        estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_A = A, **experiment["params"],fixed_P = P,hspy_comp = True)
+            W = spim.set_fixed_P(W_dict)
+        estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_H = H, **experiment["params"],fixed_W = W,hspy_comp = True)
         
         # Decomposition
         out = spim.decomposition(algorithm = estimator, return_info = True)
 
         # Results
-        P = out.P_
-        A = out.A_
+        W = out.W_
+        H = out.H_
         G = out.G_
     
         true_spectra, true_maps = spim.phases, spim.weights
-        metrics_summary.append(compute_metrics(true_spectra.T, true_maps, G@P, A))
+        metrics_summary.append(compute_metrics(true_spectra.T, true_maps, G@W, H))
 
     k = experiment["params"]["n_components"]
     names_a = []
@@ -219,25 +219,11 @@ def results_string(experiment, metrics):
     return title + top + sep + middle + means + stds
     
 
-    # tc = 25
-    # ec = 18
-    # nc = metrics.shape[3]*ec //2
-    # for j, metrics_name in enumerate(metrics_names):
-    #     txt += "="*nc + metrics_name.center(tc) +"="*nc +"=\n"
-    #     for i, exp in enumerate(exp_list):
-    #         txt += "| {}".format(exp["name"]).ljust(tc)
-    #         for a,b in zip(mean[i,j], std[i,j]):
-    #             txt += "| {:.2f} ± {:.2f}".format(a, b).ljust(ec)
-    #         txt += "|\n"
-    #     txt += "\n"
-    # print(txt)
-    # return txt
-
 def store_in_file(file,metrics,matrices_tuple,losses) :
     d = {}
     d["G"] = matrices_tuple[0]
-    d["P"] = matrices_tuple[1]
-    d["A"] = matrices_tuple[2]
+    d["W"] = matrices_tuple[1]
+    d["H"] = matrices_tuple[2]
     d["metrics"] = metrics
     d["losses"] = losses
     filename = conf.RESULTS_PATH / Path(file)
@@ -246,22 +232,8 @@ def store_in_file(file,metrics,matrices_tuple,losses) :
 def print_in_file(experiment, metrics, out_file) :
     output_file = conf.RESULTS_PATH / Path(out_file)
     results = results_string(experiment, metrics)
-    # txt =100*"#" + "\n"
-    # if estimator_dict == {} :
-    #     txt += "Using default parameters\n"
-    #     txt += "\n"
-    # else : 
-    #     txt += "Estimator parameters\n"
-    #     txt += 20*"-" + "\n"
-    #     for elt in estimator_dict.keys() :
-    #         txt += "|{:10} : {:>5}|".format(elt,estimator_dict[elt])
-    #     txt +="\n"
-
-    # print(txt)
-    # print(results)
     with open(output_file,"a") as f : 
         f.write(results)
-
 
 
 ###################################################
@@ -299,10 +271,10 @@ def zeros_dict (elements = "Si") :
         d[elt] = 0.0
     return d
 
-def build_fixed_P (spim, col1 = False) : 
+def build_fixed_W (spim, col1 = False) : 
     phases_pars = spim.metadata.Truth.phases
     unique_elts = list((elts_dict_from_dict_list([x["elements_dict"] for x in phases_pars])).keys())
-    P_dict = {}
+    W_dict = {}
     for i, phase in enumerate(phases_pars) : 
         elts_list = list(phase["elements_dict"].keys())
         other_elts = list(set(unique_elts) - set(elts_list))
@@ -310,7 +282,7 @@ def build_fixed_P (spim, col1 = False) :
             d = {}
         else : 
             d = zeros_dict(elements=other_elts)
-        P_dict[str(i)] = d
-        print(P_dict)
-    P = spim.set_fixed_P(P_dict)
-    return P
+        W_dict[str(i)] = d
+        print(W_dict)
+    W = spim.set_fixed_W(W_dict)
+    return W

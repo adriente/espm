@@ -1,6 +1,5 @@
 from pathlib import Path
 import hyperspy.misc.eds.ffast_mac as macs
-import numpy as np
 
 # Path of the base
 BASE_PATH = Path(__file__).parent

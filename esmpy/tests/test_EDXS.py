@@ -70,17 +70,17 @@ def test_absorption () :
     np.testing.assert_array_less(1e-30,abs_corr)
     np.testing.assert_array_less(abs_corr,1.0)
 
-def test_elts_dict_from_P () : 
+def test_elts_dict_from_W () : 
     elements_mass = [28.085,40.0784,15.999,30.9737619985,12.011]
-    part_P = np.random.rand(5,3)
-    avg_P = part_P.sum(axis=1)/3
-    weighted_P= [avg_P[i]*elt_mass for i,elt_mass in enumerate(elements_mass)]
-    norm_P = weighted_P/np.sum(weighted_P)
+    part_W = np.random.rand(5,3)
+    avg_W = part_W.sum(axis=1)/3
+    weighted_W= [avg_W[i]*elt_mass for i,elt_mass in enumerate(elements_mass)]
+    norm_W = weighted_W/np.sum(weighted_W)
     elements_list = ["Si","Ca", "O", "P", "C"]
 
-    result = ef.elts_dict_from_P(part_P, elements = elements_list)
+    result = ef.elts_dict_from_W(part_W, elements = elements_list)
     for i,key in enumerate(result) : 
-        np.testing.assert_allclose(result[key],norm_P[i],rtol = 1e-1)
+        np.testing.assert_allclose(result[key],norm_W[i],rtol = 1e-1)
 
 def test_elts_dict_from_dict_list () : 
     dict_list = [{"chou" : 1, "carottes" : 2, "navet" : 3}, {"chou" : 2, "oignons" : 3, "navet" : 3}, {"orange" : 6, "citron" : 4, "poireau" : 8}]

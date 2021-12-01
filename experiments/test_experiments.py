@@ -101,7 +101,7 @@ def test_quick_load () :
     assert estimator1.max_iter == 1000
     assert isinstance(spim1, datasets.EDS_ESMPY)
     assert spim1.data.shape == (30,40,1000)
-    assert estimator1.true_A.shape == (4,30*40)
+    assert estimator1.true_H.shape == (4,30*40)
     assert estimator1.true_D.shape == (1000,4)
 
     shutil.rmtree(folder)
@@ -120,7 +120,7 @@ def test_run_experiment () :
     assert P.shape == (12,4)
     assert A.shape == (4, 1200)
     assert losses.shape == (3,)
-    assert losses.dtype.names == ('full_loss', 'KL_div_loss', 'log_reg_loss', 'rel_P', 'rel_A', 'ang_p0', 'ang_p1', 'ang_p2', 'ang_p3', 'mse_p0', 'mse_p1', 'mse_p2', 'mse_p3', 'true_KL_loss')
+    assert losses.dtype.names == ('full_loss', 'KL_div_loss', 'log_reg_loss', 'rel_W', 'rel_H', 'ang_p0', 'ang_p1', 'ang_p2', 'ang_p3', 'mse_p0', 'mse_p1', 'mse_p2', 'mse_p3', 'true_KL_loss')
     assert len(metrics) == 3
     assert len(metrics[0]) == 4
     assert len(metrics[1]) == 4
