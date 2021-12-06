@@ -82,7 +82,7 @@ def test_generate():
     phases = model.phases
     G = model.G
     n_phases = len(DATA_DICT["phases_parameters"])
-    maps = generate_weights(weight_type=DATA_DICT["weight_type"], shape_2D= DATA_DICT["shape_2d"], n_phases=n_phases, seed=DATA_DICT["seed"], **DATA_DICT["weights_params"])
+    maps = generate_weights(weight_type=DATA_DICT["weight_type"], shape_2d= DATA_DICT["shape_2d"], n_phases=n_phases, seed=DATA_DICT["seed"], **DATA_DICT["weights_params"])
     densities = np.array([1.3, 1.6, 1.9])
     spim = generate_spim(phases, maps, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = False)
     cont_spim = generate_spim(phases, maps, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = True)
@@ -125,41 +125,41 @@ def test_generate():
 
 
 def test_generate_random_weights():
-    shape_2D = [28, 36]
+    shape_2d = [28, 36]
     n_phases = 5
     
-    w = random_weights(shape_2D=shape_2D, n_phases=n_phases)
+    w = random_weights(shape_2d=shape_2d, n_phases=n_phases)
     
-    assert(w.shape == (*shape_2D, n_phases))
+    assert(w.shape == (*shape_2d, n_phases))
     np.testing.assert_array_less(-1e-30, w)
     np.testing.assert_array_almost_equal(np.sum(w, axis=2), 1)
 
 def test_generate_laplacian_weights():
-    shape_2D = [28, 36]
+    shape_2d = [28, 36]
     n_phases = 5
     
-    w = laplacian_weights(shape_2D=shape_2D, n_phases=n_phases)
+    w = laplacian_weights(shape_2d=shape_2d, n_phases=n_phases)
     
-    assert(w.shape == (*shape_2D, n_phases))
+    assert(w.shape == (*shape_2d, n_phases))
     np.testing.assert_array_less(-1e-30, w)
     np.testing.assert_array_almost_equal(np.sum(w, axis=2), 1)
     
 def test_generate_two_sphere():
-    shape_2D = [80, 80]
+    shape_2d = [80, 80]
     n_phases = 3
     radius = 2
     
-    w = spheres_weights(shape_2D=shape_2D, n_phases=n_phases, radius= radius)
+    w = spheres_weights(shape_2d=shape_2d, n_phases=n_phases, radius= radius)
     
     assert(w.shape == (80, 80, 3))
     np.testing.assert_array_less(-1e-30, w)
     np.testing.assert_array_almost_equal(np.sum(w, axis=2), 1)
 
 def test_generate_gaussian_ripple() : 
-    shape_2D = [100,40]
+    shape_2d = [100,40]
     width = 10
     
-    w = gaussian_ripple_weights(shape_2D, width = width)
+    w = gaussian_ripple_weights(shape_2d, width = width)
 
     assert(w.shape == (100,40,2))
     np.testing.assert_array_less(-1e-30,w)

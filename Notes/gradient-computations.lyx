@@ -890,9 +890,8 @@ For
  we use the key computation presented bellow
 \begin_inset Formula 
 \begin{align*}
-{\color{blue}R_{2}(A)} & =\frac{\lambda}{2}\text{tr}\left(\MH^{T}\Delta A\right)\\
- & =\frac{\lambda}{2}\sum_{k}A_{k}^{T}\Delta A_{k}\\
- & \leq\frac{\lambda}{2}\sum_{k}A_{k}^{t}{}^{T}\Delta A_{k}^{t}+2\left(A_{k}-A_{k}^{t}\right)^{T}\Delta A_{k}^{t}+2\lambda\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)\sum_{p,k}\left(A_{k,p}^{t}\log\left(\frac{A_{k,p}^{t}}{A_{k,p}}\right)-A_{k,p}^{t}+A_{k,p}\right)
+{\color{blue}R_{2}(\MH)} & =\frac{\lambda}{2}\text{tr}\left(\MH^{T}\Delta\MH\right)=\frac{\lambda}{2}\sum_{k}\MH_{k}^{T}\Delta\MH_{k}\\
+ & \leq\frac{\lambda}{2}\sum_{k}\left[\left.\MH_{k}^{t}\right.^{T}\Delta\MH_{k}^{t}+2\left(\MH_{k}-\MH_{k}^{t}\right)^{T}\Delta\MH_{k}^{t}+2\lambda\sigma(\Delta)\left(\max_{p}\MH_{k,p}^{t}\right)\sum_{p}\left(\MH_{k,p}^{t}\log\left(\frac{\MH_{k,p}^{t}}{\MH_{k,p}}\right)-\MH_{k,p}^{t}+\MH_{k,p}\right)\right]
 \end{align*}
 
 \end_inset

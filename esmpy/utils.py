@@ -180,7 +180,7 @@ def arg_helper(params, d_params):
     check_keys(params, d_params)
     return params
 
-def check_keys(params, d_params, upperkeys = '',toprint = False):
+def check_keys(params, d_params, upperkeys = '',toprint = True):
     """Check recursively if params and d_params if all the keys of params are in d_params."""
     keys = set(d_params.keys())
     for key in params.keys():

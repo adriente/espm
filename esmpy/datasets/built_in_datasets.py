@@ -12,7 +12,7 @@ dataset_particles  = {'N': 100,
     'weights_params' : {
       "radius" : 2.5
     },
-    'shape_2D': [80, 80],
+    'shape_2d': [80, 80],
     'phases_parameters': [{'b0': 7.408513360414626e-05,
     'b1': 6.606903143185911e-03,
     'elements_dict': {'23': 0.04704309583693933,
