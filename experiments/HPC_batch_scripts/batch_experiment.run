@@ -7,5 +7,5 @@
 #SBATCH --time 24:00:00
 
 echo STARTING at `date`
-python /home/teurtrie/SNMF_EDXS/scripts/HPC_batch_experiment.py "$@"
+python /home/teurtrie/esmpy/experiments/HPC_batch_experiment.py "$@"
 echo FINISHED at `date`

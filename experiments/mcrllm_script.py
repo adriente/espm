@@ -10,7 +10,7 @@ def experiment (input_file, output_file) :
     true_spim = hs.load(str(dataset_path))
 
 
-    estimator = MCRLLM(n_components=3, init="Kmeans", tol = 1e-9, max_iter=50000,hspy_comp=True)
+    estimator = MCRLLM(n_components=3, init="Kmeans", max_iter=50000,hspy_comp=True)
 
     true_spim.decomposition(algorithm=estimator,verbose=True)
 

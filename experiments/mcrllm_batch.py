@@ -5,6 +5,7 @@ from esmpy.utils import rescaled_DH
 from experiments import compute_metrics, results_string
 import numpy.lib.recfunctions as rfn
 import sys
+from mcrllm_wrapper import MCRLLM
 
 def metrics_statistics (k,metrics_summary,n_samples) : 
     names_a = []
@@ -27,11 +28,10 @@ def metrics_statistics (k,metrics_summary,n_samples) :
 
 
 
-def run_batch (k, folder, init, output, random_state) : 
+def run_batch (k, folder, init, output) : 
 
     n_samples = 6
     k = int(k)
-    random_state = int(random_state)
     
     metrics_list = []
     for i in range(n_samples) :
@@ -41,7 +41,9 @@ def run_batch (k, folder, init, output, random_state) :
         true_spectra = spim.phases.T
         true_maps = spim.maps
         shape_2d = spim.shape_2d
-        spim.decomposition(True,algorithm = "NMF", max_iter = 50000, tol = 1e-9, solver = "mu", beta_loss = "kullback-leibler", output_dimension = k,print_info= True, init = init, random_state = random_state)
+
+        estimator = MCRLLM(n_components=3, init=init, max_iter=2000,hspy_comp=True)
+        spim.decomposition(algorithm=estimator,verbose=True)
         factors = spim.get_decomposition_factors().data.T
         loadings = spim.get_decomposition_loadings().data.reshape((k,shape_2d[0]*shape_2d[1]))
         r_factors, r_loadings = rescaled_DH(factors,loadings)
@@ -50,9 +52,9 @@ def run_batch (k, folder, init, output, random_state) :
     summary = metrics_statistics(k,metrics_list,n_samples)
 
     with open(output,"a") as f : 
-        f.write(results_string({"name" : "NMF"},summary))
+        f.write(results_string({"name" : "MCRLLM"},summary))
 
 if __name__ == "__main__" : 
     print(sys.argv[1:])
-    k, folder, init, output, random_state =  sys.argv[1:]
-    run_batch(k, folder, init, output, random_state)
+    k, folder, init, output =  sys.argv[1:]
+    run_batch(k, folder, init, output)
