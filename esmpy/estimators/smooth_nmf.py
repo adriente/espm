@@ -6,6 +6,9 @@ from esmpy.estimators import NMF
 from esmpy.conf import log_shift, dicotomy_tol
 from esmpy.laplacian import sigmaL
 
+# from esmpy.measures import KL_loss_surrogate, KLdiv_loss, log_reg, log_surrogate
+
+
 def smooth_l2_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
     tmp = (Ht @ L)
     t1 = np.sum(Ht * tmp)
@@ -44,6 +47,12 @@ class SmoothNMF(NMF):
 
 
     def _iteration(self, W, H):
+
+        # KL_surr = KL_loss_surrogate(self.X_, W, H, H, eps=0)
+        # log_surr = log_surrogate(H, H, mu=self.mu, epsilon=self.epsilon_reg)
+        # print("loss before:", KL_surr, log_surr, log_surr+KL_surr)
+
+        Hold = H.copy() 
         if self.accelerate:
             if self.linesearch:
                 Hold = H.copy()            
@@ -59,6 +68,13 @@ class SmoothNMF(NMF):
         else:
             H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H_inds=self.fixed_H_inds)
             W = multiplicative_step_w(self.X_, self.G_, W, H, eps=self.log_shift, safe=self.debug, l2=self.l2,fixed_W=self.fixed_W)
+
+        # KL_surr = KL_loss_surrogate(self.X_, W, H, Hold, eps=0)
+        # log_surr = log_surrogate(H, Hold, mu=self.mu, epsilon=self.epsilon_reg)
+        # print("surrogate before:", KL_surr, log_surr, log_surr+KL_surr)
+        # KL_surr = KL_loss_surrogate(self.X_, W, H, H, eps=0)
+        # log_surr = log_surrogate(H, H, mu=self.mu, epsilon=self.epsilon_reg)
+        # print("loss after:", KL_surr, log_surr, log_surr+KL_surr)
 
         if callable(self.G) : 
             self.G_ = self.G(part_W = W[:-2,:],G = self.G_)

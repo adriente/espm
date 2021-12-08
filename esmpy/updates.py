@@ -133,6 +133,9 @@ def multiplicative_step_w(X, G, W, H, eps=log_shift, safe=True, l2=False, fixed_
         assert(np.sum(W<-log_shift/2)==0)
         assert(np.sum(G<-log_shift/2)==0)
 
+        H = np.maximum(H, log_shift)
+        W = np.maximum(W, log_shift)
+
     if l2:
         GG = G.T @ G
         HH = H @ H.T
@@ -189,19 +192,21 @@ def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, eps=log_shift, e
         assert(np.sum(H<-log_shift/2)==0)
         assert(np.sum(W<-log_shift/2)==0)
         assert(np.sum(G<-log_shift/2)==0)
+        H = np.maximum(H, log_shift)
+        W = np.maximum(W, log_shift)
 
     GW = G @ W # Also called D
     
     if l2:
         WGGW = GW.T @ GW
         WGX = GW.T @ X
-        num = H * WGX
+        num = WGX
         denum = WGGW @ H
     else:
         
         GWH = GW @ H
         # Split to debug timing...
-        num = H * (GW.T @ (X / (GWH+eps)))
+        num = GW.T @ (X / (GWH+eps))
         # op1 = X / (GPA+eps)
         # op2 = GP.T @ op1
         # num = A * op2
@@ -213,9 +218,9 @@ def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, eps=log_shift, e
         denum = denum + mu / (H + epsilon_reg)
     if not(lambda_L==0):
         maxH = np.max(H)
-        num = num + lambda_L * sigmaL * H * maxH
+        num = num + lambda_L * sigmaL * maxH
         denum = denum + lambda_L * sigmaL * maxH + lambda_L * HL 
-
+    num = H * num
     if force_simplex:
         nu = dichotomy_simplex(num, denum,dicotomy_tol)
     else:

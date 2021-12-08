@@ -201,10 +201,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 elif (eval_before - eval_after) < 0:
                     if hasattr(self, "accelerate"):
                         if not self.accelerate:
-                            print("exit because of negative decrease")
+                            print("exit because of negative decrease {}: {}, {}".format((eval_before - eval_after), eval_before, eval_after))
                             break
                     else:
-                        print("exit because of negative decrease")
+                        print("exit because of negative decrease {}: {}, {}".format((eval_before - eval_after), eval_before, eval_after))
                         break
                 
                 if self.verbose > 0 and np.mod(self.n_iter_, self.eval_print) == 0:

@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.lib.function_base import kaiser
 from esmpy.measures import mse, spectral_angle, KLdiv_loss, KLdiv, square_distance, find_min_MSE, find_min_angle, trace_xtLx, Frobenius_loss, ordered_angles, ordered_mse
+from esmpy.measures import KL_loss_surrogate, log_reg, log_surrogate
 import pytest
 from esmpy.conf import log_shift
 from esmpy.laplacian import create_laplacian_matrix
@@ -269,3 +270,23 @@ def test_froebenius_loss():
     res1 = Frobenius_loss(X, D2, A)
     res2 = Frobenius_loss(X, D2, A, average=True)
     np.testing.assert_almost_equal(res1/l/p, res2)
+
+
+def test_surrogates():
+    l = 10
+    k = 3
+    p = 25
+    mu = 10
+    epsilon = 0.1
+
+    W0  = np.random.rand(l, k)
+    H0 = np.random.rand(k, p)
+    X = np.random.rand(l, p)
+
+    eps =0
+    np.testing.assert_allclose(
+        KL_loss_surrogate(X, W0, H0, H0, eps=eps), 
+        KLdiv_loss(X, W0, H0, eps=eps))
+    np.testing.assert_allclose(
+        log_surrogate(H0, H0, mu=mu, epsilon=epsilon),
+        log_reg(H0, mu=mu, epsilon=epsilon))

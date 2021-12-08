@@ -32,7 +32,7 @@ class NMF(NMFEstimator):
         lkl = super().loss(W, H, average=average, X = X)
         # GP = self.G_ @ P
         # kl = KLdiv(self.X_, GP, A, self.log_shift, safe=self.debug) 
-        reg = log_reg(H, self.mu, self.epsilon_reg, average=True)
+        reg = log_reg(H, self.mu, self.epsilon_reg, average=False)
         if average:
             reg = reg / self.GWH_numel_
         self.detailed_loss_.append(reg)

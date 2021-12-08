@@ -225,6 +225,16 @@ def KLdiv_loss(X, D, H, eps=log_shift, safe=True, average=False):
         x_log = np.sum(X*np.log(DH + eps))
     return x_lin - x_log
 
+def KL_loss_surrogate(X, D, H, Ht, eps=log_shift, safe=True, average=False):
+    DHT = np.expand_dims(D, axis=2) * np.expand_dims(Ht, axis=0)
+    U = DHT/(np.sum(DHT, axis=1, keepdims=True)+eps)
+    
+    DH = np.expand_dims(D, axis=2) * np.expand_dims(H, axis=0)
+    if average:
+        return np.mean(X * np.sum(U * np.log((U+eps)/ (DH+eps)), axis=1) + np.sum(DHT, axis=1))
+    else:
+        return np.sum(X * np.sum(U * np.log((U+eps)/ (DH+eps)), axis=1)) + np.sum(DHT)
+
 def log_reg(H, mu, epsilon, average=False):
     """
     Compute the regularization loss: \sum_ij mu_i \log(A_{ij})
@@ -235,6 +245,16 @@ def log_reg(H, mu, epsilon, average=False):
         return np.mean(mu* np.log(H+epsilon))        
     else:
         return np.sum(mu* np.log(H+epsilon))
+
+def log_surrogate(H, Ht, mu, epsilon, average=False):
+
+    if not(np.isscalar(mu)):
+        mu = np.expand_dims(mu, axis=1)
+    tmp = np.log(Ht+epsilon) + (H-Ht) / (epsilon + Ht)
+    if average:
+        return np.mean(mu* tmp)        
+    else:
+        return np.sum(mu* tmp)
 
 def trace_xtLx(L, x, average=False):
     if average:
