@@ -82,7 +82,7 @@ class SmoothNMF(NMF):
 
     def loss(self, W, H, average=True, X = None):
         l1 = super().loss(W, H, average=average, X = X)
-        l2 = self.lambda_L * trace_xtLx(self.L_, H.T, average=False)
+        l2 = 0.5 * self.lambda_L * trace_xtLx(self.L_, H.T, average=False)
         if average:
             l2 = l2 / self.GWH_numel_
     
