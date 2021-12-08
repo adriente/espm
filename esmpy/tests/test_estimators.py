@@ -89,6 +89,17 @@ def generate_one_sample():
 
     return G, W, H, D, w, X, X_cont, N
 
+def gen_fixed_mat () : 
+    fixed_W = -1*np.ones((8,2))
+    fixed_W[0,0] = 0.0
+    fixed_W[1,0] = 0.0
+
+    fixed_H = -1*np.ones((2,200))
+    fixed_H[0,0:20] = 1.0
+    fixed_H[1,0:20] = 0.0
+
+    return fixed_W, fixed_H
+
 
 def test_generate_one_sample():
     G, W, H, D, w, X, Xdot, N = generate_one_sample()
@@ -145,6 +156,19 @@ def test_general():
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A2.T))
     # assert(trace_xtLx(L, A.T) < trace_xtLx(L, A2.T) )
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, H.T) )
+
+def test_fixed_mat () :
+    G, W, H, D, w, X, Xdot, N = generate_one_sample()
+    fW, fH = gen_fixed_mat()
+    estimator = SmoothNMF(G=G, n_components= 2,max_iter=200,force_simplex = True, fixed_W = fW, hspy_comp = False)
+    estimator.fit_transform(X=X)
+    P2, A2 = estimator.W_, estimator.H_ 
+    np.testing.assert_allclose(P2[fW >= 0],fW[fW>=0])
+
+    estimator = SmoothNMF(G=G, n_components= 2,max_iter=200,force_simplex = True, fixed_H = fH, hspy_comp = False)
+    estimator.fit_transform(X=X)
+    P2, A2 = estimator.W_, estimator.H_ 
+    np.testing.assert_allclose(A2[fH >= 0],fH[fH>=0])
 
 def test_surrogate_smooth_nmf():
     L = create_laplacian_matrix(4, 3)
