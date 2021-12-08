@@ -94,6 +94,20 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         else : 
             self.X_ = self._validate_data(X, dtype=[np.float64, np.float32])
 
+        if self.hspy_comp==False:
+            try:
+                import inspect
+                curframe = inspect.currentframe()
+                calframe = inspect.getouterframes(curframe, 2)
+                if calframe[1][3]=="decomposition":
+                    print("Are you calling the function decomposition from Hyperspy?\n" +
+                        "If so, please set the compatibility argument 'hspy_comp' to True.\n\n" + 
+                        "If this argument is not set correctly, the function will not work properly!!!")
+
+            except:
+                pass
+
+
         self.X_ = self.remove_zeros_lines(self.X_, self.log_shift)
         self.const_KL_ = None
         if self.normalize : 
