@@ -99,11 +99,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 import inspect
                 curframe = inspect.currentframe()
                 calframe = inspect.getouterframes(curframe, 2)
-                if calframe[1][3]=="decomposition":
+                if calframe[1][3]=="decomposition" and "hyperspy" in calframe[1][1]:
                     print("Are you calling the function decomposition from Hyperspy?\n" +
                         "If so, please set the compatibility argument 'hspy_comp' to True.\n\n" + 
                         "If this argument is not set correctly, the function will not work properly!!!")
-
             except:
                 pass
 
