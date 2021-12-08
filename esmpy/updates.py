@@ -162,7 +162,7 @@ def multiplicative_step_w(X, G, W, H, eps=log_shift, safe=True, l2=False, fixed_
         new_W[fixed_W >= 0] = fixed_W[fixed_W >=0]
         return new_W
 
-def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, fixed_H_inds = None, sigmaL=sigmaL):
+def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, sigmaL=sigmaL, fixed_H = None):
     """
     Multiplicative step in A.
     The main terms are calculated first.
@@ -175,17 +175,7 @@ def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, eps=log_shift, e
     if not(lambda_L==0):
         if L is None:
             raise ValueError("Please provide the laplacian")
-
-    if not(fixed_H_inds is None) : 
-        not_fixed_inds = [x for x in range(H.shape[1]) if not(x in fixed_H_inds)]    
-        if not(lambda_L==0):
-            HL = (H@L)[:,not_fixed_inds]
-        new_H = H.copy()
-        H = H[:,not_fixed_inds]
-        X = X[:,not_fixed_inds]
-    else : 
-        if not(lambda_L==0):
-            HL = H @ L
+        HL = H@L
 
     if safe:
         # Allow for very small negative values!
@@ -229,15 +219,16 @@ def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, eps=log_shift, e
         assert np.sum(denum<0)==0
         assert np.sum(num<0)==0
 
-    if fixed_H_inds is None : 
-        new_H = num/(denum+nu)
+    new_H = num/(denum+nu)
+
+    if fixed_H is None : 
+        return new_H
     else : 
-        new_H[:,not_fixed_inds] = num/(denum+nu)
+        new_H[fixed_H >= 0] = fixed_H[fixed_H >= 0]
+        return new_H
 
-    return new_H
 
-
-def initialize_algorithms(X, G, W, H, n_components, init, random_state, force_simplex, fixed_H_inds = None):
+def initialize_algorithms(X, G, W, H, n_components, init, random_state, force_simplex):
     # Handle initialization
 
     if G is None : 
@@ -278,12 +269,6 @@ def initialize_algorithms(X, G, W, H, n_components, init, random_state, force_si
         if force_simplex:
             scale = np.sum(H, axis=0, keepdims=True)
             H = H/scale
-    
-    if not(fixed_H_inds is None) : 
-        vec = np.zeros_like(H[:,0])
-        vec[0] = 1
-        fixed_H = np.tile(vec[:,np.newaxis],(len(fixed_H_inds),))
-        H[:,fixed_H_inds] = fixed_H
 
     return G, W, H
 

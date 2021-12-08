@@ -56,10 +56,11 @@ DEFAULT_SYNTHETIC_DATA_DICT = {
     "phases_parameters" : DEFAULT_PHASE_PARAMS,
     "shape_2d" : (80,80),
     "weight_type" : "sphere",
-    "weights_params" : {},
+    "weights_params" : {"radius" : 2.0},
     "N" : 100,
     "densities" : [2.33,19.3],
-    "model" : "EDXS"
+    "model" : "EDXS",
+    "seed" : 0
 }
 
 log_shift = 1e-14

@@ -11,7 +11,7 @@ SCRIPT_CONFIG_PATH = BASE_PATH.parent / Path("scripts/config/")
 
 POS_ARGS = {
     "input_file" : ["input_file",{"help" : "str : Name of the file containing the data."}],
-    "method" : ["method",{"choices":  ["NMF","SmoothNMF","SKNMF","MCRLLM"], "help" : "str : Name of the estimator for the decomposition"}],
+    "method" : ["method",{"choices":  ["SmoothNMF"], "help" : "str : Name of the estimator for the decomposition"}],
     "g_type" : ["g_type", {"choices" : ["bremsstrahlung","no_brstlg", "identity"], "default" : "bremsstrahlung", "help" : "str : method to generate the G matrix from the metadata"}],
     "k" : ["k",{"type" : int,"help" : "int : expected number of phases"}]
 }
@@ -32,9 +32,9 @@ ESTIMATOR_ARGS = {
     "normalize" : ["-n", "--normalize", {"action" : "store_true", "help" : "None : Activate the normalization of the data, it is mostly useful for having stable values of lambda_L among datasets."}, None],
 
     # SNMFEM parameters
-    "mu" : ["-mu","--mu",{"type" : float,"default" : 0.0, "help" : "float : strenght of the log regularization"},["NMF","SmoothNMF"]],
-    "epsilon_reg" : ["-er","--epsilon_reg",{"type" : float, "default" : 1.0, "help" : "float : slope of the log regularization"}, ["NMF","SmoothNMF"]],
-    "force_simplex" : ["-fs","--force_simplex",{"action" : "store_false", "help" : "None : Activate simplex constraint"},["NMF","SmoothNMF"]],
+    "mu" : ["-mu","--mu",{"type" : float,"default" : 0.0, "help" : "float : strenght of the log regularization"},["SmoothNMF"]],
+    "epsilon_reg" : ["-er","--epsilon_reg",{"type" : float, "default" : 1.0, "help" : "float : slope of the log regularization"}, ["SmoothNMF"]],
+    "force_simplex" : ["-fs","--force_simplex",{"action" : "store_false", "help" : "None : Activate simplex constraint"},["SmoothNMF"]],
     "lambda_L" : ["-l","--lambda_L",{"type" : float, "default" : 0.0,"help":"float : strengh of the Laplacian reg"},["SmoothNMF"]],
     "l2" : ["-l2","--l2",{"action" : "store_true","help" : "None : Sets the loss function to frobenius when activated"}, ["NMF","SmoothNMF"]],
     "accelerate" : ["-acc","--accelerate",{"action" : "store_true","help" : "None : Sets the algorithm type to the accelerated one"}, ["SmoothNMF"]],

@@ -13,12 +13,11 @@ class EDS_ESMPY (Signal1D) :
     def __init__ (self,*args,**kwargs) : 
         super().__init__(*args,**kwargs)
         self.shape_2d_ = None
-        self.phases_ = None
-        self.maps_ = None
-        self.X_ = None
-        self.Xdot_ = None
-        self.phases_2d_ = None
-        self.maps_2d_ = None
+        self._phases = None
+        self._maps = None
+        self._X = None
+        self._Xdot = None
+        self._maps_2d = None
 
     @property
     def shape_2d (self) : 
@@ -28,38 +27,38 @@ class EDS_ESMPY (Signal1D) :
 
     @property
     def X (self) :
-        if self.X_ is None :  
+        if self._X is None :  
             shape = self.axes_manager[1].size, self.axes_manager[0].size, self.axes_manager[2].size
-            self.X_ = self.data.reshape((shape[0]*shape[1], shape[2])).T
-        return self.X_
+            self._X = self.data.reshape((shape[0]*shape[1], shape[2])).T
+        return self._X
 
     @property
     def Xdot (self) : 
-        if self.Xdot_ is None : 
+        if self._Xdot is None : 
             try : 
-                self.Xdot_ = self.metadata.Truth.Params.N * self.phases @ np.diag(self.metadata.Truth.Params.densities) @ self.maps
+                self._Xdot = self.phases @ self.maps
             except AttributeError : 
                 print("This dataset contains no ground truth. Nothing was done.")
-        return self.Xdot_
+        return self._Xdot
 
 
     @property
     def maps (self) : 
-        if self.maps_ is None : 
-            self.maps_ = self.build_ground_truth()[1]
-        return self.maps_
+        if self._maps is None : 
+            self._maps = self.build_ground_truth()[1]
+        return self._maps
 
     @property
     def phases (self) : 
-        if self.phases_ is None : 
-            self.phases_ = self.build_ground_truth()[0]
-        return self.phases_
+        if self._phases is None : 
+            self._phases = self.build_ground_truth()[0]
+        return self._phases
 
     @property
     def maps_2d (self) : 
-        if self.maps_2d_ is None : 
-            self.maps_2d_ = self.build_ground_truth(reshape = False)[1]
-        return self.maps_2d_
+        if self._maps_2d is None : 
+            self._maps_2d = self.build_ground_truth(reshape = False)[1]
+        return self._maps_2d
 
     def build_ground_truth(self,reshape = True) : 
         mod_pars = get_metadata(self)

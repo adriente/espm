@@ -3,7 +3,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 from esmpy.updates import initialize_algorithms
 from esmpy.measures import KLdiv_loss, Frobenius_loss, find_min_angle, find_min_MSE
-from esmpy.conf import log_shift
+from esmpy.conf import log_shift, dicotomy_tol
 from esmpy.utils import rescaled_DH
 import time
 from abc import ABC, abstractmethod
@@ -23,7 +23,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     def __init__(self, n_components=2, init='warn', tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, log_shift=log_shift, debug=False,
                  force_simplex=True, l2=False,  G=None, shape_2d = None, normalize = False,
-                 eval_print=10, true_D = None, true_H = None, fixed_H_inds = None, fixed_W = None, hspy_comp = False
+                 eval_print=10, true_D = None, true_H = None, fixed_H = None, fixed_W = None, hspy_comp = False,dicotomy_tol=dicotomy_tol
                  ):
         self.n_components = n_components
         self.init = init
@@ -40,10 +40,11 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.eval_print = eval_print
         self.true_D = true_D
         self.true_H = true_H
-        self.fixed_H_inds = fixed_H_inds
+        self.fixed_H = fixed_H
         self.fixed_W = fixed_W
         self.hspy_comp = hspy_comp
         self.normalize = normalize
+        self.dicotomy_tol = dicotomy_tol
 
     def _more_tags(self):
         return {'requires_positive_X': True}
@@ -119,7 +120,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         else : 
             G = self.G
         
-        self.G_, self.W_, self.H_ = initialize_algorithms(X = self.X_, G = G, W = W, H = H, n_components = self.n_components, init = self.init, random_state = self.random_state, force_simplex = self.force_simplex, fixed_H_inds = self.fixed_H_inds)
+        self.G_, self.W_, self.H_ = initialize_algorithms(X = self.X_, G = G, W = W, H = H, n_components = self.n_components, init = self.init, random_state = self.random_state, force_simplex = self.force_simplex)
 
         if not(self.shape_2d is None) :
             self.L_ = create_laplacian_matrix(*self.shape_2d)

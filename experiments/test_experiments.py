@@ -68,18 +68,18 @@ DATA_DICT = {
 folder = DATASETS_PATH / Path(DATA_DICT["data_folder"])
 
 def test_experiment_parser () : 
-    inputs = ["file.hspy", "NMF", "bremsstrahlung", "3", "-mi" , '100', "--verbose", "--tol", '200', "-fwjs", "/path/to/json"]
-    result_dicts = {'input_file': 'file.hspy', 'method': 'NMF', 'g_type': 'bremsstrahlung', 'k': 3}, {'max_iter': 100, 'verbose': False, 'init': 'nndsvdar', 'tol': 200, 'mu': 0.0, 'force_simplex': True, 'lambda_L': 0.0, 'l2': False, "accelerate" : False, "linesearch" : False, "normalize" : False, "random_state" : 42, "epsilon_reg" : 1.0}, {'output_file': 'dump.npz', "simulated" : False, "fixed_W_json" : "/path/to/json"}
+    inputs = ["file.hspy", "SmoothNMF", "bremsstrahlung", "3", "-mi" , '100', "--verbose", "--tol", '200', "-fwjs", "/path/to/json"]
+    result_dicts = {'input_file': 'file.hspy', 'method': 'SmoothNMF', 'g_type': 'bremsstrahlung', 'k': 3}, {'max_iter': 100, 'verbose': False, 'init': 'nndsvdar', 'tol': 200, 'mu': 0.0, 'force_simplex': True, 'lambda_L': 0.0, 'l2': False, "accelerate" : False, "linesearch" : False, "normalize" : False, "random_state" : 42, "epsilon_reg" : 1.0}, {'output_file': 'dump.npz', "simulated" : False, "fixed_W_json" : "/path/to/json"}
 
     assert exps.experiment_parser(inputs) == result_dicts
 
 def test_build_exp () : 
-    inputs = ["file.hspy", "NMF", "bremsstrahlung", "3", "-mi" , '1000', "--verbose", "--tol", '200']
+    inputs = ["file.hspy", "SmoothNMF", "bremsstrahlung", "3", "-mi" , '1000', "--verbose", "--tol", '200']
     pos_dict, est_dict, _ = exps.experiment_parser(inputs)
     exp = exps.build_exp(pos_dict,est_dict,name = "dummy")
-    assert exp == {'g_type' : 'bremsstrahlung', 'input_file' : 'file.hspy', 'name' : 'dummy', 'method' : 'NMF', 
+    assert exp == {'g_type' : 'bremsstrahlung', 'input_file' : 'file.hspy', 'name' : 'dummy', 'method' : 'SmoothNMF', 
     'params' : {'force_simplex' : True, 'init' : 'nndsvdar', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'n_components' : 3,
-    'tol' : 200.0, 'verbose' : False, "normalize" : False, "random_state" : 42, "epsilon_reg" : 1.0}}
+    'tol' : 200.0, 'verbose' : False, "normalize" : False, "random_state" : 42, 'epsilon_reg' : 1.0, 'accelerate' : False, 'lambda_L' : 0.0, 'linesearch' : False}}
 
 def test_fill_exp_dict () : 
     exp = {"force_simplex" : True, "max_iter" : 1000, "linesearch" : True}
@@ -90,13 +90,13 @@ def test_quick_load () :
     
     generate_dataset(seeds_range=1,**DATA_DICT)
     file = folder / Path("sample_0.hspy")
-    experiment1 = {'g_type' : 'bremsstrahlung', 'input_file' : file , 'name' : 'dummy', 'method' : 'NMF', 
+    experiment1 = {'g_type' : 'bremsstrahlung', 'input_file' : file , 'name' : 'dummy', 'method' : 'SmoothNMF', 
     'params' : {'force_simplex' : True, 'init' : 'random', 'l2' : False, 'max_iter' : 1000, 'mu' : 0.0, 'n_components' : 3,
     'tol' : 200.0, 'verbose' : False}}
 
     spim1, estimator1 = exps.quick_load(experiment1)
     assert callable(estimator1.G)
-    assert isinstance(estimator1,estimators.NMF)
+    assert isinstance(estimator1,estimators.SmoothNMF)
     assert estimator1.shape_2d == (30,40)
     assert estimator1.max_iter == 1000
     assert isinstance(spim1, datasets.EDS_ESMPY)
@@ -109,7 +109,7 @@ def test_quick_load () :
 def test_run_experiment () : 
     generate_dataset(seeds_range=1,**DATA_DICT)
     file = folder / Path("sample_0.hspy")
-    experiment1 = {'g_type' : 'bremsstrahlung', 'input_file' : file , 'name' : 'dummy', 'method' : 'NMF', 
+    experiment1 = {'g_type' : 'bremsstrahlung', 'input_file' : file , 'name' : 'dummy', 'method' : 'SmoothNMF', 
     'params' : {'force_simplex' : True, 'init' : 'random', 'l2' : False, 'max_iter' : 3, 'mu' : 0.0, 'n_components' : 4,
     'tol' : 0.0001, 'verbose' : False}}
 
@@ -120,11 +120,12 @@ def test_run_experiment () :
     assert P.shape == (12,4)
     assert A.shape == (4, 1200)
     assert losses.shape == (3,)
-    assert losses.dtype.names == ('full_loss', 'KL_div_loss', 'log_reg_loss', 'rel_W', 'rel_H', 'ang_p0', 'ang_p1', 'ang_p2', 'ang_p3', 'mse_p0', 'mse_p1', 'mse_p2', 'mse_p3', 'true_KL_loss')
+    assert losses.dtype.names == ('full_loss', 'KL_div_loss', 'log_reg_loss', 'Lapl_reg_loss','rel_W', 'rel_H', 'ang_p0', 'ang_p1', 'ang_p2', 'ang_p3', 'mse_p0', 'mse_p1', 'mse_p2', 'mse_p3', 'true_KL_loss')
     assert len(metrics) == 3
     assert len(metrics[0]) == 4
     assert len(metrics[1]) == 4
     assert len(metrics[2]) == 4
     assert np.array(metrics[2]).dtype == int
+    assert np.all(np.diff(losses['full_loss'])) >= 0
 
     shutil.rmtree(folder)
