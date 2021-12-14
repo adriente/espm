@@ -118,7 +118,7 @@ def find_min_MSE(true_maps, algo_maps, get_ind = False, unique=False):
     # This function calculates all the possible MSE between abundances and true maps
     # For each true map a best matching abundance is found
     # The function returns the MSE of the corresponding pairs
-    mse_matr = square_distance(true_maps, algo_maps)/square_distance(true_maps,np.zeros_like(true_maps))
+    mse_matr = square_distance(true_maps, algo_maps)
     if unique :
         ordered_maps = unique_min(mse_matr)
     else :
@@ -142,7 +142,7 @@ def ordered_mse (true_maps, algo_maps, input_inds) :
     '''
     ordered_maps = []
     for i,j in enumerate(input_inds) : 
-        ordered_maps.append(float(square_distance(true_maps[j], algo_maps[i])/square_distance(true_maps[j],np.zeros_like(true_maps)[j])))
+        ordered_maps.append(float(square_distance(true_maps[j], algo_maps[i])))
     return ordered_maps
 
 def ordered_angles (true_spectra, algo_spectra, input_inds) :
@@ -302,5 +302,5 @@ def square_distance(x, y=None):
     xy = np.dot(x, y.T)    
     d = abs(np.kron(np.ones((ry, 1)), xx).T +np.kron(np.ones((rx, 1)), yy) - 2 * xy)    
     
-    return d
+    return d / cx
 

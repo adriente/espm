@@ -53,7 +53,7 @@ def test_distance () :
         for b_vec in b :
             d_vec.append(mse(b_vec,a_vec))
         d_matr.append(d_vec)
-    d_matr = np.array(d_matr)
+    d_matr = np.array(d_matr)/a.shape[1]
     d_matr_2 = square_distance(a,b)
     np.testing.assert_allclose(d_matr,d_matr_2)
 
@@ -123,20 +123,20 @@ def test_find_min_mse () :
     p1 = np.random.rand(4,34)
     p2 = np.random.rand(4,34)
 
-    true_res_u = ([0.4700214874275558,
-    0.5496556111420093,
-    0.5358278122971686,
-    0.6350175164272782],
+    true_res_u = ([0.15630003054762612,
+    0.17106418363825374,
+    0.17991197120876662,
+    0.17531522148609824],
     (1, 2, 3, 0))
 
     mins_u, ind_mins_u = find_min_MSE(p1,p2,get_ind=True,unique=True)
     np.testing.assert_allclose(mins_u,true_res_u[0])
     np.testing.assert_allclose(ind_mins_u,true_res_u[1])
 
-    true_res_g = ([0.6344767006931911,
-    0.4700214874275558,
-    0.4862674591919179,
-    0.530211881001339],
+    true_res_g = ([0.17516591343119908,
+    0.15630003054762612,
+    0.15133648097157715,
+    0.1780263407013204],
     [0, 0, 0, 3])
  
     mins_g, ind_mins_g = find_min_MSE(p1,p2,get_ind=True)
@@ -157,10 +157,10 @@ def test_ordered_functions () :
     angles = ordered_angles(p1,p2,true_ang_u[1])
     np.testing.assert_allclose(angles,true_ang_u[0])
 
-    true_mse_u = ([0.4700214874275558,
-    0.5496556111420093,
-    0.5358278122971686,
-    0.6350175164272782],
+    true_mse_u = ([0.15630003054762612,
+    0.17106418363825374,
+    0.17991197120876662,
+    0.17531522148609824],
     (1, 2, 3, 0))
 
     mse = ordered_mse(p1,p2,true_mse_u[1])
