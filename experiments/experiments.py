@@ -120,7 +120,7 @@ def run_several_experiments(experiment,n_samples = 10, W_dict = None) :
         G = spim.build_G(problem_type = experiment["g_type"])
         shape_2d = spim.shape_2d
         Estimator = getattr(estimators, experiment["method"])
-        D, H = spim.phases, spim.weights
+        D, H = spim.phases, spim.maps
         if W_dict is None : 
             W = None
         else : 
@@ -135,7 +135,7 @@ def run_several_experiments(experiment,n_samples = 10, W_dict = None) :
         H = out.H_
         G = out.G_
     
-        true_spectra, true_maps = spim.phases, spim.weights
+        true_spectra, true_maps = spim.phases, spim.maps
         metrics_summary.append(compute_metrics(true_spectra.T, true_maps, G@W, H))
 
     k = experiment["params"]["n_components"]
