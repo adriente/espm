@@ -6,7 +6,6 @@ from experiments import results_string
 import numpy.lib.recfunctions as rfn
 from esmpy import measures
 import sys
-import conf
 
 def metrics_statistics (k,metrics_summary,n_samples) : 
     names_a = []
@@ -33,7 +32,7 @@ def metrics_statistics (k,metrics_summary,n_samples) :
 
 
 
-def run_batch (k, folder, init, output, random_state) : 
+def run_batch (k, folder, output, random_state) : 
 
     n_samples = 6
     k = int(k)
@@ -51,9 +50,10 @@ def run_batch (k, folder, init, output, random_state) :
         true_spectra = spim.phases.T
         true_maps = spim.maps
         shape_2d = spim.shape_2d
-        spim.decomposition(False,algorithm = "NMF", max_iter = 50000, tol = 1e-9, solver = "mu", beta_loss = "kullback-leibler", output_dimension = k,print_info= True, init = init, random_state = random_state)
-        factors = spim.get_decomposition_factors().data.T
-        loadings = spim.get_decomposition_loadings().data.reshape((k,shape_2d[0]*shape_2d[1]))
+        spim.decomposition(True,output_dimension = k,random_state = random_state)
+        spim.blind_source_separation(number_of_components=k,tol = 1e-9)
+        factors = spim.get_bss_factors().data.T
+        loadings = spim.get_bss_loadings().data.reshape((k,shape_2d[0]*shape_2d[1]))
         r_factors, r_loadings = rescaled_DH(factors,loadings)
         metrics_list.append(measures.find_min_config(true_maps,true_spectra,r_loadings,r_factors.T))
 
@@ -63,12 +63,11 @@ def run_batch (k, folder, init, output, random_state) :
     summary = metrics_statistics(k,metrics_list,n_samples)
 
     with open(txt,"a") as f : 
-        f.write(results_string({"name" : "NMF"},summary))
+        f.write(results_string({"name" : "ICA"},summary))
 
-    filename = conf.RESULTS_PATH / Path(npz)
-    np.savez(filename, **d)
+    np.savez(npz, **d)
 
 if __name__ == "__main__" : 
     print(sys.argv[1:])
-    k, folder, init, output, random_state =  sys.argv[1:]
-    run_batch(k, folder, init, output, random_state)
+    k, folder, output, random_state =  sys.argv[1:]
+    run_batch(k, folder, output, random_state)

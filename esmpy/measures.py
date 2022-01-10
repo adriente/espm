@@ -112,6 +112,28 @@ def unique_min (matr) :
 
 #     return mins, ind_mins
 
+def find_min_config(true_maps,true_spectra, algo_maps, algo_spectra,angles = True) : 
+    min_MSE_config = find_min_MSE(true_maps,algo_maps,get_ind=True,unique=True)[1]
+    min_angle_config = find_min_angle(true_spectra,algo_spectra,get_ind=True,unique=True)[1]
+    warning = False
+
+    if min_MSE_config != min_angle_config : 
+        print("WARNING : angles and mse disagree there's probably an issue")
+        warning = True
+
+    if angles : 
+        corresponding_angles = find_min_angle(true_spectra,algo_spectra,unique=True)
+        min_config = min_angle_config
+        corresponding_mse = ordered_mse(true_maps,algo_maps,min_angle_config)
+
+    else : 
+        corresponding_mse = find_min_MSE(true_maps,algo_maps,unique=True)
+        min_config = min_MSE_config
+        corresponding_angles = ordered_angles(true_spectra,algo_spectra,min_MSE_config)
+
+    return corresponding_angles, corresponding_mse, min_config, warning
+
+
 
 # This function works but can probably greatly improved
 def find_min_MSE(true_maps, algo_maps, get_ind = False, unique=False):

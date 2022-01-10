@@ -71,11 +71,6 @@ def fill_exp_dict(input_dict) :
 # Loading data and running the algorithm #
 ##########################################
 
-def compute_metrics(true_spectra, true_maps, GW, H, u = True):
-    angle, ind1 = measures.find_min_angle(true_spectra, GW.T, True, unique=u)
-    mse = measures.ordered_mse(true_maps, H, ind1)
-    return angle, mse, ind1
-
 def run_experiment(spim,estimator,experiment,sim = False) : 
     out = spim.decomposition(algorithm = estimator, return_info = True)
     
@@ -86,10 +81,10 @@ def run_experiment(spim,estimator,experiment,sim = False) :
     losses = estimator.get_losses()
     if sim :
         true_spectra, true_maps = spim.phases, spim.maps
-        metrics = compute_metrics(true_spectra.T, true_maps, G@W, H)
+        metrics = measures.find_min_config(true_maps, true_spectra.T, H, (G@W).T, angles = True)
     else : 
         temp = np.zeros((experiment["params"]["n_components"],))
-        metrics = (temp, temp, temp)
+        metrics = (temp, temp, temp, False)
     return metrics, (G, W, H), losses
 
 def quick_load(experiment,sim = True, W_dict = None) : 
@@ -110,9 +105,10 @@ def quick_load(experiment,sim = True, W_dict = None) :
     estimator = Estimator(G = G, shape_2d = shape_2d, true_D = D, true_H = H, **experiment["params"],fixed_W = W,hspy_comp = True)
     return spim, estimator
 
-def run_several_experiments(experiment,n_samples = 10, W_dict = None) :
+def run_several_experiments(experiment,output_file,n_samples = 10, W_dict = None) :
     metrics_summary = []
     folder = experiment["input_file"]
+    d = {}
     for i in range(n_samples) : 
         # Load parameters and data
         file = str(Path(folder) / Path("sample_{}.hspy".format(i)))
@@ -134,9 +130,17 @@ def run_several_experiments(experiment,n_samples = 10, W_dict = None) :
         W = out.W_
         H = out.H_
         G = out.G_
-    
+        losses = out.get_losses()
+
+        d["G_{}".format(i)] = G
+        d["W_{}".format(i)] = W
+        d["H_{}".format(i)] = H
+        d["losses_{}".format(i)] = losses
+
         true_spectra, true_maps = spim.phases, spim.maps
-        metrics_summary.append(compute_metrics(true_spectra.T, true_maps, G@W, H))
+        metrics_summary.append(measures.find_min_config(true_maps, true_spectra.T, H, (G@W).T, angles = True))
+
+    np.savez(output_file, **d)
 
     k = experiment["params"]["n_components"]
     names_a = []
@@ -155,7 +159,11 @@ def run_several_experiments(experiment,n_samples = 10, W_dict = None) :
             angles_array[key_a][j] = metrics[0][metrics[2][i]]
             mse_array[key_m][j] = metrics[1][i]
 
-    output = rfn.merge_arrays((angles_array,mse_array), flatten = True, usemask = False)
+    warn_array = np.zeros((n_samples,),dtype={"names" : ["warning"], "formats" : ["bool"]})
+    for j,metrics in enumerate(metrics_summary) : 
+        warn_array["warning"][j] = metrics[3]
+
+    output = rfn.merge_arrays((angles_array,mse_array,warn_array), flatten = True, usemask = False)
 
     return output
 
@@ -197,7 +205,7 @@ def results_string(experiment, metrics):
         len_name = len(name)
         top += ' ' + name + ' '
         sep += (2 + len_name)*'-' 
-        fmt = "{:" + str(len_name)+ '.2f}'
+        fmt = "{:" + str(len_name)+ '.4f}'
         means += ' ' + str(fmt.format(mean[name][0])) + ' '
         stds +=  ' ' + str(fmt.format(std[name][0])) + ' '
 
@@ -206,7 +214,7 @@ def results_string(experiment, metrics):
         middle += '         |'
         for name in metrics.dtype.names  : 
             len_name = len(name)
-            fmt = "{:" + str(len_name)+ '.2f}'
+            fmt = "{:" + str(len_name)+ '.4f}'
             middle += ' ' + str(fmt.format(metrics[name][i])) + ' '
         middle += "|\n"
 

@@ -4,15 +4,17 @@ import json
 
 def run_batch_exp(pos_dict,est_dict,eval_dict) :
     exp = e.build_exp(pos_dict, est_dict)
+    txt = eval_dict["output_file"] + ".txt"
+    npz = eval_dict["output_file"] + ".npz"
     
     if eval_dict["fixed_W_json"] == "None" :  
-        metrics = e.run_several_experiments(exp,n_samples = 6, W_dict = None)
+        metrics = e.run_several_experiments(exp, npz, n_samples = 6, W_dict = None)
     else : 
         with open(eval_dict["fixed_W_json"],"r") as f :
             json_dict = json.load(f)
-        metrics = e.run_several_experiments(exp,n_samples = 6, W_dict = json_dict)
+        metrics = e.run_several_experiments(exp, npz, n_samples = 6, W_dict = json_dict)
 
-    e.print_in_file(exp, metrics, eval_dict["output_file"])
+    e.print_in_file(exp, metrics, txt)
 
 if __name__ == "__main__" : 
     print(sys.argv[1:])
