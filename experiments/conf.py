@@ -32,7 +32,7 @@ ESTIMATOR_ARGS = {
     "normalize" : ["-n", "--normalize", {"action" : "store_true", "help" : "None : Activate the normalization of the data, it is mostly useful for having stable values of lambda_L among datasets."}, None],
 
     # SNMFEM parameters
-    "mu" : ["-mu","--mu",{"type" : float,"default" : 0.0, "help" : "float : strenght of the log regularization"},["SmoothNMF"]],
+    "mu" : ["-mu","--mu",{"type" : float, "narg" : "+","default" : 0.0, "help" : "float : strenght of the log regularization"},["SmoothNMF"]],
     "epsilon_reg" : ["-er","--epsilon_reg",{"type" : float, "default" : 1.0, "help" : "float : slope of the log regularization"}, ["SmoothNMF"]],
     "force_simplex" : ["-fs","--force_simplex",{"action" : "store_false", "help" : "None : Activate simplex constraint"},["SmoothNMF"]],
     "lambda_L" : ["-l","--lambda_L",{"type" : float, "default" : 0.0,"help":"float : strengh of the Laplacian reg"},["SmoothNMF"]],
