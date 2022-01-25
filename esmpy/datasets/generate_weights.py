@@ -125,15 +125,20 @@ def gaussian_ripple_weights(shape_2d, width = 1, seed = 0, **kwargs) :
 def spheres_weights(shape_2d=[80, 80], n_phases=3,  seed=0, radius = 2.5, **kwargs):
     mat = Material(shape_2d, n_phases)
     
+    intersect = 10*radius*np.sqrt(2)/2
+
+    assert shape_2d[0] > intersect
+    assert shape_2d[1] > intersect
     if seed == 0 and n_phases==3 and shape_2d == [80, 80]:
         mat.sphere((25, 30), 3.5, 3.5, 0.0, 0.5, 1)
         mat.sphere((55, 30), 3.5, 3.5, 0.0, 0.5, 2)
     else:
         np.random.seed(seed)
         for i in range(1, n_phases):
-            p1 = np.random.randint(1, shape_2d[0])
-            p2 = np.random.randint(1, shape_2d[1])
+            p1 = np.random.randint(int(intersect), int(shape_2d[0]- intersect))
+            p2 = np.random.randint(int(intersect), int(shape_2d[1]- intersect))
             mat.sphere([p1,p2], radius, radius, 0.0, 0.5, i)     
+        
     return mat.finalize_weight()
 
 def generate_weights(weight_type, shape_2d, n_phases=3, seed=0, **params):

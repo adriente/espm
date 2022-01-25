@@ -4,7 +4,7 @@ from esmpy.datasets.generate_EDXS_phases import generate_modular_phases
 from esmpy.conf import DEFAULT_SYNTHETIC_DATA_DICT
 
 n_phases = 3
-seed = 400
+seed = 43
 
 weights_dict = {
     "weight_type" : "sphere",
