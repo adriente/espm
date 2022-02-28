@@ -5,7 +5,7 @@ This project contains the code to create artificial Energy dispersive X-ray spec
 
 
 ## Installation
-Be sure to have all files by initialazing the submodule.
+Be sure to have all files by initialazing the submodule. Not necessary anymore
 ```
 git submodule update --init --recursive
 ```
@@ -14,6 +14,11 @@ Then, you can install this package using
 ```
 pip install cython
 pip install .
+```
+
+If you want to develop, please use the option
+```
+pip install ."testing" 
 ```
 
 # Set up the virtual env
@@ -49,14 +54,14 @@ pip install -e ".[testing]"
 
 You can then simply run the tests with 
 ```
-pytest snmfem
+pytest esmpy
 flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 ```
 
 ## Getting started with the repo
 Generate the synthetic dataset. Run the script:
 ```
-python scripts/generate_synthetic_dataset.py
+python experiments/generate_synthetic_dataset.py
 ```
 
 ## Running the algorithm

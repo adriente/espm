@@ -1,5 +1,5 @@
 from sklearn.utils.estimator_checks import check_estimator
-from esmpy.estimators.smooth_nmf import diff_surrogate, smooth_l2_surrogate
+from esmpy.estimators.smooth_nmf import diff_surrogate, smooth_l2_surrogate, smooth_dgkl_surrogate
 from esmpy.estimators import SmoothNMF
 from esmpy.estimators.base import normalization_factor
 import numpy as np
@@ -185,7 +185,26 @@ def test_surrogate_smooth_nmf():
             v4 = smooth_l2_surrogate(A1, L, A2)
             v5 = trace_xtLx(L, A2.T) / 2
             assert v4 >= v5
-            d = diff_surrogate(A1, A2, L=L)
+            d = diff_surrogate(A1, A2, L=L, dgkl=False)
+            np.testing.assert_almost_equal(v4 - v5 , d)
+            
+def test_surrogate_smooth_dgkl_nmf():
+
+    L = create_laplacian_matrix(4, 3)
+    for i in range(10):
+        A1 = np.random.rand(3, 12)
+        v1 = smooth_dgkl_surrogate(A1, L)
+        v2 = smooth_dgkl_surrogate(A1, L, A1)
+        v3 = trace_xtLx(L, A1.T) / 2
+        np.testing.assert_almost_equal(v1, v2)
+        np.testing.assert_almost_equal(v1, v3)
+
+        for j in range(10):
+            A2 = np.random.rand(3, 12)
+            v4 = smooth_dgkl_surrogate(A1, L, A2)
+            v5 = trace_xtLx(L, A2.T) / 2
+            assert v4 >= v5
+            d = diff_surrogate(A1, A2, L=L, dgkl=True)
             np.testing.assert_almost_equal(v4 - v5 , d)
 
 

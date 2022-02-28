@@ -207,7 +207,7 @@ def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, eps=log_shift, e
             mu = np.expand_dims(mu, axis=1)
         denum = denum + mu / (H + epsilon_reg)
     if not(lambda_L==0):
-        maxH = np.max(H)
+        maxH = np.max(H, axis=1, keepdims=True)
         num = num + lambda_L * sigmaL * maxH
         denum = denum + lambda_L * sigmaL * maxH + lambda_L * HL 
     num = H * num

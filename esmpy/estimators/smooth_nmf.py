@@ -9,19 +9,38 @@ from esmpy.laplacian import sigmaL
 
 
 def smooth_l2_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
-    tmp = (Ht @ L)
-    t1 = np.sum(Ht * tmp)
-    if not(H is None):
-        t2 = np.sum(H * tmp)
-        t3 = np.sum((Ht-H)**2)
-    else:
+    HtTL = Ht @ L
+    t1 = np.sum(HtTL * Ht)
+    if H is None:
         t2 = t1
         t3 = 0
-    return lambda_L / 2 * (2*t2 -t1 + sigmaL * t3)
+    else:
+        t2 = np.sum(HtTL * H )
+        t3 = np.sum((Ht-H)**2)
+    return lambda_L / 2 * (2*t2 - t1 + sigmaL * t3)
 
-def diff_surrogate(Ht, H, L, sigmaL=sigmaL, lambda_L=1):
+def smooth_dgkl_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
+    HtTL = Ht @ L
+    t1 = np.sum(HtTL * Ht)
+    
+    def dgkl(p, q):
+        return p * np.log(p/q) - p + q
+    
+    if H is None:
+        t2 = t1
+        t3 = 0
+    else:
+        t2 = np.sum(HtTL * H )
+        maxH = np.max(H, axis=1)
+        t3 = np.sum(maxH * np.sum(dgkl(Ht, H), axis=1))
+    return lambda_L / 2 * (2*t2 - t1 + sigmaL * t3)
+
+def diff_surrogate(Ht, H, L, sigmaL=sigmaL, lambda_L=1, dgkl=False):
     b_inf = trace_xtLx(L, H.T) * lambda_L / 2
-    b_supp = smooth_l2_surrogate(Ht, L=L, H=H, sigmaL=sigmaL, lambda_L=lambda_L)
+    if dgkl:
+        b_supp = smooth_dgkl_surrogate(Ht, L=L, H=H, sigmaL=sigmaL, lambda_L=lambda_L)
+    else:
+        b_supp = smooth_l2_surrogate(Ht, L=L, H=H, sigmaL=sigmaL, lambda_L=lambda_L)
     return b_supp - b_inf
 
 class SmoothNMF(NMFEstimator):
@@ -29,7 +48,7 @@ class SmoothNMF(NMFEstimator):
     loss_names_ = NMFEstimator.loss_names_ + ["log_reg_loss"] + ["Lapl_reg_loss"]
 
     # args and kwargs are copied from the init to the super instead of capturing them in *args and **kwargs to be scikit-learn compliant.
-    def __init__(self, lambda_L = 1.0, accelerate=False, linesearch=False, mu=0, epsilon_reg=1, **kwargs):
+    def __init__(self, lambda_L = 1.0, accelerate=False, linesearch=False, mu=0, epsilon_reg=1, algo_hq=False, **kwargs):
 
         super().__init__( **kwargs)
         self.accelerate = accelerate
@@ -37,6 +56,7 @@ class SmoothNMF(NMFEstimator):
         self.linesearch = linesearch
         self.mu = mu
         self.epsilon_reg = epsilon_reg
+        self.algo_hq = algo_hq
         if self.accelerate:
             assert np.max(np.array(self.mu))==0, "mu is not available for the accelerated algorithm."
             assert not self.l2
@@ -53,22 +73,21 @@ class SmoothNMF(NMFEstimator):
         # log_surr = log_surrogate(H, H, mu=self.mu, epsilon=self.epsilon_reg)
         # print("loss before:", KL_surr, log_surr, log_surr+KL_surr)
 
-        Hold = H.copy() 
-        if self.accelerate:
-            if self.linesearch:
-                Hold = H.copy()            
+        if self.linesearch:
+            Hold = H.copy()
+        if self.algo_hq:
             H = multiplicative_step_hq(self.X_, self.G_, W, H, force_simplex=self.force_simplex, eps=self.log_shift, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, sigmaL=self.sigmaL_)
-            W = multiplicative_step_w(self.X_, self.G_, W, H, eps=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W)
-            if self.linesearch:
-                d = diff_surrogate(Hold, H, L=self.L_, sigmaL=self.sigmaL_ )
-                if d>0:
-                    self.sigmaL_  = self.sigmaL_ / 1.2
-                else:
-                    self.sigmaL_  = self.sigmaL_ * 1.5
-                self.gamma.append(self.sigmaL_ )
         else:
             H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H)
-            W = multiplicative_step_w(self.X_, self.G_, W, H, eps=self.log_shift, safe=self.debug, l2=self.l2,fixed_W=self.fixed_W)
+
+        W = multiplicative_step_w(self.X_, self.G_, W, H, eps=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W)
+        if self.linesearch:
+            d = diff_surrogate(Hold, H, L=self.L_, sigmaL=self.sigmaL_, dgkl=not(self.algo_hq))
+            if d>0:
+                self.sigmaL_  = self.sigmaL_ / 1.2
+            else:
+                self.sigmaL_  = self.sigmaL_ * 1.5
+            self.gamma.append(self.sigmaL_ )
 
         # KL_surr = KL_loss_surrogate(self.X_, W, H, Hold, eps=0)
         # log_surr = log_surrogate(H, Hold, mu=self.mu, epsilon=self.epsilon_reg)

@@ -16,8 +16,11 @@
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
 \DeclareMathOperator{\Pois}{Pois}
-\DeclareMathOperator{\Likelihood}{Likelihood}
+\DeclareMathOperator{\Likelihood}{\text{Likelihood}}
 \DeclareMathOperator{\LogLikelihood}{LL}
+\DeclareMathOperator{\NLL}{NLL}
+\DeclareMathOperator{\Lagrangian}{\mathcal{L}}
+\DeclareMathOperator{\problem}{problem}
 
 \newcommand{\Rbb}[0]{\mathbb{R}}
 \newcommand{\Mat}[1]{\bm{#1}}
@@ -26,6 +29,10 @@
 \newcommand{\MG}[0]{\Mat{G}}
 \newcommand{\MD}[0]{\Mat{D}}
 \newcommand{\MY}[0]{\Mat{Y}}
+\newcommand{\bmu}[0]{\bm{\mu}}
+\newcommand{\bnu}[0]{\bm{\nu}}
+\newcommand{\trace}[1]{\text{tr}\left( #1 \right)}
+
 
 
 \newcommand{\GO}[1]{\textcolor{green3}{Guillaume: \textit{#1}}}
@@ -354,22 +361,22 @@ Toward an iterative algorithm
 
 \begin_layout Standard
 Let us consider a gradient step of 
-\begin_inset Formula $A$
+\begin_inset Formula $\MH$
 \end_inset
 
 .
  We have 
 \begin_inset Formula 
 \begin{align*}
-A_{t+1} & =A_{t}-\gamma\circ\nabla_{A}\mathcal{L}\vert_{A_{t},P_{t}}\\
- & =A_{t}-\gamma\circ\left(-P_{t}^{T}G_{t}^{T}\left(X\oslash G_{t}P_{t}A_{t}\right)+P_{t}^{T}G_{t}^{T}\mathbf{\mathbf{1}^{\ell,p}}\right)\\
- & =\left(A_{t}\oslash P_{t}^{T}G_{t}^{T}\mathbf{\mathbf{1}^{\ell,p}}\right)\circ\left(P_{t}^{T}G_{t}^{T}\left(X\oslash G_{t}P_{t}A_{t}\right)\right)
+\MH^{t+1} & =\MH^{t}-\gamma\circ\nabla_{\MH}F\vert_{\MW^{t},\MH^{t}}\\
+ & =\MH^{t}-\gamma\circ\left(-P_{t}^{T}G_{t}^{T}\left(\MY\oslash\MG\MW^{t}\MH^{t}\right)+\MW^{tT}\MG^{T}\mathbf{\mathbf{1}^{\ell,p}}\right)\\
+ & =\left(\MH^{t}\oslash\MW^{tT}\MG^{T}\mathbf{\mathbf{1}^{\ell,p}}\right)\circ\left(\MW^{tT}\MG^{T}\left(X\oslash\MG\MW^{t}\MH^{t}\right)\right)
 \end{align*}
 
 \end_inset
 
 where we used 
-\begin_inset Formula $\gamma=A_{t}\oslash P_{t}^{T}G_{t}^{T}\mathbf{\mathbf{1}^{\ell,p}}$
+\begin_inset Formula $\gamma=\MH^{t}\oslash\MW^{tT}\MG^{T}\mathbf{\mathbf{1}^{\ell,p}}$
 \end_inset
 
 .
@@ -383,6 +390,22 @@ where we used
 P_{t+1} & =P_{t}-\gamma\circ\nabla_{P}\mathcal{L}\vert_{A_{t},P_{t}}\\
  & =P_{t}-\gamma\circ\left(-G^{T}\left(X\oslash GPA\right)A^{T}+G^{T}\mathbf{1}^{\ell,p}A^{T}\right)\\
  & =\left(P_{t}\oslash G^{T}\mathbf{1}^{\ell,p}A^{T}\right)\circ\left(G^{T}\left(X\oslash GPA\right)A^{T}\right)
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\MW^{t+1} & =\left(\MW^{t}\oslash\MG^{T}\mathbf{1}^{\ell,p}\MH^{tT}\right)\circ\left(\MG^{T}\left(\MY\oslash\MG\MW^{t}\MH^{t}\right)\MH^{tT}\right)
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\MW_{c_{0},k_{0}} & =\MW_{c_{0},k_{0}}^{t}\frac{\sum_{\ell,p}\MG_{\ell,c_{0}}\MH_{k_{0},p}^{t}\left(\frac{\MY_{\ell,p}}{\sum_{c,k}\MG_{\ell,c}\MW_{c,k}^{t}\MH_{k,p}^{t}}\right)}{\sum_{\ell,p}\MG_{\ell,c_{0}}\MH_{k_{0},p}^{t}}
 \end{align*}
 
 \end_inset
@@ -835,7 +858,7 @@ We create an auxiliary function
 
 \begin_layout Enumerate
 For 
-\begin_inset Formula ${\color{magenta}F(\MW,\MH)}$
+\begin_inset Formula ${\color{magenta}F(\MW,\MH,\MY)}$
 \end_inset
 
 , we set 
@@ -845,7 +868,7 @@ For
  and obtain
 \begin_inset Formula 
 \begin{align*}
-{\color{magenta}{\color{magenta}F(\MW,\MH)}} & \leq\sum_{\ell,p}\left[\MY_{\ell,p}\sum_{k}u_{\ell,k,p}^{t}\log\left(\frac{u_{\ell,k,p}^{t}}{\MD_{\ell,k}\MH_{k,p}}\right)+\sum_{k}\MD_{\ell,k}\MH_{k,p}^{t}\right]\\
+{\color{magenta}{\color{magenta}F(\MW,\MH,\MY)}} & \leq\sum_{\ell,p}\left[\MY_{\ell,p}\sum_{k}u_{\ell,k,p}^{t}\log\left(\frac{u_{\ell,k,p}^{t}}{\MD_{\ell,k}\MH_{k,p}}\right)+\sum_{k}\MD_{\ell,k}\MH_{k,p}^{t}\right]\\
  & =\sum_{\ell,p}\left[-\sum_{k}\MY_{\ell,p}\frac{\MD_{\ell,k}\MH_{k,p}^{t}}{\sum_{i}\MD_{\ell,i}\MH_{i,p}^{t}}\left(\log\left(\MD_{\ell,k}\MH_{k,p}\right)-\log\left(\frac{\MD_{\ell,k}\MH_{k,p}^{t}}{\sum_{i}\MD_{\ell,i}\MH_{i,p}^{t}}\right)\right)+\sum_{k}\MD_{\ell,k}\MH_{k,p}^{t}\right]\\
 \end{align*}
 
@@ -868,13 +891,21 @@ For
 \end_inset
 
  we linearize the function around 
-\begin_inset Formula $A^{t}$
+\begin_inset Formula $\MH^{t}$
 \end_inset
 
  and thanks to concavity, we have
 \begin_inset Formula 
 \[
-{\color{green}R_{1}(A)\leq\sum_{k,p}\mu_{k}\left[\log\left(A_{k,p}^{t}+\epsilon\right)+\frac{A-A_{k,p}^{t}}{\epsilon+A_{k,p}^{t}}\right]}
+{\color{green}R_{1}(A)=\bmu^{T}\log(\MH+\epsilon)\mathbf{1}^{p}}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+{\color{green}R_{1}(\MH)\leq\sum_{k,p}\bmu_{k}\left[\log\left(\MH_{k,p}^{t}+\epsilon\right)+\frac{\MH-\MH_{k,p}^{t}}{\epsilon+\MH_{k,p}^{t}}\right]}
 \]
 
 \end_inset
@@ -903,9 +934,9 @@ For
 As a result, we create an auxiliary defined as 
 \begin_inset Formula 
 \begin{align*}
-G\left(A,A^{t}\right) & =\sum_{\ell,p}\left[-\sum_{i}X_{\ell,p}\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}}\left(\log\left(D_{\ell,i}^{\prime}A_{i,p}\right)-\log\left(\frac{D_{\ell,i}^{\prime}A_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p}^{t}}\right)\right)+\sum_{i}D_{\ell,i}^{\prime}A_{i,p}\right]\\
- & +\sum_{k,p}\mu_{k}\left[\log\left(A_{k,p}^{t}+\epsilon\right)+\frac{A-A_{k,p}^{t}}{\epsilon+A_{k,p}^{t}}\right]+\sum_{k}\nu_{k}\left(\sum_{p}A_{kp}-1\right)\\
- & +\frac{\lambda}{2}\sum_{i}\left[A_{i}^{t}{}^{T}\Delta A_{i}^{t}+2\left(A_{i}-A_{i}^{t}\right)^{T}\Delta A_{i}^{t}\right]+2\sigma(\Delta)\left(\max_{i,p}A_{i,p}^{t}\right)\sum_{i,p}\left(A_{i,p}^{t}\log\left(\frac{A_{i,p}^{t}}{A_{i,p}}\right)-A_{i,p}^{t}+A_{i,p}\right)
+G\left(\MW^{t},\MH^{t},\MW,\MH,\MY\right) & =\sum_{\ell,p}\left[-\sum_{i}X_{\ell,p}\frac{\MD_{\ell,i}\MH_{i,p}^{t}}{\sum_{k}\MD_{\ell,k}\MH_{k,p}^{t}}\left(\log\left(\MD_{\ell,i}\MH_{i,p}\right)-\log\left(\frac{D_{\ell,i}^{\prime}\MH_{i,p}^{t}}{\sum_{k}D_{\ell,k}^{\prime}\MH_{k,p}^{t}}\right)\right)+\sum_{i}\MD_{\ell,i}\MH_{i,p}\right]\\
+ & +\sum_{k,p}\bmu_{k}\left[\log\left(\MH_{k,p}^{t}+\epsilon\right)+\frac{\MH-\MH_{k,p}^{t}}{\epsilon+\MH_{k,p}^{t}}\right]+\sum_{k}\bnu_{k}\left(\sum_{p}\MH_{kp}-\bm{1}\right)\\
+ & +\frac{\lambda}{2}\sum_{i}\left[\MH_{i}^{t}{}^{T}\Delta\MH_{i}^{t}+2\left(\MH_{i}-\MH_{i}^{t}\right)^{T}\Delta\MH_{i}^{t}\right]+2\sigma(\Delta)\left(\max_{i,p}\MH_{i,p}^{t}\right)\sum_{i,p}\left(\MH_{i,p}^{t}\log\left(\frac{\MH_{i,p}^{t}}{\MH_{i,p}}\right)-\MH_{i,p}^{t}+\MH_{i,p}\right)
 \end{align*}
 
 \end_inset
@@ -923,17 +954,17 @@ Let us compute the gradient of the auxiliary function
 \end_inset
 
  with respect of 
-\begin_inset Formula $A$
+\begin_inset Formula $\MH$
 \end_inset
 
  
 \begin_inset Formula 
 \begin{align*}
-\frac{\partial G(A,A^{t})}{\partial A_{k_{0},p_{0}}} & =\sum_{\ell}D_{\ell,k_{0}}^{\prime}-\frac{1}{A_{k_{0},p_{0}}}\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}\\
- & +\frac{\mu_{k_{0}}}{\epsilon+A_{k_{0},p_{0}}^{t}}+\nu_{k_{0}}\\
- & +\frac{\lambda}{2}\left[2\sum_{k_{2}}A_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+2\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)\left(-\frac{A_{k_{0},p_{0}}^{t}}{A_{k_{0},p_{0}}}+1\right)\right]\\
- & =-\frac{1}{A_{k_{0},p_{0}}}\left(\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}+\lambda\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)A_{k_{0},p_{0}}^{t}\right)\\
- & +\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\frac{\mu_{k_{0}}}{\epsilon+A_{k_{0},p_{0}}^{t}}+\lambda\sum_{k_{2}}A_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+\lambda\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)+\nu_{k_{0}}\\
+\frac{\partial G(\MW^{t},\MH^{t},\MW,\MH,\MY)}{\partial\MH_{k_{0},p_{0}}} & =\sum_{\ell}\MD_{\ell,k_{0}}-\frac{1}{\MH_{k_{0},p_{0}}}\sum_{\ell}\MY_{\ell,p_{0}}\frac{\MD_{\ell,k_{0}}\MH_{k_{0},p_{0}}^{t}}{\sum_{k}\MD_{\ell,k}\MH_{k,p_{0}}^{t}}\\
+ & +\frac{\bmu_{k_{0}}}{\epsilon+\MH_{k_{0},p_{0}}^{t}}+\bnu_{p_{0}}\\
+ & +\frac{\lambda}{2}\left[2\sum_{k_{2}}\MH_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+2\sigma(\Delta)\left(\max_{k,p}\MH_{k,p}^{t}\right)\left(-\frac{\MH_{k_{0},p_{0}}^{t}}{\MH_{k_{0},p_{0}}}+1\right)\right]\\
+ & =-\frac{1}{\MH_{k_{0},p_{0}}}\left(\sum_{\ell}\MY_{\ell,p_{0}}\frac{\MD_{\ell,k_{0}}\MH_{k_{0},p_{0}}^{t}}{\sum_{k}\MD_{\ell,k}\MH_{k,p_{0}}^{t}}+\lambda\sigma(\Delta)\left(\max_{k,p}\MH_{k,p}^{t}\right)\MH_{k_{0},p_{0}}^{t}\right)\\
+ & +\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\frac{\bmu_{k_{0}}}{\epsilon+\MH_{k_{0},p_{0}}^{t}}+\lambda\sum_{k_{2}}\MH_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+\lambda\sigma(\Delta)\left(\max_{k,p}\MH_{k,p}^{t}\right)+\bnu_{p_{0}}\\
  & =0
 \end{align*}
 
@@ -942,7 +973,34 @@ Let us compute the gradient of the auxiliary function
 So we obtain we obtain the following solution
 \begin_inset Formula 
 \[
-A_{k_{0},p_{0}}=A_{k_{0},p_{0}}^{t}\frac{\sum_{\ell}X_{\ell,p_{0}}\frac{D_{\ell,k_{0}}^{\prime}A_{k_{0},p_{0}}^{t}}{\sum_{k}D_{\ell,k}^{\prime}A_{k,p_{0}}^{t}}+\lambda\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)A_{k_{0},p_{0}}^{t}}{\sum_{\ell}D_{\ell,k_{0}}^{\prime}+\frac{\mu_{k_{0}}}{\epsilon+A_{k_{0},p_{0}}^{t}}+\lambda\sum_{k_{2}}A_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+\lambda\sigma(\Delta)\left(\max_{k,p}A_{k,p}^{t}\right)+\nu_{k_{0}}}
+\MH_{k_{0},p_{0}}=\MH_{k_{0},p_{0}}^{t}\frac{\sum_{\ell}\MY_{\ell,p_{0}}\frac{\MD_{\ell,k_{0}}}{\sum_{k}\MD_{\ell,k}A_{k,p_{0}}^{t}}+\lambda\sigma(\Delta)\left(\max_{k,p}\MH_{k,p}^{t}\right)}{\sum_{\ell}\MD_{\ell,k_{0}}+\frac{\bmu_{k_{0}}}{\epsilon+\MH_{k_{0},p_{0}}^{t}}+\lambda\sum_{k_{2}}\MH_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+\lambda\sigma(\Delta)\left(\max_{k,p}\MH_{k,p}^{t}\right)+\bnu_{p_{0}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+1=\sum_{k_{0}}\MH_{k_{0},p_{0}}=\sum_{k_{0}}\frac{\Mat A_{k_{0},p_{0}}}{\Mat B_{k_{0},p_{0}}+\bnu_{p_{0}}}
+\]
+
+\end_inset
+
+where
+\begin_inset Formula 
+\[
+\Mat A_{k_{0},p_{0}}=\MH_{k_{0},p_{0}}^{t}\sum_{\ell}\MY_{\ell,p_{0}}\frac{\MD_{\ell,k_{0}}}{\sum_{k}\MD_{\ell,k}A_{k,p_{0}}^{t}}+\lambda\sigma(\Delta)\left(\max_{k,p}\MH_{k,p}^{t}\right)
+\]
+
+\end_inset
+
+and
+\begin_inset Formula 
+\[
+\Mat B_{k_{0},p_{0}}=\sum_{\ell}\MD_{\ell,k_{0}}+\frac{\bmu_{k_{0}}}{\epsilon+\MH_{k_{0},p_{0}}^{t}}+\lambda\sum_{k_{2}}\MH_{p_{0},k_{2}}^{tT}\Delta_{k_{2}k_{0}}+\lambda\sigma(\Delta)\left(\max_{k,p}\MH_{k,p}^{t}\right)
 \]
 
 \end_inset
@@ -1782,7 +1840,7 @@ So instead, we optimize an auxiliary function
 The gradient of the auxiliary function becomes
 \begin_inset Formula 
 \[
-\left.\nabla_{A}\tilde{\mathcal{D}_{J}}(A,A^{t},D^{t},Q^{t},\nu)\right|_{k,p}=-\frac{\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}^{t}}{A_{k,p}}+\sum_{\ell}D_{\ell,k}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{k,p_{2}}^{t}+\lambda\sigma(\Delta)\left(A_{k,p}-A_{k,p}^{t}\right)+\nu_{k}=0
+\left.\nabla_{\MH}G(\MH,\MH^{t},\MW^{t},Q^{t},\nu)\right|_{k,p}=-\frac{\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}^{t}}{A_{k,p}}+\sum_{\ell}D_{\ell,k}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}A_{k,p_{2}}^{t}+\lambda\sigma(\Delta)\left(A_{k,p}-A_{k,p}^{t}\right)+\nu_{k}=0
 \]
 
 \end_inset
@@ -3127,6 +3185,150 @@ b_{0}^{\prime}\frac{\left(E_{0}-E\right)}{E}+\left(b_{1}^{\prime}-b_{0}^{\prime}
 \end_inset
 
 
+\end_layout
+
+\begin_layout Section
+Normalisation
+\end_layout
+
+\begin_layout Standard
+Let us consider 
+\begin_inset Formula $\MY$
+\end_inset
+
+ and 
+\begin_inset Formula 
+\[
+\MY^{\prime}=\alpha\left[\underbrace{\begin{array}{ccc}
+\MY & \cdots & \MY\\
+\vdots & \ddots & \vdots\\
+\MY & \cdots & \MY
+\end{array}}_{m_{L}}\left.\begin{matrix}\vphantom{}\\
+\vphantom{}\\
+\vphantom{}
+\end{matrix}\right\} m_{P}\right]
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\MY^{\prime}=\left[\underbrace{\begin{array}{ccc}
+\MY & \cdots & \MY\\
+\vdots & \ddots & \vdots\\
+\MY & \cdots & \MY
+\end{array}}_{m_{\ell}}\right]\left.\begin{matrix}\vphantom{}\\
+\vphantom{}\\
+\vphantom{}
+\end{matrix}\right\} m_{p}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\MY^{\prime}=\left[\begin{array}{ccc}
+\alpha_{1}\beta_{1}\MY & \cdots & \alpha_{1}\beta_{m_{L}}\MY\\
+\vdots & \ddots & \vdots\\
+\alpha_{m_{P}}\beta_{1}\MY & \cdots & \alpha_{m_{P}}\beta_{m_{L}}\MY
+\end{array}\right]=\left[\begin{array}{ccc}
+\alpha_{1}\beta_{1}\MW\MH & \cdots & \alpha_{1}\beta_{m_{L}}\MW\MH\\
+\vdots & \ddots & \vdots\\
+\alpha_{m_{P}}\beta_{1}\MW\MH & \cdots & \alpha_{m_{P}}\beta_{m_{L}}\MW\MH
+\end{array}\right]=\left[\begin{array}{c}
+\alpha_{1}\MW\\
+\vdots\\
+\alpha_{m_{P}}\MW
+\end{array}\right]\left[\begin{array}{ccc}
+\beta_{1}\MH & \cdots & \beta_{m_{L}}\MH\end{array}\right]
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+L(\MW,\MH,\MY^{\prime}) & =\sum_{i=1}^{m_{P}}\sum_{j=1}^{m_{L}}F(\MW^{i},\MH^{j},\alpha_{i}\beta_{j}\MY)+\sum_{j=1}^{m_{L}}R_{1}(\MH^{j},\lambda^{j})+\sum_{j=1}^{m_{L}}R_{2}(\MH^{j},\mu^{j})\\
+ & =\sum_{i=1}^{m_{P}}\sum_{j=1}^{m_{L}}\alpha_{i}\beta_{j}\left(F(\MW^{i},\MH^{j},\MY)+\frac{\lambda^{j}}{\lambda\beta_{j}\sum_{i}\alpha_{i}}R_{1}(\MH^{j},\lambda)+\frac{\mu^{j}}{\mu\beta_{j}\sum_{i}\alpha_{i}}R_{2}(\MH^{j},\mu)\right)\\
+ & =\left(\sum_{i=1}^{m_{P}}\sum_{j=1}^{m_{L}}\alpha_{i}\beta_{j}\right)\left(F(\MW,\MH,\MY)+R_{1}(\MH,\lambda)+R_{2}(\MH,\mu)\right)
+\end{align*}
+
+\end_inset
+
+We have set 
+\begin_inset Formula $\lambda_{j}=\lambda\beta_{j}\sum_{i}\alpha_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mu_{j}=\mu\beta_{j}\sum_{i}\alpha_{i}$
+\end_inset
+
+.
+ The 
+\begin_inset Formula $K$
+\end_inset
+
+ is added because the regularization is multiplied by 
+\begin_inset Formula $K$
+\end_inset
+
+.
+\begin_inset Formula 
+\[
+\MY^{\prime}=\frac{1}{\|\MY\|_{1}}\frac{K}{L}\MY
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\MY^{\prime}=\left[\begin{array}{c}
+\alpha_{1}\MY\\
+\vdots\\
+\alpha_{m_{P}}\MY
+\end{array}\right]\hspace{1em}\MW^{\prime}=\left[\begin{array}{c}
+\alpha_{1}\MW\\
+\vdots\\
+\alpha_{m_{P}}\MW
+\end{array}\right]\hspace{1em}\MH^{\prime}=\MH\hspace{1em}\lambda^{\prime}=\lambda\left(\sum_{i=1}^{m_{P}}\alpha_{i}\right)\hspace{1em}\mu^{\prime}=\mu\left(\sum_{i=1}^{m_{P}}\alpha_{i}\right)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+L(\MW^{\prime},\MH^{\prime},\MY^{\prime}) & =F(\MW^{\prime},\MH^{\prime},\MY^{\prime})+R_{1}(\MH^{\prime},\lambda^{\prime})+R_{2}(\MH^{\prime},\mu^{\prime})\\
+ & =\left(\sum_{i=1}^{m_{P}}F(\MW,\MH,\alpha_{i}\MY)\right)+R_{1}(\MH,\lambda^{\prime})+R_{2}(\MH,\mu^{\prime})\\
+ & =\left(\sum_{i=1}^{m_{P}}\alpha_{i}\right)\left(F(\MW,\MH,\MY)+R_{1}\left(\MH,\frac{\lambda^{\prime}}{\left(\sum_{i=1}^{m_{P}}\alpha_{i}\right)}\right)+R_{2}\left(\MH,\frac{\mu^{\prime}}{\left(\sum_{i=1}^{m_{P}}\alpha_{i}\right)}\right)\right)\\
+ & =\left(\sum_{i=1}^{m_{P}}\alpha_{i}\right)L(\MW,\MH,\MY)
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\problem(\MY^{\prime},\lambda^{\prime},\bmu^{\prime}) & =\argmin_{\MW^{\prime},\MH^{\prime}}F(\MW^{\prime},\MH^{\prime},\MY^{\prime})+R_{1}(\MH^{\prime},\lambda^{\prime})+R_{2}(\MH^{\prime},\bmu^{\prime})\\
+ & \argmin_{\MW,\MH}\left(\sum_{i=1}^{m_{P}}F(\MW,\MH,\alpha_{i}\MY)\right)+R_{1}(\MH,\lambda^{\prime})+R_{2}(\MH,\bmu^{\prime})\\
+\problem(\MY,\lambda,\bmu) & =\argmin_{\MW,\MH}\left(\sum_{i=1}^{m_{P}}\alpha_{i}\right)\left(F(\MW,\MH,\MY)+R_{1}\left(\MH,\frac{\lambda^{\prime}}{\left(\sum_{i=1}^{m_{P}}\alpha_{i}\right)}\right)+R_{2}\left(\MH,\frac{\bmu^{\prime}}{\left(\sum_{i=1}^{m_{P}}\alpha_{i}\right)}\right)\right)\\
+\end{align*}
+
+\end_inset
+
+ The obtain the same solution, the regularisation parameter needs to be
+ set to 
+\begin_inset Formula $\lambda^{\prime}=\lambda\left(\sum_{i=1}^{m_{P}}\alpha_{i}\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $\mu^{\prime}=\mu\left(\sum_{i=1}^{m_{P}}\alpha_{i}\right)$
+\end_inset
+
+.
 \end_layout
 
 \end_body
