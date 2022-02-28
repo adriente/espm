@@ -3,7 +3,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 from esmpy.updates import initialize_algorithms
 from esmpy.measures import KLdiv_loss, Frobenius_loss, find_min_angle, find_min_MSE
-from esmpy.conf import log_shift, dicotomy_tol
+from esmpy.conf import log_shift
 from esmpy.utils import rescaled_DH
 import time
 from abc import ABC, abstractmethod
@@ -21,9 +21,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     const_KL_ = None
     
     def __init__(self, n_components=2, init='warn', tol=1e-4, max_iter=200,
-                 random_state=None, verbose=1, log_shift=log_shift, debug=False,
-                 force_simplex=True, l2=False,  G=None, shape_2d = None, normalize = False,
-                 eval_print=10, true_D = None, true_H = None, fixed_H = None, fixed_W = None, hspy_comp = False,dicotomy_tol=dicotomy_tol
+                 random_state=None, verbose=1, debug=False,
+                 l2=False,  G=None, shape_2d = None, normalize = False, log_shift=log_shift, 
+                 eval_print=10, true_D = None, true_H = None, fixed_H = None, fixed_W = None, hspy_comp = False
                  ):
         self.n_components = n_components
         self.init = init
@@ -33,7 +33,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.verbose = verbose
         self.log_shift = log_shift
         self.debug = debug
-        self.force_simplex= force_simplex
         self.l2 = l2
         self.G = G
         self.shape_2d = shape_2d
@@ -44,7 +43,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.fixed_W = fixed_W
         self.hspy_comp = hspy_comp
         self.normalize = normalize
-        self.dicotomy_tol = dicotomy_tol
 
     def _more_tags(self):
         return {'requires_positive_X': True}

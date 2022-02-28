@@ -4,6 +4,7 @@ from esmpy.updates import multiplicative_step_h, multiplicative_step_w, multipli
 from esmpy.measures import trace_xtLx, log_reg
 from esmpy.estimators import NMFEstimator
 from esmpy.laplacian import sigmaL
+from esmpy.conf import dicotomy_tol
 
 # from esmpy.measures import KL_loss_surrogate, KLdiv_loss, log_reg, log_surrogate
 
@@ -48,7 +49,8 @@ class SmoothNMF(NMFEstimator):
     loss_names_ = NMFEstimator.loss_names_ + ["log_reg_loss"] + ["Lapl_reg_loss"]
 
     # args and kwargs are copied from the init to the super instead of capturing them in *args and **kwargs to be scikit-learn compliant.
-    def __init__(self, lambda_L = 1.0, accelerate=False, linesearch=False, mu=0, epsilon_reg=1, algo_hq=False, **kwargs):
+    def __init__(self, lambda_L = 1.0, accelerate=False, linesearch=False, mu=0, epsilon_reg=1, algo_hq=False, 
+                 force_simplex=True, dicotomy_tol=dicotomy_tol, **kwargs):
 
         super().__init__( **kwargs)
         self.accelerate = accelerate
@@ -56,6 +58,11 @@ class SmoothNMF(NMFEstimator):
         self.linesearch = linesearch
         self.mu = mu
         self.epsilon_reg = epsilon_reg
+        self.force_simplex = force_simplex
+        self.dicotomy_tol = dicotomy_tol
+        
+        
+
         self.algo_hq = algo_hq
         if self.accelerate:
             assert np.max(np.array(self.mu))==0, "mu is not available for the accelerated algorithm."
