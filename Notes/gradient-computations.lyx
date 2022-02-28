@@ -29,6 +29,7 @@
 \newcommand{\MG}[0]{\Mat{G}}
 \newcommand{\MD}[0]{\Mat{D}}
 \newcommand{\MY}[0]{\Mat{Y}}
+\newcommand{\MQ}[0]{\Mat{Q}}
 \newcommand{\bmu}[0]{\bm{\mu}}
 \newcommand{\bnu}[0]{\bm{\nu}}
 \newcommand{\trace}[1]{\text{tr}\left( #1 \right)}
@@ -915,13 +916,13 @@ For
 
 \begin_layout Enumerate
 For 
-\begin_inset Formula ${\color{blue}R_{2}(A)},$
+\begin_inset Formula $R_{2}(\MH,\lambda),$
 \end_inset
 
  we use the key computation presented bellow
 \begin_inset Formula 
 \begin{align*}
-{\color{blue}R_{2}(\MH)} & =\frac{\lambda}{2}\text{tr}\left(\MH^{T}\Delta\MH\right)=\frac{\lambda}{2}\sum_{k}\MH_{k}^{T}\Delta\MH_{k}\\
+R_{2}(\MH,\lambda) & =\frac{\lambda}{2}\text{tr}\left(\MH^{T}\Delta\MH\right)=\frac{\lambda}{2}\sum_{k}\MH_{k}^{T}\Delta\MH_{k}\\
  & \leq\frac{\lambda}{2}\sum_{k}\left[\left.\MH_{k}^{t}\right.^{T}\Delta\MH_{k}^{t}+2\left(\MH_{k}-\MH_{k}^{t}\right)^{T}\Delta\MH_{k}^{t}+2\lambda\sigma(\Delta)\left(\max_{p}\MH_{k,p}^{t}\right)\sum_{p}\left(\MH_{k,p}^{t}\log\left(\frac{\MH_{k,p}^{t}}{\MH_{k,p}}\right)-\MH_{k,p}^{t}+\MH_{k,p}\right)\right]
 \end{align*}
 
@@ -1613,12 +1614,12 @@ f_{J}(x,a,d,q):=-x\sum_{i}q_{i}\log\left(\frac{a_{i}d_{i}}{q_{i}}\right)+\sum_{i
 Now les us write an auxiliary objective function
 \begin_inset Formula 
 \begin{align*}
-\mathcal{L}_{J}(A,D,Q) & :=\sum_{\ell,p}\left[f_{J}(X_{\ell,p},A_{\cdot,p},D_{\ell,\cdot},Q_{\ell,p})\right]\\
- & =\sum_{\ell,p}\left[-X_{\ell,p}\sum_{k}Q_{\ell,p,k}\log\left(\frac{A_{k,p}D_{\ell,k}}{Q_{\ell,p,k}}\right)+\sum_{k}A_{k,p}D_{\ell,k}\right]\\
- & =-\sum_{p,k}\log\left(A_{k,p}\right)\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}\\
- & -\sum_{\ell,k}\log\left(D_{\ell,k}\right)\sum_{p}X_{\ell,p}Q_{\ell,p,k}\\
- & +\sum_{\ell,p}\sum_{k}X_{\ell,p}Q_{\ell,p,k}\log\left(Q_{\ell,p,k}\right)\\
- & +\sum_{\ell,p}\sum_{k}A_{k,p}D_{\ell,k}
+\mathcal{L}_{J}(\MH,\MD,\MQ) & :=\sum_{\ell,p}\left[f_{J}(\MY_{\ell,p},\MH_{\cdot,p},D_{\ell,\cdot},\MQ_{\ell,p,\cdot})\right]\\
+ & =\sum_{\ell,p}\left[-\MY_{\ell,p}\sum_{k}\MQ_{\ell,p,k}\log\left(\frac{\MH_{k,p}\MD_{\ell,k}}{\MQ_{\ell,p,k}}\right)+\sum_{k}\MH_{k,p}\MD_{\ell,k}\right]\\
+ & =-\sum_{p,k}\log\left(\MH_{k,p}\right)\sum_{\ell}\MY_{\ell,p}\MQ_{\ell,p,k}\\
+ & -\sum_{\ell,k}\log\left(\MD_{\ell,k}\right)\sum_{p}\MY_{\ell,p}\MQ_{\ell,p,k}\\
+ & +\sum_{\ell,p}\sum_{k}\MY_{\ell,p}\MQ_{\ell,p,k}\log\left(\MQ_{\ell,p,k}\right)\\
+ & +\sum_{\ell,p}\sum_{k}\MH_{k,p}D_{\ell,k}
 \end{align*}
 
 \end_inset
@@ -1626,7 +1627,7 @@ Now les us write an auxiliary objective function
 
 \begin_inset Formula 
 \[
-\mathcal{L}(A,D)\leq\mathcal{L}_{J}(A,D,Q)
+\mathcal{L}(\MH,\MD)\leq\mathcal{L}_{J}(\MH,\MD,\MQ)
 \]
 
 \end_inset
@@ -1644,7 +1645,7 @@ Note that minimizing
  The smooth regularizer is given by 
 \begin_inset Formula 
 \[
-\frac{\lambda}{2}\text{tr}\left(A^{T}\Delta A\right)
+\frac{\lambda}{2}\text{tr}\left(\MH^{T}\Delta\MH\right)
 \]
 
 \end_inset
@@ -1652,9 +1653,9 @@ Note that minimizing
 
 \begin_inset Formula 
 \begin{align*}
-\tilde{\psi_{t}}\left(A^{t},A\right) & =\frac{\lambda}{2}\text{tr}\left(A^{T}\Delta A\right)=\frac{\lambda}{2}\sum_{k}A_{k}^{T}\Delta A_{k}\\
- & =\frac{\lambda}{2}\sum_{k}A_{k}^{tT}\Delta A_{k}^{t}+\lambda\sum_{k}\left(A_{k}-A_{k}^{t}\right)^{T}\Delta A_{k}^{t}+\frac{\lambda}{2}\sum_{k}\left(A_{k}-A_{k}^{t}\right)^{T}\Delta\left(A_{k}-A_{k}^{t}\right)\\
- & \leq\frac{\lambda}{2}\sum_{k}A_{k}^{tT}\Delta A_{k}^{t}+\lambda\sum_{k}\left(A_{k}-A_{k}^{t}\right)^{T}\Delta A_{k}^{t}+\sigma(\Delta)\frac{\lambda}{2}\sum_{k}\|A_{k}-A_{k}^{t}\|^{2}
+\tilde{\psi_{t}}\left(\MH^{t},\MH\right) & =\frac{\lambda}{2}\text{tr}\left(\MH^{T}\Delta\MH\right)=\frac{\lambda}{2}\sum_{k}\MH_{k}^{T}\Delta\MH_{k}\\
+ & =\frac{\lambda}{2}\sum_{k}\MH_{k}^{tT}\Delta\MH_{k}^{t}+\lambda\sum_{k}\left(\MH_{k}-\MH_{k}^{t}\right)^{T}\Delta\MH_{k}^{t}+\frac{\lambda}{2}\sum_{k}\left(\MH_{k}-\MH_{k}^{t}\right)^{T}\Delta\left(\MH_{k}-\MH_{k}^{t}\right)\\
+ & \leq\frac{\lambda}{2}\sum_{k}\MH_{k}^{tT}\Delta\MH_{k}^{t}+\lambda\sum_{k}\left(\MH_{k}-\MH_{k}^{t}\right)^{T}\Delta\MH_{k}^{t}+\sigma(\Delta)\frac{\lambda}{2}\sum_{k}\|\MH_{k}-\MH_{k}^{t}\|^{2}
 \end{align*}
 
 \end_inset
@@ -1666,7 +1667,7 @@ I believe that minimizing with respect of
  is simply doing 
 \begin_inset Formula 
 \[
-\dot{Q_{\ell,p,i}}=\frac{A_{i,p}D_{\ell,i}}{\sum_{j}A_{j,p}D_{\ell,j}}.
+\dot{\MQ}_{\ell,p,k}=\frac{\MD_{\ell,k}\MH_{k,p}}{\sum_{j}\MD_{\ell,j}\MH_{j,p}}.
 \]
 
 \end_inset
@@ -1678,7 +1679,7 @@ At optimimality of
 , we have
 \begin_inset Formula 
 \[
-\mathcal{L}(A,D)=\mathcal{L}_{J}(A,D,\dot{Q})
+\mathcal{L}(\MH,\MD)=\mathcal{L}_{J}(\MH,\MD,\dot{\MQ})
 \]
 
 \end_inset
@@ -1686,7 +1687,7 @@ At optimimality of
 
 \begin_inset Formula 
 \[
-\nabla_{A}\mathcal{L}(A,D)=\nabla_{A}\mathcal{L}_{J}(A,D,\dot{Q})
+\nabla_{\MH}\mathcal{L}(\MH,\MD)=\nabla_{\MH}\mathcal{L}_{J}(\MH,\MD,\dot{\MQ})
 \]
 
 \end_inset
@@ -1694,7 +1695,7 @@ At optimimality of
 
 \begin_inset Formula 
 \[
-\nabla_{D}\mathcal{L}(A,D)=\nabla_{D}\mathcal{L}_{J}(A,D,\dot{Q})
+\nabla_{\MD}\mathcal{L}(\MH,\MD)=\nabla_{\MD}\mathcal{L}_{J}(\MH,\MD,\dot{\MQ})
 \]
 
 \end_inset
@@ -1773,6 +1774,42 @@ So we can define a proximal step as
 
 \begin_layout Standard
 WE CAN DO LINESEARCH OVER GAMMA
+\end_layout
+
+\begin_layout Subsubsection
+Difference of surrogate function
+\end_layout
+
+\begin_layout Standard
+Let us consider the function
+\begin_inset Formula 
+\begin{align*}
+R_{2}(\MH,\lambda) & =\frac{\lambda}{2}\text{tr}\left(\MH^{T}\Delta\MH\right)=\frac{\lambda}{2}\sum_{k}\MH_{k}^{T}\Delta\MH_{k}\\
+ & \leq\frac{\lambda}{2}\sum_{k}\left.\MH_{k}^{t}\right.^{T}\Delta\MH_{k}^{t}+\lambda\sum_{k}\left(\MH_{k}-\MH_{k}^{t}\right)^{T}\Delta\MH_{k}^{t}+\lambda\sum_{k}\sigma(\Delta)\left(\max_{p}\MH_{k,p}^{t}\right)\sum_{p}\left(\MH_{k,p}^{t}\log\left(\frac{\MH_{k,p}^{t}}{\MH_{k,p}}\right)-\MH_{k,p}^{t}+\MH_{k,p}\right)\\
+ & =G_{2}\left(\MH^{t},\MH,\lambda\right)
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+R_{2}(\MH,\lambda) & =\frac{\lambda}{2}\sum_{k}\MH_{k}^{T}\Delta\MH_{k}\\
+ & \leq\frac{\lambda}{2}\sum_{k}\MH_{k}^{tT}\Delta\MH_{k}^{t}+\lambda\sum_{k}\left(\MH_{k}-\MH_{k}^{t}\right)^{T}\Delta\MH_{k}^{t}+\sigma(\Delta)\frac{\lambda}{2}\sum_{k}\|\MH_{k}-\MH_{k}^{t}\|^{2}\\
+ & =G_{2}^{\prime}\left(\MH^{t},\MH,\lambda\right)
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\frac{\lambda}{2}\sum_{k}\MH_{k}^{tT}\Delta\MH_{k}^{t}+\lambda\sum_{k}\left(\MH_{k}-\MH_{k}^{t}\right)^{T}\Delta\MH_{k}^{t}=\lambda\sum_{k}\MH_{k}^{T}\Delta\MH_{k}^{t}-\frac{\lambda}{2}\sum_{k}\MH_{k}^{tT}\Delta\MH_{k}^{t}
+\]
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -1887,7 +1924,7 @@ b^{2}-4ac\geq b^{2}\geq0
 
 \end_inset
 
-Thus, we have two real solution, one negative and one positive.
+Thus, we have two real solutions, one negative and one positive.
  We are interested in the positive one:
 \begin_inset Formula 
 \[
@@ -1975,6 +2012,36 @@ c_{k,p} & =-\sum_{\ell}X_{\ell,p}Q_{\ell,p,k}^{t}\\
 
 \end_layout
 
+\begin_layout Standard
+Let us check what happen if we replace 
+\begin_inset Formula $Q$
+\end_inset
+
+ in 
+\begin_inset Formula 
+\begin{align*}
+0 & =\lambda\sigma(\Delta)\MH_{k,p}^{2}+\MH_{k,p}\left(\sum_{\ell}\MD_{\ell,k}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}\MH_{k,p_{2}}^{t}-\MH_{k,p}^{t}\lambda\sigma(\Delta)+\bnu_{k}\right)-\sum_{\ell}\MY_{\ell,p}Q_{\ell,p,k}^{t}\\
+ & =\lambda\sigma(\Delta)\MH_{k,p}^{2}+\MH_{k,p}\left(\sum_{\ell}\MD_{\ell,k}^{t}+\lambda\sum_{p_{2}}\Delta_{p,p_{2}}\MH_{k,p_{2}}^{t}-\MH_{k,p}^{t}\lambda\sigma(\Delta)+\bnu_{k}\right)-\MH_{k,p}^{t}\sum_{\ell}\frac{\MY_{\ell,p}\MD_{\ell,k}^{t}}{\sum_{j}\MD_{\ell,j}^{t}\MH_{j,p}^{t}}\\
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\sum_{\ell}\MY_{\ell,p}\dot{Q_{\ell,p,k}^{t}} & =\sum_{\ell}\MY_{\ell,p}\frac{\MD_{\ell,k}^{t}\MH_{k,p}^{t}}{\sum_{j}\MD_{\ell,j}^{t}\MH_{j,p}^{t}}\\
+ & =\MH_{k,p}^{t}\sum_{\ell}\frac{\MY_{\ell,p}\MD_{\ell,k}^{t}}{\sum_{j}\MD_{\ell,j}^{t}\MH_{j,p}^{t}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Forget about these two last equations...
+\end_layout
+
 \begin_layout Paragraph
 D update:
 \end_layout
@@ -1986,7 +2053,7 @@ We simply that the gradient
 \begin_layout Paragraph
 \begin_inset Formula 
 \[
-\left.\nabla_{D}\mathcal{D}_{J}(A^{t},D,Q^{t})\right|_{\ell,p}=-\frac{\sum_{i}X_{\ell,i}Q_{\ell,i,p}^{t}}{D_{\ell,p}}+\sum_{p}A_{p,i}^{t}=0
+\left.\nabla_{D}\mathcal{D}_{J}(\MH^{t},\MD,Q^{t})\right|_{\ell,k}=-\frac{\sum_{p}\MY_{\ell,p}Q_{\ell,p,k}^{t}}{\MD_{\ell,k}}+\sum_{p}\MH_{k,p}^{t}=0
 \]
 
 \end_inset
@@ -1998,7 +2065,7 @@ We simply that the gradient
 The update rule becomes
 \begin_inset Formula 
 \[
-D_{\ell,p}=\frac{\sum_{i}X_{\ell,i}Q_{\ell,i,p}^{t}}{\sum_{p}A_{p,i}^{t}}
+\MD_{\ell,p}=\frac{\sum_{p}\MY_{\ell,p}Q_{\ell,p,k}^{t}}{\sum_{p}\MH_{k,p}^{t}}
 \]
 
 \end_inset
@@ -2055,17 +2122,17 @@ where the learning rate is set to
 
 \begin_layout Standard
 Let us replace Q with its current value with respect of 
-\begin_inset Formula $P,A$
+\begin_inset Formula $\MD,\MH$
 \end_inset
 
 .
  We have
 \begin_inset Formula 
 \begin{align*}
-\left[XQ\right]_{\ell,k} & =\sum_{p}X_{\ell,p}Q_{\ell,p,k}\\
- & =\sum_{p}X_{\ell,p}\frac{A_{k,p}D_{\ell,k}}{\sum_{j}A_{j,p}D_{\ell,j}}\\
- & =D_{\ell,k}\sum_{p}A_{k,p}\frac{X_{\ell,p}}{\sum_{j}A_{j,p}D_{\ell,j}}\\
- & =\left[D\circ\left(\left(X\oslash DA\right)A^{T}\right)\right]_{\ell,k}
+\left[\MY Q\right]_{\ell,k} & =\sum_{p}\MY_{\ell,p}Q_{\ell,p,k}\\
+ & =\sum_{p}\MY_{\ell,p}\frac{\MH_{k,p}\MD_{\ell,k}}{\sum_{j}\MH_{j,p}\MD_{\ell,j}}\\
+ & =\MD_{\ell,k}\sum_{p}\MH_{k,p}\frac{\MY_{\ell,p}}{\sum_{j}\MH_{j,p}\MD_{\ell,j}}\\
+ & =\left[\MD\circ\left(\left(\MY\oslash D\MH\right)\MH^{T}\right)\right]_{\ell,k}
 \end{align*}
 
 \end_inset
@@ -2095,7 +2162,7 @@ Q update:
 We simply do 
 \begin_inset Formula 
 \[
-Q_{\ell,p,k}=\frac{A_{k,p}^{t}D_{\ell,k}^{t}}{\sum_{j}A_{j,p}^{t}D_{\ell,j}^{t}}.
+\MQ_{\ell,p,k}=\frac{\MH_{k,p}^{t}\MD_{\ell,k}^{t}}{\sum_{j}\MD_{\ell,j}^{t}\MH_{j,p}^{t}}.
 \]
 
 \end_inset
