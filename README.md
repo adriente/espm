@@ -5,12 +5,7 @@ This project contains the code to create artificial Energy dispersive X-ray spec
 
 
 ## Installation
-Be sure to have all files by initialazing the submodule. Not necessary anymore
-```
-git submodule update --init --recursive
-```
-
-Then, you can install this package using
+You can install this package using
 ```
 pip install cython
 pip install .
@@ -24,39 +19,6 @@ pip install ."testing"
 # Set up the virtual env
 
 To be done
-
-# Modifying hyperspy 
-
-Once your virtual env has started search for the folder where hyperspy is installed : 
-```
-pipenv --venv
-```
-
-Go to this location + ``/lib/python3.X/site-packages/hyperspy`` and open the ``hyperspy_extension.yaml``.
-In that file add the following lines : 
-```
-  EDXSsnmfem:
-    signal_type: "EDXSsnmfem"
-    signal_dimension: 1
-    dtype : real
-    lazy: False
-    module: snmfem.datasets.spim
-```
-
-
-## Installation as a developer (What you should do Adrien)
-After setting up your virtual environnement, simply run 
-```
-git submodule update --init --recursive
-pip install cython
-pip install -e ".[testing]"
-```
-
-You can then simply run the tests with 
-```
-pytest esmpy
-flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-```
 
 ## Getting started with the repo
 Generate the synthetic dataset. Run the script:
