@@ -9,16 +9,11 @@ from esmpy.datasets.generate_EDXS_phases import unique_elts
 
 def generate_spim(phases, weights, densities, N, seed=0,continuous = False):
     """
-    Function to generate a noisy spectrum image based on an ideal one. For each pixel,
-    local_N random spectroscopic events are drown from the probabilities given by the
-    ideal spectra. local_N is drawn from a poisson distribution with average N weighted
-    by the local density. The density of the matrix is set similarly as for
-    generate_spim_deterministic.
+
 
     Inputs :
         N : (integer) average number of events
         seed : (integer) the seed for reproducible result. Default: 0.
-        old : (boolean) use the old way to generate data. Default: False.
     """
     # Set the seed
     np.random.seed(seed)
@@ -26,31 +21,35 @@ def generate_spim(phases, weights, densities, N, seed=0,continuous = False):
     shape_2d = weights.shape[:2]
     spectral_len = phases.shape[1]
     phases = phases / np.sum(phases, axis=1, keepdims=True)
-    # n D W A
-    if continuous : 
     
-        continuous_spim = N * (
-            weights.reshape(-1, weights.shape[-1])
-            @ (phases * np.expand_dims(densities, axis=1))
-        ).reshape(*shape_2d, -1)
+    # n D W A
+    continuous_spim = N * (
+        weights.reshape(-1, weights.shape[-1])
+        @ (phases * np.expand_dims(densities, axis=1))
+    ).reshape(*shape_2d, -1)
+
+    if continuous:
         return continuous_spim
 
-    else : 
-        stochastic_spim = np.zeros([*shape_2d, spectral_len])
-        for k, w in enumerate(densities):
-            # generating the spectroscopic events
-            for i in range(shape_2d[0]):
-                for j in range(shape_2d[1]):
-                    # Draw a local_N based on the local density
-                    local_N = np.random.poisson(N * w * weights[i, j, k])
-                    # draw local_N events from the ideal spectrum
-                    counts = np.random.choice(
-                        spectral_len, local_N, p=phases[k]
-                    )
-                    # Generate the spectrum based on the drawn events
-                    hist = np.bincount(counts, minlength=spectral_len)
-                    stochastic_spim[i, j] += hist
-        return stochastic_spim
+    else :
+        return np.random.poisson(continuous_spim)
+    
+        # # This is probably a very inefficient way to generate the data...
+        # stochastic_spim = np.zeros([*shape_2d, spectral_len])
+        # for k, w in enumerate(densities):
+        #     # generating the spectroscopic events
+        #     for i in range(shape_2d[0]):
+        #         for j in range(shape_2d[1]):
+        #             # Draw a local_N based on the local density
+        #             local_N = np.random.poisson(N * w * weights[i, j, k])
+        #             # draw local_N events from the ideal spectrum
+        #             counts = np.random.choice(
+        #                 spectral_len, local_N, p=phases[k]
+        #             )
+        #             # Generate the spectrum based on the drawn events
+        #             hist = np.bincount(counts, minlength=spectral_len)
+        #             stochastic_spim[i, j] += hist
+        # return stochastic_spim
 
 
 def save_generated_spim(filename, spim, model_params, phases_params, misc_params) : 

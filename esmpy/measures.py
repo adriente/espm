@@ -2,6 +2,7 @@ import numpy as np
 from esmpy.conf import log_shift
 import warnings as w
 from itertools import permutations
+from sklearn.metrics import r2_score
 
 def spectral_angle(v1, v2):
     """
@@ -31,7 +32,30 @@ def mse(map1, map2):
     :map1: (np.array 2D) first array
     :map2: (np.array 2D) second array
     """
-    return np.sum((map1-map2)**2)
+    return np.mean((map1-map2)**2)
+
+
+def mae(map1, map2):
+    """Mean square error.
+
+    Calculates the mean average error between two 2D arrays. They have to have the same dimension.
+    :map1: (np.array 2D) first array
+    :map2: (np.array 2D) second array
+    """
+    return np.mean(np.abs(map1-map2))
+
+
+def r2(map_true, map_pred):
+    """ (coefficient of determination) regression score function.
+
+    Calculates the coefficient of determination between two 2D arrays. They have to have the same dimension.
+    :map1: (np.array 2D) first array
+    :map2: (np.array 2D) second array
+    """
+    def reshape_2d(x):
+        return x.reshape(x.shape[0], -1)
+    return r2_score(reshape_2d(map_true), reshape_2d(map_pred))
+
 
 
 # This function will find the best matching endmember for each true spectrum.
@@ -164,8 +188,37 @@ def ordered_mse (true_maps, algo_maps, input_inds) :
     '''
     ordered_maps = []
     for i,j in enumerate(input_inds) : 
-        ordered_maps.append(float(square_distance(true_maps[j], algo_maps[i])))
+        ordered_maps.append(float(mse(true_maps[j], algo_maps[i])))
     return ordered_maps
+
+def ordered_mae (true_maps, algo_maps, input_inds) :
+    '''
+    input : p x Npx matrix of floats, p x Npx matrix of floats, list of integers
+    output : list of floats
+    %-------------------------%
+    Takes true maps of p phases and Npx pixels, reconstructed maps of the same size and
+    indices of the correspondance between true phases and reconstructed phases
+    returns the mean average errors of each phase in truth order.
+    '''
+    ordered_maps = []
+    for i,j in enumerate(input_inds) : 
+        ordered_maps.append(float(mae(true_maps[j], algo_maps[i])))
+    return ordered_maps
+
+def ordered_r2(true_maps, algo_maps, input_inds) :
+    '''
+    input : p x Npx matrix of floats, p x Npx matrix of floats, list of integers
+    output : list of floats
+    %-------------------------%
+    Takes true maps of p phases and Npx pixels, reconstructed maps of the same size and
+    indices of the correspondance between true phases and reconstructed phases
+    returns the coefficient of determination of each phase in truth order.
+    '''
+    ordered_maps = []
+    for i,j in enumerate(input_inds) : 
+        ordered_maps.append(float(r2(true_maps[j], algo_maps[i])))
+    return ordered_maps
+
 
 def ordered_angles (true_spectra, algo_spectra, input_inds) :
     '''

@@ -122,6 +122,41 @@ def test_generate():
     np.testing.assert_allclose(X,gen_si.data)
 
     shutil.rmtree(str(gen_folder))
+    
+def test_generate_spim():
+     
+    k = 3
+    ell = 7
+    shape_2d = [4,5]
+    pd = 0.3
+    seed = 0
+
+    phases = np.random.rand(k, ell)
+    weights = np.random.rand(*shape_2d, k)
+    densities = 1 - pd + 2*pd*np.random.rand(k)
+
+    # Ns = np.linspace(10, 200, 30)
+    # vals = []
+    # vals2 = []
+
+    # for N in Ns:
+    #     Xdot = generate_spim(phases, weights, densities, N, seed=seed,continuous = True)/N
+    #     X = generate_spim(phases, weights, densities, N, seed=seed,continuous = False)/N
+    #     X2 = np.random.poisson(N * Xdot) / N
+
+    #     vals.append(np.mean(np.abs(X - Xdot)))
+    #     vals2.append(np.mean(np.abs(X2 - Xdot)))
+        
+    # plt.plot(Ns, vals)
+    # plt.plot(Ns, vals2)
+
+    N = 10000
+    Xdot = generate_spim(phases, weights, densities, N, seed=seed,continuous = True)/N
+    X = generate_spim(phases, weights, densities, N, seed=seed,continuous = False)/N
+    X2 = np.random.poisson(N * Xdot) / N
+
+    assert ( np.mean(np.abs(X - Xdot)) < 0.005)
+
 
 
 def test_generate_random_weights():
