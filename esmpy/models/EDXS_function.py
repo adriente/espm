@@ -124,8 +124,9 @@ def print_concentrations_from_W (part_W, *, elements = []) :
     for i in range(norm_W.shape[1]) : 
         title_string += "{:>7}".format("p" + str(i))
     print(title_string)
-    
+    print(elements)
     for j in range(norm_W.shape[0]) : 
+        print(j)
         main_string = ""
         main_string += "{:2}".format(elements[j]) + " : "
         for i in range(norm_W.shape[1]) :

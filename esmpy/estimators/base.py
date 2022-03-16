@@ -88,6 +88,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         -------
         W, H : ndarrays
         """
+        print(self.n_components)
         if self.hspy_comp : 
             self.X_ = self._validate_data(X.T, dtype=[np.float64, np.float32])
         else : 

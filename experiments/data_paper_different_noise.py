@@ -1,4 +1,3 @@
-from sklearn.preprocessing import scale
 from esmpy.utils import arg_helper
 from esmpy.datasets.base import generate_dataset
 from esmpy.datasets.generate_EDXS_phases import generate_modular_phases
@@ -6,12 +5,11 @@ from esmpy.conf import DEFAULT_SYNTHETIC_DATA_DICT
 
 n_phases = 3
 seed = 43
-scale_factor = 2
 
 weights_dict = {
     "weight_type" : "sphere",
-    "shape_2d" : [64,64],
-    "weights_params" : {"radius" : 2}
+    "shape_2d" : [128,128],
+    "weights_params" : {"radius" : 4.0}
 }
 
 elts_dicts = [
@@ -53,7 +51,7 @@ model_params = {
 phases, full_dict = generate_modular_phases(elts_dicts=elts_dicts, brstlg_pars = brstlg_pars, scales = [1, 1, 1], model_params= model_params, seed = seed)
 
 data_dict = {
-    "N" : 18*(scale_factor*scale_factor),
+    "N" : 18,
     "densities" : [1.0,0.8,1.2],
     "data_folder" : "FpBrgCaPv_N18_paper",
     "seed" : seed
