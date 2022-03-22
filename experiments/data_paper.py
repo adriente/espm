@@ -1,4 +1,4 @@
-from sklearn.preprocessing import scale
+
 from esmpy.utils import arg_helper
 from esmpy.datasets.base import generate_dataset
 from esmpy.datasets.generate_EDXS_phases import generate_modular_phases
@@ -6,12 +6,11 @@ from esmpy.conf import DEFAULT_SYNTHETIC_DATA_DICT
 
 n_phases = 3
 seed = 43
-scale_factor = 2
 
 weights_dict = {
     "weight_type" : "sphere",
-    "shape_2d" : [64,64],
-    "weights_params" : {"radius" : 2}
+    "shape_2d" : [128,128],
+    "weights_params" : {"radius" : 4.0}
 }
 
 elts_dicts = [
@@ -33,8 +32,8 @@ brstlg_pars = [
 
 model_params = {
         "e_offset" : 0.3,
-        "e_size" : 1980,
-        "e_scale" : 0.01,
+        "e_size" : 500,
+        "e_scale" : 0.02,
         "width_slope" : 0.01,
         "width_intercept" : 0.065,
         "db_name" : "default_xrays.json",
@@ -53,7 +52,7 @@ model_params = {
 phases, full_dict = generate_modular_phases(elts_dicts=elts_dicts, brstlg_pars = brstlg_pars, scales = [1, 1, 1], model_params= model_params, seed = seed)
 
 data_dict = {
-    "N" : 18*(scale_factor*scale_factor),
+    "N" : 4,
     "densities" : [1.0,0.8,1.2],
     "data_folder" : "FpBrgCaPv_N18_paper",
     "seed" : seed
@@ -68,14 +67,14 @@ print(input_dict)
 
 generate_dataset(**input_dict, seeds_range=7)
 
-data_dict["N"] = 73
+data_dict["N"] = 18
 data_dict["data_folder"] = "FpBrgCaPv_N73_paper"
 
 input_dict = arg_helper(data_dict,DEFAULT_SYNTHETIC_DATA_DICT)
 
 generate_dataset(**input_dict, seeds_range=7)
 
-data_dict["N"] = 293
+data_dict["N"] = 73
 data_dict["data_folder"] = "FpBrgCaPv_N293_paper"
 
 input_dict = arg_helper(data_dict,DEFAULT_SYNTHETIC_DATA_DICT)
