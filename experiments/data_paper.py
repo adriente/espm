@@ -9,8 +9,8 @@ seed = 43
 
 weights_dict = {
     "weight_type" : "sphere",
-    "shape_2d" : [128,128],
-    "weights_params" : {"radius" : 4.0}
+    "shape_2d" : [64,64],
+    "weights_params" : {"radius" : 2.0}
 }
 
 elts_dicts = [

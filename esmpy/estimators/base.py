@@ -73,7 +73,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.detailed_loss_ = [loss]
         return loss
 
-    def fit_transform(self, X, y=None, W=None, H=None):
+    def fit_transform(self, X, y=None, W=None, H=None, n_pixel_side=0):
         """Learn a NMF model for the data X and returns the transformed data.
         This is more efficient than calling fit followed by transform.
         Parameters
@@ -147,11 +147,16 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             else : 
                 print("The chosen number of components does not match the number of components of the provided truth. The ground truth will be ignored.")
         try:
+            Hs, Ws = [], []
+            Hs.append(self.H_.copy())
+            Ws.append(self.W_.copy())
             while True:
                 # Take one step in A, P
                 old_W, old_H = self.W_.copy(), self.H_.copy()
                 
-                self.W_, self.H_ = self._iteration(self.W_, self.H_ )
+                self.W_, self.H_ = self._iteration(self.W_, self.H_)
+                Hs.append(self.H_.copy())
+                Ws.append(self.W_.copy())
                 eval_after = self.loss(self.W_, self.H_)
                 self.n_iter_ +=1
                 
@@ -247,10 +252,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         
         if self.hspy_comp : 
             self.components_ = GW.T
-            return self.H_.T
+            return self.H_.T, Hs, Ws
         else : 
             self.components_ = self.H_
-            return GW
+            return GW, Hs, Ws
 
     def fit(self, X, y=None, **params):
         """Learn a NMF model for the data X.
