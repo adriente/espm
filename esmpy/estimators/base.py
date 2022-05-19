@@ -1,7 +1,8 @@
+from turtle import update
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
-from esmpy.updates import initialize_algorithms
+from esmpy.updates import initialize_algorithms, initialize_algorithms_checkerboard
 from esmpy.measures import KLdiv_loss, Frobenius_loss, find_min_angle, find_min_MSE
 from esmpy.conf import log_shift
 from esmpy.utils import rescaled_DH
@@ -9,6 +10,7 @@ import time
 from abc import ABC, abstractmethod
 from esmpy.laplacian import create_laplacian_matrix 
 from scipy.sparse import lil_matrix
+import matplotlib.pyplot as plt
 
 
 def normalization_factor (X, nc) : 
@@ -73,7 +75,28 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.detailed_loss_ = [loss]
         return loss
 
-    def fit_transform(self, X, y=None, W=None, H=None, n_pixel_side=0):
+    def loss_checkerboard(self, W, Hs, average=True, Xs = None):
+        GW = self.G_ @ W
+        if Xs is None : 
+            Xs = self.Xs_
+
+        assert(Xs[0].shape == (self.G_.shape[0],Hs[0].shape[1]))
+
+        self.GWH_numel_ = self.G_.shape[0] * Hs[0].shape[1]
+        
+        if self.l2:
+            loss = sum([Frobenius_loss(Xs[i], GW, Hs[i], average=False) for i in range(4)])
+        else:
+            if self.const_KL_ is None:
+                self.const_KL_ = sum([ np.sum(Xs[i]*np.log(self.Xs_[i]+ self.log_shift)) - np.sum(Xs[i]) for i in range(4)])
+
+            loss = sum([KLdiv_loss(Xs[i], GW, Hs[i], self.log_shift, safe=self.debug, average=False) + self.const_KL_ for i in range(4)])
+        if average:
+            loss = loss / self.GWH_numel_
+        self.detailed_loss_ = [loss]
+        return loss
+
+    def fit_transform(self, X, y=None, W=None, H=None, update_W=True):
         """Learn a NMF model for the data X and returns the transformed data.
         This is more efficient than calling fit followed by transform.
         Parameters
@@ -88,7 +111,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         -------
         W, H : ndarrays
         """
-        print(self.n_components)
+        convergence_iteration = 0
         if self.hspy_comp : 
             self.X_ = self._validate_data(X.T, dtype=[np.float64, np.float32])
         else : 
@@ -148,15 +171,13 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 print("The chosen number of components does not match the number of components of the provided truth. The ground truth will be ignored.")
         try:
             Hs, Ws = [], []
-            Hs.append(self.H_.copy())
-            Ws.append(self.W_.copy())
+         
             while True:
                 # Take one step in A, P
                 old_W, old_H = self.W_.copy(), self.H_.copy()
                 
-                self.W_, self.H_ = self._iteration(self.W_, self.H_)
-                Hs.append(self.H_.copy())
-                Ws.append(self.W_.copy())
+                self.W_, self.H_ = self._iteration(self.W_, self.H_, update_W=update_W)
+               
                 eval_after = self.loss(self.W_, self.H_)
                 self.n_iter_ +=1
                 
@@ -185,10 +206,25 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                         self.angles_.append(angles)
                         self.mse_.append(mse)
                         self.true_losses_.append(loss)
-                
+
+
+                A,B = self.W_.copy(), self.H_.copy()
+
+                if (not self.force_simplex):
+                    A,B = rescaled_DH(A,B)
+
+                if self.normalize : 
+                    A = A / self.norm_factor_     
+               
+                Hs.append(B)
+                Ws.append(A)
+
+
                 self.losses_.append(eval_after)
                 self.detailed_losses_.append(detailed_loss_)
                 self.rel_.append([rel_W,rel_H])
+
+                
                               
                 # check convergence criterions
                 if self.n_iter_ >= self.max_iter:
@@ -197,20 +233,27 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
                 # If there is no regularization the algorithm stops with this criterion
                 # Otherwise it goes to the data fitting step
-                elif max(rel_H,rel_W) < self.tol:
-                    print(
-                        "exits because of relative change rel_A {} or rel_P {} < tol ".format(
-                            rel_H,rel_W
-                        )
-                    )
-                    break
+                # elif max(rel_H,rel_W) < self.tol:
+                #     print(
+                #         "exits because of relative change rel_A {} or rel_P {} < tol ".format(
+                #             rel_H,rel_W
+                #         )
+                #     )
+                    
+                #     break
                 elif abs((eval_before - eval_after)/eval_init) < self.tol:
                     print(
                         "exits because of relative change < tol: {}".format(
                             (eval_before - eval_after)/min(eval_before, eval_after)
                         )
                     )
-                    break
+                    # If the algorithm has converged in updating H, start updating W too
+                    # if update_W == False:
+                    #     update_W = True
+                    # convergence_iteration += 1
+                    # If the algorithm has converged in updating both H and W, then stop
+                    if convergence_iteration == 20:
+                        break
 
                 elif np.isnan(eval_after):
                     print("exit because of the presence of NaN")
@@ -252,10 +295,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         
         if self.hspy_comp : 
             self.components_ = GW.T
-            return self.H_.T, Hs, Ws
+            return self.H_.T, Hs, Ws, self.G_, self.losses_
         else : 
             self.components_ = self.H_
-            return GW, Hs, Ws
+            return GW, Hs, Ws, self.G_, self.losses_
 
     def fit(self, X, y=None, **params):
         """Learn a NMF model for the data X.
@@ -270,6 +313,268 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         """
         self.fit_transform(X, **params)
         return self
+
+    def fit_checkerboard(self, Xs, y=None, **params):
+        """Learn a NMF model for the data X.
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Data matrix to be decomposed
+        y : Ignored
+        Returns
+        -------
+        self
+        """
+        self.fit_transform_checkerboard(Xs, **params)
+        return self
+
+    
+    def fit_transform_checkerboard(self, Xs, y=None, W=None, Hs=None, update_W=True):
+        """Learn a NMF model for the data X and returns the transformed data.
+        This is more efficient than calling fit followed by transform.
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Data matrix to be decomposed
+        W : array-like of shape (n_samples, n_components)
+            If specified, it is used as initial guess for the solution.
+        H : array-like of shape (n_components, n_features)
+            If specified, it is used as initial guess for the solution.
+        Returns
+        -------
+        W, H : ndarrays
+        """
+        convergence_iteration = 0
+        print(self.n_components)
+        self.Xs_ = []
+        for i in range(4):
+            X = Xs[i]
+            if self.hspy_comp : 
+                self.Xs_.append(self._validate_data(X.T, dtype=[np.float64, np.float32]))
+            else : 
+                self.Xs_.append(self._validate_data(X, dtype=[np.float64, np.float32]))
+
+        if self.hspy_comp==False:
+            try:
+                import inspect
+                curframe = inspect.currentframe()
+                calframe = inspect.getouterframes(curframe, 2)
+                if calframe[1][3]=="decomposition" and "hyperspy" in calframe[1][1]:
+                    print("Are you calling the function decomposition from Hyperspy?\n" +
+                        "If so, please set the compatibility argument 'hspy_comp' to True.\n\n" + 
+                        "If this argument is not set correctly, the function will not work properly!!!")
+            except:
+                pass
+
+        for i in range(4):
+            self.Xs_[i] = self.remove_zeros_lines(self.Xs_[i], self.log_shift)
+
+        self.const_KL_ = None
+        if self.normalize : 
+            self.norm_factor_ = normalization_factor(self.X_,self.n_components)
+            for i in range(4):
+                self.Xs_[i] = self.norm_factor_ * self.Xs_[i]
+        
+
+        if callable(self.G): 
+            G = self.G()
+        else : 
+            G = self.G
+        
+        self.G_, self.W_, self.Hs_ = initialize_algorithms_checkerboard(Xs = self.Xs_, G = G, W = W, Hs = Hs, n_components = self.n_components, init = self.init, random_state = self.random_state, force_simplex = self.force_simplex)
+
+        if not(self.shape_2d is None) :
+            self.Ls_ = [create_laplacian_matrix(*self.shape_2d) for i in range(4)]
+        else : 
+
+            self.Ls_ = [lil_matrix((self.Xs_[i].shape[1],self.Xs_[i].shape[1]),dtype=np.float32) for i in range(4)]
+            for i in range(4):
+                self.Ls_[i].setdiag([1]*self.Xs_[i].shape[1])
+
+        algo_start = time.time()
+        # If mu_sparse != 0, this is the regularized step of the algorithm
+        # Otherwise this is directly the data fitting step
+        eval_before = np.inf
+        eval_init = self.loss_checkerboard(self.W_, self.Hs_)
+        self.n_iter_ = 0
+
+        # if self.debug:
+        self.losses_ = []
+        self.rel_ = []
+        self.detailed_losses_ = []
+        if not(self.true_D is None) and not(self.true_H is None) : 
+            if (self.true_D.shape[1] == self.n_components) and (self.true_H.shape[0] == self.n_components) : 
+                self.angles_ = []
+                self.mse_ = []
+                self.true_losses_ = []
+                true_DH = self.true_D @ self.true_H
+            else : 
+                print("The chosen number of components does not match the number of components of the provided truth. The ground truth will be ignored.")
+        try:
+            Hs_hist, Ws_hist = [], []
+         
+            while True:
+                # Take one step in A, P
+                old_W, old_Hs = self.W_.copy(), [self.Hs_[i].copy() for i in range(4)]
+                
+                self.W_, self.Hs_ = self._iteration_checkerboard(self.W_, self.Hs_, update_W=update_W)
+        
+                eval_after = self.loss_checkerboard(self.W_, self.Hs_)
+                self.n_iter_ +=1
+                
+                rel_W = np.max((self.W_ - old_W)/(self.W_ + self.tol*np.mean(self.W_) ))
+                rel_Hs = [np.max((self.Hs_[i] - old_Hs[i])/(self.Hs_[i] + self.tol*np.mean(self.Hs_[i]) )) for i in range(4)]
+
+                # store some information for assessing the convergence
+                # for debugging purposes
+                
+                # We need to store this value as 
+                #    loss = self.loss(self.P_,self.A_, X = true_DA )
+                # might destroy it. Furthermore, saving the data before the if, might cause 
+                # an error if the optimization is stoped with a keyboard interrupt. 
+                detailed_loss_ = self.detailed_loss_
+
+                if not(self.true_D is None) and not(self.true_H is None) :
+                    if (self.true_D.shape[1] == self.n_components) and (self.true_H.shape[0] == self.n_components) : 
+                        if self.force_simplex:
+                            W, Hs = self.W_, self.Hs_ 
+                        else:
+                            W, Hs = rescaled_DH(self.W_, self.Hs_ )
+                        GW = self.G_ @ W
+                        angles = find_min_angle(self.true_D.T,GW.T, unique=True)
+                        mse = find_min_MSE(self.true_H, H,unique=True)
+                        loss = self.loss(self.W_,H, X = true_DH )
+                        self.angles_.append(angles)
+                        self.mse_.append(mse)
+                        self.true_losses_.append(loss)
+
+
+                # A,B = self.W_.copy(), self.H_.copy()
+
+                # if (not self.force_simplex):
+                #     A,B = rescaled_DH(A,B)
+
+                # if self.normalize : 
+                #     A = A / self.norm_factor_     
+               
+                # Hs_hist.append(B)
+                # Ws_hist.append(A)
+
+
+                self.losses_.append(eval_after)
+                self.detailed_losses_.append(detailed_loss_)
+                self.rel_.append([rel_W,rel_Hs])
+
+                
+                              
+                # check convergence criterions
+                if self.n_iter_ >= self.max_iter:
+                    print("exits because max_iteration was reached")
+                    break
+
+                # If there is no regularization the algorithm stops with this criterion
+                # Otherwise it goes to the data fitting step
+                # elif max(rel_H,rel_W) < self.tol:
+                #     print(
+                #         "exits because of relative change rel_A {} or rel_P {} < tol ".format(
+                #             rel_H,rel_W
+                #         )
+                #     )
+                    
+                #     break
+                elif abs((eval_before - eval_after)/eval_init) < self.tol:
+                    print(
+                        "exits because of relative change < tol: {}".format(
+                            (eval_before - eval_after)/min(eval_before, eval_after)
+                        )
+                    )
+                    # If the algorithm has converged in updating H, start updating W too
+                    # if update_W == False:
+                    #     update_W = True
+                    # convergence_iteration += 1
+                    # If the algorithm has converged in updating both H and W, then stop
+                    if convergence_iteration == 20:
+                        break
+
+                elif np.isnan(eval_after):
+                    print("exit because of the presence of NaN")
+                    break
+
+                elif (eval_before - eval_after) < 0:
+                    if hasattr(self, "accelerate"):
+                        if not self.accelerate:
+                            print("exit because of negative decrease {}: {}, {}".format((eval_before - eval_after), eval_before, eval_after))
+                            break
+                    else:
+                        print("exit because of negative decrease {}: {}, {}".format((eval_before - eval_after), eval_before, eval_after))
+                        break
+                
+                if self.verbose > 0 and np.mod(self.n_iter_, self.eval_print) == 0:
+                    print(
+                        f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:0.3f},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
+                    )
+                    pass
+                eval_before = eval_after
+        except KeyboardInterrupt:
+            pass
+        
+        # Reconstruct H
+        H_cube = np.zeros((self.n_components, 100, 100), dtype=np.float64)
+        odds = evens = np.array([i*2 for i in range(100//2)])
+        odds = np.array([i*2+1 for i in range(100//2)])
+        H_cube[:, ::2, ::2] = self.Hs_[0].reshape(self.n_components, 50, 50)
+
+        H_cube[:, ::2, 1::2]  = self.Hs_[1].reshape(self.n_components, 50, 50)
+        H_cube[:, 1::2, ::2]  = self.Hs_[2].reshape(self.n_components, 50, 50)
+        H_cube[:, 1::2, 1::2]  = self.Hs_[3].reshape(self.n_components, 50, 50)
+        self.H_ = H_cube.reshape((self.n_components, -1))
+
+
+
+        X_cube = np.zeros((200, 100, 100))
+        X_cube[:, evens][:,:, evens] = self.Xs_[0].reshape(200, 50, 50)
+        X_cube[:, evens][:,:, odds] = self.Xs_[1].reshape(200, 50, 50)
+        X_cube[:, odds][:,:, evens] = self.Xs_[2].reshape(200, 50, 50)
+        X_cube[:, odds][:,:, odds] = self.Xs_[3].reshape(200, 50, 50)
+        self.X_ = X_cube.reshape((200, 100*100))
+ 
+        if not(self.force_simplex):
+            self.W_, self.H_ = rescaled_DH(self.W_, self.H_ )
+        
+        algo_time = time.time() - algo_start
+        print(
+            f"Stopped after {self.n_iter_} iterations in {algo_time//60} minutes "
+            f"and {np.round(algo_time) % 60} seconds."
+        )
+        # self.reconstruction_err_ = self.loss(self.W_, self.H_)
+
+        if self.normalize : 
+            self.W_ = self.W_ / self.norm_factor_
+        
+        GW = self.G_ @ self.W_
+        self.n_components_ = self.H_.shape[0]
+        
+        if self.hspy_comp : 
+            self.components_ = GW.T
+            return self.H_.T, Hs_hist, Ws_hist, self.G_, self.losses_
+        else : 
+            self.components_ = self.H_
+            return GW, Hs_hist, Ws_hist, self.G_, self.losses_
+
+    def fit(self, X, y=None, **params):
+        """Learn a NMF model for the data X.
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Data matrix to be decomposed
+        y : Ignored
+        Returns
+        -------
+        self
+        """
+        self.fit_transform(X, **params)
+        return self
+
 
     # def transform(self, X):
     #     """Transform the data X according to the fitted NMF model.

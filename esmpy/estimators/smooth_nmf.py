@@ -1,6 +1,6 @@
 import numpy as np
 
-from esmpy.updates import multiplicative_step_h, multiplicative_step_w, multiplicative_step_hq
+from esmpy.updates import multiplicative_step_h, multiplicative_step_w, multiplicative_step_hq, multiplicative_step_w_checkerboard
 from esmpy.measures import trace_xtLx, log_reg
 from esmpy.estimators import NMFEstimator
 from esmpy.laplacian import sigmaL
@@ -74,7 +74,44 @@ class SmoothNMF(NMFEstimator):
         
 
 
-    def _iteration(self, W, H):
+    def _iteration_checkerboard(self, W, Hs, update_W=True):
+
+        # KL_surr = KL_loss_surrogate(self.X_, W, H, H, eps=0)
+        # log_surr = log_surrogate(H, H, mu=self.mu, epsilon=self.epsilon_reg)
+        # print("loss before:", KL_surr, log_surr, log_surr+KL_surr)
+        if self.linesearch:
+            Holds = [Hs[i].copy() for i in range(len(Hs))]
+        self.sigmaLs_ = []
+        for i in range(4):
+            if self.algo_hq:
+                Hs[i] = multiplicative_step_hq(self.Xs_[i], self.G_, W, Hs[i], force_simplex=self.force_simplex, eps=self.log_shift, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.Ls_[i], sigmaL=self.sigmaLs_[i])
+            else:
+                Hs[i] = multiplicative_step_h(self.Xs_[i], self.G_, W, Hs[i], force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.Ls_[i], l2=self.l2, fixed_H=self.fixed_H)
+            if self.linesearch:
+                d = diff_surrogate(Holds[i], Hs[i], L=self.Ls_[i], sigmaL=self.sigmaLs_[i], dgkl=not(self.algo_hq))
+                if d>0:
+                    self.sigmaLs_.append(self.sigmaLs_[i] / 1.2)
+                else:
+                    self.sigmaLs_.append(self.sigmaLs_[i] * 1.5)
+        
+        if self.linesearch:
+            self.gamma.append(self.sigmaLs_)
+
+        if update_W:
+            W = multiplicative_step_w_checkerboard(self.Xs_, self.G_, W, Hs, eps=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W)
+        
+        # KL_surr = KL_loss_surrogate(self.X_, W, H, Hold, eps=0)
+        # log_surr = log_surrogate(H, Hold, mu=self.mu, epsilon=self.epsilon_reg)
+        # print("surrogate before:", KL_surr, log_surr, log_surr+KL_surr)
+        # KL_surr = KL_loss_surrogate(self.X_, W, H, H, eps=0)
+        # log_surr = log_surrogate(H, H, mu=self.mu, epsilon=self.epsilon_reg)
+        # print("loss after:", KL_surr, log_surr, log_surr+KL_surr)
+
+        if callable(self.G) : 
+            self.G_ = self.G(part_W = W[:-2,:],G = self.G_)
+        return  W, Hs
+
+    def _iteration(self, W, H, update_W=True):
 
         # KL_surr = KL_loss_surrogate(self.X_, W, H, H, eps=0)
         # log_surr = log_surrogate(H, H, mu=self.mu, epsilon=self.epsilon_reg)
@@ -87,7 +124,8 @@ class SmoothNMF(NMFEstimator):
         else:
             H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H)
 
-        W = multiplicative_step_w(self.X_, self.G_, W, H, eps=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W)
+        if update_W:
+            W = multiplicative_step_w(self.X_, self.G_, W, H, eps=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W)
         if self.linesearch:
             d = diff_surrogate(Hold, H, L=self.L_, sigmaL=self.sigmaL_, dgkl=not(self.algo_hq))
             if d>0:

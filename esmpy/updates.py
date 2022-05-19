@@ -162,6 +162,54 @@ def multiplicative_step_w(X, G, W, H, eps=log_shift, safe=True, l2=False, fixed_
         new_W[fixed_W >= 0] = fixed_W[fixed_W >=0]
         return new_W
 
+def multiplicative_step_w_checkerboard(Xs, G, W, Hs, eps=log_shift, safe=True, l2=False, fixed_W = None):
+    """
+    Multiplicative step in W.
+    """
+
+    if safe:
+        # Allow for very small negative values!
+        assert(np.sum(H<-log_shift/2)==0)
+        assert(np.sum(W<-log_shift/2)==0)
+        assert(np.sum(G<-log_shift/2)==0)
+
+        H = np.maximum(H, log_shift)
+        W = np.maximum(W, log_shift)
+
+    if l2:
+        GG = G.T @ G
+        HH = H @ H.T
+        GGWHH = GG @ W @ HH
+
+        GXH = G.T @ (X @ H.T)
+
+        new_W = W / GGWHH * GXH
+    else:
+        term1_list = []
+        term2_list = []
+        for i in range(4):
+            X = Xs[i]
+            H = Hs[i]
+            GW = G @ W
+            GWH = GW @ H
+            # Split to debug timing...
+            # term1 = G.T @ (X / (GPA + eps)) @ A.T
+            op1 = X / (GWH + eps)
+            
+            mult1 = G.T @ op1
+            term1 = (mult1 @ H.T)
+            term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(H, axis=1,  keepdims=True).T
+            term1_list.append(term1)
+            term2_list.append(term2)
+
+        new_W = W / (term2_list[0]+term2_list[1]+term2_list[2]+term2_list[3]) *  (term1_list[0]+term1_list[1]+term1_list[2]+term1_list[3])
+    
+    if fixed_W is None : 
+        return new_W
+    else : 
+        new_W[fixed_W >= 0] = fixed_W[fixed_W >=0]
+        return new_W
+
 def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, sigmaL=sigmaL, fixed_H = None):
     """
     Multiplicative step in A.
@@ -271,6 +319,54 @@ def initialize_algorithms(X, G, W, H, n_components, init, random_state, force_si
             H = H/scale
 
     return G, W, H
+
+def initialize_algorithms_checkerboard(Xs, G, W, Hs, n_components, init, random_state, force_simplex):
+    # Handle initialization
+
+    if G is None : 
+        skip_second = True
+        # G = sparse.diags(np.ones(X.shape[0]).astype(X.dtype))        
+        G = np.diag(np.ones(Xs[0].shape[0]).astype(Xs[0].dtype))
+
+    # elif callable(G) : 
+    #     assert not(model_params is None), "You need to input model_parameters"
+    #     assert not(g_params is None), "You need to input g_parameters"
+    #     G = G(model_params,g_params)
+    #     skip_second = False
+
+    else:
+        skip_second = False
+
+    if W is None:
+        if Hs is None:
+            Hs = []
+            for i in range(4):
+                D, H = initialize_nmf(Xs[i], n_components=n_components, init=init, random_state=random_state)
+                # D, A = u.rescaled_DA(D,A)
+                if force_simplex:
+                    scale = np.sum(H, axis=0, keepdims=True)
+                    H = np.nan_to_num(H/scale, nan = 1.0/H.shape[0] )
+                Hs.append(H)
+        D = np.abs(np.linalg.lstsq(Hs[0].T, Xs[0].T,rcond=None)[0].T)
+        if skip_second:
+            W = D
+        else:
+            # Divide in two parts the initial fitting, otherwise the bremsstrahlung (which has a low intensity) tends to be poorly learned
+            # First fit the caracteristic Xrays, then subtract that contribution to obtain a rough estimate of the bremsstralung parameters
+            Wcarac = (np.linalg.lstsq(G[:,:-2],D,rcond = None)[0]).clip(min = 0)
+            Wbrem = (np.linalg.lstsq(G[:,-2:],D - G[:,:-2]@Wcarac,rcond = None)[0]).clip(min = 0)
+            W = np.vstack((Wcarac, Wbrem))
+            # P = np.abs(np.linalg.lstsq(G, D,rcond=None)[0])
+
+    elif H is None:
+        D = G @ W
+        Hs = [np.abs(np.linalg.lstsq(D, Xs[i], rcond=None)[0]) for i in range(4)]
+        if force_simplex:
+            scale = np.sum(H, axis=0, keepdims=True)
+            for i in range(4):
+                Hs[i] = Hs[i]/scale
+
+    return G, W, Hs
 
 def update_q(D, H, eps=log_shift):
     """Perform a Q step."""

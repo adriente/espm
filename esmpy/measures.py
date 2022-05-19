@@ -219,6 +219,14 @@ def ordered_r2(true_maps, algo_maps, input_inds) :
         ordered_maps.append(float(r2(true_maps[j], algo_maps[i])))
     return ordered_maps
 
+def ordered_kl(true_maps, algo_maps, input_ids):
+    algo_maps = algo_maps[input_ids,:]
+    p = true_maps.shape[1]
+    print(true_maps / (algo_maps+ 0.0001)+0.0001)
+
+    return np.sum(true_maps * np.log(true_maps / (algo_maps+ 0.000001) +0.000001))/p
+
+
 
 def ordered_angles (true_spectra, algo_spectra, input_inds) :
     '''
