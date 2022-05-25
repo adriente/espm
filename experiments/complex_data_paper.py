@@ -4,37 +4,35 @@ from esmpy.datasets.generate_EDXS_phases import generate_modular_phases
 import hyperspy.api as hs
 import numpy as np
 from esmpy.datasets.base import generate_spim, save_generated_spim
+from esmpy.datasets.generate_weights import chemical_maps_weights
 from esmpy.conf import DATASETS_PATH, BASE_PATH
 from pathlib import Path
 
 n_phases = 3
 seed = 43
 
-pbrg = BASE_PATH.parent / Path("experiments/brg_ab_map.hspy")
-pfp = BASE_PATH.parent / Path("experiments/fp_ab_map.hspy")
-pcapv = BASE_PATH.parent / Path("experiments/capv_ab_map.hspy")
+file_path = BASE_PATH.parent / Path("experiments/71GPa_experimental_data.hspy")
 
-brg = hs.load(str(pbrg)).data
-fp = hs.load(str(pfp)).data
-capv = hs.load(str(pcapv)).data
 
-weights = np.moveaxis(np.stack((brg,fp,capv)),(0),(2))
+data = hs.load(str(file_path))
+
+weights = chemical_maps_weights(file_path,["Fe_Ka","Ca_Ka"],conc_max = 0.7)
 
 elts_dicts = [
-    {
-        "Mg" : 0.245, "Fe" : 0.035, "Ca" : 0.031, "Si" : 0.219, "Al" : 0.024, "O" : 0.436, "Cu" : 0.05, "Hf" : 0.01
-    },
     {
         "Mg" : 0.522, "Fe" : 0.104, "O" : 0.374, "Cu" : 0.05
     },
     {
         "Mg" : 0.020, "Fe" : 0.018, "Ca" : 0.188, "Si" : 0.173, "Al" : 0.010, "O" : 0.572, "Ti" : 0.004, "Cu" : 0.05, "Sm" : 0.007, "Lu" : 0.006, "Nd" : 0.006 
+    },
+    {
+        "Mg" : 0.245, "Fe" : 0.035, "Ca" : 0.031, "Si" : 0.219, "Al" : 0.024, "O" : 0.436, "Cu" : 0.05, "Hf" : 0.01
     }]
 
 brstlg_pars = [
-    {"b0" : 0.0003458, "b1" : 0.0006268},
     {"b0" : 0.0001629, "b1" : 0.0009812},
-    {"b0" : 0.0007853, "b1" : 0.0003658}
+    {"b0" : 0.0007853, "b1" : 0.0003658},
+    {"b0" : 0.0003458, "b1" : 0.0006268}
 ]
 
 model_params = {
@@ -57,18 +55,18 @@ model_params = {
     }
 
 data_dict = {
-    "weight_type": "custom",
+    "weight_type": "data",
     "N" : 176,
-    "densities" : [0.8,1.2,1.0],
+    "densities" : [1.2,1.0,0.8],
     "data_folder" : "None",
     "model" : "EDXS",
     "seed" : seed,
-    "weights_params" : None
+    "weights_params" : weights
 }
 
 
 phases, full_dict = generate_modular_phases(elts_dicts=elts_dicts, brstlg_pars = brstlg_pars, scales = [1, 1, 1], model_params= model_params, seed = seed)
 
-spim = generate_spim(phases, weights, [0.8,1.2,1.0], N = 176, seed=seed,continuous = False)
+spim = generate_spim(phases, weights, [1.2,1.0,0.8], N = 176, seed=seed,continuous = False)
 filename = DATASETS_PATH / Path("71GPa_synthetic_N176.hspy")
 save_generated_spim(filename, spim, model_params, full_dict["phases_parameters"], data_dict)

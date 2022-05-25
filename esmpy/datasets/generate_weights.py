@@ -1,6 +1,9 @@
 import numpy as np
 from skimage.filters import median
 from esmpy.models.EDXS_function import gaussian
+import scipy.ndimage as ndimage
+from skimage.filters import threshold_otsu
+import hyperspy.api as hs
 
 class Material(object):
     
@@ -141,6 +144,30 @@ def spheres_weights(shape_2d=[80, 80], n_phases=3,  seed=0, radius = 2.5, **kwar
         
     return mat.finalize_weight()
 
+def chemical_maps_weights(file, element_lines, conc_max, sigma = 4, **kwargs) : 
+    spim = hs.load(str(file))
+    maps = spim.get_lines_intensity(element_lines, **kwargs)
+    blurs = []
+    for map in maps : 
+        blurs.append(ndimage.gaussian_filter(map.data, sigma=sigma, order=0))
+
+    masks = []
+    for blur in blurs : 
+        thresh = threshold_otsu(blur)
+        masks.append(np.where(blur > thresh, blur, np.zeros_like(blur)))
+        
+    for mask in masks : 
+        ind_0 = np.where(mask > 0)
+        min_mask = mask[ind_0] - np.min(mask[ind_0])
+        norm_mask = min_mask / ((1/conc_max)* np.max(min_mask))
+        mask[ind_0] = norm_mask
+
+    complementary = 1 - (np.sum(np.stack(masks),axis = 0))
+    masks.append(complementary)
+    weights = np.moveaxis(np.stack(masks),0,2)
+
+    return weights
+
 def generate_weights(weight_type, shape_2d, n_phases=3, seed=0, **params):
     if weight_type=="random":
         return random_weights(shape_2d, n_phases, seed) 
@@ -153,4 +180,4 @@ def generate_weights(weight_type, shape_2d, n_phases=3, seed=0, **params):
     # elif weight_type=="gradient":
     #     return spheres_gradient(shape_2d, n_phases, seed) 
     else:
-        raise ValueError("Wrong weight_type: {}".format(weight_type))
+        raise ValueError("Wrong weight_type: {}. Accepted types : random, laplacian, sphere, gaussian_ripple".format(weight_type))

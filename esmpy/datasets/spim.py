@@ -187,7 +187,10 @@ def build_truth(spim, model_params, phases_params, misc_params ) :
         model.generate_phases(phases_params)
         phases = model.phases
         phases = phases / np.sum(phases, axis=1, keepdims=True)
-        weights = generate_weights(misc_params["weight_type"],shape_2d, len(phases_params),misc_params["seed"], **misc_params["weights_params"])
+        if misc_params["weight_type"] == "data" :
+            weights = misc_params["weights_params"]
+        else : 
+            weights = generate_weights(misc_params["weight_type"],shape_2d, len(phases_params),misc_params["seed"], **misc_params["weights_params"])
         return phases, weights
     else : 
         print("This dataset contains no ground truth. Nothing was done.")
