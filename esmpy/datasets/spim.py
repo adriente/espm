@@ -198,6 +198,7 @@ def get_truth(spim) :
     try : 
         phases_pars = spim.metadata.Truth.phases
         misc_pars = spim.metadata.Truth.Params.as_dictionary()
+        print(misc_pars)
     except AttributeError : 
         print("This dataset contain no ground truth.")
         return None, None

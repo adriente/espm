@@ -28,21 +28,32 @@ from esmpy.models.EDXS_function import print_concentrations_from_W
 ds.generate_built_in_datasets(seeds_range=5)
 spim = ds.load_particules(sample = 0)
 
-spim = hs.load("../generated_datasets/FpBrgCaPv_N293_paper/sample_5.hspy")
+spim = hs.load("../generated_datasets/71GPa_synthetic_N176.hspy")
+
+
+
+
+
+
+
+
+
+
+
 
 # spim.axes_manager[-1].offset = 12000
-spim.set_signal_type("EDS_ESMPY")
-spim.set_analysis_parameters(beam_energy = 200,
-azimuth_angle = 0.0,
-elevation_angle = 22.0,
-tilt_stage = 0.0,
-elements = ["Si","Mg","Fe"],
-thickness = 200e-7,
-density = 3.5,
-detector_type = "SDD_efficiency.txt",
-width_slope = 0.01,
-width_intercept = 0.065,
-xray_db = "default_xrays.json")
+# spim.set_signal_type("EDS_ESMPY")
+# spim.set_analysis_parameters(beam_energy = 200,
+# azimuth_angle = 0.0,
+# elevation_angle = 22.0,
+# tilt_stage = 0.0,
+# elements = ["Si","Mg","Fe"],
+# thickness = 200e-7,
+# density = 3.5,
+# detector_type = "SDD_efficiency.txt",
+# width_slope = 0.01,
+# width_intercept = 0.065,
+# xray_db = "default_xrays.json")
 G = spim.build_G("bremsstrahlung", norm = True)
 fW = spim.set_fixed_W({"p0" : {"Si" : 0.0},"p1" : {"Fe" : 0.0}, "p2" : {"Mg" : 0.0}})
 
@@ -211,14 +222,14 @@ def downsample_flat(X,n, pixels_side):
     X = downsample(X,n)
     return X.reshape((-1, pixels_side*pixels_side//n//n))
 
-pixels_side = 64
+pixels_side = 201
 
 G = spim.build_G("bremsstrahlung")
 shape_2d = spim.shape_2d
 # phases, weights = spim.phases, spim.weights
 
 
-downsampling_factors = [1]
+downsampling_factors = [3]
 
 # results_max = []
 # r2_max = []
@@ -233,10 +244,21 @@ times_exp = []
 
 
 X = spim.X
-est = SmoothNMF( n_components = 3,tol=0.00001, max_iter = 1000, G = None, lambda_L=0, mu=0, force_simplex=False, init="nndsvdar")
+print(X.shape)
+est = SmoothNMF( n_components = 3,tol=0.00001, max_iter = 10, G = None, lambda_L=0, mu=0, force_simplex=False, init="nndsvdar")
 Ximg = X.reshape((-1, pixels_side,pixels_side))
 Hflat =None
 W = None
+
+spim1 = hs.load('../experiments/brg_ab_map.hspy')
+spim2 = hs.load('../experiments/capv_ab_map.hspy')
+spim3 = hs.load('../experiments/fp_ab_map.hspy')
+
+maps = np.array([spim1.data, spim2.data, spim3.data])
+maps = maps.reshape(maps.shape[0], -1)
+
+print(maps.shape)
+
 
 for i in range(len(downsampling_factors)):
     start_time = time.time()
@@ -244,19 +266,20 @@ for i in range(len(downsampling_factors)):
     X_ = downsample(Ximg,n)
     Xflat = X_.reshape((X_.shape[0], -1))
     
-    est = SmoothNMF( n_components = 3,tol=0.00001, max_iter = 1000, G = None, lambda_L=0, mu=0, force_simplex=False, init="nndsvdar")
+    est = SmoothNMF( n_components = 3,tol=0.00001, max_iter = 10, G = None, lambda_L=0, mu=0, force_simplex=False, init="nndsvdar")
 
-    D , Hs, Ws, losses = est.fit_transform(Xflat)
+    D , Hs, Ws, G, losses = est.fit_transform(Xflat)
 
     Hflat = est.H_
     W = est.W_
 
+
     Wdot = spim.phases
-    Hflatdot = downsample_flat(spim.maps,n, pixels_side)
+    Hflatdot = downsample_flat(maps,n, pixels_side)
 
     angle, true_inds = find_min_angle(Wdot.T, W.T, unique=True, get_ind=True)
     r2 = ordered_r2(Hflatdot, Hflat[true_inds,:], true_inds)
-    kls = kl(Hflatdot, Hflat[true_inds,:])
+    # kls = kl(Hflatdot, Hflat[true_inds,:])
 
 
     print('baseline angle', sum(angle)/len(angle))
@@ -456,8 +479,8 @@ plt.show()
 
 
 
-n = 5
-m = 5
+n = 1
+m = 1
 
 
 
@@ -523,13 +546,7 @@ Y = np.reshape(lambdas, (n,m))
 Z = [angle_max_exp[i][-1] for i in range(n*m)]
 Z = np.array(Z)
 Z = np.reshape(Z, (n,m))
-ax = plt.axes(projection='3d')
-ax.plot_surface(np.log10(X), np.log10(Y), Z )
-ax.set_xlabel('$\mu$ (log)')
-ax.set_ylabel('$\lambda$ (log)')
-ax.set_zlabel('Angle error [deg]')
-ax.set_title('Angle errors')
-plt.show()
+
 
 plt.imshow(Z, cmap=cmap_green_red,origin='lower')
 plt.yticks([i for i in range(n)], [str(10**((i)-1)) for i in range(n)])
@@ -548,14 +565,6 @@ Y = np.reshape(lambdas, (n,m))
 Z = [r2_max_exp[i][-1] for i in range(n*m)]
 Z = np.array(Z)
 Z = np.reshape(Z, (n,m))
-ax = plt.axes(projection='3d')
-ax.plot_surface(np.log10(X), np.log10(Y), Z )
-ax.set_xlabel('$\mu$ (log)')
-ax.set_ylabel('$\lambda$ (log)')
-ax.set_zlabel('R2 error [-]');
-ax.set_title('R2 errors')
-plt.show()
-
 
 plt.imshow(Z, cmap=cmap_red_green,origin='lower')
 plt.yticks([i for i in range(n)], [str(10**((i%n)-1)) for i in range(n)])
