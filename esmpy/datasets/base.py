@@ -19,7 +19,6 @@ def generate_spim(phases, weights, densities, N, seed=0,continuous = False):
     np.random.seed(seed)
 
     shape_2d = weights.shape[:2]
-    spectral_len = phases.shape[1]
     phases = phases / np.sum(phases, axis=1, keepdims=True)
     
     # n D W A
