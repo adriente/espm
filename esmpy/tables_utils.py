@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
-from esmpy.conf import DB_PATH
+from esmpy.conf import DB_PATH, SYMBOLS_PERIODIC_TABLE, SIEGBAHN_TO_IUPAC
 import re
+import numpy as np
+import esmpy.utils as u
 
 def load_table (db_name) :
     """
@@ -16,6 +18,40 @@ def load_table (db_name) :
         json_dict = json.load(f)
     return json_dict["table"], json_dict["metadata"]
 
+def import_k_factors(table,mdata,k_factors_names,k_factors_values,ref_name) : 
+
+    with open(SYMBOLS_PERIODIC_TABLE,"r") as f : 
+        SPT = json.load(f)["table"]
+
+    with open(SIEGBAHN_TO_IUPAC,"r") as f : 
+        STI = json.load(f)
+
+    for i,name in enumerate(k_factors_names) : 
+        if name == ref_name : 
+            mr = re.match(r"([A-Z][a-z]?)_(.*)",name)
+            ref_at_num = SPT[mr.group(1)]["number"]
+            ref_lines =  STI[mr.group(2)]
+            ref_sig_vals = []
+            for l in ref_lines :
+                if l in table[str(ref_at_num)] : 
+                    ref_sig_vals.append(table[str(ref_at_num)][l]["cs"])
+            ref_sig_val = np.mean(ref_sig_vals)
+            ref_k_val = k_factors_values[i]
+
+    for i,name in enumerate(k_factors_names) : 
+        m0 = re.match(r"([A-Z][a-z]?)_(.*)",name)
+        if m0 : 
+            at_num = SPT[m0.group(1)]["number"]
+            lines =  STI[m0.group(2)]
+            for line in lines : 
+                new_k = k_factors_values[i]/ref_k_val
+                if line in table[str(at_num)] : 
+                    sig_val = table[str(at_num)][line]["cs"]
+                    new_value = ref_sig_val*new_k/sig_val
+                    new_table, new_mdata = modify_table_lines(table,mdata,[at_num],line,new_value)
+    return new_table,new_mdata
+            
+
 def modify_table_lines (table, mdata, elements, line, coeff) :
     """
     Takes a table, its metadata, a list of elements (atomic number), a line regex and a coefficient.
@@ -28,7 +64,12 @@ def modify_table_lines (table, mdata, elements, line, coeff) :
             for key in table[str(elt)].keys() :
                 if re.match(r"^{}".format(line),key) : 
                     table[str(elt)][key]["cs"] *=coeff
-                    mdata["modifications"][str(elt)][key] = coeff
+                    if "modifications" in mdata : 
+                        mdata["modifications"][str(elt) + "_" + key] = coeff
+                    else : 
+                        mdata["modifications"] = {}
+                        mdata["modifications"][str(elt) + "_" + key] = coeff
+                        
     else :
         print("You need to enable line notation")
     return table, mdata

@@ -256,11 +256,14 @@ def initialize_algorithms(X, G, W, H, n_components, init, random_state, force_si
         if skip_second:
             W = D
         else:
+            # [np.where(G[:,:-2].sum(axis=1)<(np.max(G[:,:-2].sum(axis=1))*0.001))[0],:]
             # Divide in two parts the initial fitting, otherwise the bremsstrahlung (which has a low intensity) tends to be poorly learned
             # First fit the caracteristic Xrays, then subtract that contribution to obtain a rough estimate of the bremsstralung parameters
             Wcarac = (np.linalg.lstsq(G[:,:-2],D,rcond = None)[0]).clip(min = 0)
-            Wbrem = (np.linalg.lstsq(G[:,-2:],D - G[:,:-2]@Wcarac,rcond = None)[0]).clip(min = 0)
-            W = np.vstack((Wcarac, Wbrem))
+            filter = np.where(np.mean(G[:,:-2],axis=1)<(np.max(np.mean(G[:,:-2],axis=1))*0.001))[0]
+            Wbrem = (np.linalg.lstsq(G[:,-2:][filter,:],D[filter,:],rcond = None)[0]).clip(min = 0)
+            # Wbrem = (np.linalg.lstsq(G[:,-2:],D - G[:,:-2]@Wcarac,rcond = None)[0]).clip(min = 0)
+            W = np.vstack((Wcarac,Wbrem))
             # P = np.abs(np.linalg.lstsq(G, D,rcond=None)[0])
 
     elif H is None:
