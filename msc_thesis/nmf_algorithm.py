@@ -9,7 +9,7 @@ from msc_thesis.binning import bin_dataset_3D, bin_dataset_2D
 def runNMF(Dtilde, Htilde, lambda_, mu_, binning_sizes, alpha, num_iterations, upsampleMode, Y_vol, Y_n_vol, G):
 
     L, P1, P2, K, P = Y_vol.shape[0], Y_vol.shape[1], Y_vol.shape[2], Htilde.shape[0],  Y_vol.shape[1]*Y_vol.shape[2]
-    updateW = True
+    update_W = True
 
     Y = Y_vol.reshape(L, P)
     H =None
@@ -41,8 +41,8 @@ def runNMF(Dtilde, Htilde, lambda_, mu_, binning_sizes, alpha, num_iterations, u
         est = SmoothNMF( n_components = K,tol=0.0001, max_iter = num_iterations, G = G_hat, lambda_L= lambda_, mu=mu_, force_simplex=False, normalize =True)
         
         if i > 0 and upsampleMode == 3:
-            updateW = False
-        D = est.fit_transform(Y_hat, W=W, H=H, update_W=updateW)
+            update_W = False
+        D = est.fit_transform(Y_hat, W=W, H=H, update_W=update_W)
 
         H = est.H_
         W = est.W_

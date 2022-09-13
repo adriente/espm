@@ -48,7 +48,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         return {'requires_positive_X': True}
 
     @abstractmethod
-    def _iteration(self,  W, H):
+    def _iteration(self,  W, H, update_W=True):
         pass
     
 

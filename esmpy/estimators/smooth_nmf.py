@@ -74,7 +74,7 @@ class SmoothNMF(NMFEstimator):
         
 
 
-    def _iteration(self, W, H, updateW=True):
+    def _iteration(self, W, H, update_W=True):
 
         # KL_surr = KL_loss_surrogate(self.X_, W, H, H, eps=0)
         # log_surr = log_surrogate(H, H, mu=self.mu, epsilon=self.epsilon_reg)
@@ -87,7 +87,7 @@ class SmoothNMF(NMFEstimator):
         else:
             H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H)
 
-        if updateW:
+        if update_W:
             W = multiplicative_step_w(self.X_, self.G_, W, H, eps=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W)
         if self.linesearch:
             d = diff_surrogate(Hold, H, L=self.L_, sigmaL=self.sigmaL_, dgkl=not(self.algo_hq))

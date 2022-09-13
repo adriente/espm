@@ -21,4 +21,8 @@ assert abs(filter[F1//2, F2//2,F3//2]) < 0.000001, f"Central weight is not almos
 # Assert all weights are non-negative
 assert np.all(filter > 0.000000000001), f"Some weights are negative"
 
+# Assert output shape equals input shape
 assert filter.shape == F_size, f"Incorrect resulting filter shape. Input filter size: {F_size}, Output filter size: {filter.shape}"
+
+
+A = np.ones()
