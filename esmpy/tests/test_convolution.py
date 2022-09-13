@@ -24,5 +24,3 @@ def test_build_noncentral_filter_weights():
     # Assert output shape equals input shape
     assert filter.shape == F_size, f"Incorrect resulting filter shape. Input filter size: {F_size}, Output filter size: {filter.shape}"
 
-
-    A = np.ones()
