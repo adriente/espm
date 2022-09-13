@@ -73,7 +73,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.detailed_loss_ = [loss]
         return loss
 
-    def fit_transform(self, X, y=None, W=None, H=None):
+    def fit_transform(self, X, y=None, W=None, H=None, update_W=True):
         """Learn a NMF model for the data X and returns the transformed data.
         This is more efficient than calling fit followed by transform.
         Parameters
@@ -150,7 +150,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 # Take one step in A, P
                 old_W, old_H = self.W_.copy(), self.H_.copy()
                 
-                self.W_, self.H_ = self._iteration(self.W_, self.H_ )
+
+                self.W_, self.H_ = self._iteration(self.W_, self.H_ , update_W=update_W)
                 eval_after = self.loss(self.W_, self.H_)
                 self.n_iter_ +=1
                 
@@ -346,4 +347,3 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             return new_X
         else : 
             raise ValueError("There are negative values in X")
-
