@@ -20,6 +20,17 @@ def smooth_l2_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
         t3 = np.sum((Ht-H)**2)
     return lambda_L / 2 * (2*t2 - t1 + sigmaL * t3)
 
+def smooth_l2_surrogate_alt(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
+    HtTL = Ht @ L
+    t1 = np.sum(HtTL * Ht)
+    if H is None:
+        return lambda_L / 2 * t1
+    
+    t2 = 2 * np.sum(HtTL * (H - Ht) )
+    t3 = sigmaL * np.sum((Ht-H)**2)
+    
+    return lambda_L / 2 * (t1 + t2 + t3)
+
 def smooth_dgkl_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
     HtTL = Ht @ L
     t1 = np.sum(HtTL * Ht)
@@ -91,7 +102,7 @@ class SmoothNMF(NMFEstimator):
         if self.linesearch:
             d = diff_surrogate(Hold, H, L=self.L_, sigmaL=self.sigmaL_, dgkl=not(self.algo_hq))
             if d>0:
-                self.sigmaL_  = self.sigmaL_ / 1.2
+                self.sigmaL_  = self.sigmaL_ / 1.05
             else:
                 self.sigmaL_  = self.sigmaL_ * 1.5
             self.gamma.append(self.sigmaL_ )

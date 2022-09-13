@@ -1,7 +1,0 @@
-signals : 
-  EDS_ESMPY:
-    signal_type: EDS_ESMPY
-    signal_dimension : 1
-    dtype : real
-    lazy : False
-    module : esmpy.datasets.spim
