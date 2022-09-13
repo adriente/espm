@@ -11,6 +11,8 @@ NUMBER_PERIODIC_TABLE = DB_PATH / Path("periodic_table_number.json")
 
 SYMBOLS_PERIODIC_TABLE = DB_PATH / Path("periodic_table_symbols.json")
 
+SIEGBAHN_TO_IUPAC = DB_PATH / Path("siegbahn_to_iupac.json")
+
 DEFAULT_SDD_EFF = "SDD_efficiency.txt"
 
 # Path of the generated datasets

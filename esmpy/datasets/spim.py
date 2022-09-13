@@ -108,6 +108,23 @@ class EDS_ESMPY (Signal1D) :
 
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.take_off_angle = take_off_angle(tilt_stage,azimuth_angle,elevation_angle)
 
+    def set_additional_parameters(self,thickness = 200e-7, density = 3.5,  detector_type = "SDD_efficiency.txt", width_slope = 0.01, width_intercept = 0.065, xray_db = "default_xrays.json") : 
+        self.metadata.Sample.thickness = thickness
+        self.metadata.Sample.density = density
+        try : 
+            del self.metadata.Acquisition_instrument.TEM.Detector.EDS.type
+        except AttributeError : 
+            pass
+        self.metadata.Acquisition_instrument.TEM.Detector.EDS.type = detector_type
+        self.metadata.Acquisition_instrument.TEM.Detector.EDS.width_slope = width_slope
+        self.metadata.Acquisition_instrument.TEM.Detector.EDS.width_intercept = width_intercept
+        self.metadata.xray_db = xray_db
+
+        tilt_stage = self.metadata.Acquisition_instrument.TEM.Stage.tilt_alpha
+        azimuth_angle = self.metadata.Acquisition_instrument.TEM.Detector.EDS.azimuth_angle
+        elevation_angle = self.metadata.Acquisition_instrument.TEM.Detector.EDS.elevation_angle
+        self.metadata.Acquisition_instrument.TEM.Detector.EDS.take_off_angle = take_off_angle(tilt_stage,azimuth_angle,elevation_angle)
+
     @number_to_symbol_list
     def add_elements(self, *, elements = []) :
         try : 

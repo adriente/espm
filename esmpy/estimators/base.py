@@ -20,7 +20,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     loss_names_ = ["KL_div_loss"]
     const_KL_ = None
     
-    def __init__(self, n_components=2, init='warn', tol=1e-4, max_iter=200,
+    def __init__(self, n_components=2, init=None, tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, debug=False,
                  l2=False,  G=None, shape_2d = None, normalize = False, log_shift=log_shift, 
                  eval_print=10, true_D = None, true_H = None, fixed_H = None, fixed_W = None, hspy_comp = False
