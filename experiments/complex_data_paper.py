@@ -1,3 +1,4 @@
+from sympy import N
 from esmpy.utils import arg_helper
 from esmpy.datasets.base import generate_dataset
 from esmpy.datasets.generate_EDXS_phases import generate_modular_phases
@@ -67,7 +68,7 @@ model_params = {
 
 data_dict = {
     "weight_type": "data",
-    "N" : 176,
+    "N" : 100,
     "densities" : [1.2,1.0,0.8],
     "data_folder" : "None",
     "model" : "EDXS",
@@ -78,6 +79,6 @@ data_dict = {
 
 phases, full_dict = generate_modular_phases(elts_dicts=elts_dicts, brstlg_pars = brstlg_pars, scales = [1, 1, 1], model_params= model_params, seed = seed)
 
-spim = generate_spim(phases, weights, [1.2,1.0,0.8], N = 176, seed=seed,continuous = False)
-filename = DATASETS_PATH / Path("71GPa_synthetic_N176.hspy")
+spim = generate_spim(phases, weights, [1.2,1.0,0.8], N = 100, seed=seed,continuous = False)
+filename = DATASETS_PATH / Path("71GPa_synthetic_N100.hspy")
 save_generated_spim(filename, spim, model_params, full_dict["phases_parameters"], data_dict)
