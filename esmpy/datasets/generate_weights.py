@@ -144,6 +144,13 @@ def spheres_weights(shape_2d=[80, 80], n_phases=3,  seed=0, radius = 2.5, **kwar
         
     return mat.finalize_weight()
 
+def wedge_weights(shape_2d=[80, 80],  seed=0, **kwargs):
+    mat = Material(shape_2d, n_phases=2)
+    np.random.seed(seed)
+    mat.wedge([0,0], shape_2d[0], shape_2d[1], 0.0, 1.0, 1)     
+        
+    return mat.finalize_weight()
+
 def chemical_maps_weights(file, element_lines, conc_max, sigma = 4, **kwargs) : 
     spim = hs.load(str(file))
     maps = spim.get_lines_intensity(element_lines, **kwargs)
@@ -177,7 +184,7 @@ def generate_weights(weight_type, shape_2d, n_phases=3, seed=0, **params):
         return spheres_weights(shape_2d, n_phases, seed, **params) 
     elif weight_type == "gaussian_ripple" : 
         return gaussian_ripple_weights(shape_2d = shape_2d, seed = seed , **params)
-    # elif weight_type=="gradient":
-    #     return spheres_gradient(shape_2d, n_phases, seed) 
+    elif weight_type=="wedge":
+        return wedge_weights(shape_2d=shape_2d,seed=seed,**params)
     else:
-        raise ValueError("Wrong weight_type: {}. Accepted types : random, laplacian, sphere, gaussian_ripple".format(weight_type))
+        raise ValueError("Wrong weight_type: {}. Accepted types : random, laplacian, sphere, gaussian_ripple, wedge".format(weight_type))

@@ -61,22 +61,26 @@ class EDS_ESMPY (Signal1D) :
         return self._maps_2d
 
     def build_ground_truth(self,reshape = True) : 
-        mod_pars = get_metadata(self)
-        phases_pars, misc_pars = get_truth(self)
-        phases, weights = build_truth(self, mod_pars, phases_pars, misc_pars)
-        if not(phases is None) : 
-            Ns = self.metadata.Truth.Params.N * np.array(self.metadata.Truth.Params.densities)
-            phases = phases*Ns[:,np.newaxis]
-        if reshape : 
-            phases = phases.T
-            weights = weights.reshape((weights.shape[0]*weights.shape[1], weights.shape[2])).T
+        if "phases" in self.metadata.Truth.Data : 
+            phases = self.metadata.Truth.Data.phases
+            weights = self.metadata.Truth.Data.weights
+            if reshape : 
+                phases = phases.T
+                weights = weights.reshape((weights.shape[0]*weights.shape[1], weights.shape[2])).T
+        else : 
+            raise AttributeError("There is no ground truth contained in this dataset")
         return phases, weights
 
-    def build_G(self, problem_type = "bremsstrahlung", norm = True) :
+    def build_G(self, problem_type = "bremsstrahlung", norm = True, reference_elt = {"26" : 3.0}) :
         self.problem_type = problem_type
         self.norm = norm
-        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements, "norm" : norm}
+        self.reference_elt = reference_elt
+        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements, "norm" : norm, "reference_elt" : reference_elt}
         mod_pars = get_metadata(self)
+        if norm : 
+            model = EDXS(**mod_pars)
+            model.generate_g_matr(**g_pars)
+            self.G_norms = model.norm
         if problem_type == "bremsstrahlung" : 
             G = self.update_G
         else : 
@@ -88,7 +92,7 @@ class EDS_ESMPY (Signal1D) :
 
     def update_G(self, part_W=None, G=None):
         model_params = get_metadata(self)
-        g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "norm" : self.norm}
+        g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "norm" : self.norm, "reference_elt" : self.reference_elt}
         G = G_EDXS(model_params, g_params, part_W=part_W, G=G)
         return G
 
@@ -194,35 +198,6 @@ def get_metadata(spim) :
         print("You need to define the relevant parameters for the analysis. Use the set_analysis_parameters function.")
 
     return mod_pars
-
-def build_truth(spim, model_params, phases_params, misc_params ) : 
-    # axes manager does not respect the original order of the input data shape
-    shape_2d = [spim.axes_manager[1].size , spim.axes_manager[0].size]
-    if (not(phases_params is None)) and (not(misc_params is None)) :
-        Model = getattr(models,misc_params["model"])
-        model = Model(**model_params)
-        model.generate_phases(phases_params)
-        phases = model.phases
-        phases = phases / np.sum(phases, axis=1, keepdims=True)
-        if misc_params["weight_type"] == "data" :
-            weights = misc_params["weights_params"]
-        else : 
-            weights = generate_weights(misc_params["weight_type"],shape_2d, len(phases_params),misc_params["seed"], **misc_params["weights_params"])
-        return phases, weights
-    else : 
-        print("This dataset contains no ground truth. Nothing was done.")
-        return None, None
-
-    
-def get_truth(spim) : 
-    try : 
-        phases_pars = spim.metadata.Truth.phases
-        misc_pars = spim.metadata.Truth.Params.as_dictionary()
-    except AttributeError : 
-        print("This dataset contain no ground truth.")
-        return None, None
-
-    return phases_pars, misc_pars
 
 def build_G(model_params, g_params) : 
     model = EDXS(**model_params)

@@ -51,15 +51,30 @@ def generate_spim(phases, weights, densities, N, seed=0,continuous = False):
         # return stochastic_spim
 
 
-def save_generated_spim(filename, spim, model_params, phases_params, misc_params) : 
+def save_generated_spim(filename, spim, phases, weights, **kwargs) : 
     s = hs.signals.Signal1D(spim)
     s.set_signal_type("EDS_ESMPY")
+    model_params = kwargs["model_parameters"]
+    misc_parameters = {
+        "N" : kwargs["N"],
+        "densities" : kwargs["densities"],
+        "model" : kwargs["model"],
+        "seed" : kwargs["seed"]
+    }
+    s.metadata.Truth = {}
+    if "weights_params" in kwargs : 
+        misc_parameters["weights_params"] = kwargs["weights_params"]
+        s.metadata.Truth.Params = misc_parameters
+        
+    if "phases_parameters" in kwargs : 
+        s.add_elements(elements = unique_elts(kwargs['phases_parameters']))
+        s.metadata.Truth.phases = kwargs['phases_parameters']
+    
     s.axes_manager[-1].offset = model_params["e_offset"]
     s.axes_manager[-1].scale = model_params["e_scale"]
 
     s.set_microscope_parameters(beam_energy = model_params["E0"])
     
-    s.add_elements(elements = unique_elts(phases_params))
     s.metadata.Sample.thickness = model_params["params_dict"]["Abs"]["thickness"]
     s.metadata.Sample.density = model_params["params_dict"]["Abs"]["density"]
     s.metadata.Acquisition_instrument.TEM.Detector.EDS.type = model_params["params_dict"]["Det"]
@@ -68,47 +83,61 @@ def save_generated_spim(filename, spim, model_params, phases_params, misc_params
     s.metadata.Acquisition_instrument.TEM.Detector.EDS.width_intercept = model_params["width_intercept"]
     s.metadata.xray_db = model_params["db_name"]
     
-    s.metadata.Truth = {}
-    s.metadata.Truth.phases = phases_params
-    s.metadata.Truth.Params = misc_params
+    s.metadata.Truth.Data = {}
+    s.metadata.Truth.Data.phases = phases
+    s.metadata.Truth.Data.weights = weights
+
 
     s.save(filename)
 
-def generate_dataset(base_path=DATASETS_PATH, seeds_range = 10, **kwargs):
+def generate_dataset(base_path=DATASETS_PATH, seeds_range = 10, phases = None, weights = None, **kwargs):
     
     # Handle paramters
 
     data_folder = kwargs["data_folder"]
     model_parameters = kwargs["model_parameters"]
-    phases_parameters = kwargs["phases_parameters"]
-    misc_parameters = {
-        "weight_type" : kwargs["weight_type"],
-        "N" : kwargs["N"],
-        "densities" : kwargs["densities"],
-        "model" : kwargs["model"],
-        "seed" : kwargs["seed"],
-        "weights_params" : kwargs["weights_params"]
-    }
-
-    Model = getattr(models, kwargs["model"]) 
-    n_phases = len(phases_parameters)
-
-    # Generate the phases
-    model = Model(**model_parameters)
-    model.generate_phases(phases_parameters)
-    phases = model.phases
-
     # Ensure the data folder exist
     folder = base_path / Path(data_folder)
     folder.mkdir(exist_ok=True, parents=True)
     
     # list of densities which will give different total number of events per spectra
+    misc_parameters = {
+        "N" : kwargs["N"],
+        "densities" : kwargs["densities"],
+        "model" : kwargs["model"],
+        "seed" : kwargs["seed"]
+    }
+    if "weights_params" in kwargs : 
+        misc_parameters["weights_params"] = kwargs["weights_params"]
+    
     fixed_seed = misc_parameters["seed"]
+    
+    
+    if "phases_parameters" in kwargs : 
+        phases_parameters = kwargs["phases_parameters"]
+        n_phases = len(phases_parameters)
+
+    # Generate the phases  
+    if phases is None :
+        Model = getattr(models, kwargs["model"]) 
+        model = Model(**model_parameters)
+        model.generate_phases(phases_parameters) 
+        g_phases = model.phases
+        Ns = kwargs["N"] * np.array(kwargs["densities"])
+        g_phases = g_phases*Ns[:,np.newaxis]
+    else : 
+        g_phases = phases/np.sum(phases, axis=1, keepdims=True)
+        Ns = kwargs["N"] * np.array(kwargs["densities"])
+        g_phases = g_phases*Ns[:,np.newaxis]
+        n_phases = phases.shape[0]
 
     for seed in tqdm(range(misc_parameters["seed"],seeds_range+misc_parameters["seed"])):
-
-        weights = generate_weights(kwargs["weight_type"],kwargs["shape_2d"], **kwargs["weights_params"], n_phases=n_phases, seed=seed)
-        spim = generate_spim(phases, weights, kwargs["densities"], kwargs["N"], seed=seed)
+        if weights is None : 
+            g_weights = generate_weights(kwargs["weight_type"],kwargs["shape_2d"], **kwargs["weights_params"], n_phases=n_phases, seed=seed)
+        else : 
+            g_weights = weights
+        assert np.allclose(np.sum(g_weights,axis = 2),1.0), "The input weights do not sum to one. Please modify it so that they sum to one along the 0th axis"
+        spim = generate_spim(g_phases, g_weights, kwargs["densities"], kwargs["N"], seed=seed)
         filename = str(folder / Path("sample_{}".format(seed - fixed_seed)))
         misc_parameters.update({"seed" : seed})
-        save_generated_spim(filename, spim, model_parameters, phases_parameters, misc_parameters)
+        save_generated_spim(filename, spim, g_phases, g_weights, **kwargs)

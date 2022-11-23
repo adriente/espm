@@ -43,7 +43,10 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
     b = len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0)
 
     def func(x):
-        return np.sum(num / (x + denum), axis=0) - 1
+        # m = (x + denum) == 0
+        new_x = x + denum
+        # new_x[m] += 1e-20
+        return np.sum(num / (new_x), axis=0) - 1
     func_a = func(a)
     func_b = func(b)
     
@@ -100,6 +103,8 @@ def dicotomy(a, b, func, maxit, tol):
     it = 0
     new = (a + b)/2
     func_new = func(new)
+    # print("A : {}, B: {}, new : {}, fA : {}, fB : {}, fnew : {}".format(np.min(np.abs(a)),np.min(np.abs(b)),np.min(np.abs(new)),np.min(np.abs(func(a))),np.min(np.abs(func(b))),np.min(np.abs(func(new)))))
+    # print("A : {}, B: {}, new : {}, fA : {}, fB : {}, fnew : {}".format(np.max(a),np.max(b),np.max(new),np.max(func(a)),np.max(func(b)),np.max(func(new))))
     while np.max(np.abs(func_new)) > tol:
         
         it=it+1
@@ -118,8 +123,9 @@ def dicotomy(a, b, func, maxit, tol):
         new = (a + b) / 2
         func_new = func(new)
         if it>=maxit:
-            print("Dicotomy stopped for maximum number of iterations")
+            print("Dicotomy stopped for maximum number of iterations with an error of : {}".format(np.max(np.abs(func_new))))
             break
+        
     return new
 
 def multiplicative_step_w(X, G, W, H, eps=log_shift, safe=True, l2=False, fixed_W = None):

@@ -5,7 +5,7 @@ import hyperspy.api as hs
 import numpy as np
 from esmpy.datasets.base import generate_spim, save_generated_spim
 from esmpy.datasets.generate_weights import chemical_maps_weights
-from esmpy.conf import DATASETS_PATH, BASE_PATH
+from esmpy.conf import DATASETS_PATH, BASE_PATH, DEFAULT_SYNTHETIC_DATA_DICT
 from pathlib import Path
 
 n_phases = 3
@@ -66,18 +66,24 @@ model_params = {
     }
 
 data_dict = {
-    "weight_type": "data",
     "N" : 176,
     "densities" : [1.2,1.0,0.8],
-    "data_folder" : "None",
+    "data_folder" : "71GPa_synthetic_N176",
     "model" : "EDXS",
-    "seed" : seed,
-    "weights_params" : weights
+    "seed" : seed
 }
 
 
 phases, full_dict = generate_modular_phases(elts_dicts=elts_dicts, brstlg_pars = brstlg_pars, scales = [1, 1, 1], model_params= model_params, seed = seed)
 
-spim = generate_spim(phases, weights, [1.2,1.0,0.8], N = 176, seed=seed,continuous = False)
-filename = DATASETS_PATH / Path("71GPa_synthetic_N176.hspy")
-save_generated_spim(filename, spim, model_params, full_dict["phases_parameters"], data_dict)
+data_dict.update(full_dict)
+
+input_dict = arg_helper(data_dict,DEFAULT_SYNTHETIC_DATA_DICT)
+
+
+generate_dataset(seeds_range=5, **input_dict, weights=weights)
+
+
+# spim = generate_spim(phases, weights, [1.2,1.0,0.8], N = 176, seed=seed,continuous = False)
+# filename = DATASETS_PATH / Path("71GPa_synthetic_N176.hspy")
+# save_generated_spim(filename, spim, model_params, full_dict["phases_parameters"], data_dict)

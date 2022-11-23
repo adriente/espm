@@ -24,7 +24,7 @@ def absorption_coefficient (x,atomic_fraction = False,*,elements_dict = {"Si" : 
 
     return mu
 
-def absorption_correction (x,thickness = 100e-7,toa = 90,density = None,atomic_fraction = False,*,elements_dict = {"Si" : 1.0}) : 
+def absorption_correction (x,thickness = 100e-7,toa = 90,density = None,atomic_fraction = False,*,elements_dict = {"Si" : 1.0},**kwargs) : 
     mu = absorption_coefficient(x,atomic_fraction,elements_dict = elements_dict)
     rad_toa = np.deg2rad(toa)
     if density is None : 
@@ -35,6 +35,15 @@ def absorption_correction (x,thickness = 100e-7,toa = 90,density = None,atomic_f
     else : 
         chi = mu*density*thickness/np.sin(rad_toa)
         return (1 - np.exp(-chi))/chi
+
+def absorption_mass_thickness(x,mass_thickness, toa = 90, atomic_fraction = True, *, elements_dict = {"Si" : 1.0}) : 
+    mu = absorption_coefficient(x,atomic_fraction,elements_dict = elements_dict)
+    rad_toa = np.deg2rad(toa)
+    if type(mu) == float : 
+        chi = mu*mass_thickness/np.sin(rad_toa)
+    else : 
+        chi = mu[:,np.newaxis]@((mass_thickness.reshape(-1)[:,np.newaxis]).T)/np.sin(rad_toa)
+    return (1-np.exp(-chi))/chi
 
 def det_efficiency_from_curve (x,filename,kind = "cubic") :
     array = np.loadtxt(DB_PATH / Path(filename))

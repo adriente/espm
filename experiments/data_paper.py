@@ -1,7 +1,8 @@
 from esmpy.utils import arg_helper
-from esmpy.datasets.base import generate_dataset
+from esmpy.datasets.base import generate_dataset, generate_weights
 from esmpy.datasets.generate_EDXS_phases import generate_modular_phases
 from esmpy.conf import DEFAULT_SYNTHETIC_DATA_DICT
+import numpy as np
 
 n_phases = 3
 seed = 43
@@ -70,6 +71,7 @@ data_dict["N"] = 73
 data_dict["data_folder"] = "FpBrgCaPv_N73_paper"
 
 input_dict = arg_helper(data_dict,DEFAULT_SYNTHETIC_DATA_DICT)
+
 
 generate_dataset(**input_dict, seeds_range=7)
 
