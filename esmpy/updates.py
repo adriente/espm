@@ -154,7 +154,7 @@ def multiplicative_step_w(X, G, W, H, eps=log_shift, safe=True, l2=False, fixed_
         GW = G @ W
         GWH = GW @ H
         # Split to debug timing...
-        # term1 = G.T @ (X / (GPA + eps)) @ A.T
+        # term1 = G.T @ (X / (GWH + eps)) @ H.T
         op1 = X / (GWH + eps)
         
         mult1 = G.T @ op1
