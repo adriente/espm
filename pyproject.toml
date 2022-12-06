@@ -22,6 +22,8 @@ hyperspy-gui-ipywidgets = "*"
 hyperspy-gui-traitsui = "*"
 pysptools = "*"
 flake8 = "*"
+pylint = "*"
+
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
