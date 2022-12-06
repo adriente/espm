@@ -23,8 +23,8 @@ class Material(object):
             conc_min and conc_max : min and max concentration of the wedge (floats between 0.0 and 1.0)
             phase_id : index of the phase in self.phases (integer)
         """
-        if (ind_origin[0] + length < self.shape_2d[0]) or (
-            ind_origin[1] + width < self.shape_2d[1]
+        if (ind_origin[0] + length <= self.shape_2d[0]) or (
+            ind_origin[1] + width <= self.shape_2d[1]
         ):
             # Constructs the wedge in 2D
             wedge = np.linspace(
@@ -32,7 +32,6 @@ class Material(object):
                 (np.linspace(conc_min, conc_max, num=width)),
                 num=length,
             )
-
             val = np.zeros(self.shape_2d)
             val[
                 ind_origin[0] : ind_origin[0] + length,
