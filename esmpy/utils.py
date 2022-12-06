@@ -223,3 +223,18 @@ def symbol_list () :
     for num in NPT.keys() : 
         symbol_list.append(NPT[num]["symbol"])
     return symbol_list
+
+
+def close_all():
+    r"""Close all opened windows."""
+
+    global _qtg_widgets
+    for widget in _qtg_widgets:
+        widget.close()
+    _qtg_widgets = []
+
+    global _plt_figures
+    for fig in _plt_figures:
+        _, plt, _ = _import_plt()
+        plt.close(fig)
+    _plt_figures = []

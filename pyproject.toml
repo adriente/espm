@@ -23,6 +23,13 @@ hyperspy-gui-traitsui = "*"
 pysptools = "*"
 flake8 = "*"
 pylint = "*"
+sphinx = "*"
+numpydoc = "*"
+sphinxcontrib-bibtex = "*"
+sphinx-gallery = "*"
+memory_profiler = "*"
+sphinx-rtd-theme = "*"
+sphinx-copybutton = "*"
 
 
 [build-system]
