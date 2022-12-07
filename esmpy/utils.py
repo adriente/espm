@@ -238,3 +238,14 @@ def close_all():
         _, plt, _ = _import_plt()
         plt.close(fig)
     _plt_figures = []
+
+def _import_plt():
+    try:
+        import matplotlib as mpl
+        from matplotlib import pyplot as plt
+    except Exception as e:
+        raise ImportError('Cannot import matplotlib. Choose another backend '
+                          'or try to install it with '
+                          'pip (or conda) install matplotlib. '
+                          'Original exception: {}'.format(e))
+    return mpl, plt
