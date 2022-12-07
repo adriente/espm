@@ -9,3 +9,8 @@ build
 generated_datasets
 results
 .DS_Store
+
+
+doc/_build/
+doc/backrefs/
+doc/examples/

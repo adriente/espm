@@ -25,9 +25,6 @@ test:
 	pytest .
 
 doc:
-	mkdir -p doc/_build/doctrees
-	mkdir -p doc/_build/html
-	mkdir -p doc/_build/linkcheck
 	sphinx-build -b html -d doc/_build/doctrees doc doc/_build/html
 	sphinx-build -b linkcheck -d doc/_build/doctrees doc doc/_build/linkcheck
 

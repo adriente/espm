@@ -12,7 +12,7 @@ matrices and arrays.
 
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
-    >>> import hyperspi.api as hs
+    >>> import hyperspy.api as hs
 
 We then set default plotting parameters. We're using the ``matplotlib`` backend
 to embed plots in this tutorial. 
@@ -20,7 +20,6 @@ to embed plots in this tutorial.
 .. plot::
     :context: close-figs
 
-    >>> plotting.BACKEND = 'matplotlib'
     >>> plt.rcParams['figure.figsize'] = (10, 5)
 
 Datasets
@@ -33,6 +32,7 @@ artificial datasets using the following lines:
 
 .. plot::
     :context: close-figs
+
     >>> import esmpy.datasets as ds
     >>> ds.generate_built_in_datasets(seeds_range=5)
     >>> spim = ds.load_particules(sample = 0)
@@ -41,6 +41,7 @@ Here the object `spim` is of the :class:`hyperspy._signals.signal1d.Signal1D`.
 
 .. plot::
     :context: close-figs
+    
     >>> out = spim.decomposition(3)
     >>> spim.plot_decomposition_factors(3)
 

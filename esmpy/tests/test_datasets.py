@@ -97,7 +97,7 @@ def test_generate():
     np.testing.assert_allclose( Xdot.sum(axis=(0,1)), G@W, rtol = 0.1 )
 
     filename = "test.hspy"
-    save_generated_spim(filename, spim, DATA_DICT["model_parameters"], DATA_DICT["phases_parameters"], MISC_DICT)
+    save_generated_spim(filename, spim, DATA_DICT["model_parameters"], DATA_DICT["phases_parameters"], **MISC_DICT)
     si = hs.load(filename)
     si.set_signal_type("EDS_ESMPY")
     G = si.build_G(problem_type = "bremsstrahlung")

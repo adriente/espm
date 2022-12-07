@@ -2,8 +2,11 @@
 name = "esmpy"
 version = "0.1.1"
 description = "Electron Spectro-Microscopy Python Library"
+readme = "README.md"
 authors = ["Adrien Teurtie, Nathanael Perraudin"]
 license = "MIT"
+
+
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<4.0"
