@@ -18,7 +18,6 @@ setuptools.setup(
     entry_points={'hyperspy.extensions': 'esmpy = esmpy'},
     extras_require={'dev': [
         'flake8', 'pytest', 'jupyterlab', 'twine', 'setuptools', 'wheel', 
-        'hyperspy-gui-ipywidgets', 'hyperspy-gui-traitsui', 'PyQt5',  'pysptools',
         'sphinx','numpydoc','sphinxcontrib-bibtex','sphinx-gallery',
         'memory_profiler','sphinx-rtd-theme','sphinx-copybutton'
         ]},
@@ -39,5 +38,5 @@ setuptools.setup(
     install_requires=[
         'hyperspy', 'tqdm', 'lmfit', 'scikit-learn'
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.7',
 )
