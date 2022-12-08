@@ -71,11 +71,11 @@ def test_absorption () :
     np.testing.assert_array_less(abs_corr,1.0)
 
 def test_elts_dict_from_W () : 
-    elements_mass = [28.085,40.0784,15.999,30.9737619985,12.011]
+    # elements_mass = [28.085,40.0784,15.999,30.9737619985,12.011]
     part_W = np.random.rand(5,3)
     avg_W = part_W.sum(axis=1)/3
-    weighted_W= [avg_W[i]*elt_mass for i,elt_mass in enumerate(elements_mass)]
-    norm_W = weighted_W/np.sum(weighted_W)
+    # weighted_W= [avg_W[i]*elt_mass for i,elt_mass in enumerate(elements_mass)]
+    norm_W = avg_W/np.sum(avg_W)
     elements_list = ["Si","Ca", "O", "P", "C"]
 
     result = ef.elts_dict_from_W(part_W, elements = elements_list)
@@ -98,11 +98,10 @@ def test_continuum_xrays () :
 
 def test_update_bremsstrahlung () : 
     elts_list = ["Si", "Co", "Cu","O"]
-    part_P = np.random.rand(4,2)
+    part_P = np.ones((4,1))/4
     model = EDXS(**model_parameters)
     model.generate_g_matr(elements=elts_list)
     G = model.G
-
     new_G = ef.update_bremsstrahlung(G, part_P, model_parameters, elts_list)
 
     assert G.shape == new_G.shape

@@ -80,7 +80,6 @@ def G_bremsstrahlung(x,E0,params_dict,*,elements_dict = {}):
     Computes the continuum X-ray based on the brstlg_pars set during init.
     The function is built in a way so that even an incomplete brstlg_pars dict is not a problem.
     """
-    
     A = absorption_correction(x,**params_dict["Abs"],elements_dict= elements_dict)
     
     if type(params_dict["Det"]) == str : 
@@ -111,7 +110,7 @@ def elts_dict_from_W (part_W,*,elements = []) :
     with open(SYMBOLS_PERIODIC_TABLE,"r") as f : 
         SPT = json.load(f)["table"]
     for i,elt in enumerate(elements) :
-        elements_dict[elt] = norm_P[i] * SPT[elt]["atomic_mass"]
+        elements_dict[elt] = norm_P[i] # * SPT[elt]["atomic_mass"]
     factor =  sum(elements_dict.values())
     return {key:elements_dict[key]/factor for key in elements_dict}
 
@@ -147,7 +146,9 @@ def update_bremsstrahlung (G,part_W,model_parameters,elements_list, norm = True)
     new_G = G.copy()
     new_G[:,-2:] = B
     if norm : 
-        new_G = new_G / np.sqrt(np.sum(new_G**2, axis=0, keepdims=True))
+        norms = np.sqrt(np.sum(new_G**2, axis=0, keepdims=True))
+        norms[0][:-2] = np.mean(norms[0][:-2])
+        new_G = new_G / norms
     return new_G
 
 

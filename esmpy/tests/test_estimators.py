@@ -60,7 +60,7 @@ def generate_one_sample():
     model = EDXS(**model_parameters)
     model.generate_phases(phases_parameters)
     phases = model.phases
-    model.generate_g_matr(g_type="bremsstrahlung", elements=["Fe", "Mo", "Ca", "Si", "O", "Pt"] )
+    model.generate_g_matr(g_type="bremsstrahlung", elements=["Fe", "Mo", "Ca", "Si", "O", "Pt"] ,reference_elt={})
     G = model.G
 
     weights = generate_weights(misc_params["weight_type"], misc_params["shape_2d"], n_phases=len(phases_parameters), seed=misc_params["seed"], **misc_params["weights_params"])

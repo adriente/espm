@@ -79,25 +79,25 @@ def test_generate():
     model = EDXS(**DATA_DICT["model_parameters"])
     model.generate_g_matr(g_type = "bremsstrahlung", elements=["Fe", "Pt", "O", "Si", "Ca", "Au", "Mo", "Cu"])
     model.generate_phases(DATA_DICT["phases_parameters"])
-    phases = model.phases
+    phases1 = model.phases
     G = model.G
     n_phases = len(DATA_DICT["phases_parameters"])
     maps = generate_weights(weight_type=DATA_DICT["weight_type"], shape_2d= DATA_DICT["shape_2d"], n_phases=n_phases, seed=DATA_DICT["seed"], **DATA_DICT["weights_params"])
     densities = np.array([1.3, 1.6, 1.9])
-    spim = generate_spim(phases, maps, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = False)
-    cont_spim = generate_spim(phases, maps, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = True)
-    Xdot = DATA_DICT["N"]* maps @ np.diag(densities)@ phases
+    spim = generate_spim(phases1, maps, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = False)
+    cont_spim = generate_spim(phases1, maps, densities, DATA_DICT["N"], seed=DATA_DICT["seed"],continuous = True)
+    Xdot = DATA_DICT["N"]* maps @ np.diag(densities)@ phases1
     W = np.abs(np.linalg.lstsq(G,spim.sum(axis = (0,1)),rcond = None)[0])
     
-    assert phases.shape == (3, 1900)
+    assert phases1.shape == (3, 1900)
     assert maps.shape == (100,120,3)
     assert spim.shape == (100,120,1900)
-    np.testing.assert_allclose(np.sum(phases, axis=1), np.ones([3]))
+    np.testing.assert_allclose(np.sum(phases1, axis=1), np.ones([3]))
     np.testing.assert_allclose( Xdot, cont_spim)
     np.testing.assert_allclose( Xdot.sum(axis=(0,1)), G@W, rtol = 0.1 )
 
     filename = "test.hspy"
-    save_generated_spim(filename, spim, DATA_DICT["model_parameters"], DATA_DICT["phases_parameters"], **MISC_DICT)
+    save_generated_spim(filename, spim, DATA_DICT['N']*np.diag(densities)@phases1, maps, **DATA_DICT)
     si = hs.load(filename)
     si.set_signal_type("EDS_ESMPY")
     G = si.build_G(problem_type = "bremsstrahlung")
@@ -230,15 +230,20 @@ def test_spim () :
 
     shape = gen_si.shape_2d
     G1 = gen_si.build_G(problem_type = "identity")
-    G2 = gen_si.build_G(problem_type = "no_brstlg")
-    G3 = gen_si.build_G(problem_type = "bremsstrahlung")
+    G2 = gen_si.build_G(problem_type = "no_brstlg",reference_elt = {})
+    G3 = gen_si.build_G(problem_type = "bremsstrahlung",reference_elt = {})
     Xflat = gen_si.X
+    print(gen_si.metadata.Sample.elements)
 
     assert shape == (100,120)
     np.testing.assert_array_equal(G1,np.diag(np.ones((1900,))))
     assert G2.shape == (1900, 8)
     assert callable(G3)
     assert G3().shape == (1900, 10)
+    G4 = gen_si.build_G(problem_type = "no_brstlg")
+    G5 = gen_si.build_G(problem_type = "bremsstrahlung")
+    assert G4.shape == (1900, 9)
+    assert G5().shape == (1900, 11)
     assert Xflat.shape == (1900, 120*100)
 
     detector_dict = {
