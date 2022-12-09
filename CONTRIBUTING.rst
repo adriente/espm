@@ -14,8 +14,7 @@ The package can be set up (ideally in a fresh virtual environment) for local
 development with the following::
 
     $ git clone https://github.com/adriente/esmpy.git
-    $ poetry init
-    $ poetry install
+    $ pip install -e ".[dev]"
 
 You can improve or add functionality in the ``esmpy`` folder, along with
 corresponding unit tests in ``esmpy/tests/test_*.py`` (with reasonable

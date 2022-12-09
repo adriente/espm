@@ -4,6 +4,9 @@ from esmpy.conf import SYMBOLS_PERIODIC_TABLE, NUMBER_PERIODIC_TABLE
 import json
 from hyperspy.misc.material import atomic_to_weight, density_of_mixture
 
+_qtg_widgets = []
+_plt_figures = []
+
 def rescaled_DH(D,H) :
     """Rescale the matrices D and H such that the columns of H sums approximately to one."""
     _, p = H.shape

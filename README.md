@@ -13,7 +13,7 @@ pip install .
 
 If you want to develop, please use the option
 ```
-pip install ."dev" 
+pip install -e ".[dev]" 
 ```
 
 # Set up the virtual env

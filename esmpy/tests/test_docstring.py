@@ -15,7 +15,7 @@ def gen_recursive_file(root, ext):
                 yield os.path.join(root, name)
 
 
-def test_docstrings(root, ext, setup=None):
+def func_test_docstrings(root, ext, setup=None):
     files = list(gen_recursive_file(root, ext))
     return doctest.DocFileSuite(*files, setUp=setup, tearDown=teardown,
                                 module_relative=False)
@@ -23,10 +23,8 @@ def test_docstrings(root, ext, setup=None):
 
 def setup(doctest):
     import numpy
-    import esmpy
     import hyperspy.api
     doctest.globs = {
-        'utils': esmpy.utils,
         'np': numpy,
         'hs': hyperspy.api
     }
@@ -34,5 +32,17 @@ def setup(doctest):
 
 def teardown(doctest):
     """Close matplotlib figures to avoid warning and save memory."""
-    import esmpy
-    esmpy.utils.close_all()
+    from esmpy.utils import close_all
+    close_all()
+
+
+def test_docstrings_esmpy():
+    # Docstrings from API reference.
+    func_test_docstrings('esmpy', '.py', setup)
+
+
+def test_docstrings_rst():
+    # Docstrings from tutorials. No setup to not forget imports.
+    func_test_docstrings('.', '.rst')
+
+
