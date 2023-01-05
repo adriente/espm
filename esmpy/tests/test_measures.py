@@ -4,7 +4,7 @@ from esmpy.measures import mse, spectral_angle, KLdiv_loss, KLdiv, square_distan
 from esmpy.measures import KL_loss_surrogate, log_reg, log_surrogate
 import pytest
 from esmpy.conf import log_shift
-from esmpy.laplacian import create_laplacian_matrix
+from esmpy.utils import create_laplacian_matrix
 
 def base_loss(x_matr, d_matr, a_matr, eps=log_shift):
     """

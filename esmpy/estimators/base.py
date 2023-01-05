@@ -7,7 +7,7 @@ from esmpy.conf import log_shift
 from esmpy.utils import rescaled_DH
 import time
 from abc import ABC, abstractmethod
-from esmpy.laplacian import create_laplacian_matrix 
+from esmpy.utils import create_laplacian_matrix 
 from scipy.sparse import lil_matrix
 
 

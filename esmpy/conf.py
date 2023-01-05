@@ -68,3 +68,4 @@ DEFAULT_SYNTHETIC_DATA_DICT = {
 log_shift = 1e-14
 dicotomy_tol = 1e-5
 seed_max = 4294967295
+sigmaL = 8

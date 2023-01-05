@@ -7,7 +7,7 @@ from esmpy.models import EDXS
 from esmpy.datasets.generate_weights import generate_weights
 from esmpy.datasets.base import generate_spim
 from esmpy.measures import trace_xtLx
-from esmpy.laplacian import create_laplacian_matrix
+from esmpy.utils import create_laplacian_matrix
 from esmpy.models.edxs import G_EDXS
 import hyperspy.api as hs
 

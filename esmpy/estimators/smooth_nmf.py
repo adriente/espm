@@ -3,8 +3,7 @@ import numpy as np
 from esmpy.updates import multiplicative_step_h, multiplicative_step_w, multiplicative_step_hq
 from esmpy.measures import trace_xtLx, log_reg
 from esmpy.estimators import NMFEstimator
-from esmpy.laplacian import sigmaL
-from esmpy.conf import dicotomy_tol
+from esmpy.conf import dicotomy_tol, sigmaL
 
 # from esmpy.measures import KL_loss_surrogate, KLdiv_loss, log_reg, log_surrogate
 
