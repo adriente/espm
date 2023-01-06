@@ -1,9 +1,9 @@
 import numpy as np
 
-from esmpy.updates import dichotomy_simplex, multiplicative_step_w, multiplicative_step_h, update_q, dichotomy_simplex_acc, multiplicative_step_hq
+from esmpy.estimators.updates import dichotomy_simplex, multiplicative_step_w, multiplicative_step_h, update_q, dichotomy_simplex_acc, multiplicative_step_hq
 from esmpy.measures import KLdiv_loss, log_reg, Frobenius_loss
 from esmpy.conf import log_shift, dicotomy_tol
-
+import pytest
 
 def make_step_a(x_matr, g_matr, p_matr , a_matr, mu_sparse=0, eps=log_shift, eps_sparse=1, mask=None):
     """
@@ -35,7 +35,7 @@ def make_step_a(x_matr, g_matr, p_matr , a_matr, mu_sparse=0, eps=log_shift, eps
                 fixed_a + eps_sparse
             )
             # Lagragian multiplier
-            lambda_s = dichotomy_simplex(a_matr * U, denum, dicotomy_tol)
+            lambda_s = dichotomy_simplex(a_matr * U, denum, 0, tol=dicotomy_tol)
             # A update (regularized)
             a_matr = (
                 a_matr
@@ -49,7 +49,7 @@ def make_step_a(x_matr, g_matr, p_matr , a_matr, mu_sparse=0, eps=log_shift, eps
         else:
             # Lagragian multiplier
             lambda_s = dichotomy_simplex(
-                a_matr * U, V[:, np.newaxis], dicotomy_tol
+                a_matr * U, V[:, np.newaxis], 0, tol=dicotomy_tol
             )
             # Update the entry that did not meet the sparsity requirements
             n_mask = np.invert(mask)
@@ -63,7 +63,7 @@ def make_step_a(x_matr, g_matr, p_matr , a_matr, mu_sparse=0, eps=log_shift, eps
     else:
         # Lagragian multiplier
         lambda_s = dichotomy_simplex(
-            a_matr * U, V[:, np.newaxis], dicotomy_tol
+            a_matr * U, V[:, np.newaxis], 0, tol=dicotomy_tol
         )
         # A update (not regularized)
         a_matr = a_matr / (V[:, np.newaxis] + lambda_s) * U
@@ -93,27 +93,27 @@ def test_dichotomy_simplex():
     denum = np.random.rand(1,1)
     sol = num - denum
     tol = 1e-8
-    sol2 = dichotomy_simplex(num, denum, tol )
+    sol2 = dichotomy_simplex(num, denum, 0, tol=tol )
     assert(np.abs(sol -sol2 )< 2*tol)
 
     n = 10
     num = np.random.rand(1,n)
     denum = np.random.rand(1, n)
     sol = np.squeeze(num - denum)
-    sol2 = dichotomy_simplex(num, denum, tol )
+    sol2 = dichotomy_simplex(num, denum, 0, tol=tol )
     np.testing.assert_allclose(sol2, sol, atol=tol)
 
     num = np.random.rand(n, 1)
     denum = np.random.rand(n, 1)
     tol = 1e-6
-    sol = dichotomy_simplex(num, denum, tol )
+    sol = dichotomy_simplex(num, denum, 0, tol=tol)
     np.sum(num/(denum + sol))
     np.testing.assert_allclose(np.sum(num/(denum + sol)), 1, atol=tol)
 
     num = np.random.rand(n, 6)
     denum = np.random.rand(n, 6)
     tol = 1e-6
-    sol = dichotomy_simplex(num, denum, tol )
+    sol = dichotomy_simplex(num, denum, 0, tol=tol )
     v = np.sum(num/(denum + sol), axis=0)
     np.testing.assert_allclose(v, np.ones([6]), atol=tol)
 
@@ -122,37 +122,84 @@ def test_dichotomy_simplex():
     num = num/(np.sum(num/denum))
     np.testing.assert_allclose(np.sum(num/(denum)), 1)
     tol = 1e-6
-    sol = dichotomy_simplex(num, denum, tol )
+    sol = dichotomy_simplex(num, denum, 0, tol=tol )
     np.testing.assert_allclose(sol, 0, atol=tol)
 
     tol = 1e-6
     num = np.array([[1,1,0,0,0,2]]).T
     denum = np.array([[1,1,3,5,4,2]]).T
-    sol = dichotomy_simplex(num, denum, tol )
+    sol = dichotomy_simplex(num, denum, 0, tol=tol )
     np.testing.assert_allclose(np.sum(num/(denum + sol)), 1, atol=tol)
 
     tol = 1e-6
     num = np.array([[1,1,0,0,0,2]]).T
     denum = np.array([[1,1,0,5,0,2]]).T
-    sol = dichotomy_simplex(num, denum, tol )
+    sol = dichotomy_simplex(num, denum, 0, tol=tol )
     np.sum(num/(denum + sol))
     np.testing.assert_allclose(np.sum(num/(denum + sol)), 1, atol=tol)
 
+def test_dichotomy_simplex_contraint():
+    # Test the other constraint
+    tol = 1e-8
+    num = np.array([[3,0.5]]).T
+    denum = np.array([[1,1]]).T
+    sol = np.array([[3]]).T
+    tol = 1e-8
+    sol2 = dichotomy_simplex(num, denum, 1/4, tol=tol )
+    assert(np.abs(sol -sol2 )< 2*tol)
+
+    n = 10
+    num = np.random.rand(1,n)
+    denum = np.random.rand(1, n)
+    sol = np.squeeze(num - denum)
+    sol2 = dichotomy_simplex(num, denum, 0.5, tol=tol )
+    np.testing.assert_allclose(sol2, sol, atol=tol)
+
+    with pytest.raises(ValueError) as _:
+        num = np.random.rand(1,n)
+        denum = np.random.rand(1, n)
+        dichotomy_simplex(num, denum, 1.1, tol=tol )
+    with pytest.raises(ValueError) as _:
+        num = np.random.rand(3,n)
+        denum = np.random.rand(3, n)
+        dichotomy_simplex(num, denum, 0.5, tol=tol )
+
+    n = 10
+    num = np.random.rand(1,n)
+    denum = np.random.rand(1, n)
+    sol = np.squeeze(num - denum)
+    sol2 = dichotomy_simplex(num, denum, 0.99, tol=tol )
+    np.testing.assert_allclose(sol2, sol, atol=tol)
+
+    n = 10
+    num = np.random.rand(n, 6)
+    denum = np.random.rand(n, 6)
+    tol = 1e-6
+    log_shift = 0.05
+    sol = dichotomy_simplex(num, denum, log_shift, tol=tol )
+    v = np.sum(np.maximum(num/(denum + sol), log_shift), axis=0)
+    np.testing.assert_allclose(v, np.ones([6]), atol=tol)
 
 def test_dicotomy2():
     k = 5
     p = 6400
     span = np.logspace(-6,6,num=17)
     its = 25
-    tol = 1e-6
+    tol = 0
+    maxit = 100
     np.random.seed(0)
     for _ in range(its) : 
         scale_num = np.random.choice(span,size=(k,p))
         num = scale_num * np.random.rand(k,p)
         scale_denum = np.random.choice(span,size=(k,p))
         denum = scale_denum * np.random.rand(k,p)
-        sol = dichotomy_simplex(num, denum, tol, maxit=100)
+        sol = dichotomy_simplex(num, denum, 0, tol=tol, maxit=maxit)
         v = np.sum(num/(denum + sol), axis=0)
+        np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
+
+        log_shift = 0.1 / 5
+        sol = dichotomy_simplex(num, denum, log_shift, tol=tol, maxit=maxit)
+        v = np.sum(np.maximum(num/(denum + sol), log_shift), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
         
     for _ in range(its) : 
@@ -161,8 +208,13 @@ def test_dicotomy2():
         num[np.tile(np.arange(k),p//k),np.arange(p)] = 0
         scale_denum = np.random.choice(span,size=(k,p))
         denum = scale_denum * np.random.rand(k,p)
-        sol = dichotomy_simplex(num, denum, tol, maxit=100)
+        sol = dichotomy_simplex(num, denum, 0, tol=tol, maxit=maxit)
         v = np.sum(num/(denum + sol), axis=0)
+        np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
+
+        log_shift = 0.001 / 5
+        sol = dichotomy_simplex(num, denum, log_shift, tol=tol, maxit=maxit)
+        v = np.sum(np.maximum(num/(denum + sol), log_shift), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
         
     for _ in range(its) : 
@@ -170,8 +222,13 @@ def test_dicotomy2():
         num = scale_num * np.random.rand(k,p)
         scale_denum = np.random.choice(span,size=(k,1))
         denum = scale_denum * np.random.rand(k,1)
-        sol = dichotomy_simplex(num, denum, tol, maxit=100)
+        sol = dichotomy_simplex(num, denum, 0, tol=tol, maxit=maxit)
         v = np.sum(num/(denum + sol), axis=0)
+        np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
+
+        log_shift = 0.1 / 5
+        sol = dichotomy_simplex(num, denum, log_shift, tol=tol, maxit=maxit)
+        v = np.sum(np.maximum(num/(denum + sol), log_shift), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
         
     for _ in range(its) : 
@@ -180,8 +237,13 @@ def test_dicotomy2():
         num[np.tile(np.arange(k),p//k),np.arange(p)] = 0
         scale_denum = np.random.choice(span,size=(k,1))
         denum = scale_denum * np.random.rand(k,1)
-        sol = dichotomy_simplex(num, denum, tol, maxit=100)
+        sol = dichotomy_simplex(num, denum, 0, tol=tol, maxit=maxit)
         v = np.sum(num/(denum + sol), axis=0)
+        np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
+
+        log_shift = 0.1 / 5
+        sol = dichotomy_simplex(num, denum, log_shift, tol=tol, maxit=maxit)
+        v = np.sum(np.maximum(num/(denum + sol), log_shift), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
 
 def test_dicotomy_aq():
@@ -306,10 +368,10 @@ def test_multiplicative_step_w():
 
     X = GP @ A
 
-    Pp = multiplicative_step_w(X, G, P, A, eps=0)
+    Pp = multiplicative_step_w(X, G, P, A, log_shift=0)
     np.testing.assert_array_almost_equal(Pp, P)
 
-    Pp = multiplicative_step_w(X, G, P, A, eps=0, l2=True)
+    Pp = multiplicative_step_w(X, G, P, A, log_shift=0, l2=True)
     np.testing.assert_array_almost_equal(Pp, P)
 
     for _ in range(10):
@@ -352,31 +414,31 @@ def test_multiplicative_step_h():
     X = GP @ A
     np.testing.assert_allclose(np.sum(A, axis=0), np.ones([A.shape[1]]), atol=dicotomy_tol)
 
-    Ap = multiplicative_step_h(X, G, P, A, force_simplex=False, mu=0, eps=0, epsilon_reg=1, safe=True)
+    Ap = multiplicative_step_h(X, G, P, A, force_simplex=False, mu=0, log_shift=0, epsilon_reg=1, safe=True)
     np.testing.assert_array_almost_equal(A, Ap)
     np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
 
-    Ap = multiplicative_step_h(X, G, P, A, force_simplex=True, mu=0, eps=0, epsilon_reg=1, safe=True)
+    Ap = multiplicative_step_h(X, G, P, A, force_simplex=True, mu=0, log_shift=0, epsilon_reg=1, safe=True)
     np.testing.assert_allclose(A, Ap, atol=dicotomy_tol)        
 
     # Same test for l2
-    Ap = multiplicative_step_h(X, G, P, A, force_simplex=False, mu=0, eps=0, epsilon_reg=1, safe=True, l2=True)
+    Ap = multiplicative_step_h(X, G, P, A, force_simplex=False, mu=0, log_shift=0, epsilon_reg=1, safe=True, l2=True)
     np.testing.assert_array_almost_equal(A, Ap)
     np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
 
-    Ap = multiplicative_step_h(X, G, P, A, force_simplex=True, mu=0, eps=0, epsilon_reg=1, safe=True, l2=True)
+    Ap = multiplicative_step_h(X, G, P, A, force_simplex=True, mu=0, log_shift=0, epsilon_reg=1, safe=True, l2=True)
     np.testing.assert_allclose(A, Ap, atol=dicotomy_tol)       
 
     for _ in range(10):
         A = np.random.rand(k,p)
         A = A/np.sum(A, axis=1, keepdims=True)
-        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=False, mu=0, eps=0, epsilon_reg=1, safe=True)
+        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=False, mu=0, log_shift=0, epsilon_reg=1, safe=True)
         val1 = KLdiv_loss(X, GP, A)
         val2 = KLdiv_loss(X, GP, Ap)
         np.testing.assert_array_less(0, Ap)
         assert(val1 > val2)
 
-        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True)
+        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=0, log_shift=log_shift, epsilon_reg=1, safe=True)
         Ap2 =  make_step_a(X, G, P, A, mu_sparse=0, eps=log_shift, eps_sparse=1, mask=None)
         np.testing.assert_array_almost_equal(Ap2, Ap)
         np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
@@ -389,13 +451,13 @@ def test_multiplicative_step_h():
         epsilon_reg = 1
         mu = np.ones(k)
         mu[0] = 0
-        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=mu, eps=log_shift, epsilon_reg=epsilon_reg, safe=True)
+        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=mu, log_shift=log_shift, epsilon_reg=epsilon_reg, safe=True)
         Ap2 =  make_step_a(X, G, P, A, mu_sparse=1, eps=log_shift, eps_sparse=epsilon_reg, mask=None)
         np.testing.assert_array_almost_equal(Ap2, Ap)
         np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
 
 
-        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=3*mu, eps=log_shift, epsilon_reg=epsilon_reg, safe=True)
+        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=3*mu, log_shift=log_shift, epsilon_reg=epsilon_reg, safe=True)
         Ap2 =  make_step_a(X, G, P, A, mu_sparse=3, eps=log_shift, eps_sparse=epsilon_reg, mask=None)
         np.testing.assert_array_almost_equal(Ap2, Ap)
         np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
@@ -414,13 +476,13 @@ def test_multiplicative_step_h():
     for _ in range(10):
         A = np.random.rand(k,p)
         A = A/np.sum(A, axis=1, keepdims=True)
-        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=False, mu=0, eps=0, epsilon_reg=1, safe=True, l2=True)
+        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=False, mu=0, log_shift=0, epsilon_reg=1, safe=True, l2=True)
         val1 = Frobenius_loss(X, GP, A)
         val2 = Frobenius_loss(X, GP, Ap)
         np.testing.assert_array_less(0, Ap)
         assert(val1 > val2)
 
-        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=0, eps=log_shift, epsilon_reg=1, safe=True, l2=True)
+        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=0, log_shift=log_shift, epsilon_reg=1, safe=True, l2=True)
         np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
 
         val1 = Frobenius_loss(X, GP, A)
@@ -431,11 +493,11 @@ def test_multiplicative_step_h():
         epsilon_reg = 1
         mu = np.ones(k)
         mu[0] = 0
-        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=mu, eps=log_shift, epsilon_reg=epsilon_reg, safe=True, l2=True)
+        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=mu, log_shift=log_shift, epsilon_reg=epsilon_reg, safe=True, l2=True)
         np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
 
 
-        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=3*mu, eps=log_shift, epsilon_reg=epsilon_reg, safe=True, l2=True)
+        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=3*mu, log_shift=log_shift, epsilon_reg=epsilon_reg, safe=True, l2=True)
         np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
 
 
@@ -461,23 +523,23 @@ def test_multiplicative_step_hq():
     X = GP @ A
     np.testing.assert_allclose(np.sum(A, axis=0), np.ones([A.shape[1]]), atol=dicotomy_tol)
 
-    Ap = multiplicative_step_hq(X, G, P, A, force_simplex=False,eps=0,safe=True)
+    Ap = multiplicative_step_hq(X, G, P, A, force_simplex=False, log_shift=0,safe=True)
     np.testing.assert_array_almost_equal(A, Ap)
     np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
 
-    Ap = multiplicative_step_hq(X, G, P, A, force_simplex=True, eps=0, safe=True)
+    Ap = multiplicative_step_hq(X, G, P, A, force_simplex=True, log_shift=0, safe=True)
     np.testing.assert_allclose(A, Ap, atol=dicotomy_tol)        
 
     for _ in range(10):
         A = np.random.rand(k,p)
         A = A/np.sum(A, axis=1, keepdims=True)
-        Ap =  multiplicative_step_hq(X, G, P, A, force_simplex=False,  eps=0, safe=True)
+        Ap =  multiplicative_step_hq(X, G, P, A, force_simplex=False,  log_shift=0, safe=True)
         val1 = KLdiv_loss(X, GP, A)
         val2 = KLdiv_loss(X, GP, Ap)
         np.testing.assert_array_less(0, Ap)
         assert(val1 > val2)
 
-        Ap =  multiplicative_step_hq(X, G, P, A, force_simplex=True, eps=log_shift, safe=True)
+        Ap =  multiplicative_step_hq(X, G, P, A, force_simplex=True, log_shift=log_shift, safe=True)
         Ap2 =  make_step_a(X, G, P, A, mu_sparse=0, eps=log_shift, eps_sparse=1, mask=None)
         np.testing.assert_array_almost_equal(Ap2, Ap)
         np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)

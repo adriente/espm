@@ -2,10 +2,8 @@
 API reference
 =============
 
-.. automodule:: esmpy
-
 .. toctree::
-    :hidden:
+   :maxdepth: 2
 
-    models
-    estimators
+   estimators
+   models

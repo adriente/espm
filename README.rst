@@ -1,40 +1,45 @@
-# This README needs an update
+=====================================================
+ESMPY: The Electron Spectro-Microscopy Python Library
+=====================================================
 
-# Simplex non-negative matrix factorization for Electron Microscopy
-This project contains the code to create artificial Energy dispersive X-ray spectroscopy (EDXS) data and to perform hyperspectral unmixing on EDXS spectrum images.
+This library contains algorithms to perform non-negative matrix factorization with 
+diverse regularisation (e.g. Laplacian or L1) and contraints (e.g. simplex).
+
+It is specialized for Electron Microscopy applications. It contains code to create artificial 
+Energy dispersive X-ray spectroscopy (EDXS) data and to perform hyperspectral unmixing on 
+EDXS spectrum images.
+
+Installation
+------------
+
+You can install this package from PyPi using::
+
+    $ pip install esmpy
+
+If you want to develop, please use the option::
+
+    $ git clone https://github.com/adriente/esmpy.git
+    $ cd esmpy
+    $ pip install cython
+    $ pip install -e ".[dev]" 
+
+Getting started
+---------------
+Generate the synthetic dataset. Run the script::
+
+    $ python experiments/generate_synthetic_dataset.py
 
 
-## Installation
-You can install this package using
-```
-pip install cython
-pip install .
-```
-
-If you want to develop, please use the option
-```
-pip install -e ".[dev]" 
-```
-
-# Set up the virtual env
-
-To be done
-
-## Getting started with the repo
-Generate the synthetic dataset. Run the script:
-```
-python experiments/generate_synthetic_dataset.py
-```
-
-## Running the algorithm
+Running the algorithm
+---------------------
 Fill a json file with the relevant input parameters such as dataset name, hyperparameters values, etc ... (see the template in scritps/config/). They are two types of configuration files:
 1. Dataset files
 2. Experiment files
 
-To run an experiment, you can use 
-```
-python scripts/synthetic_exp.py json_filename
-```
+To run an experiment, you can use::
+
+ $ python scripts/synthetic_exp.py json_filename
+
 For example the following line will execute the experiment with the NMF method and the toy dataset.
 ```
 python scripts/synthetic_exp.py exp_NMF_Toy.json

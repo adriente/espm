@@ -1,7 +1,8 @@
 import numpy as np
 from esmpy.conf import dicotomy_tol
+from esmpy.conf import log_shift
 
-def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
+def dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol, maxit=40):
     """
     Function to solve the num/(x+denum) -1 = 0 equation. Here, x is the Lagragian multiplier which is used to apply the simplex constraint.
     The first part consists in finding a and b such that num/(a+denum) -1 > 0 and num/(b+denum) -1  < 0. 
@@ -17,16 +18,25 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
     assert((num>=0).all())
     assert((denum>=0).all())
     assert((np.sum(num, axis=0)>0).all())
-    
+    if log_shift>0:
+        # Check that a solution is possible
+        if denum.shape[0] * log_shift >= 1:
+            raise ValueError("No solution exists!")
+        denum_max = num/log_shift
+    else:
+        denum_max = np.inf
     # Ideally we want to do this, but we have to exclude the case where num==0.
     # a = np.max(num/2 - denum, axis=0)
     if denum.shape[1]>1:
         a = []
         for n,d in zip(num.T, denum.T):
             m = n>0
+            # The divided by 2 is just a factor to help a bit.
             a.append(np.max(n[m]/2 - d[m]))
         a = np.array(a)
-    else:
+    else: 
+        # This else is just to preserve the size and make it work in any case...
+        # There might be a possiblity to write this more elegantly
         d = denum[:,0]
         def max_masked(n):
             m = n>0
@@ -37,14 +47,12 @@ def dichotomy_simplex(num, denum, tol=dicotomy_tol, maxit=40):
     # r = np.sum(num/denum, axis=0)
     # b = np.zeros(r.shape)
     # b[r>=1] = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))[r>=1]
-    
+    denum_p = np.minimum(denum, denum_max)
     b = len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0)
 
     def func(x):
-        # m = (x + denum) == 0
         new_x = x + denum
-        # new_x[m] += 1e-20
-        return np.sum(num / (new_x), axis=0) - 1
+        return np.sum(np.maximum(num / new_x, log_shift), axis=0) - 1
     func_a = func(a)
     func_b = func(b)
     

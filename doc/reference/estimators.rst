@@ -1,5 +1,5 @@
-========
-Features
-========
+==========
+Estimators
+==========
 
 .. automodule:: esmpy.estimators

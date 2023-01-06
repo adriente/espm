@@ -1,6 +1,6 @@
 import numpy as np
 
-from esmpy.updates import multiplicative_step_h, multiplicative_step_w, multiplicative_step_hq
+from esmpy.estimators.updates import multiplicative_step_h, multiplicative_step_w, multiplicative_step_hq
 from esmpy.measures import trace_xtLx, log_reg
 from esmpy.estimators import NMFEstimator
 from esmpy.conf import dicotomy_tol, sigmaL
@@ -59,27 +59,22 @@ class SmoothNMF(NMFEstimator):
     loss_names_ = NMFEstimator.loss_names_ + ["log_reg_loss"] + ["Lapl_reg_loss"]
 
     # args and kwargs are copied from the init to the super instead of capturing them in *args and **kwargs to be scikit-learn compliant.
-    def __init__(self, lambda_L = 1.0, accelerate=False, linesearch=False, mu=0, epsilon_reg=1, algo_hq=False, 
+    def __init__(self, lambda_L = 1.0, linesearch=False, mu=0, epsilon_reg=1, algo_hq=False, 
                  force_simplex=True, dicotomy_tol=dicotomy_tol, **kwargs):
 
         super().__init__( **kwargs)
-        self.accelerate = accelerate
         self.lambda_L = lambda_L
         self.linesearch = linesearch
         self.mu = mu
         self.epsilon_reg = epsilon_reg
         self.force_simplex = force_simplex
         self.dicotomy_tol = dicotomy_tol
-        
-        
-
         self.algo_hq = algo_hq
-        if self.accelerate:
-            assert np.max(np.array(self.mu))==0, "mu is not available for the accelerated algorithm."
+
+        if self.linesearch:
             assert not self.l2
             self.sigmaL_ = sigmaL
-            if self.linesearch:
-                self.gamma = [self.sigmaL_]
+            self.gamma = [self.sigmaL_]
 
         
 
@@ -93,11 +88,11 @@ class SmoothNMF(NMFEstimator):
         if self.linesearch:
             Hold = H.copy()
         if self.algo_hq:
-            H = multiplicative_step_hq(self.X_, self.G_, W, H, force_simplex=self.force_simplex, eps=self.log_shift, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, sigmaL=self.sigmaL_)
+            H = multiplicative_step_hq(self.X_, self.G_, W, H, force_simplex=self.force_simplex, log_shift=self.log_shift, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, sigmaL=self.sigmaL_)
         else:
-            H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, eps=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H)
+            H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H)
 
-        W = multiplicative_step_w(self.X_, self.G_, W, H, eps=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W)
+        W = multiplicative_step_w(self.X_, self.G_, W, H, log_shift=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W)
         if self.linesearch:
             d = diff_surrogate(Hold, H, L=self.L_, sigmaL=self.sigmaL_, dgkl=not(self.algo_hq))
             if d>0:

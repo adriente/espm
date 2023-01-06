@@ -1,5 +1,5 @@
-========
-Features
-========
+======
+Models
+======
 
 .. automodule:: esmpy.models

@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
-from esmpy.updates import initialize_algorithms
+from esmpy.estimators.updates import initialize_algorithms
 from esmpy.measures import KLdiv_loss, Frobenius_loss, find_min_angle, find_min_MSE
 from esmpy.conf import log_shift
 from esmpy.utils import rescaled_DH
@@ -62,16 +62,16 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.GWH_numel_ = self.G_.shape[0] * H.shape[1]
         
         if self.l2:
-            loss = Frobenius_loss(X, GW, H, average=False) 
+            loss_ = Frobenius_loss(X, GW, H, average=False) 
         else:
             if self.const_KL_ is None:
                 self.const_KL_ = np.sum(X*np.log(self.X_+ self.log_shift)) - np.sum(X) 
 
-            loss =  KLdiv_loss(X, GW, H, self.log_shift, safe=self.debug, average=False) + self.const_KL_
+            loss_ =  KLdiv_loss(X, GW, H, self.log_shift, safe=self.debug, average=False) + self.const_KL_
         if average:
-            loss = loss / self.GWH_numel_
-        self.detailed_loss_ = [loss]
-        return loss
+            loss_ = loss_ / self.GWH_numel_
+        self.detailed_loss_ = [loss_]
+        return loss_
 
     def fit_transform(self, X, y=None, W=None, H=None):
         """Learn a NMF model for the data X and returns the transformed data.
@@ -86,7 +86,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             If specified, it is used as initial guess for the solution.
         Returns
         -------
-        W, H : ndarrays
+        W : ndarrays
         """
         if self.hspy_comp : 
             self.X_ = self._validate_data(X.T, dtype=[np.float64, np.float32])

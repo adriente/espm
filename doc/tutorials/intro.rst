@@ -36,14 +36,17 @@ artificial datasets using the following lines:
     >>> import esmpy.datasets as ds
     >>> ds.generate_built_in_datasets(seeds_range=5)
     >>> spim = ds.load_particules(sample = 0)
+    >>> out = spim.decomposition(3)
+    >>> spim.plot_decomposition_factors(3)
 
 Here the object `spim` is of the :class:`hyperspy._signals.signal1d.Signal1D`.
 
 .. plot::
     :context: close-figs
     
-    >>> out = spim.decomposition(3)
-    >>> spim.plot_decomposition_factors(3)
+    >>> import numpy as np
+    >>> import matplotlib.pyplot as plt
+    >>> plt.plot(np.random.rand(10))
 
 This is a link_.
 
