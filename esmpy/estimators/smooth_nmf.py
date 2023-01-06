@@ -76,6 +76,9 @@ class SmoothNMF(NMFEstimator):
             self.sigmaL_ = sigmaL
             self.gamma = [self.sigmaL_]
 
+        if self.algo_hq:
+            assert not self.l2
+
         
 
 
@@ -88,7 +91,7 @@ class SmoothNMF(NMFEstimator):
         if self.linesearch:
             Hold = H.copy()
         if self.algo_hq:
-            H = multiplicative_step_hq(self.X_, self.G_, W, H, force_simplex=self.force_simplex, log_shift=self.log_shift, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, sigmaL=self.sigmaL_)
+            H = multiplicative_step_hq(self.X_, self.G_, W, H, force_simplex=self.force_simplex, log_shift=self.log_shift, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, sigmaL=self.sigmaL_, fixed_H=self.fixed_H)
         else:
             H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H)
 

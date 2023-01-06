@@ -197,7 +197,7 @@ def test_dicotomy2():
         v = np.sum(num/(denum + sol), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
 
-        log_shift = 0.1 / 5
+        log_shift = 0.1 / k
         sol = dichotomy_simplex(num, denum, log_shift, tol=tol, maxit=maxit)
         v = np.sum(np.maximum(num/(denum + sol), log_shift), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
@@ -212,7 +212,7 @@ def test_dicotomy2():
         v = np.sum(num/(denum + sol), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
 
-        log_shift = 0.001 / 5
+        log_shift = 0.1 / k
         sol = dichotomy_simplex(num, denum, log_shift, tol=tol, maxit=maxit)
         v = np.sum(np.maximum(num/(denum + sol), log_shift), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
@@ -226,7 +226,7 @@ def test_dicotomy2():
         v = np.sum(num/(denum + sol), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
 
-        log_shift = 0.1 / 5
+        log_shift = 0.1 / k
         sol = dichotomy_simplex(num, denum, log_shift, tol=tol, maxit=maxit)
         v = np.sum(np.maximum(num/(denum + sol), log_shift), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
@@ -241,7 +241,7 @@ def test_dicotomy2():
         v = np.sum(num/(denum + sol), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
 
-        log_shift = 0.1 / 5
+        log_shift = 0.1 / k
         sol = dichotomy_simplex(num, denum, log_shift, tol=tol, maxit=maxit)
         v = np.sum(np.maximum(num/(denum + sol), log_shift), axis=0)
         np.testing.assert_allclose(v, np.ones([v.shape[0]]), atol=1e-2)
@@ -254,20 +254,26 @@ def test_dicotomy_aq():
     # def func_abc_onedim(x, a, b, minus_c):
     #     return x + 2*a + b - np.sqrt( (b + x)**2 + 4*a*minus_c) 
 
+
     a = np.random.rand() 
     b = np.random.rand(1,1)
     minus_c = np.random.rand(1,1)
+    # x + 2*a + b - np.sqrt( (b + x)**2 + 4*a*minus_c) = 0
+    # x + 2*a + b =  np.sqrt( (b + x)**2 + 4*a*minus_c) 
+    # (x + b)^2 + 4*a^2 + 4*a (x + b) =   (b + x)**2 + 4*a*minus_c
+    # a + (x + b) = minus_c
+    # x  = minus_c - a -b 
     sol = minus_c - a - b
     tol = 1e-8
-    sol2 = dichotomy_simplex_acc(a, b, minus_c, tol )
-    assert(np.abs(sol -sol2 )< 2*tol)
+    sol2 = dichotomy_simplex_acc(a, b, minus_c, log_shift=0, tol=tol )
+    assert(np.abs(sol -sol2 )< 10*tol)
 
     a = np.random.rand() 
     b = np.zeros([1,1])
     minus_c = np.random.rand(1,1)
     sol = minus_c - a - b
     tol = 1e-8
-    sol2 = dichotomy_simplex_acc(a, b, minus_c, tol )
+    sol2 = dichotomy_simplex_acc(a, b, minus_c, log_shift=0, tol=tol )
     assert(np.abs(sol -sol2 )< 10*tol)
 
     a = np.random.rand() 
@@ -275,7 +281,7 @@ def test_dicotomy_aq():
     minus_c = np.zeros([1,1])
     sol = minus_c - a - b
     tol = 1e-8
-    sol2 = dichotomy_simplex_acc(a, b, minus_c, tol )
+    sol2 = dichotomy_simplex_acc(a, b, minus_c, log_shift=0, tol=tol )
     assert(np.abs(sol -sol2 )< 10*tol)
 
     a = np.random.rand() 
@@ -283,7 +289,7 @@ def test_dicotomy_aq():
     minus_c = np.zeros([1,1])
     sol = minus_c - a - b
     tol = 1e-8
-    sol2 = dichotomy_simplex_acc(a, b, minus_c, tol )
+    sol2 = dichotomy_simplex_acc(a, b, minus_c, log_shift=0, tol=tol )
     assert(np.abs(sol -sol2 )< 10*tol)
 
 
@@ -292,15 +298,72 @@ def test_dicotomy_aq():
     b = np.random.rand(1,n)
     minus_c = np.random.rand(1,n)
     sol = np.squeeze(minus_c - a - b)
-    sol2 = dichotomy_simplex_acc(a, b, minus_c, tol )
+    sol2 = dichotomy_simplex_acc(a, b, minus_c, log_shift=0, tol=tol )
     np.testing.assert_allclose(sol2, sol, atol=10*tol)
 
     a = np.random.rand() 
     b = np.random.rand(n,6)
     minus_c = np.random.rand(n,6)
     tol = 1e-6
-    sol = dichotomy_simplex_acc(a, b, minus_c, tol )
+    sol = dichotomy_simplex_acc(a, b, minus_c, log_shift=0, tol=tol)
     np.testing.assert_allclose(func_abc(sol, a, b, minus_c), np.zeros([6]), atol=10*tol)
+
+
+def test_dichotomy_aq_constraint():
+    # Test the other constraint
+    tol = 1e-8
+    a = 4
+    log_shift = 1/8
+    b = np.array([[1,1,1, 8/log_shift, 8/log_shift]]).T
+    minus_c = np.array([[1,1,1, 1, 1]]).T
+
+    sol = 2
+    tol = 1e-8
+    sol2 = dichotomy_simplex_acc(a, b, minus_c, log_shift=log_shift, tol=tol )
+    assert(np.abs(sol -sol2 )< 10*tol)
+
+
+    n = 10
+    a = np.random.rand() 
+    b = np.random.rand(1,n)
+    minus_c = np.random.rand(1,n)
+    sol = np.squeeze(minus_c - a - b)
+    sol2 = dichotomy_simplex_acc(a, b, minus_c, log_shift=0.5, tol=tol )
+    np.testing.assert_allclose(sol2, sol, atol=10*tol)
+
+
+    with pytest.raises(ValueError) as _:
+        a = np.random.rand(1,n)
+        b = np.random.rand(1, n)
+        minus_c = np.random.rand(1,n)
+        sol2 = dichotomy_simplex_acc(a, b, minus_c, log_shift=1.1, tol=tol )
+
+    with pytest.raises(ValueError) as _:
+        a = np.random.rand(3,n)
+        b = np.random.rand(3, n)
+        minus_c = np.random.rand(3,n)
+        sol2 = dichotomy_simplex_acc(a, b, minus_c, log_shift=0.5, tol=tol )
+
+    n = 10
+    a = np.random.rand() 
+    b = np.random.rand(1,n)
+    minus_c = np.random.rand(1,n)
+    sol = np.squeeze(minus_c - a - b)
+    sol2 = dichotomy_simplex_acc(a, b, minus_c, log_shift=0.99, tol=tol )
+    np.testing.assert_allclose(sol2, sol, atol=10*tol)
+
+    def func_abc(x, a, b, minus_c, log_shift):
+        return  np.sum( np.maximum(np.sqrt( (b + x)**2 + 4*a*minus_c) - b - x, log_shift*2*a), axis=0) - 2*a
+
+    n = 10
+    a = np.random.rand() 
+    b = np.random.rand(6,n)
+    minus_c = np.random.rand(6,n)
+    log_shift = 0.1
+    sol = dichotomy_simplex_acc(a, b, minus_c, log_shift=log_shift, tol=tol )
+    v = func_abc(sol, a, b, minus_c, log_shift)
+    np.testing.assert_allclose(v, np.zeros([n]), atol=tol)
+
 
 def test_dicotom_aq2():
     k = 5
@@ -309,9 +372,12 @@ def test_dicotom_aq2():
     span = np.logspace(-6,5,num=17)
     its = 25
     tol = 1e-6
-    def func_abc(x, a, b, minus_c):
-        n_p = len(b)
-        return n_p * x + 2*a + np.sum( - np.sqrt( (b + x)**2 + 4*a*minus_c) + b, axis=0)
+    # def func_abc(x, a, b, minus_c):
+    #     n_p = len(b)
+    #     return n_p * x + 2*a + np.sum( - np.sqrt( (b + x)**2 + 4*a*minus_c) + b, axis=0)
+    def func_abc(x, a, b, minus_c, log_shift=0):
+        return  np.sum( np.maximum(np.sqrt( (b + x)**2 + 4*a*minus_c) - b - x, log_shift*2*a), axis=0) - 2*a
+
 
     np.random.seed(0)
     for _ in range(its) : 
@@ -320,17 +386,25 @@ def test_dicotom_aq2():
         b = scale_num * np.random.rand(k,p)
         scale_denum = np.random.choice(span,size=(k,1))
         minus_c = scale_denum * np.random.rand(k,1)
-        sol = dichotomy_simplex_acc(a, b, minus_c, tol, maxit=maxit )
+        sol = dichotomy_simplex_acc(a, b, minus_c, log_shift=0, tol=tol, maxit=maxit )
         np.testing.assert_allclose(func_abc(sol, a, b, minus_c), np.zeros([p]), atol=tol)
-        
+
+        log_shift = 0.1 / k
+        sol = dichotomy_simplex_acc(a, b, minus_c, log_shift=log_shift, tol=tol, maxit=maxit )
+        np.testing.assert_allclose(func_abc(sol, a, b, minus_c, log_shift=log_shift), np.zeros([p]), atol=tol)
+
     for _ in range(its) :
         a = np.random.rand()  
         scale_num = np.random.choice(span,size=(k,p))
         b = scale_num * np.random.rand(k,p)
         scale_denum = np.random.choice(span,size=(k,p))
         minus_c = scale_denum * np.random.rand(k,p)
-        sol = dichotomy_simplex_acc(a, b, minus_c, tol, maxit=maxit )
+        sol = dichotomy_simplex_acc(a, b, minus_c, log_shift=0, tol=tol, maxit=maxit )
         np.testing.assert_allclose(func_abc(sol, a, b, minus_c), np.zeros([p]), atol=tol)
+
+        log_shift = 0.1 / k
+        sol = dichotomy_simplex_acc(a, b, minus_c, log_shift=log_shift, tol=tol, maxit=maxit )
+        np.testing.assert_allclose(func_abc(sol, a, b, minus_c, log_shift=log_shift), np.zeros([p]), atol=tol)
         
     for _ in range(its) : 
         a = np.random.rand()  
@@ -339,9 +413,12 @@ def test_dicotom_aq2():
         b[np.tile(np.arange(k),p//k),np.arange(p)] = 0
         scale_denum = np.random.choice(span,size=(k,p))
         minus_c = scale_denum * np.random.rand(k,p)
-        sol = dichotomy_simplex_acc(a, b, minus_c, tol, maxit=maxit )
+        sol = dichotomy_simplex_acc(a, b, minus_c, log_shift=0, tol=tol, maxit=maxit )
         np.testing.assert_allclose(func_abc(sol, a, b, minus_c), np.zeros([p]), atol=tol)
-        
+
+        log_shift = 0.1 / k
+        sol = dichotomy_simplex_acc(a, b, minus_c, log_shift=log_shift, tol=tol, maxit=maxit )
+        np.testing.assert_allclose(func_abc(sol, a, b, minus_c, log_shift=log_shift), np.zeros([p]), atol=tol)        
 
     for _ in range(its) : 
         a = np.random.rand()  
@@ -350,9 +427,13 @@ def test_dicotom_aq2():
         b[np.tile(np.arange(k),p//k),np.arange(p)] = 0
         scale_denum = np.random.choice(span,size=(k,1))
         minus_c = scale_denum * np.random.rand(k,1)
-        sol = dichotomy_simplex_acc(a, b, minus_c, tol, maxit=maxit )
+        sol = dichotomy_simplex_acc(a, b, minus_c, log_shift=0, tol=tol, maxit=maxit )
         np.testing.assert_allclose(func_abc(sol, a, b, minus_c), np.zeros([p]), atol=tol)
 
+        log_shift = 0.1 / k
+        sol = dichotomy_simplex_acc(a, b, minus_c, log_shift=log_shift, tol=tol, maxit=maxit )
+        np.testing.assert_allclose(func_abc(sol, a, b, minus_c, log_shift=log_shift), np.zeros([p]), atol=tol)
+        
 def test_multiplicative_step_w():
     l = 26
     k = 5

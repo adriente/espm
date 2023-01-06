@@ -64,7 +64,7 @@ def dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol, maxit=4
 
     return dicotomy(a, b, func, maxit, tol)
 
-def dichotomy_simplex_acc(a, b, minus_c, tol=dicotomy_tol, maxit=100):
+def dichotomy_simplex_acc(a, b, minus_c, log_shift=log_shift, tol=dicotomy_tol, maxit=100):
     """
     Function to solve the dicotomy for the function:
     f(nu) = n_p * nu_k + 2a - sum_p sqrt ( (b_p + nu)^2 - 4 a c_p) + sum_p b_p
@@ -76,16 +76,22 @@ def dichotomy_simplex_acc(a, b, minus_c, tol=dicotomy_tol, maxit=100):
     assert(a>=0)
     assert((minus_c>=0).all())
 
+    if log_shift>0:
+        # Check that a solution is possible
+        if b.shape[0] * log_shift >= 1:
+            raise ValueError("No solution exists!")
+
     n_p = len(b) 
     nu_max = n_p * np.max(b**2/a+2*a+2*(b+ minus_c), axis=0) * 1.5 + 1e-3
 
     nu_min = - (2 * a + np.sum(b, axis=0))/ n_p  * 1.1 - 1e-3
     
     def func(x):
-        return n_p * x + 2*a + np.sum( - np.sqrt( (b + x)**2 + 4*a*minus_c) + b, axis=0)
+        return   2*a - np.sum( np.maximum(np.sqrt( (b + x)**2 + 4*a*minus_c) - x - b, log_shift*2*a), axis=0)
     func_max = func(nu_max)
     func_min = func(nu_min)
-    
+    # print(a,b,minus_c)
+    # print(nu_max, nu_min, func_min, func_max)
     assert(np.sum(func_min>=0)==0)
     assert(np.sum(func_max<=0)==0)
     assert(np.sum(np.isnan(func_max))==0)

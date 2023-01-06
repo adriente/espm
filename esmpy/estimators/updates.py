@@ -38,11 +38,9 @@ def multiplicative_step_w(X, G, W, H, log_shift=log_shift, safe=True, l2=False, 
         new_W = W / term2 * term1
         new_W = np.maximum(new_W, log_shift)
     
-    if fixed_W is None : 
-        return new_W
-    else : 
+    if fixed_W is not None: 
         new_W[fixed_W >= 0] = fixed_W[fixed_W >=0]
-        return new_W
+    return new_W
 
 def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, log_shift=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, sigmaL=sigmaL, fixed_H = None):
     """
@@ -91,7 +89,7 @@ def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, log_shift=log_sh
         denum = denum + lambda_L * sigmaL * maxH + lambda_L * HL 
     num = H * num
     if force_simplex:
-        nu = dichotomy_simplex(num, denum, log_shift, dicotomy_tol)
+        nu = dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol)
     else:
         nu = 0
     if safe:
@@ -101,11 +99,10 @@ def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, log_shift=log_sh
     # Add the shift...
     new_H = np.maximum(num/(denum+nu), log_shift)
 
-    if fixed_H is None : 
-        return new_H
-    else : 
+    if fixed_H is not None: 
         new_H[fixed_H >= 0] = fixed_H[fixed_H >= 0]
-        return new_H
+    return new_H
+
 
 
 def initialize_algorithms(X, G, W, H, n_components, init, random_state, force_simplex, logshift=log_shift):
@@ -188,7 +185,7 @@ def multiplicative_step_wq(X, G, W, H, log_shift=log_shift, safe=True):
     term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(H, axis=1,  keepdims=True).T
     return W / term2 * term1
 
-def multiplicative_step_hq(X, G, W, H, force_simplex=True, log_shift=log_shift, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, sigmaL=sigmaL):
+def multiplicative_step_hq(X, G, W, H, force_simplex=True, log_shift=log_shift, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, sigmaL=sigmaL, fixed_H = None):
     """
     Multiplicative step in H.
     """
@@ -212,11 +209,19 @@ def multiplicative_step_hq(X, G, W, H, force_simplex=True, log_shift=log_shift, 
         b = b + lambda_L * H @ L - lambda_L * sigmaL  * H 
         a = lambda_L * sigmaL
         if force_simplex:
-            nu = dichotomy_simplex_acc(a, b, minus_c)
+            nu = dichotomy_simplex_acc(a, b, minus_c, log_shift=log_shift, tol=dicotomy_tol)
             b = b + nu
-        return (-b + np.sqrt(b**2 + 4* a *minus_c)) / (2*a)
+        new_H = (-b + np.sqrt(b**2 + 4* a *minus_c)) / (2*a)
     else: # We recover the classic case: multiplicative_step_a
         if force_simplex:
-            nu = dichotomy_simplex(minus_c, b, dicotomy_tol)
+            nu = dichotomy_simplex(minus_c, b, log_shift=log_shift, tol=dicotomy_tol)
             b = b + nu
-        return minus_c / b
+        new_H = minus_c / b
+
+    # Add the shift...
+    new_H = np.maximum(new_H, log_shift)
+
+    if fixed_H is not None: 
+        new_H[fixed_H >= 0] = fixed_H[fixed_H >= 0]
+    return new_H
+
