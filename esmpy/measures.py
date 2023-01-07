@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+
+r"""
+The :mod:`pygsp.measures` module implements different measures for the matrix factorisation problem.
+In particulare it contains the different losses and regularizers used in :mod:`pygsp.estimator` module. 
+It also contains different metrics to evaluate the results
+"""
+
 import numpy as np
 from esmpy.conf import log_shift
 import warnings as w
@@ -241,10 +249,13 @@ def residuals(data, model):
     return X_sum - model_sum
 
 def Frobenius_loss(X, W, H, average=False):
-    """
+    r"""
     Compute the generalized KL divergence.
- 
-    \sum_{ji} | X_{ij} - (D H)_{ij} |^2
+
+    .. math::
+
+        \sum_{ji} left| X_{ij} - (D H)_{ij} \right|^2
+    
     """
     
     DH = W @ H
@@ -254,11 +265,13 @@ def Frobenius_loss(X, W, H, average=False):
     else:
         return np.sum((DH - X)**2)
 
-def KLdiv(X, D, H, eps=log_shift, safe=True, average=False):
-    """
+def KLdiv(X, D, H, log_shift=log_shift, safe=True, average=False):
+    r"""
     Compute the generalized KL divergence.
+    
+    .. math::
 
-    \sum_{ji} X_{ij} \log (X / D A)_{ij} + (D A - X)_{ij}
+        \sum_{ji} X_{ij} \log (X / D A)_{ij} + (D A - X)_{ij}
     """
     if safe:
         # Allow for very small negative values!
@@ -278,10 +291,12 @@ def KL(X, DH, eps=log_shift, average=False):
     return x_lin + x_log
 
 def KLdiv_loss(X, D, H, eps=log_shift, safe=True, average=False):
-    """
+    r"""
     Compute the loss based on the generalized KL divergence.
 
-    \sum_{ji} X_{ij} \log (D W)_{ij} + (D W)_{ij}
+    .. math::
+
+        \sum_{ji} X_{ij} \log (D W)_{ij} + (D W)_{ij}
 
     This does not contains all the term of the KL divergence, only the ones
     depending on D and A.
@@ -311,8 +326,8 @@ def KL_loss_surrogate(X, D, H, Ht, eps=log_shift, safe=True, average=False):
         return np.sum(X * np.sum(U * np.log((U+eps)/ (DH+eps)), axis=1)) + np.sum(DHT)
 
 def log_reg(H, mu, epsilon, average=False):
-    """
-    Compute the regularization loss: \sum_ij mu_i \log(A_{ij})
+    r"""
+    Compute the regularization loss: :math:`\sum_ij mu_i \log(A_{ij})`
     """
     if not(np.isscalar(mu)):
         mu = np.expand_dims(mu, axis=1)
