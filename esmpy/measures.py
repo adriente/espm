@@ -243,7 +243,7 @@ def residuals(data, model):
 def Frobenius_loss(X, W, H, average=False):
     """
     Compute the generalized KL divergence.
-
+ 
     \sum_{ji} | X_{ij} - (D H)_{ij} |^2
     """
     
