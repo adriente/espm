@@ -238,7 +238,7 @@ def find_min_MSE(true_maps, algo_maps, get_ind = False, unique=False):
     # This function calculates all the possible MSE between abundances and true maps
     # For each true map a best matching abundance is found
     # The function returns the MSE of the corresponding pairs
-    mse_matr = square_distance(true_maps, algo_maps)
+    mse_matr = squared_distance(true_maps, algo_maps)
     if unique :
         ordered_maps = unique_min(mse_matr)
     else :
@@ -385,7 +385,9 @@ def KLdiv(X, D, H, log_shift=log_shift, average=False):
         2.921251732961556
 
     """
-    
+    D = np.maximum(D, log_shift)
+    H = np.maximum(H, log_shift)    
+    X = np.maximum(X, log_shift)
     DH = D @ H
     return KL(X, DH, log_shift, average)
 
@@ -455,29 +457,36 @@ def KLdiv_loss(X, W, H, log_shift=log_shift, average=False):
         2.921251732961556
     """
 
-    
-    Y = W @ H
+    W = np.maximum(W, log_shift)
+    H = np.maximum(H, log_shift)
     X = np.maximum(X, log_shift)
-    Y = np.maximum(Y, log_shift)
+
+    Y = W @ H
     if average:
         x_lin = np.mean(Y)
-        x_log = np.mean(Y*np.log(Y))        
+        x_log = np.mean(X*np.log(Y))        
     else:
         x_lin = np.sum(Y)
-        x_log = np.sum(Y*np.log(Y))
+        x_log = np.sum(X*np.log(Y))
     return x_lin - x_log
 
-def KL_loss_surrogate(X, D, H, Ht, eps=log_shift, average=False):
+def KL_loss_surrogate(X, W, H, Ht, log_shift=log_shift, average=False):
     r""" Surrogate loss for the KL divergence."""
 
-    DHT = np.expand_dims(D, axis=2) * np.expand_dims(Ht, axis=0)
-    U = DHT/(np.sum(DHT, axis=1, keepdims=True)+eps)
+    W = np.maximum(W, log_shift)
+    H = np.maximum(H, log_shift)
+    Ht = np.maximum(Ht, log_shift)
+    X = np.maximum(X, log_shift)
+
+    WHT = np.expand_dims(W, axis=2) * np.expand_dims(Ht, axis=0)
+
+    U = WHT/(np.sum(WHT, axis=1, keepdims=True))
     
-    DH = np.expand_dims(D, axis=2) * np.expand_dims(H, axis=0)
+    DH = np.expand_dims(W, axis=2) * np.expand_dims(H, axis=0)
     if average:
-        return np.mean(X * np.sum(U * np.log((U+eps)/ (DH+eps)), axis=1) + np.sum(DHT, axis=1))
+        return np.mean(X * np.sum(U * np.log(U/ DH), axis=1) + np.sum(WHT, axis=1))
     else:
-        return np.sum(X * np.sum(U * np.log((U+eps)/ (DH+eps)), axis=1)) + np.sum(DHT)
+        return np.sum(X * np.sum(U * np.log(U/ DH), axis=1)) + np.sum(WHT)
 
 def log_reg(H, mu, epsilon=1, average=False):
     r""" Log regularisation

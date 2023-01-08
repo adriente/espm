@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.lib.function_base import kaiser
-from esmpy.measures import mse, spectral_angle, KLdiv_loss, KLdiv, square_distance, find_min_MSE, find_min_angle, trace_xtLx, Frobenius_loss, ordered_angles, ordered_mse
+from esmpy.measures import mse, spectral_angle, KLdiv_loss, KLdiv, find_min_MSE, find_min_angle, trace_xtLx, Frobenius_loss, ordered_angles, ordered_mse
 from esmpy.measures import KL_loss_surrogate, log_reg, log_surrogate
 import pytest
 from esmpy.conf import log_shift
@@ -43,19 +43,6 @@ def test_mse():
 
     np.testing.assert_allclose(mse(a, b), MSE_map(a, b)/34/10)
 
-# def test_distance () : 
-#     a = np.random.randn(10, 34)
-#     b = np.random.randn(10, 34)
-
-#     d_matr = []
-#     for a_vec in a :
-#         d_vec = []
-#         for b_vec in b :
-#             d_vec.append(mse(b_vec,a_vec))
-#         d_matr.append(d_vec)
-#     d_matr = np.array(d_matr)/a.shape[1]
-#     d_matr_2 = square_distance(a,b)
-#     np.testing.assert_allclose(d_matr,d_matr_2)
 
 def test_spectral_angle():
     v1 = np.random.randn(10)
@@ -178,7 +165,7 @@ def test_base_loss():
     
     X = D @ A
     
-    val = np.sum(X) - np.sum(X*np.log(X+log_shift))
+    val = np.sum(X) - np.sum(X*np.log(X))
 
     val2 = KLdiv_loss(X, D, A)
     val3 = base_loss(X, D, A)
@@ -213,15 +200,16 @@ def test_base_loss():
     val2 = KLdiv_loss(X, D, A)
     assert(val2>val)
 
-    with pytest.raises(Exception):
-        D = np.random.rand(l,k)
-        A = np.random.randn(k,p)
-        val2 = KLdiv_loss(X, D, A)
+    # The code does this differently now...
+    # with pytest.raises(Exception):
+    #     D = np.random.rand(l,k)
+    #     A = np.random.randn(k,p)
+    #     val2 = KLdiv_loss(X, D, A)
 
-    with pytest.raises(Exception):
-        A = np.random.rand(k,p)
-        D = np.random.randn(l,k)
-        val2 = KLdiv_loss(X, D, A)
+    # with pytest.raises(Exception):
+    #     A = np.random.rand(k,p)
+    #     D = np.random.randn(l,k)
+    #     val2 = KLdiv_loss(X, D, A)
 
 def test_trace_xtLx():
     nx = 4
@@ -277,16 +265,16 @@ def test_surrogates():
     k = 3
     p = 25
     mu = 10
-    epsilon = 0.1
+    epsilon = 0.01
 
     W0  = np.random.rand(l, k)
     H0 = np.random.rand(k, p)
     X = np.random.rand(l, p)
 
-    eps =0
+    log_shift = 0.0
     np.testing.assert_allclose(
-        KL_loss_surrogate(X, W0, H0, H0, eps=eps), 
-        KLdiv_loss(X, W0, H0, eps=eps))
+        KL_loss_surrogate(X, W0, H0, H0, log_shift=log_shift), 
+        KLdiv_loss(X, W0, H0, log_shift=log_shift))
     np.testing.assert_allclose(
         log_surrogate(H0, H0, mu=mu, epsilon=epsilon),
         log_reg(H0, mu=mu, epsilon=epsilon))
