@@ -109,7 +109,7 @@ def dicotomy(a, b, func, maxit, tol):
     * maxit: maximum number of iteration
     * tol: tolerance - the algorithm stops if |func(sol)| < tol
     
-    This algorithm work for number or numpy array of any size.
+    This algorithm works for number or numpy array of any size.
     """
     # Dichotomy algorithm to solve the equation
     it = 0

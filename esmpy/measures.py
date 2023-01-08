@@ -3,7 +3,8 @@
 r"""
 The :mod:`pygsp.measures` module implements different measures for the matrix factorisation problem.
 In particulare it contains the different losses and regularizers used in :mod:`pygsp.estimator` module. 
-It also contains different metrics to evaluate the results
+It also contains different metrics to evaluate the results.
+
 """
 
 import numpy as np
@@ -13,10 +14,27 @@ from itertools import permutations
 from sklearn.metrics import r2_score
 
 def spectral_angle(v1, v2):
-    """
-    Calculates the angle between two spectra. They have to have the same dimension.
-    :v1: first spectrum (np.array 1D)
-    :v2: second spectrum (np.array 1D)
+    r"""Spectral angle
+
+    Calculate the angle between two spectra of the same dimension.
+    
+    :param np.array 1D v1: first spectrum
+    :param np.array 1D v2: second spectrum
+
+    :returns: the answer
+    
+    :rtype: float
+
+    Examples
+    --------
+    
+    >>> import numpy as np
+    >>> from esmpy.measures import spectral_angle
+    >>> v1 = np.array([0, 1, 0])
+    >>> v2 = np.array([1, 0, 1])
+    >>> spectral_angle(v1, v2)
+        90.0
+
     """
 
     if len(v1.shape)==1:
@@ -34,31 +52,69 @@ def spectral_angle(v1, v2):
 
 
 def mse(map1, map2):
-    """Mean square error.
+    r"""Mean square error
 
-    Calculates the mean squared error between two 2D arrays. They have to have the same dimension.
-    :map1: (np.array 2D) first array
-    :map2: (np.array 2D) second array
+    Calculate the mean squared error between two 2D arrays of the same dimension.
+
+    :param np.array 2D map1: first array
+    :param np.array 2D map2: second array
+
+    :returns: the answer
+
+    Examples
+    --------
+    
+    >>> import numpy as np
+    >>> from esmpy.measures import mse
+    >>> map1 = np.array([[0, 1][0, 1]])
+    >>> map2 = np.array([[1, 1][1, 1]])
+    >>> mse(map1, map2)
+        0.5
+
     """
     return np.mean((map1-map2)**2)
 
 
 def mae(map1, map2):
-    """Mean square error.
+    r"""Mean average error
 
-    Calculates the mean average error between two 2D arrays. They have to have the same dimension.
-    :map1: (np.array 2D) first array
-    :map2: (np.array 2D) second array
+    Calculate the mean average error between two 2D arrays of the same dimension.
+
+    :param np.array 2D map1: first array
+    :param np.array 2D map2: second array
+    
+    :returns: the answer
+
+    Examples
+    --------
+    
+    >>> import numpy as np
+    >>> from esmpy.measures import mae
+    >>> map1 = np.array([[0, 1][0, 1]])
+    >>> map2 = np.array([[1, 1][1, 1]])
+    >>> mae(map1, map2)
+        0.5
+
     """
     return np.mean(np.abs(map1-map2))
 
 
 def r2(map_true, map_pred):
-    """ (coefficient of determination) regression score function.
+    r""":math:`R^2 - Coefficient of determination`
 
-    Calculates the coefficient of determination between two 2D arrays. They have to have the same dimension.
-    :map1: (np.array 2D) first array
-    :map2: (np.array 2D) second array
+    Calculates the coefficient of determination between two 2D arrays of the same dimension.
+    This is also called regression score function. 
+    See `wikipedia <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_.
+
+    This function is a wrapper for the function  :mod:`sklearn.metrics.r2_score` of Scikit Learn.
+
+    
+    :param np.array 2D map1: first array
+    :param np.array 2D map2: second array
+    
+    :returns: the answer
+
+    :rtype: float
     """
     def reshape_2d(x):
         return x.reshape(x.shape[0], -1)
@@ -100,35 +156,45 @@ def global_min (matr) :
     return res, ind_res
     
 
-def unique_min (matr) : 
+def unique_min (matrix) : 
     '''
-    input : N x N matrix of floats
-    output : list of N unique min values and corresponding indices in the same order
-    %-----------------------------------%
-    From a N x N matrix of float values, finds the combination of elements with different lines which mimises the sum of elements.
-    From :
-    1.2  1.3  3.5
-    4.9  2.2  6.5
-    9.0  4.1  1.8
 
-    it returns : 
-    [1.2, 2.2, 1.8], [0, 1, 2]
+    From a square matrix of float values, finds the combination of elements with 
+    different lines which mimises the sum of elements.
+    
+    It is a brute force algorithm, it is not recommended to input a matrix bigger than 20 x 20
 
-    It is a very simple brute force algorithm, it is not recommended to input a matrix bigger than 20 x 20
+    :param np.array 2D matrix: square matrix
+    
+    :returns: list of unique min values and corresponding indices in the same order
+
+    :rtype: (list, list[int])
+
+    Examples
+    --------
+
+    >>> import numpy as np
+    >>> from esmpy.measures import unique_min
+    >>> matrix = np.array([[1.2,  1.3,  3.5],
+                        [4.9,  2.2,  6.5],
+                       [9.0,  4.1,  1.8]])
+    >>> unique_min(v1, v2)   
+        ([1.2, 2.2, 1.8], (0, 1, 2))
+
     '''
-    shape = matr.shape[0]
+    shape = matrix.shape[0]
     perms = list(permutations(range(shape),shape))
     list_sum_angles = []
     for perm in perms : 
         sum_angles = 0
         for i in range(shape) :
-            sum_angles += matr[perm[i],i]
+            sum_angles += matrix[perm[i],i]
         list_sum_angles.append(sum_angles)
     
     min_ind = list_sum_angles.index(min(list_sum_angles))
     mins = []
     for i in range(shape) : 
-        mins.append(matr[perms[min_ind][i],i])
+        mins.append(matrix[perms[min_ind][i],i])
 
     return mins, perms[min_ind]
     
@@ -249,15 +315,35 @@ def residuals(data, model):
     return X_sum - model_sum
 
 def Frobenius_loss(X, W, H, average=False):
-    r"""
-    Compute the generalized KL divergence.
+    r"""Froebenius norm
+    
+    Compute the Froebenius norm (elementwise L2 norm of a matrix) given :math: `X,W,H`:
 
     .. math::
 
-        \sum_{ji} left| X_{ij} - (D H)_{ij} \right|^2
+        \| X - WH \|_F = \sum_{ji} \left| X_{ij} - (W H)_{ij} \right|^2
+
+    :param np.array 2D X: n x m matrix
+    :param np.array 2D W: n x k matrix
+    :param np.array 2D H: k x m matrix
+    :param boolean average: replace the sum with a mean, i.e.,
+        divide the result by n*m (default False)
+
+    :returns: the answer
     
+    Examples
+    --------
+    
+    >>> import numpy as np
+    >>> from esmpy.measures import Frobenius_loss
+    >>> X = np.array([[1, 1, -1], [2, 4, 5]])
+    >>> W = np.array([[1], [1]])
+    >>> H = np.array([[1, 2, 3]])
+    >>> Frobenius_loss(X, W, H)
+        26
+
     """
-    
+
     DH = W @ H
 
     if average:
@@ -265,57 +351,125 @@ def Frobenius_loss(X, W, H, average=False):
     else:
         return np.sum((DH - X)**2)
 
-def KLdiv(X, D, H, log_shift=log_shift, safe=True, average=False):
-    r"""
-    Compute the generalized KL divergence.
+def KLdiv(X, D, H, log_shift=log_shift, average=False):
+    r"""Generalized KL (Kullback–Leibler) divergence
+
+    Compute the generalized KL divergence given :math: `X,W,H`:
     
     .. math::
 
-        \sum_{ji} X_{ij} \log (X / D A)_{ij} + (D A - X)_{ij}
+        D_KL(X || WH) =  \sum_{ji} X_{ij} \log (X / D A)_{ij} + (D A - X)_{ij}
+
+
+    :param np.array 2D X: n x m matrix
+    :param np.array 2D W: n x k matrix
+    :param np.array 2D H: k x m matrix
+    :param float log_shift: small constant to ensure the KL divergence does 
+        not explode (default value set in module :mod:`esppy.conf`)
+    :param boolean average: replace the sum with a mean, i.e.,
+        divide the result by n*m (default False)
+
+    :returns: the answer
+
+    :rtype: float
+    
+    Examples
+    --------
+    
+    >>> import numpy as np
+    >>> from esmpy.measures import KLdiv
+    >>> X = np.array([[1, 1, 1], [2, 4, 5]])
+    >>> W = np.array([[1], [1]])
+    >>> H = np.array([[1, 2, 3]])
+    >>> KLdiv(X, W, H)
+        2.921251732961556
+
     """
-    if safe:
-        # Allow for very small negative values!
-        assert(np.sum(H<-log_shift/2)==0)
-        assert(np.sum(D<-log_shift/2)==0)
     
     DH = D @ H
     return KL(X, DH, log_shift, average)
 
-def KL(X, DH, eps=log_shift, average=False):
+def KL(X, Y, log_shift=log_shift, average=False):
+    r"""Generalized KL (Kullback–Leibler) divergence for two matrices
+
+    .. math::
+
+        D_KL(X || Y) =  \sum_{ji} X_{ij} \log (X / Y)_{ij} + (Y - X)_{ij}
+
+    :param np.array 2D X: n x m matrix
+    :param np.array 2D W: n x k matrix
+    :param np.array 2D H: k x m matrix
+    :param float log_shift: small constant to ensure the KL divergence does 
+        not explode (default value set in module :mod:`esppy.conf`)
+    :param boolean average: replace the sum with a mean, i.e.,
+        divide the result by n*m (default False)
+
+    :returns: the answer
+
+    :rtype: float
+    """
+    X = np.maximum(X, log_shift)
+    Y = np.maximum(Y, log_shift)
     if average:
-        x_lin = np.mean(DH) - np.mean(X)
-        x_log = np.mean(X*np.log(X+ eps)) - np.mean(X*np.log(DH + eps))                
+        x_lin = np.mean(Y) - np.mean(X)
+        x_log = np.mean(X*np.log(X)) - np.mean(X*np.log(Y))                
     else:
-        x_lin = np.sum(DH) - np.sum(X)
-        x_log = np.sum(X*np.log(X+ eps)) - np.sum(X*np.log(DH + eps))
+        x_lin = np.sum(Y) - np.sum(X)
+        x_log = np.sum(X*np.log(X)) - np.sum(X*np.log(Y))
     return x_lin + x_log
 
-def KLdiv_loss(X, D, H, eps=log_shift, safe=True, average=False):
-    r"""
-    Compute the loss based on the generalized KL divergence.
+def KLdiv_loss(X, W, H, log_shift=log_shift, average=False):
+    r""" Generalized Generalized KL (Kullback–Leibler) divergence loss
+
+    Compute the loss based on the generalized KL divergence given :math: `X,W,H`:
 
     .. math::
 
         \sum_{ji} X_{ij} \log (D W)_{ij} + (D W)_{ij}
 
     This does not contains all the term of the KL divergence, only the ones
-    depending on D and A.
-    """
-    if safe:
-        # Allow for very small negative values!
-        assert(np.sum(H<-log_shift/2)==0)
-        assert(np.sum(D<-log_shift/2)==0)
+    depending on W and H.
+
+    :param np.array 2D X: n x m matrix
+    :param np.array 2D Y: n x m matrix
+    :param float log_shift: small constant to ensure the KL divergence does 
+        not explode (default value set in module :mod:`esppy.conf`)
+    :param boolean average: replace the sum with a mean, i.e.,
+        divide the result by n*m (default False)
+
+    :returns: the answer
+
+    :rtype: float
     
-    DH = D @ H
+    Examples
+    --------
+
+    >>> import numpy as np
+    >>> from esmpy.measures import KLdiv, KLdiv_loss
+    >>> X = np.array([[1, 1, 1], [2, 4, 5]])
+    >>> W = np.array([[1], [1]])
+    >>> H = np.array([[1, 2, 3]])
+    >>> KLdiv_loss(X, W, H)
+        1.9425903651915402ZSXDerzA
+    >>> KLdiv(X, W, H)
+        2.921251732961556
+    """
+
+    
+    Y = W @ H
+    X = np.maximum(X, log_shift)
+    Y = np.maximum(Y, log_shift)
     if average:
-        x_lin = np.mean(DH)
-        x_log = np.mean(X*np.log(DH + eps))        
+        x_lin = np.mean(Y)
+        x_log = np.mean(Y*np.log(Y))        
     else:
-        x_lin = np.sum(DH)
-        x_log = np.sum(X*np.log(DH + eps))
+        x_lin = np.sum(Y)
+        x_log = np.sum(Y*np.log(Y))
     return x_lin - x_log
 
-def KL_loss_surrogate(X, D, H, Ht, eps=log_shift, safe=True, average=False):
+def KL_loss_surrogate(X, D, H, Ht, eps=log_shift, average=False):
+    r""" Surrogate loss for the KL divergence."""
+
     DHT = np.expand_dims(D, axis=2) * np.expand_dims(Ht, axis=0)
     U = DHT/(np.sum(DHT, axis=1, keepdims=True)+eps)
     
@@ -325,9 +479,24 @@ def KL_loss_surrogate(X, D, H, Ht, eps=log_shift, safe=True, average=False):
     else:
         return np.sum(X * np.sum(U * np.log((U+eps)/ (DH+eps)), axis=1)) + np.sum(DHT)
 
-def log_reg(H, mu, epsilon, average=False):
-    r"""
-    Compute the regularization loss: :math:`\sum_ij mu_i \log(A_{ij})`
+def log_reg(H, mu, epsilon=1, average=False):
+    r""" Log regularisation
+
+    Compute the regularization loss: 
+    
+    .. math:: 
+        
+        R(\mu, H, \epsilon) = \sum_{ij} \mu_i \log \left( H_{ij} + \epsilon \right).
+
+    :param np.array 2D H: n x m matrix
+    :param np.array 1D mu: n vector
+    :param float epsilon: value of :math:`\epsilon` (default 1)
+    :param boolean average: replace the sum with a mean, i.e.,
+        divide the result by n*m (default False)
+
+    :returns: the answer
+
+    :rtype: float
     """
     if not(np.isscalar(mu)):
         mu = np.expand_dims(mu, axis=1)
@@ -337,7 +506,7 @@ def log_reg(H, mu, epsilon, average=False):
         return np.sum(mu* np.log(H+epsilon))
 
 def log_surrogate(H, Ht, mu, epsilon, average=False):
-
+    r"""Surrogate loss for the log function."""
     if not(np.isscalar(mu)):
         mu = np.expand_dims(mu, axis=1)
     tmp = np.log(Ht+epsilon) + (H-Ht) / (epsilon + Ht)
@@ -347,29 +516,50 @@ def log_surrogate(H, Ht, mu, epsilon, average=False):
         return np.sum(mu* tmp)
 
 def trace_xtLx(L, x, average=False):
+    r""" Trace of :math:`X^T L X`
+
+    Compute the following expression :math:`\text{Tr} (X^T L X)`.
+
+    :param np.array 2D L: n x n matrix
+    :param np.array 2D mu: n x k martrix of k n-sized vector
+    :param boolean average: replace the sum with a mean, i.e.,
+        divide the result by n*m (default False)
+
+    :returns: the answer
+
+    :rtype: float
+    """
     if average:
         return np.mean(x * (L @ x))
     else:
         return np.sum(x * (L @ x))
 
-def square_distance(x, y=None):
-    r"""
-    Calculate the distance between two colon vectors.    Parameters
-    ----------
-    x : ndarray
-        First colon vector
-    y : ndarray
-        Second colon vector    Returns
-    -------
-    d : ndarray
-        Distance between x and y    Examples
+def squared_distance(x, y=None):
+    r""" Squared distance between two between all colon vectors matrices.
+
+    Calculate the squared L2 distance between all pairs of vectors of two matrices.
+    If only one matrix is given, the function uses each pair of vector of this matrix.
+
+    :param np.array 2D x: n x m matrix of first colon vectors
+    :param np.array 2D y: n x m matrix of second colon vectors (optional)
+
+    :returns: the answer
+
+    :rtype: np.array (m x m)
+        
+    Examples
     --------
-    >>> from pygsp import utils
+    
+    >>> import numpy as np
+    >>> from esmpy.measures import square_distance
     >>> x = np.arange(3)
-    >>> utils.distanz(x, x)
-    array([[ 0.,  1.,  2.],
-           [ 1.,  0.,  1.],
-           [ 2.,  1.,  0.]])    """
+    >>> square_distance(x, x)
+        array([[ 0.,  1.,  2.],
+        [ 1.,  0.,  1.],
+        [ 2.,  1.,  0.]])
+
+    """
+
     try:
         x.shape[1]
     except IndexError:
