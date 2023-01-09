@@ -7,6 +7,8 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.mathjax',
     'sphinx.ext.inheritance_diagram',
+    'nbsphinx',
+    'sphinx_gallery.load_style',
 ]
 
 extensions.append('sphinx.ext.autodoc')

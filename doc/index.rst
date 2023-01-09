@@ -1,10 +1,15 @@
 .. include:: ../README.rst
 
+
+=================
+Documentation map
+=================
+
 .. toctree::
-   :hidden:
+   :maxdepth: 2
 
    Home <self>
-   tutorials/index
+   introduction/index
    reference/index
    changelog
    contributing
