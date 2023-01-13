@@ -42,6 +42,8 @@ def multiplicative_step_w(X, G, W, H, log_shift=log_shift, safe=True, l2=False, 
         new_W[fixed_W >= 0] = fixed_W[fixed_W >=0]
     return new_W
 
+
+
 def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, log_shift=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, sigmaL=sigmaL, fixed_H = None):
     """
     Multiplicative step in A.
@@ -69,12 +71,13 @@ def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, log_shift=log_sh
     GW = G @ W # Also called D
     
     if l2:
+        assert lambda_L == 0
+        assert mu == 0
         WGGW = GW.T @ GW
         WGX = GW.T @ X
         num = WGX
         denum = WGGW @ H
     else:
-        
         GWH = GW @ H
         num = GW.T @ (X / GWH)
         denum = np.sum(GW, axis=0, keepdims=True).T 

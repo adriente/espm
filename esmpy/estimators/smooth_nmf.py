@@ -56,11 +56,11 @@ def diff_surrogate(Ht, H, L, sigmaL=sigmaL, lambda_L=1, dgkl=False):
 
 class SmoothNMF(NMFEstimator):
 
-    loss_names_ = NMFEstimator.loss_names_ + ["log_reg_loss"] + ["Lapl_reg_loss"]
+    loss_names_ = NMFEstimator.loss_names_ + ["log_reg_loss"] + ["Lapl_reg_loss"] + ["sigma_L"]
 
     # args and kwargs are copied from the init to the super instead of capturing them in *args and **kwargs to be scikit-learn compliant.
     def __init__(self, lambda_L = 1.0, linesearch=False, mu=0, epsilon_reg=1, algo_hq=False, 
-                 force_simplex=True, dicotomy_tol=dicotomy_tol, **kwargs):
+                 force_simplex=True, dicotomy_tol=dicotomy_tol, sigmaL_=sigmaL, **kwargs):
 
         super().__init__( **kwargs)
         self.lambda_L = lambda_L
@@ -71,15 +71,15 @@ class SmoothNMF(NMFEstimator):
         self.dicotomy_tol = dicotomy_tol
         self.algo_hq = algo_hq
 
+        self.sigmaL_ = sigmaL_
+
         if self.linesearch:
             assert not self.l2
-            self.sigmaL_ = sigmaL
-            self.gamma = [self.sigmaL_]
+            assert lambda_L > 0
 
         if self.algo_hq:
             assert not self.l2
 
-        
 
 
     def _iteration(self, W, H):
@@ -93,7 +93,7 @@ class SmoothNMF(NMFEstimator):
         if self.algo_hq:
             H = multiplicative_step_hq(self.X_, self.G_, W, H, force_simplex=self.force_simplex, log_shift=self.log_shift, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, sigmaL=self.sigmaL_, fixed_H=self.fixed_H)
         else:
-            H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H)
+            H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, sigmaL=self.sigmaL_)
 
         W = multiplicative_step_w(self.X_, self.G_, W, H, log_shift=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W)
         if self.linesearch:
@@ -102,7 +102,6 @@ class SmoothNMF(NMFEstimator):
                 self.sigmaL_  = self.sigmaL_ / 1.05
             else:
                 self.sigmaL_  = self.sigmaL_ * 1.5
-            self.gamma.append(self.sigmaL_ )
 
         # KL_surr = KL_loss_surrogate(self.X_, W, H, Hold, eps=0)
         # log_surr = log_surrogate(H, Hold, mu=self.mu, epsilon=self.epsilon_reg)
@@ -127,5 +126,6 @@ class SmoothNMF(NMFEstimator):
         if average:
             l2 = l2 / self.GWH_numel_
         self.detailed_loss_.append(l2)
+        self.detailed_loss_.append(self.sigmaL_)
 
         return lkl + reg + l2
