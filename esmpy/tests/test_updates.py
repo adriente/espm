@@ -571,22 +571,6 @@ def test_multiplicative_step_h():
         np.testing.assert_array_less(0, Ap)
         assert(val1 > val2)
 
-        epsilon_reg = 1
-        mu = np.ones(k)
-        mu[0] = 0
-        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=mu, log_shift=log_shift, epsilon_reg=epsilon_reg, safe=True, l2=True)
-        np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
-
-
-        Ap =  multiplicative_step_h(X, G, P, A, force_simplex=True, mu=3*mu, log_shift=log_shift, epsilon_reg=epsilon_reg, safe=True, l2=True)
-        np.testing.assert_allclose(np.sum(Ap, axis=0), np.ones([Ap.shape[1]]), atol=dicotomy_tol)
-
-
-        val1 = Frobenius_loss(X, GP, A) + log_reg(A, 3*mu, epsilon_reg)
-        val2 = Frobenius_loss(X, GP, Ap) + log_reg(A, 3*mu, epsilon_reg)
-        np.testing.assert_array_less(0, Ap)
-        assert(val1 > val2)
-
 def test_multiplicative_step_hq():
 
     l = 26

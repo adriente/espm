@@ -72,7 +72,10 @@ def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, log_shift=log_sh
     
     if l2:
         assert lambda_L == 0
-        assert mu == 0
+        if np.isscalar(mu):
+            assert mu == 0
+        else:
+            assert (mu==0).all()
         WGGW = GW.T @ GW
         WGX = GW.T @ X
         num = WGX

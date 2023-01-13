@@ -120,7 +120,7 @@ def test_run_experiment () :
     assert P.shape == (13,4)
     assert A.shape == (4, 1200)
     assert losses.shape == (3,)
-    assert losses.dtype.names == ('full_loss', 'KL_div_loss', 'log_reg_loss', 'Lapl_reg_loss','rel_W', 'rel_H', 'ang_p0', 'ang_p1', 'ang_p2', 'ang_p3', 'mse_p0', 'mse_p1', 'mse_p2', 'mse_p3', 'true_KL_loss')
+    assert losses.dtype.names == ('full_loss', 'KL_div_loss', 'log_reg_loss', 'Lapl_reg_loss','rel_W', 'rel_H', 'ang_p0', 'ang_p1', 'ang_p2', 'ang_p3', 'mse_p0', 'mse_p1', 'mse_p2', 'mse_p3', 'true_KL_loss', 'sigma_L')
     assert len(metrics) == 4
     assert len(metrics[0]) == 4
     assert len(metrics[1]) == 4
