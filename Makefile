@@ -22,7 +22,7 @@ export MPLBACKEND = agg
 export DISPLAY = :99
 
 test:
-	pytest .
+	pytest esmpy
 
 doc:
 	sphinx-build -b html -d doc/_build/doctrees doc doc/_build/html
