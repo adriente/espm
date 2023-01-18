@@ -100,7 +100,7 @@ def mae(map1, map2):
 
 
 def r2(map_true, map_pred):
-    r""":math:`R^2 - Coefficient of determination`
+    r""":math:`R^2` - Coefficient of determination
 
     Calculates the coefficient of determination between two 2D arrays of the same dimension.
     This is also called regression score function. 

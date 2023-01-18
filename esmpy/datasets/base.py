@@ -74,7 +74,7 @@ def save_generated_spim(filename, spim, phases, weights, **kwargs) :
     s.axes_manager[-1].scale = model_params["e_scale"]
 
     s.set_microscope_parameters(beam_energy = model_params["E0"])
-    
+    s.metadata.Sample = {}
     s.metadata.Sample.thickness = model_params["params_dict"]["Abs"]["thickness"]
     s.metadata.Sample.density = model_params["params_dict"]["Abs"]["density"]
     s.metadata.Acquisition_instrument.TEM.Detector.EDS.type = model_params["params_dict"]["Det"]
