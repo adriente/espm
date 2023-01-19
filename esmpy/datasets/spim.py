@@ -1,4 +1,4 @@
-from  hyperspy._signals.signal1d import Signal1D
+from  hyperspy.signals import Signal1D
 from esmpy.models import EDXS
 from esmpy import models
 from esmpy.models.edxs import G_EDXS

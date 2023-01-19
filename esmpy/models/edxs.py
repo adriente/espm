@@ -37,7 +37,7 @@ class EDXS(PhysicalModel):
 
 
     @symbol_to_number_list
-    def generate_g_matr(self, g_type="bremsstrahlung", norm = True, reference_elt = {"26" : 3.0},*,elements=[], **kwargs):
+    def generate_g_matr(self, g_type="bremsstrahlung", norm = True, reference_elt = {},*,elements=[], **kwargs):
         """
         Generates a matrix (e_size,n). Each column corresponds to the sum of X-ray characteristic gaussian peaks associated to each shell of the elements of elements_lists. n is then len(elements_list)*number of shells per element.
         :elements_list: List of integers. Each integer is an element of the model. If None, the g_matr is diagonal matrix of size e_size.
