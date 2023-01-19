@@ -100,7 +100,7 @@ def mae(map1, map2):
 
 
 def r2(map_true, map_pred):
-    r""":math:`R^2 - Coefficient of determination`
+    r""":math:`R^2` - Coefficient of determination
 
     Calculates the coefficient of determination between two 2D arrays of the same dimension.
     This is also called regression score function. 
@@ -129,6 +129,15 @@ def find_min_angle(true_vectors, algo_vectors, get_ind = False, unique=False):
     # This function calculates all the possible angles between endmembers and true spectra
     # For each true spectrum a best matching endmember is found
     # The function returns the angles of the corresponding pairs
+    r"""Compare all the angles between ground truth spectra and NMF spectra and find the minimum configuration.
+
+    :param np.array 2D true_vectors: true spectra with shape (number of phases, number of energy channels)
+    :param np.array 2D algo_vectors: NMF spectra with shape (number of phases, number of energy channels)
+    :param boolean get_ind: If True, the function will also return the indices of the NMF spectra corresponding to the ground truth
+    :param boolean unique: If False it will find the global minimum but several spectra can be associated to the same ground truth
+    
+    :returns: list of angles, (optionally) tuple of indices
+    """
     angle_matr = spectral_angle(true_vectors,algo_vectors)
     if unique :
         ordered_angles = unique_min(angle_matr)
@@ -238,6 +247,26 @@ def find_min_MSE(true_maps, algo_maps, get_ind = False, unique=False):
     # This function calculates all the possible MSE between abundances and true maps
     # For each true map a best matching abundance is found
     # The function returns the MSE of the corresponding pairs
+    r"""Mean average error
+
+    Calculate the mean average error between two 2D arrays of the same dimension.
+
+    :param np.array 2D map1: first array
+    :param np.array 2D map2: second array
+
+    :returns: the answer
+
+    Examples
+    --------
+    
+    >>> import numpy as np
+    >>> from esmpy.measures import mae
+    >>> map1 = np.array([[0, 1][0, 1]])
+    >>> map2 = np.array([[1, 1][1, 1]])
+    >>> mae(map1, map2)
+        0.5
+
+    """
     mse_matr = squared_distance(true_maps, algo_maps)
     if unique :
         ordered_maps = unique_min(mse_matr)

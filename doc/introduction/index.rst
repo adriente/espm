@@ -16,5 +16,8 @@ List of example notebooks
 
 .. nbgallery::
    notebooks/toy-problem
+   notebooks/generate_data
+
+
 
    

@@ -36,6 +36,7 @@ artificial datasets using the following lines:
     >>> import esmpy.datasets as ds
     >>> ds.generate_built_in_datasets(seeds_range=5)
     >>> spim = ds.load_particules(sample = 0)
+    >>> spim.change_dtype('float64')
     >>> out = spim.decomposition(3)
     >>> spim.plot_decomposition_factors(3)
 
@@ -54,5 +55,5 @@ This is a link_.
 
 .. note::
     Please see the review article `esmpy : a Python library for the simulation 
-    of STEM-EDXS datasets`_ for an overview of
+    of STEM-EDXS datasets` for an overview of
     the methods this package leverages.
