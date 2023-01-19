@@ -4,7 +4,7 @@ from pathlib import Path
 import hyperspy.api as hs
 import os
 
-dataset_particles  = {'N': 100,
+dataset_particles  = {'N': 500,
     'seed' : 91,
     'densities': [0.6030107883539217, 0.9870613994765459, 0.8894990661032164],
     'data_folder': 'built_in_particules',
