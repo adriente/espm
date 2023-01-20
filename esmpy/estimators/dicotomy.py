@@ -1,8 +1,7 @@
 import numpy as np
-from esmpy.conf import dicotomy_tol
-from esmpy.conf import log_shift
+from esmpy.conf import dicotomy_tol, log_shift, maxit_dichotomy
 
-def dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol, maxit=40):
+def dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol, maxit=maxit_dichotomy):
     """
     Function to solve the num/(x+denum) -1 = 0 equation. Here, x is the Lagragian multiplier which is used to apply the simplex constraint.
     The first part consists in finding a and b such that num/(a+denum) -1 > 0 and num/(b+denum) -1  < 0. 
@@ -47,24 +46,15 @@ def dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol, maxit=4
     # r = np.sum(num/denum, axis=0)
     # b = np.zeros(r.shape)
     # b[r>=1] = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))[r>=1]
-    denum_p = np.minimum(denum, denum_max)
     b = len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0)
 
     def func(x):
         new_x = x + denum
         return np.sum(np.maximum(num / new_x, log_shift), axis=0) - 1
-    func_a = func(a)
-    func_b = func(b)
-    
-    assert(np.sum(func_b>=0)==0)
-    assert(np.sum(func_a<=0)==0)
-    assert(np.sum(np.isnan(func_a))==0)
-    assert(np.sum(np.isnan(func_b))==0)
-
 
     return dicotomy(a, b, func, maxit, tol)
 
-def dichotomy_simplex_acc(a, b, minus_c, log_shift=log_shift, tol=dicotomy_tol, maxit=100):
+def dichotomy_simplex_acc(a, b, minus_c, log_shift=log_shift, tol=dicotomy_tol, maxit=maxit_dichotomy):
     """
     Function to solve the dicotomy for the function:
     f(nu) = n_p * nu_k + 2a - sum_p sqrt ( (b_p + nu)^2 - 4 a c_p) + sum_p b_p
@@ -83,21 +73,40 @@ def dichotomy_simplex_acc(a, b, minus_c, log_shift=log_shift, tol=dicotomy_tol, 
 
     n_p = len(b) 
     nu_max = n_p * np.max(b**2/a+2*a+2*(b+ minus_c), axis=0) * 1.5 + 1e-3
-
     nu_min = - (2 * a + np.sum(b, axis=0))/ n_p  * 1.1 - 1e-3
     
     def func(x):
         return   2*a - np.sum( np.maximum(np.sqrt( (b + x)**2 + 4*a*minus_c) - x - b, log_shift*2*a), axis=0)
-    func_max = func(nu_max)
-    func_min = func(nu_min)
-    # print(a,b,minus_c)
-    # print(nu_max, nu_min, func_min, func_max)
-    assert(np.sum(func_min>=0)==0)
-    assert(np.sum(func_max<=0)==0)
-    assert(np.sum(np.isnan(func_max))==0)
-    assert(np.sum(np.isnan(func_min))==0)
+
+    return dicotomy(nu_max, nu_min, func, maxit, tol)
+
+def dichotomy_simplex_projected_gradient(a, log_shift=log_shift, tol=dicotomy_tol, maxit=maxit_dichotomy):
+    r"""
+    Function to solve the dicotomy for the function:
+
+    .. :math:: 
+
+        f(\nu) = \sum_p \max \left( \alpha_p+\nu, \epsilon right) - 1 = 0 
+
+    The first part consists in finding nu_max and nu_min such that f(nu_max) > 0 and f(nu_min) < 0. 
+    The second part applies the dichotomy algorithm to solve the equation.
+    """
+
+    if log_shift>0:
+        # Check that a solution is possible
+        if a.shape[0] * log_shift >= 1:
+            raise ValueError("No solution exists!")
+
+
+    nu_min = -np.max(a, axis=0)
+    nu_max = 1/a.shape[0] - np.min(a, axis=0)
+    
+    def func(x):
+        return   np.sum( np.maximum(a + x, log_shift), axis=0) -1
+
 
     return dicotomy(nu_max, nu_min, func, maxit, tol)     
+
 
 def dicotomy(a, b, func, maxit, tol):
     """
@@ -111,6 +120,15 @@ def dicotomy(a, b, func, maxit, tol):
     
     This algorithm works for number or numpy array of any size.
     """
+
+    func_max = func(a)
+    func_min = func(b)
+
+    assert(np.sum(func_min>=0)==0)
+    assert(np.sum(func_max<=0)==0)
+    assert(np.sum(np.isnan(func_max))==0)
+    assert(np.sum(np.isnan(func_min))==0)
+
     # Dichotomy algorithm to solve the equation
     it = 0
     new = (a + b)/2

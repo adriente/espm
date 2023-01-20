@@ -62,7 +62,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.GWH_numel_ = self.G_.shape[0] * H.shape[1]
         
         if self.l2:
-            loss_ = Frobenius_loss(X, GW, H, average=False) 
+            loss_ = 0.5*Frobenius_loss(X, GW, H, average=False) 
         else:
             if self.const_KL_ is None:
                 self.const_KL_ = np.sum(X*np.log(np.maximum(self.X_, self.log_shift))) - np.sum(X) 

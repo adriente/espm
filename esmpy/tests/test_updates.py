@@ -1,8 +1,10 @@
 import numpy as np
 
 from esmpy.estimators.updates import dichotomy_simplex, multiplicative_step_w, multiplicative_step_h, update_q, dichotomy_simplex_acc, multiplicative_step_hq
-from esmpy.measures import KLdiv_loss, log_reg, Frobenius_loss
+from esmpy.estimators.updates import estimate_Lipschitz_bound_h, estimate_Lipschitz_bound_w, gradW, gradH, proj_grad_step_h, proj_grad_step_w
+from esmpy.measures import KLdiv_loss, log_reg, Frobenius_loss, trace_xtLx
 from esmpy.conf import log_shift, dicotomy_tol
+from esmpy.utils import create_laplacian_matrix
 import pytest
 
 def make_step_a(x_matr, g_matr, p_matr , a_matr, mu_sparse=0, eps=log_shift, eps_sparse=1, mask=None):
@@ -653,3 +655,122 @@ def test_Q_step2():
     Q2 = update_q(D, A)
     np.testing.assert_array_almost_equal(Q, Q2)
     assert((np.isnan(Q)==False).all())
+
+def create_toy_problem(l = 25, k = 3, p = 100, c = 10, n_poisson=200, force_simplex=True):
+
+    A = np.random.rand(k,p)
+    if force_simplex:
+        A = A/np.sum(A, axis=0, keepdims=True)
+    
+    G = np.random.rand(l,c)
+    P = np.random.rand(c,k)
+    GP = G @ P
+
+    X = GP @ A
+
+    Xdot = 1/n_poisson * np.random.poisson(n_poisson * X)
+
+    return G, P, A, X, Xdot
+
+def test_proj_step_h():
+
+
+    def full_loss(X, G, W, H, log_shift, mu, lambda_L, L):
+        return KLdiv_loss(X, G@W, H, log_shift=log_shift) + lambda_L * trace_xtLx(L, H.T) + log_reg(H, mu)
+        
+    shape_2d = [10, 15]
+    k = 5
+    n_poisson = 200
+    log_shift = 0.01
+    epsilon_reg = 2
+    L = create_laplacian_matrix(*shape_2d)
+
+    for _ in range(10):
+
+        G, W, H, Xtrue, X = create_toy_problem(p = shape_2d[0]*shape_2d[1], k=k, n_poisson=n_poisson)
+
+        true_D = G @ W
+        true_H = H
+
+        for force_simplex in [True, False]:
+            for lambda_L in [0, 1, 10]:
+                for mu in [0, 1 ,10]:
+
+                    W0 = np.random.rand(*W.shape)
+                    H0 = np.random.rand(*H.shape)
+                    W0 = np.maximum(W0, log_shift)
+                    H0 = np.maximum(H0, log_shift)
+                    X = np.maximum(X, log_shift)
+
+
+                    gamma_h = estimate_Lipschitz_bound_h(log_shift, X, G, k, mu=mu, lambda_L=lambda_L, epsilon_reg=epsilon_reg)
+
+                    loss1 = full_loss(X, G, W0, H0, log_shift, mu, lambda_L, L)
+                    
+                    grad = gradH(X, G, W0, H0, log_shift=log_shift, l2=False, mu=mu, lambda_L=lambda_L, L=L, epsilon_reg=epsilon_reg)
+                    H1 = H0 - 1/gamma_h * grad
+                    loss2 = full_loss(X, G, W0, H1, log_shift, mu, lambda_L, L)
+                    H2 =proj_grad_step_h(X, G, W0, H0, gamma_h, log_shift=log_shift, safe=True, l2=False, force_simplex=force_simplex, mu=mu, lambda_L=lambda_L,  L=L, epsilon_reg=epsilon_reg)
+                    loss3 = full_loss(X, G, W0, H2, log_shift, mu, lambda_L, L)
+                    assert( loss1 >= loss2) 
+                    assert(loss1 >= loss3)
+                    assert((H2 >= log_shift).all())
+
+                    maxit = 10
+                    loss_old = loss3
+                    grad = gradH(X, G, W0, H2, log_shift=log_shift, l2=False)
+                    n_grad_old = np.sum(grad**2)
+                    for _ in range(maxit):
+                        H2 = proj_grad_step_h(X, G, W0, H2, gamma_h, log_shift=log_shift, safe=True, l2=False, force_simplex=force_simplex, mu=mu, lambda_L=lambda_L,  L=L, epsilon_reg=epsilon_reg)
+                        grad = gradH(X, G, W0, H2, log_shift=log_shift,  mu=mu, lambda_L=lambda_L,  L=L, l2=False)
+                        n_grad = np.sum(grad**2)
+                        loss = full_loss(X, G, W0, H2, log_shift, mu, lambda_L, L)
+                        assert loss<=loss_old+np.abs(loss_old)*0.00001
+                        # assert n_grad<=n_grad_old
+                        loss_old = loss
+                        n_grad_old = n_grad
+
+def test_proj_step_w():
+    for _ in range(10):
+        shape_2d = [10, 15]
+        log_shift = 0.01
+
+        k = 5
+        n_poisson = 200
+        G, W, H, Xtrue, X = create_toy_problem(p = shape_2d[0]*shape_2d[1], k=k, n_poisson=n_poisson)
+
+        true_D = G @ W
+        true_H = H
+
+        W0 = np.random.rand(*W.shape)
+        H0 = np.random.rand(*H.shape)
+
+
+        gamma_w = estimate_Lipschitz_bound_w(log_shift, X, G, k)
+
+        loss1 = KLdiv_loss(X, G@W0, H0, log_shift=log_shift)
+        grad = gradW(X, G, W0, H0, log_shift=log_shift, l2=False)
+        W1 = W0 - 1/gamma_w * grad
+        loss2 = KLdiv_loss(X, G@W1, H0, log_shift=log_shift)
+        W2 =proj_grad_step_w(X, G, W0, H0, gamma_w, log_shift=log_shift, safe=True, l2=False)
+        loss3 = KLdiv_loss(X, G@W2, H0, log_shift=log_shift)
+        assert( loss1 >= loss2) 
+        assert(loss1 >= loss3)
+        assert((W2 >= log_shift).all())
+
+        maxit = 10
+        loss_old = loss3
+        grad = gradW(X, G, W2, H0, log_shift=log_shift, l2=False)
+        n_grad_old = np.sum(grad**2)
+        for _ in range(maxit):
+            W2 = proj_grad_step_w(X, G, W2, H0, gamma_w, log_shift=log_shift, safe=True, l2=False)
+            grad = gradW(X, G, W2, H0, log_shift=log_shift, l2=False)
+
+            n_grad = np.sum(grad**2)
+            loss = KLdiv_loss(X, G@W2, H0, log_shift=log_shift)
+            assert loss<=loss_old
+            assert n_grad<=n_grad_old
+            loss_old = loss
+            n_grad_old = n_grad
+
+
