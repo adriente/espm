@@ -338,6 +338,9 @@ def residuals(data, model):
 def Frobenius_loss(X, W, H, average=False):
     r"""    
     Compute the Froebenius norm (elementwise L2 norm of a matrix) given :math: `X,W,H`:
+    r"""Froebenius norm
+    
+    Compute the Froebenius norm (elementwise L2 norm of a matrix) given :math:`X,W,H`:
 
     .. math::
 
@@ -374,7 +377,7 @@ def Frobenius_loss(X, W, H, average=False):
 def KLdiv(X, D, H, log_shift=log_shift, average=False):
     r"""Generalized KL (Kullback–Leibler) divergence
 
-    Compute the generalized KL divergence given :math: `X,W,H`:
+    Compute the generalized KL divergence given :math:`X,W,H`:
     
     .. math::
 

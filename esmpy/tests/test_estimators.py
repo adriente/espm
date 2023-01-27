@@ -185,7 +185,7 @@ def test_surrogate_smooth_nmf():
             v4 = smooth_l2_surrogate(A1, L, A2)
             v5 = trace_xtLx(L, A2.T) / 2
             assert v4 >= v5
-            d = diff_surrogate(A1, A2, L=L, dgkl=False)
+            d = diff_surrogate(A1, A2, L=L, algo="l2_surrogate")
             np.testing.assert_almost_equal(v4 - v5 , d)
             
 def test_surrogate_smooth_dgkl_nmf():
@@ -204,7 +204,7 @@ def test_surrogate_smooth_dgkl_nmf():
             v4 = smooth_dgkl_surrogate(A1, L, A2)
             v5 = trace_xtLx(L, A2.T) / 2
             assert v4 >= v5
-            d = diff_surrogate(A1, A2, L=L, dgkl=True)
+            d = diff_surrogate(A1, A2, L=L, algo="log_surrogate")
             np.testing.assert_almost_equal(v4 - v5 , d)
 
 

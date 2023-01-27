@@ -1,7 +1,7 @@
 import numpy as np
 from esmpy.conf import log_shift, dicotomy_tol, sigmaL
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
-from esmpy.estimators.dicotomy import dichotomy_simplex, dichotomy_simplex_acc
+from esmpy.estimators.dicotomy import dichotomy_simplex, dichotomy_simplex_acc, dichotomy_simplex_projected_gradient
 
 def multiplicative_step_w(X, G, W, H, log_shift=log_shift, safe=True, l2=False, fixed_W = None):
     """
@@ -36,7 +36,8 @@ def multiplicative_step_w(X, G, W, H, log_shift=log_shift, safe=True, l2=False, 
         term1 = (mult1 @ H.T)
         term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(H, axis=1,  keepdims=True).T
         new_W = W / term2 * term1
-        new_W = np.maximum(new_W, log_shift)
+    
+    new_W = np.maximum(new_W, log_shift)
     
     if fixed_W is not None: 
         new_W[fixed_W >= 0] = fixed_W[fixed_W >=0]
@@ -231,3 +232,107 @@ def multiplicative_step_hq(X, G, W, H, force_simplex=True, log_shift=log_shift, 
         new_H[fixed_H >= 0] = fixed_H[fixed_H >= 0]
     return new_H
 
+def gradW(X, G, W, H, log_shift=log_shift, safe=False, l2=False):
+    if safe:
+        H = np.maximum(H, log_shift)
+        W = np.maximum(W, log_shift)
+    if l2:
+        grad = 2*G.T @ ( (G @ W) @ H - X ) @ H.T
+    else:
+        D = G @ W
+        DH = D @ H
+        grad = G.T @ (- (X / DH) @ H.T + np.sum(H, axis=1, keepdims=True).T)
+    return grad
+
+def gradH(X, G, W, H, mu=0,  lambda_L=0, L=None, epsilon_reg=1, log_shift=log_shift, safe=False, l2=False):
+    if not(lambda_L==0):
+        if L is None:
+            raise ValueError("Please provide the laplacian")
+        HL = H@L
+    
+    if safe:
+        H = np.maximum(H, log_shift)
+        W = np.maximum(W, log_shift)
+
+
+    if l2:
+        D = G @ W
+        grad = D.T @ (D @ H - X)
+    else:
+        D = G @ W
+        DH = D @ H
+        grad =  - D.T @ (X / DH) + np.sum(D, axis=0, keepdims=True).T
+
+    if not(np.isscalar(mu) and mu==0):
+        if len(np.shape(mu))==1:
+            mu = np.expand_dims(mu, axis=1)
+        grad += mu / (H + epsilon_reg)
+
+    if not(lambda_L==0):
+        grad += (lambda_L * L @ H.T).T
+
+    return grad
+# 
+def proj_grad_step_w(X, G, W, H, gamma, log_shift=log_shift, safe=True, l2=False, fixed_W = None):
+    """Projected gradient step for the variable W."""
+
+    if safe:
+        H = np.maximum(H, log_shift)
+        W = np.maximum(W, log_shift)
+
+    grad = gradW(X, G, W, H, log_shift=log_shift, safe=safe, l2=l2)
+
+    # gradient step
+    new_W = W - 1/gamma * grad
+    # projection
+    new_W = np.maximum(new_W, log_shift)
+
+    if fixed_W is not None: 
+        new_W[fixed_W >= 0] = fixed_W[fixed_W >=0]
+    return new_W
+
+def proj_grad_step_h(X, G, W, H, gamma, force_simplex=True, mu=0, log_shift=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, fixed_H = None):
+    """Projected gradient step for the variable H."""
+
+    if safe:
+        H = np.maximum(H, log_shift)
+        W = np.maximum(W, log_shift)
+
+    # gradient step
+    grad = gradH(X, G, W, H, log_shift=log_shift, safe=safe, mu=mu, epsilon_reg=epsilon_reg, lambda_L=lambda_L, L=L, l2=l2)
+    new_H = H - 1/gamma * grad
+
+    # Dichotomy
+    if force_simplex:
+        nu = dichotomy_simplex_projected_gradient(new_H, log_shift=log_shift, tol=dicotomy_tol)
+    else:
+        nu = 0
+
+    # projection
+    new_H = np.maximum(new_H + nu, log_shift)
+
+    if fixed_H is not None: 
+        new_H[fixed_H >= 0] = fixed_H[fixed_H >=0]
+    return new_H
+
+def estimate_Lipschitz_bound_w(log_shift, X, G, k):
+    if G is None:
+        G = np.eye(X.shape[0])
+    Wlim = np.ones([G.shape[1], k]) * log_shift
+    Hlim = np.ones([k, X.shape[1]]) * log_shift
+    D = G @ Wlim
+    DH = D @ Hlim
+    gamma = np.max((np.sum(Hlim,axis=0, keepdims=True) * X/(DH**2))@ Hlim.T)
+    return gamma
+
+def estimate_Lipschitz_bound_h(log_shift, X, G, k, lambda_L=0, mu=0, epsilon_reg=1):
+    if G is None:
+        G = np.eye(X.shape[0])
+    Wlim = np.ones([G.shape[1], k]) * log_shift
+    Hlim = np.ones([k, X.shape[1]]) * log_shift
+    D = G @ Wlim
+    DH = D @ Hlim
+    
+    gamma = np.max(D.T @ (np.sum(D,axis=1, keepdims=True) * X/(DH**2)) ) + 2*lambda_L+mu*epsilon_reg
+
+    return gamma

@@ -69,3 +69,4 @@ log_shift = 1e-14
 dicotomy_tol = 1e-5
 seed_max = 4294967295
 sigmaL = 8
+maxit_dichotomy = 100
