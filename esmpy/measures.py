@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 
 r"""
-The :mod:`pygsp.measures` module implements different measures for the matrix factorisation problem.
-In particulare it contains the different losses and regularizers used in :mod:`pygsp.estimator` module. 
-It also contains different metrics to evaluate the results.
-
+The :mod:`esmpy.measures` module implements different measures for the matrix factorisation problem. In particular it contains the different losses and regularizers used in :mod:`esmpy.estimator` module. It also contains different metrics to evaluate the results.
 """
 
 import numpy as np
@@ -137,6 +134,9 @@ def find_min_angle(true_vectors, algo_vectors, get_ind = False, unique=False):
     :param boolean unique: If False it will find the global minimum but several spectra can be associated to the same ground truth
     
     :returns: list of angles, (optionally) tuple of indices
+    :rtype: (list[float],list[int])
+    ..warning:: 
+        The output being either a list or a tuple of list isn't a great idea. It has to change.
     """
     angle_matr = spectral_angle(true_vectors,algo_vectors)
     if unique :
@@ -247,25 +247,17 @@ def find_min_MSE(true_maps, algo_maps, get_ind = False, unique=False):
     # This function calculates all the possible MSE between abundances and true maps
     # For each true map a best matching abundance is found
     # The function returns the MSE of the corresponding pairs
-    r"""Mean average error
+    r"""Compare all the mean squared errors between ground truth spectra and NMF spectra and find the minimum configuration.
 
-    Calculate the mean average error between two 2D arrays of the same dimension.
-
-    :param np.array 2D map1: first array
-    :param np.array 2D map2: second array
-
-    :returns: the answer
-
-    Examples
-    --------
+    :param np.array 2D true_maps: true maps with shape (number of phases, number of pixels)
+    :param np.array 2D algo_maps: NMF maps with shape (number of phases, number of pixels)
+    :param boolean get_ind: If True, the function will also return the indices of the NMF maps corresponding to the ground truth
+    :param boolean unique: If False it will find the global minimum but several maps can be associated to the same ground truth
     
-    >>> import numpy as np
-    >>> from esmpy.measures import mae
-    >>> map1 = np.array([[0, 1][0, 1]])
-    >>> map2 = np.array([[1, 1][1, 1]])
-    >>> mae(map1, map2)
-        0.5
-
+    :returns: list of mse, (optionally) tuple of indices
+    :rtype: (list[float],list[int])
+    ..warning:: 
+        The output being either a list or a tuple of list isn't a great idea. It has to change.
     """
     mse_matr = squared_distance(true_maps, algo_maps)
     if unique :
@@ -344,8 +336,7 @@ def residuals(data, model):
     return X_sum - model_sum
 
 def Frobenius_loss(X, W, H, average=False):
-    r"""Froebenius norm
-    
+    r"""    
     Compute the Froebenius norm (elementwise L2 norm of a matrix) given :math: `X,W,H`:
 
     .. math::
