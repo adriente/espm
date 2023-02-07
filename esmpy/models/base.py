@@ -1,5 +1,6 @@
 r"""
-Models abstract class.
+Models abstract class
+---------------------
 
 Its main purpose is to read databases and set energy parameters. 
 """
@@ -11,9 +12,7 @@ import esmpy.conf as conf
 import numpy as np
 
 class PhysicalModel(ABC) :
-
     """Abstract class of the models"""
-
     def __init__(self, e_offset, e_size, e_scale, params_dict,db_name="default_xrays.json", E0 = 200, **kwargs) :
         self.x = self.build_energy_scale(e_offset, e_size, e_scale)
         self.params_dict = params_dict

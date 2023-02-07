@@ -336,9 +336,7 @@ def residuals(data, model):
     return X_sum - model_sum
 
 def Frobenius_loss(X, W, H, average=False):
-    r"""    
-    Compute the Froebenius norm (elementwise L2 norm of a matrix) given :math: `X,W,H`:
-    r"""Froebenius norm
+    r"""Frobenius norm of the difference between X and WH.
     
     Compute the Froebenius norm (elementwise L2 norm of a matrix) given :math:`X,W,H`:
 
