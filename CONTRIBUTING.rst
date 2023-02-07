@@ -26,7 +26,7 @@ In general, this can be done as a relative symbolic link to a notebook in the
 
 Update ``README.rst`` and ``CHANGELOG.rst`` if applicable.
 
-After making any change, please check the style, run the tests, and build the
+After making any change, please run the tests, and build the
 documentation with the following ::
 
     $ make test
@@ -75,11 +75,10 @@ Repository organization
    __init.py__        Load modules at package import
    *.py               One file per module
 
-  pygsp/tests/        Contains the test suites (will be distributed to end user)
+  esmpy/tests/        Contains the test suites (will be distributed to end user)
    __init.py__        Load modules at package import
    test_*.py          One test suite per module
    test_docstrings.py Test the examples in the docstrings (reference doc)
-   test_tutorials.py  Test the tutorials in doc/tutorials
 
   doc/                Package documentation
    conf.py            Sphinx configuration
@@ -90,6 +89,9 @@ Repository organization
    index.rst          Reference entry page
    *.rst              Only directives, the actual doc is alongside the code
 
-  doc/tutorials/
+  doc/introduction/
    index.rst          Tutorials entry page
    *.rst              One file per tutorial
+
+  doc/introduction/notebooks/
+   *.ipynb            One notebook per tutorial

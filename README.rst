@@ -57,7 +57,8 @@ The experiment script produces two ouputs :
 
 For now it is supported for NMF only and the user needs to provide artificial data with ground truths
 
-## Todo
-* Integrate xraylib to generate a more accurate `xrays.json`
-* Integrate a database to calculate absorption coefficients
-* Integrate detector artefacts 
+TODOs
+-----
+
+* Update the `Running the algorithm` of this file (@Adrien)
+* Update the line 40 of `doc/introduction/index.rst` (@Adrien)
