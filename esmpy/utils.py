@@ -6,6 +6,7 @@ from scipy.optimize import nnls
 from esmpy.conf import SYMBOLS_PERIODIC_TABLE, NUMBER_PERIODIC_TABLE
 import json
 from hyperspy.misc.material import atomic_to_weight, density_of_mixture
+from functools import wraps
 
 _qtg_widgets = []
 _plt_figures = []
@@ -70,6 +71,7 @@ def number_to_symbol_dict (func) :
     Takes a dict of elements (a.k.a chemical composition) with atomic numbers as keys (e.g. 26 for Fe)
     returns a dict of elements with symbols as keys (e.g. Fe for iron)
     """
+    @wraps(func)
     def inner(*args,**kwargs) : 
         elts_dict = kwargs["elements_dict"]
         new_dict = {}
@@ -98,6 +100,7 @@ def symbol_to_number_dict (func) :
     Takes a dict of elements (a.k.a chemical composition) with symbols as keys (e.g. Fe for iron)
     returns a dict of elements with atomic numbers as keys (e.g. 26 for iron)
     """
+    @wraps(func)
     def inner(*args,**kwargs) : 
         elts_dict = kwargs["elements_dict"]
         new_dict = {}
@@ -124,6 +127,7 @@ def symbol_to_number_list (func) :
     Takes a dict of elements (a.k.a chemical composition) with symbols as keys (e.g. Fe for iron)
     returns a dict of elements with atomic numbers as keys (e.g. 26 for iron)
     """
+    @wraps(func)
     def inner(*args,**kwargs) : 
         elts_list = kwargs["elements"]
         new_list = []
@@ -148,6 +152,7 @@ def number_to_symbol_list (func) :
     Takes a dict of elements (a.k.a chemical composition) with symbols as keys (e.g. Fe for iron)
     returns a dict of elements with atomic numbers as keys (e.g. 26 for iron)
     """
+    @wraps(func)
     def inner(*args,**kwargs) : 
         elts_list = kwargs["elements"]
         new_list = []

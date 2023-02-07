@@ -1,3 +1,11 @@
+r"""
+EDXS model
+----------
+
+The :mod:`esmpy.models.edxs` module implements the creation of the G matrix that contains a modelisation of the characteristic and continuous X-rays.
+
+"""
+
 import numpy as np
 from esmpy.models import PhysicalModel
 from esmpy.models.EDXS_function import G_bremsstrahlung, continuum_xrays, gaussian, read_lines_db, read_compact_db, update_bremsstrahlung, elts_dict_from_dict_list
@@ -38,10 +46,28 @@ class EDXS(PhysicalModel):
 
     @symbol_to_number_list
     def generate_g_matr(self, g_type="bremsstrahlung", norm = True, reference_elt = {},*,elements=[], **kwargs):
-        """
-        Generates a matrix (e_size,n). Each column corresponds to the sum of X-ray characteristic gaussian peaks associated to each shell of the elements of elements_lists. n is then len(elements_list)*number of shells per element.
-        :elements_list: List of integers. Each integer is an element of the model. If None, the g_matr is diagonal matrix of size e_size.
-        :brstlg: Boolean. If true a continuum X-ray spectrum is added to g_matr.
+        r"""
+        Generate the G matrix. With a complete model the matrix is (e_size,n+2). The first n columns correspond to the sum of X-ray characteristic peaks associated to each shell of the elements. The last 2 columns correspond to a bremsstrahlung model. 
+        
+        Parameters
+        ----------
+        g_type : 
+            :string: Options of the edxs model to include in the G matrix. The three possibilities are "identity", "no_brstlg" and "bremsstrahlung". G is going to be the identity matrix, only characteristic X-ray peaks or characteristic X-rays plus bremsstrahlung model, respectively.
+        norm : 
+            :boolean: Norms the columns of G for computation purposes. That feature will be removed, for a better solution.
+        reference_elt : 
+            :dict: The keys are chemical elements (atomic number) and the values are cut-off energies. This argument is used to split some of the columns of G into 2 columns. The first column corresponds to characteristic X-rays before the cut-off and second one corresponds to characteristic X-rays before the cut-off. This feature is implemented to enable more accurate absorption correction.
+        elements : 
+            :list: List of modeled chemical elements. The list can be populated either with atomic numbers or chemical symbols, e.g. "Fe" or 26.
+
+        Returns
+        -------
+        g matrix :
+            :np.array 2D: matrix of the edx model. 
+
+        Notes
+        -----
+        See our paper about the esmpy package for more information about the equations of this model.
         """
         # Diagonal g_matr
         if g_type == "bremsstrahlung" : 
@@ -147,6 +173,23 @@ class EDXS(PhysicalModel):
    
 
     def generate_phases(self, phases_parameters) : 
+        r"""
+        Generate a series of spectra from list of phase parameters
+
+        Parameters
+        ----------
+        phases_parameters : 
+            :list: List of dicts containing the phase parameters.
+        
+        Returns
+        -------
+        phase_array : 
+            :np.array 2D: Array which lines correspond to the modelled phases in the input list.
+
+        Notes
+        -----
+        The absorption correction is done using the average composition of the phases. The same correction is used for each phase.
+        """
         self.phases = []
         unique_elts = dict(elts_dict_from_dict_list([x["elements_dict"] for x in phases_parameters]))
         for p in phases_parameters:
@@ -157,10 +200,40 @@ class EDXS(PhysicalModel):
 
     @symbol_to_number_dict
     def generate_spectrum(self, b0=0, b1 = 0, scale = 1.0,abs_elts_dict = {},*,elements_dict = {}):
-        """
-        Generates an EDXS spectrum with the specified elements. The continuum x-rays are added and scaled to the gaussian peaks.
-        :elements_dict: dictionnary of elements with concentration in that way {"integer":concentration}
-        :scale: Scale of the continuum x-rays to the characteristic X-rays. It can be set to 0 to eliminate the continuum. (float)
+        r"""
+        Generate a spectrum from bremsstrahlung parameters and a chemical composition.
+
+        Parameters
+        ----------
+        b0 : 
+            :float: First bremsstrahlung parameter. 
+        b1 : 
+            :float: Second bremsstrahlung parameter.
+        scale : 
+            :float: Scale factor to apply to the bremsstrahlung. Feature to be removed, scaling should be done with b0 and b1.
+        abs_elts_dict : 
+            :dict: Dictionnary of elements and associated concentrations. This dictionnary is used to calculate the contribution of the absorption in the spectrum.
+        elements_dict : 
+            :dict: Dictionnary of elements and associated concentrations describing the chemical composition of the modeled sample.
+        Returns
+        -------
+        spectrum : 
+            :np.array 1D: Output edx spectrum corresponding to the input chemical composition.
+
+        Examples
+        --------
+        >>> import matplotlib.pyplot as plt
+        >>> from esmpy.models.edxs import EDXS
+        >>> from esmpy.conf import DEFAULT_SYNTHETIC_DATA_DICT
+        >>> b0, b1 = 5.5367e-5, 0.00192181
+        >>> elts_dict = {"Si" : 1.0,"Ca" : 1.0,"O" : 3.0,"C" : 0.3}
+        >>> model = EDXS(**DEFAULT_SYNTHETIC_DATA_DICT['model_parameters'])
+        >>> spectrum = model.generate_spectrum(b0,b1, elements_dict = elts_dict)
+        >>> plt.plot(spectrum)
+
+        Notes
+        -----
+        Check EDXS_function for details about the bremsstrahlung model.
         """
         temp = np.zeros_like(self.x)
         for elt in elements_dict.keys():
@@ -212,6 +285,25 @@ class EDXS(PhysicalModel):
         
 
 def G_EDXS (model_params, g_params, part_W = None, G = None) : 
+    r"""
+    Update the bremsstrahlung part of the G matrix. This function is used for the NMF decomposition so that the absorption correction is updated in between each step.
+
+    Parameters
+    ----------
+    model_params : 
+        :dict: Parameters of the edxs model. Check esmpy.conf.DEFAULT_EDXS_PARAMS for an example. 
+    g_params : 
+        :dict: Parameters specific to the creation of the G matrix.
+    part_W : 
+        :np.array 2D: Concentrations determined during the NMF decomposition. It is used to determine the average composition that will be used to determine the absorption correction.
+    G : 
+        :np.array 2D: Current G matrix. Setting it to None will initialize the G matrix.
+
+    Returns
+    -------
+    updated G : 
+        :np.array 2D: Updated G matrix with a new absorption correction.
+    """
     if G is None : 
         model = EDXS(**model_params)
         model.generate_g_matr(**g_params)
