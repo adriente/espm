@@ -20,19 +20,17 @@ You can improve or add functionality in the ``esmpy`` folder, along with
 corresponding unit tests in ``esmpy/tests/test_*.py`` (with reasonable
 coverage).
 If you have a nice example to demonstrate the use of the introduced
-functionality, please consider adding a tutorial in ``doc/tutorials``.
+functionality, please consider adding a notebook in ``doc/introduction/notebooks``.
+In general, this can be done as a relative symbolic link to a notebook in the
+``notebooks`` folder.
 
 Update ``README.rst`` and ``CHANGELOG.rst`` if applicable.
 
 After making any change, please check the style, run the tests, and build the
 documentation with the following ::
 
-    $ make lint
     $ make test
     $ make doc
-
-Check the generated coverage report at ``htmlcov/index.html`` to make sure the
-tests reasonably cover the changes you've introduced.
 
 To iterate faster, you can partially run the test suite, at various degrees of
 granularity, as follows::
@@ -43,7 +41,7 @@ granularity, as follows::
 Making a release
 ----------------
 
-#. Update the version number and release date in ``pyproject.toml``,
+#. Update the version number and release date in ``setup.py``,
    ``esmpy/__init__.py`` and ``CHANGELOG.rst``.
 #. Create a git tag with ``git tag -a v0.2.0 -m "esmpy v0.2.0"``.
 #. Push the tag to GitHub with ``git push github v0.2.0``. The tag should now
