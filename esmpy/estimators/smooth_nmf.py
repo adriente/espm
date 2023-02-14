@@ -1,3 +1,9 @@
+""" Regularized NMF with a smooth regularization term
+
+The class :mod:`esmpy.estimators.smooth_nmf` implements the regularized NMF algorithm.
+
+"""        
+
 import numpy as np
 
 from esmpy.estimators.updates import multiplicative_step_h, multiplicative_step_w, multiplicative_step_hq, proj_grad_step_h, proj_grad_step_w, gradH, gradW, estimate_Lipschitz_bound_h, estimate_Lipschitz_bound_w

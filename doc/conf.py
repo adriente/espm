@@ -9,6 +9,7 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'nbsphinx',
     'sphinx_gallery.load_style',
+    'IPython.sphinxext.ipython_console_highlighting',
 ]
 
 extensions.append('sphinx.ext.autodoc')

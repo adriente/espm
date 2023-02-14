@@ -16,7 +16,81 @@ def normalization_factor (X, nc) :
     return nc/(m*X.shape[0])
 
 class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
+    r""" Abstract class for NMF algorithms.
+
+    This abstract class is used to implement the different NMF algorithms. It solves problems of the form:
     
+    .. math::
+
+        \dot{W}, \dot{H} = \arg \min_{W \geq \epsilon, H \geq \epsilon} \frac{1}{2} L(X - GWH) + R(W, H)
+
+    where 
+    :math:`X` is the data matrix, 
+    :math:`G` is a matrix of known values, 
+    :math:`W` and :math:`H` are the matrices to be learned, 
+    :math:`R` is a regularization term and 
+    :math:`L` is a loss function. The loss function can be the Frobenius norm (L2) or the KL divergence.
+
+    The size of:
+
+    * :math:`X` is :math:`(n, p)` 
+    * :math:`W` is :math:`(m, k)`
+    * :math:`H` is :math:`(k, p)`
+    * :math:`G` is :math:`(n, m)`.
+
+    The columns of the matrices :math:`H` and :math:`X` are assumed to be images. This is used typically for the smoothness regularization.
+    The parameter `shape_2d` defines the shape of the images, i.e. `shape_2d[0]*shape_2d[1] = p`.
+    
+    Parameters
+    ----------
+    n_components : int, default=2
+        Number of components, i.e. dimensionality of the latent space.
+    init : str
+        Method used to initialize the procedure. Default is None
+        The method use the initialization of :mod:`sklearn.decomposition`. 
+        It can be imported using:
+        .. code-block::python
+            >>> from sklearn.decomposition._nmf import _initialize_nmf
+    tol : float, default=1e-4
+        Tolerance of the stopping condition.
+    max_iter : int, default=200
+        Maximum number of iterations before timing out.
+    random_state : int, RandomState instance, default=None
+    verbose : int, default=1
+        The verbosity level.
+    debug : bool, default=False
+        If True, the algorithm will log more and perform more checks.
+    l2 : bool, default=False
+        If True, the algorithm will use the l2 norm instead of the KL divergence.
+    G : np.array, function or None, default=None
+        If np.array, it is the known matrix of the data. 
+        If function, it is a function that takes as input the data matrix and returns the known matrix (np.array). 
+        If None, it is assumed that G is the identity matrix.
+    shape_2d : tuple or None, default=None
+        If not None, it is the image shape of the columns of the matrices  :math:`X` and  :math:`H`.
+    normalize : bool, default=False
+        If True, the algorithm will normalize the data matrix  :math:`X`.
+    log_shift : float, default=1e-10
+        Lower bound for W and H, i.e. :math:`\epsilon`.
+    eval_print : int, default=10
+        Number of iterations between each evaluation of the loss function.
+    true_D : np.array or None, default=None
+        Ground truth for the matrix :math:`GW`. Used for evaluation purposes.
+    true_H : np.array or None, default=None
+        Ground truth for the matrix :math:`H`. Used for evaluation purposes.
+    fixed_H : np.array or None, default=None
+        If not None, it fixes the non-zero values of the matrix :math:`H`.
+    fixed_W : np.array or None, default=None
+        If not None, it fixes the non-zero values of the matrix :math:`W`.
+    hspy_comp : bool, default=False
+        If True, the algorithm will use the format compatible with hyperspy.
+        Use this option if you run the algorithm with the method decompositio in hyperspy.
+        For example:
+        .. code-block::python
+            >>> est = SmoothNMF( n_components = 3, hspy_comp = True)
+            >>> out = spim.decomposition(algorithm = est, return_info=True)
+        
+    """
     loss_names_ = ["KL_div_loss"]
     const_KL_ = None
     
@@ -76,6 +150,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     def fit_transform(self, X, y=None, W=None, H=None):
         """Learn a NMF model for the data X and returns the transformed data.
         This is more efficient than calling fit followed by transform.
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
@@ -84,6 +159,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             If specified, it is used as initial guess for the solution.
         H : array-like of shape (n_components, n_features)
             If specified, it is used as initial guess for the solution.
+
         Returns
         -------
         W : ndarrays
@@ -252,15 +328,22 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             return GW
 
     def fit(self, X, y=None, **params):
-        """Learn a NMF model for the data X.
+        """ Learn a NMF model for the data X.
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Data matrix to be decomposed
         y : Ignored
+        params : dict
+            Parameters passed to the `fit_transform` method.
+        
+
         Returns
         -------
         self
+            The model.
+
         """
         self.fit_transform(X, **params)
         return self
@@ -284,16 +367,19 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     #     return self.P_
 
     def inverse_transform(self, W):
-        """Transform data back to its original space.
+        """ Transform data back to its original space.
+
         Parameters
         ----------
         W : {ndarray, sparse matrix} of shape (n_samples, n_components)
             Transformed data matrix.
+        
         Returns
         -------
+        
         X : {ndarray, sparse matrix} of shape (n_samples, n_features)
             Data matrix of original shape.
-        .. versionadded:: 0.18
+        
         """
         check_is_fitted(self)
         return self.G_ @ W @ self.H_

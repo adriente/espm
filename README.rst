@@ -32,6 +32,9 @@ Generate the synthetic dataset. Run the script::
 
 Running the algorithm
 ---------------------
+
+@Adrien, I am suggesting to remove this section because it is not up to date and confusing. What do you think?
+
 Fill a json file with the relevant input parameters such as dataset name, hyperparameters values, etc ... (see the template in scritps/config/). They are two types of configuration files:
 1. Dataset files
 2. Experiment files
@@ -62,3 +65,5 @@ TODOs
 
 * Update the `Running the algorithm` of this file (@Adrien)
 * Update the line 40 of `doc/introduction/index.rst` (@Adrien)
+* Make some doc for the dataset module (just the minimum) (@Adrien)
+* Check that the doc is somehow understanable and sufficiently complete (@Sebastian)
