@@ -9,3 +9,5 @@ Models
 .. automodule:: esmpy.models.EDXS_function
 
 .. automodule:: esmpy.models.edxs
+
+.. automodule:: esmpy.models.absorption_edxs
