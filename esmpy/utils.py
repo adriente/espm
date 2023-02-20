@@ -16,8 +16,19 @@ _plt_figures = []
 def create_laplacian_matrix(nx, ny=None):
     """
     Helper method to create the laplacian matrix for the laplacian regularization
-    :param n: width of the original image
-    :return:the n x n laplacian matrix
+    
+    Parameters
+    ----------
+    :param nx: height of the original image
+    :param ny: width of the original image
+
+    Returns
+    -------
+
+    :rtype: scipy.sparse.csr_matrix
+    :return:the n x n laplacian matrix, where n = nx*ny
+
+
     """
     if ny is None:
         ny = nx
@@ -43,7 +54,15 @@ def create_laplacian_matrix(nx, ny=None):
 
 
 def rescaled_DH(D,H) :
-    """Rescale the matrices D and H such that the columns of H sums approximately to one."""
+    """Rescale the matrices D and H such that the columns of H sums approximately to one.
+
+    :param np.array 2D D: n x k matrix
+    :param np.array 2D H: k x m matrix
+
+    :return: D_rescale, H_rescale
+    :rtype: np.array 2D, np.array 2D   
+
+    """
     _, p = H.shape
     o = np.ones((p,))
     s = np.linalg.lstsq(H.T, o, rcond=None)[0]
@@ -54,7 +73,7 @@ def rescaled_DH(D,H) :
     return D_rescale, H_rescale
 
 def bin_spim(data,n,m):
-    """
+    """ 
     
     Take a 3D array of size (x,y,k) [px, py, e]
     Returns a 3D array of size (n,m,k) [new_px, new_py, e]
@@ -241,10 +260,25 @@ def check_keys(params, d_params, upperkeys = '',toprint = True):
     return True
 
 def isdict(p):
-    """Return True if the variable a dictionary."""
+    """Return True if the variable a dictionary.
+    
+    :param p: variable to check
+    :type p: any
+    :return: True if p is a dictionary
+    :rtype: bool
+
+    """
     return type(p) is dict
 
 def is_symbol (i) :
+    """ Return True if i is a chemical symbol
+    
+    :param i: variable to check
+    :type i: any
+    :return: True if i is a chemical symbol
+    :rtype: bool
+
+    """
     symb_list = symbol_list()
     if i in symb_list : 
         return True
@@ -252,6 +286,15 @@ def is_symbol (i) :
         return False
 
 def is_number (i) :
+    """ Return True if i is a number
+
+    :param i: variable to check
+    :type i: any
+    :return: True if i is a number
+    :rtype: bool
+
+    """
+
     try : 
         int(i)
         return True
@@ -269,7 +312,7 @@ def symbol_list () :
 
 def close_all():
     r"""Close all opened windows."""
-
+    import matplotlib.pyplot as plt
     global _qtg_widgets
     for widget in _qtg_widgets:
         widget.close()
@@ -277,17 +320,5 @@ def close_all():
 
     global _plt_figures
     for fig in _plt_figures:
-        _, plt, _ = _import_plt()
         plt.close(fig)
     _plt_figures = []
-
-def _import_plt():
-    try:
-        import matplotlib as mpl
-        from matplotlib import pyplot as plt
-    except Exception as e:
-        raise ImportError('Cannot import matplotlib. Choose another backend '
-                          'or try to install it with '
-                          'pip (or conda) install matplotlib. '
-                          'Original exception: {}'.format(e))
-    return mpl, plt

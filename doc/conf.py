@@ -47,16 +47,6 @@ import esmpy
 import hyperspy.api as hs
 """
 
-# extensions.append('sphinx_gallery.gen_gallery')
-# sphinx_gallery_conf = {
-#     'examples_dirs': '../examples',
-#     'gallery_dirs': 'examples',
-#     'filename_pattern': '/',
-#     'reference_url': {'esmpy': None},
-#     'backreferences_dir': 'backrefs',
-#     'doc_module': 'esmpy',
-#     'show_memory': True,
-# }
 
 extensions.append('sphinx_copybutton')
 copybutton_prompt_text = ">>> "

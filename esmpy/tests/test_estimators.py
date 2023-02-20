@@ -1,5 +1,5 @@
 from sklearn.utils.estimator_checks import check_estimator
-from esmpy.estimators.smooth_nmf import diff_surrogate, smooth_l2_surrogate, smooth_dgkl_surrogate
+from esmpy.estimators.surrogates import diff_surrogate, smooth_l2_surrogate, smooth_dgkl_surrogate
 from esmpy.estimators import SmoothNMF
 from esmpy.estimators.base import normalization_factor
 import numpy as np

@@ -70,9 +70,9 @@ List of example notebooks
 To go deeper, we invite you to consult the following notebooks.
 
 .. nbgallery::
-   notebooks/toy-problem
-   notebooks/generate_data
    notebooks/api
+   notebooks/generate_data
+   notebooks/toy-problem
 
 
 

@@ -18,7 +18,7 @@ def normalization_factor (X, nc) :
 class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     r""" Abstract class for NMF algorithms.
 
-    This abstract class is used to implement the different NMF algorithms. It solves problems of the form:
+    This abstract class `esmpy.estimators.NMFEstimator` is used to implement the different NMF algorithms. It solves problems of the form:
     
     .. math::
 
@@ -33,14 +33,14 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
     The size of:
 
-    * :math:`X` is :math:`(n, p)` 
-    * :math:`W` is :math:`(m, k)`
-    * :math:`H` is :math:`(k, p)`
+    * :math:`X` is :math:`(n, p)`,
+    * :math:`W` is :math:`(m, k)`,
+    * :math:`H` is :math:`(k, p)`,
     * :math:`G` is :math:`(n, m)`.
 
     The columns of the matrices :math:`H` and :math:`X` are assumed to be images. This is used typically for the smoothness regularization.
     The parameter `shape_2d` defines the shape of the images, i.e. `shape_2d[0]*shape_2d[1] = p`.
-    
+
     Parameters
     ----------
     n_components : int, default=2
@@ -51,6 +51,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         It can be imported using:
         .. code-block::python
             >>> from sklearn.decomposition._nmf import _initialize_nmf
+        
     tol : float, default=1e-4
         Tolerance of the stopping condition.
     max_iter : int, default=200
@@ -127,6 +128,27 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     
 
     def loss(self, W, H, average=True, X = None):
+        """Loss function.
+
+        Compute the loss function for the given matrices W and H.
+
+        Parameters
+        ----------
+        W : np.array
+            Matrix of shape (n, k)
+        H : np.array
+            Matrix of shape (k, p)
+        average : bool, default=True
+            If True, the loss is averaged over the number of elements of the matrices.
+        X : np.array or None, default=None
+            If not None, it is the data matrix. If None, it is assumed that the data matrix in `self.X_`.
+
+        Returns
+        -------
+        loss_ : float
+            Value of the loss function.
+
+        """
         GW = self.G_ @ W
         if X is None : 
             X = self.X_
@@ -153,16 +175,28 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
         Parameters
         ----------
-        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        X : {array-like, sparse matrix} of shape (n, p)
             Data matrix to be decomposed
-        W : array-like of shape (n_samples, n_components)
+        y : Ignored
+            Not used, present here for API consistency by convention.
+        W : array-like of shape (m, k)
             If specified, it is used as initial guess for the solution.
-        H : array-like of shape (n_components, n_features)
+        H : array-like of shape (k, p)
             If specified, it is used as initial guess for the solution.
+        
+
+        The size of:
+
+        * :math:`X` is :math:`(n, p)`,
+        * :math:`W` is :math:`(m, k)`,
+        * :math:`H` is :math:`(k, p)`,
+        * :math:`G` is :math:`(n, m)`.
 
         Returns
         -------
-        W : ndarrays
+        GW : ndarrays
+            Transformed data.
+        
         """
         if self.hspy_comp : 
             self.X_ = self._validate_data(X.T, dtype=[np.float64, np.float32])

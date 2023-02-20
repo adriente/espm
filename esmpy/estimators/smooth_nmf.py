@@ -1,92 +1,64 @@
-""" Regularized NMF with a smooth regularization term
-
-The class :mod:`esmpy.estimators.smooth_nmf` implements the regularized NMF algorithm.
-
-"""        
-
 import numpy as np
 
 from esmpy.estimators.updates import multiplicative_step_h, multiplicative_step_w, multiplicative_step_hq, proj_grad_step_h, proj_grad_step_w, gradH, gradW, estimate_Lipschitz_bound_h, estimate_Lipschitz_bound_w
 from esmpy.measures import trace_xtLx, log_reg
 from esmpy.estimators import NMFEstimator
+from esmpy.estimators.surrogates import diff_surrogate, quadratic_surrogate
 from esmpy.conf import dicotomy_tol, sigmaL
 from copy import deepcopy
 # from esmpy.measures import KL_loss_surrogate, KLdiv_loss, log_reg, log_surrogate
 
 
-def smooth_l2_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
-    HtTL = Ht @ L
-    t1 = np.sum(HtTL * Ht)
-    if H is None:
-        t2 = t1
-        t3 = 0
-    else:
-        t2 = np.sum(HtTL * H )
-        t3 = np.sum((Ht-H)**2)
-    return lambda_L / 2 * (2*t2 - t1 + sigmaL * t3)
-
-# def smooth_l2_surrogate_alt(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
-#     HtTL = Ht @ L
-#     t1 = np.sum(HtTL * Ht)
-#     if H is None:
-#         return lambda_L / 2 * t1
-    
-#     t2 = 2 * np.sum(HtTL * (H - Ht) )
-#     t3 = sigmaL * np.sum((Ht-H)**2)
-    
-#     return lambda_L / 2 * (t1 + t2 + t3)
-
-def smooth_dgkl_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
-    HtTL = Ht @ L
-    t1 = np.sum(HtTL * Ht)
-    
-    def dgkl(p, q):
-        return p * np.log(p/q) - p + q
-    
-    if H is None:
-        t2 = t1
-        t3 = 0
-    else:
-        t2 = np.sum(HtTL * H )
-        maxH = np.max(H, axis=1)
-        t3 = np.sum(maxH * np.sum(dgkl(Ht, H), axis=1))
-    return lambda_L / 2 * (2*t2 - t1 + sigmaL * t3)
-
-def diff_surrogate(Ht, H, L, sigmaL=sigmaL, lambda_L=1, algo="log_surrogate"):
-    b_inf = trace_xtLx(L, H.T) * lambda_L / 2
-    if algo=="log_surrogate":
-        b_supp = smooth_dgkl_surrogate(Ht, L=L, H=H, sigmaL=sigmaL, lambda_L=lambda_L)
-    elif algo== "l2_surrogate":
-        b_supp = smooth_l2_surrogate(Ht, L=L, H=H, sigmaL=sigmaL, lambda_L=lambda_L)
-    else: 
-        raise "Unknown algorithm"
-    return b_supp - b_inf
-
-
-
-def quadratic_surrogate(x, xt, f_xt, gradf_xt, sigma):
-    r"""Compute the quadratic surrogate function of :math:`f` at :math:`x^t`
-
-    This function essentially computes:
-
-    .. math::
-        
-        g(x,x^t) = f(x^t) + left< x - x^t , \nabla f (x^t) \right> + \sigma \| x - x^t \|_2^2 
-
-    :param np.array x: variable
-    :param np.array xt: variable
-    :param np.array f_xt: function to be upper bounded
-    :param np.array gradf_xt: function that compute the gradient
-    :param float sigma: Lipschitz constant of the gradient
-
-    :returns: the answer
-
-    """
-    return f_xt + np.sum((x-xt) * gradf_xt) + sigma * np.sum((x-xt)**2)
-
-
 
 class SmoothNMF(NMFEstimator):
+    r""" SmoothNMF - NMF with a smooth regularization term
+
+    The class :mod:`esmpy.estimators.smooth_nmf` implements the regularized NMF algorithm.  It solves problems of the form:
+
+    .. math::
+
+        \dot{W}, \dot{H} = \arg \min_{W \geq \epsilon, H \geq \epsilon} L ( X,  GWH ) + \lambda_L tr ( H \Delta H^\top) + \mu^\top \log (H + \epsilon_{reg}) 1
+
+    where 
+    
+    * :math:`L` is a loss function (L2 or Generalized KL divergence), 
+    * :math:`\Delta` is the Laplacian operator, 
+    * :math:`\epsilon_{reg}` is the slope of log regularization/sparsity at 0, and 
+    * :math:`\mu` is a regularization parameter.
+
+    The size of:
+
+    * :math:`X` is :math:`(n, p)`,
+    * :math:`W` is :math:`(m, k)`,
+    * :math:`H` is :math:`(k, p)`,
+    * :math:`G` is :math:`(n, m)`.
+
+    The columns of the matrices :math:`H` and :math:`X` are assumed to be images. This is used typically for the smoothness regularization.
+    The parameter `shape_2d` defines the shape of the images, i.e. `shape_2d[0]*shape_2d[1] = p`.
+    
+    Parameters
+    ----------
+    lambda_L : float, default=1.0
+        Regularization parameter for the smooth regularization term.
+    linesearch : bool, default=False
+        If True, use a line search to find the step size.
+    mu : float, default=0
+        Regularization parameter for the log regularization/sparsity term.
+    epsilon_reg : float, default=1
+        Slope of log regularization/sparsity at 0.
+    algo : str, default="log_surrogate"
+        Algorithm to use for the smooth regularization term. Can be "log_surrogate" or "l2_surrogate".
+    force_simplex : bool, default=True
+        If True, force the solution to be in the simplex.
+    dicotomy_tol : float, default=1e-3
+        Tolerance for the dicotomy algorithm.
+    gamma : float, default=None
+        Initial value for the step size. If None, it is set to Lipschitz constant of the gradient.
+    **kwargs : dict
+        Additional parameters for the :class:`esmpy.estimators.nmf.NMFEstimator` class.
+
+
+    """        
 
     loss_names_ = NMFEstimator.loss_names_ + ["log_reg_loss"] + ["Lapl_reg_loss"] + ["gamma"]
 
@@ -114,6 +86,33 @@ class SmoothNMF(NMFEstimator):
         
 
     def fit_transform(self, X, y=None, W=None, H=None):
+        """Fit the model to the data X and returns the transformed data.
+
+        Parameters
+        ----------
+        X : array-like, shape (n, p)
+            Data matrix to be decomposed
+        y : Ignored
+            Not used, present here for API consistency by convention.
+        W : array-like, shape (m, k)
+            If init='custom', it is used as initial guess for the solution.
+        H : array-like, shape (k, p)
+            If init='custom', it is used as initial guess for the solution.
+
+
+        The size of:
+
+        * :math:`X` is :math:`(n, p)`,
+        * :math:`W` is :math:`(m, k)`,
+        * :math:`H` is :math:`(k, p)`,
+        * :math:`G` is :math:`(n, m)`.
+
+        Returns
+        -------
+        GW : ndarrays
+            Transformed data.
+            
+        """
         if self.gamma is None:
 
             if self.algo in ["l2_surrogate", "log_surrogate"]:
@@ -193,6 +192,7 @@ class SmoothNMF(NMFEstimator):
         return  W, H
 
     def loss(self, W, H, average=True, X = None):
+        """Compute the loss function."""
         lkl = super().loss(W, H, average=average, X = X)
         
         reg = log_reg(H, self.mu, self.epsilon_reg, average=False)

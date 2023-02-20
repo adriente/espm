@@ -8,3 +8,4 @@ API reference
    models
    estimators
    measures
+   utils
