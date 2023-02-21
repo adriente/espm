@@ -4,7 +4,7 @@ with open("README.rst", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='pyESM',
+    name='pyesm',
     version='0.1.1',
     description='Electron Spectro-Microscopy Python Library',
     url='https://github.com/adriente/pyesm',
