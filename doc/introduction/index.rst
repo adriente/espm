@@ -51,9 +51,9 @@ Taking the non-negative matrix factorization (NMF) is done with the following:
     >>> spim.plot_decomposition_loadings(3)
     >>> spim.plot_decomposition_factors(3)
 
-It will use the algorithm developped in this contribution_.
+It will use the algorithm developped in this `contribution`_.
 
-.. _link: https://link-to-the-paper.com
+.. _contribution: https://link-to-the-paper.com
 
 
 .. note::

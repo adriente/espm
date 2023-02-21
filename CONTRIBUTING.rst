@@ -46,7 +46,7 @@ Making a release
 #. Create a git tag with ``git tag -a v0.2.0 -m "espm v0.2.0"``.
 #. Push the tag to GitHub with ``git push --tag``. The tag should now
    appear in the releases and tags tab.
-#. `Create a release <https://github.com/adriente/espm/releases/new>`_ on
+#. `Create a release <https://github.com/adriente/esmpy/releases/new>`_ on
    GitHub and select the created tag. 
 #. Build the distribution with ``make dist`` and check that the
    ``dist/espm-0.2.0.tar.gz`` source archive contains all required files. The

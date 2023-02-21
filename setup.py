@@ -5,7 +5,7 @@ with open("README.rst", "r") as fh:
 
 setuptools.setup(
     name='espm',
-    version='0.1.1',
+    version='0.1.3',
     description='Electron SPectro-Microscopy Python Library',
     url='https://github.com/adriente/espm',
     author='Adrien Teurtie, Nathanael Perraudin',
@@ -16,6 +16,9 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     entry_points={'hyperspy.extensions': 'espm = espm'},
+    include_package_data=True,
+    package_data={'tables': ['espm/tables/*.json', 'espm/tables/*.txt']},
+
     extras_require={'dev': [
         'flake8', 'pytest', 'jupyterlab', 'twine', 'setuptools', 'wheel', 
         'sphinx','numpydoc','sphinxcontrib-bibtex','sphinx-gallery',
