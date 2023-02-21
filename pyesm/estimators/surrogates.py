@@ -1,6 +1,6 @@
 import numpy as np
-from pyesm.conf import sigmaL
-from pyesm.measures import trace_xtLx
+from espm.conf import sigmaL
+from espm.measures import trace_xtLx
 
 
 

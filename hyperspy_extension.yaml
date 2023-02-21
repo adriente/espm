@@ -1,7 +1,7 @@
 signals : 
-  EDS_pyesm:
-    signal_type: EDS_pyesm
+  EDS_espm:
+    signal_type: EDS_espm
     signal_dimension : 1
     dtype : real
     lazy : False
-    module : pyesm.datasets.spim
+    module : espm.datasets.spim

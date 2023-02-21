@@ -1,6 +1,6 @@
 import numpy as np
-from pyesm.utils import create_laplacian_matrix
-from pyesm.conf import sigmaL
+from espm.utils import create_laplacian_matrix
+from espm.conf import sigmaL
 from scipy.sparse.linalg import eigs
 
 def my_laplacian_op(image):

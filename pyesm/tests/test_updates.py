@@ -1,10 +1,10 @@
 import numpy as np
 
-from pyesm.estimators.updates import dichotomy_simplex, multiplicative_step_w, multiplicative_step_h, update_q, dichotomy_simplex_acc, multiplicative_step_hq
-from pyesm.estimators.updates import estimate_Lipschitz_bound_h, estimate_Lipschitz_bound_w, gradW, gradH, proj_grad_step_h, proj_grad_step_w
-from pyesm.measures import KLdiv_loss, log_reg, Frobenius_loss, trace_xtLx
-from pyesm.conf import log_shift, dicotomy_tol
-from pyesm.utils import create_laplacian_matrix
+from espm.estimators.updates import dichotomy_simplex, multiplicative_step_w, multiplicative_step_h, update_q, dichotomy_simplex_acc, multiplicative_step_hq
+from espm.estimators.updates import estimate_Lipschitz_bound_h, estimate_Lipschitz_bound_w, gradW, gradH, proj_grad_step_h, proj_grad_step_w
+from espm.measures import KLdiv_loss, log_reg, Frobenius_loss, trace_xtLx
+from espm.conf import log_shift, dicotomy_tol
+from espm.utils import create_laplacian_matrix
 import pytest
 
 def make_step_a(x_matr, g_matr, p_matr , a_matr, mu_sparse=0, eps=log_shift, eps_sparse=1, mask=None):

@@ -8,7 +8,7 @@ Its main purpose is to read databases and set energy parameters.
 from abc import ABC, abstractmethod
 from pathlib import Path
 import json
-import pyesm.conf as conf
+import espm.conf as conf
 import numpy as np
 
 class Model(ABC):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Test suite for the docstrings of the pyesm package.
+Test suite for the docstrings of the espm package.
 """
 
 import os
@@ -32,13 +32,13 @@ def setup(doctest):
 
 def teardown(doctest):
     """Close matplotlib figures to avoid warning and save memory."""
-    from pyesm.utils import close_all
+    from espm.utils import close_all
     close_all()
 
 
-def test_docstrings_pyesm():
+def test_docstrings_espm():
     # Docstrings from API reference.
-    func_test_docstrings('pyesm', '.py', setup)
+    func_test_docstrings('espm', '.py', setup)
 
 
 def test_docstrings_rst():

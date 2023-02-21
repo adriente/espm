@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 r"""
-The :mod:`pyesm.measures` module implements different measures for the matrix factorisation problem. In particular it contains the different losses and regularizers used in :mod:`pyesm.estimator` module. It also contains different metrics to evaluate the results.
+The :mod:`espm.measures` module implements different measures for the matrix factorisation problem. In particular it contains the different losses and regularizers used in :mod:`espm.estimator` module. It also contains different metrics to evaluate the results.
 """
 
 import numpy as np
-from pyesm.conf import log_shift
+from espm.conf import log_shift
 import warnings as w
 from itertools import permutations
 from sklearn.metrics import r2_score
@@ -26,7 +26,7 @@ def spectral_angle(v1, v2):
     --------
     
     >>> import numpy as np
-    >>> from pyesm.measures import spectral_angle
+    >>> from espm.measures import spectral_angle
     >>> v1 = np.array([0, 1, 0])
     >>> v2 = np.array([1, 0, 1])
     >>> spectral_angle(v1, v2)
@@ -62,7 +62,7 @@ def mse(map1, map2):
     --------
     
     >>> import numpy as np
-    >>> from pyesm.measures import mse
+    >>> from espm.measures import mse
     >>> map1 = np.array([[0, 1][0, 1]])
     >>> map2 = np.array([[1, 1][1, 1]])
     >>> mse(map1, map2)
@@ -86,7 +86,7 @@ def mae(map1, map2):
     --------
     
     >>> import numpy as np
-    >>> from pyesm.measures import mae
+    >>> from espm.measures import mae
     >>> map1 = np.array([[0, 1][0, 1]])
     >>> map2 = np.array([[1, 1][1, 1]])
     >>> mae(map1, map2)
@@ -183,7 +183,7 @@ def unique_min (matrix) :
     --------
 
     >>> import numpy as np
-    >>> from pyesm.measures import unique_min
+    >>> from espm.measures import unique_min
     >>> matrix = np.array([[1.2,  1.3,  3.5],
                         [4.9,  2.2,  6.5],
                        [9.0,  4.1,  1.8]])
@@ -356,7 +356,7 @@ def Frobenius_loss(X, W, H, average=False):
     --------
     
     >>> import numpy as np
-    >>> from pyesm.measures import Frobenius_loss
+    >>> from espm.measures import Frobenius_loss
     >>> X = np.array([[1, 1, -1], [2, 4, 5]])
     >>> W = np.array([[1], [1]])
     >>> H = np.array([[1, 2, 3]])
@@ -398,7 +398,7 @@ def KLdiv(X, D, H, log_shift=log_shift, average=False):
     --------
     
     >>> import numpy as np
-    >>> from pyesm.measures import KLdiv
+    >>> from espm.measures import KLdiv
     >>> X = np.array([[1, 1, 1], [2, 4, 5]])
     >>> W = np.array([[1], [1]])
     >>> H = np.array([[1, 2, 3]])
@@ -468,7 +468,7 @@ def KLdiv_loss(X, W, H, log_shift=log_shift, average=False):
     --------
 
     >>> import numpy as np
-    >>> from pyesm.measures import KLdiv, KLdiv_loss
+    >>> from espm.measures import KLdiv, KLdiv_loss
     >>> X = np.array([[1, 1, 1], [2, 4, 5]])
     >>> W = np.array([[1], [1]])
     >>> H = np.array([[1, 2, 3]])
@@ -581,7 +581,7 @@ def squared_distance(x, y=None):
     --------
     
     >>> import numpy as np
-    >>> from pyesm.measures import square_distance
+    >>> from espm.measures import square_distance
     >>> x = np.arange(3)
     >>> square_distance(x, x)
         array([[ 0.,  1.,  2.],

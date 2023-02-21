@@ -2,16 +2,16 @@ r"""
 Absorption functions
 --------------------
 
-The :mod:`pyesm.models.absorption_edxs` module implements the functions to calculate the contribution of absorption in edx spectra.
+The :mod:`espm.models.absorption_edxs` module implements the functions to calculate the contribution of absorption in edx spectra.
 
 """
 
 from scipy.interpolate import interp1d
-from pyesm.utils import number_to_symbol_dict, atomic_to_weight_dict, approx_density
-from pyesm.conf import HSPY_MAC
+from espm.utils import number_to_symbol_dict, atomic_to_weight_dict, approx_density
+from espm.conf import HSPY_MAC
 import numpy as np
 from pathlib import Path
-from pyesm.conf import DB_PATH
+from espm.conf import DB_PATH
 
 @number_to_symbol_dict
 def absorption_coefficient (x,atomic_fraction = False,*,elements_dict = {"Si" : 1.0}) : 
@@ -124,7 +124,7 @@ def absorption_mass_thickness(x,mass_thickness, toa = 90, atomic_fraction = True
 
 def det_efficiency_from_curve (x,filename,kind = "cubic") :
     r"""
-    Interpolate a detection efficiency curve that is stored in ~/pyesm/tables.
+    Interpolate a detection efficiency curve that is stored in ~/espm/tables.
 
     Parameters
     ----------
@@ -195,7 +195,7 @@ def det_efficiency (x,det_dict) :
     Examples
     --------
 
-    >>> from pyesm.models.absorption_edxs import det_efficiency
+    >>> from espm.models.absorption_edxs import det_efficiency
     >>> import matplotlib.pyplot as plt
     >>> import numpy as np
     >>> dict = {"detection" : {"thickness" : 10e-3, "density" : 2.3, "atomic_fraction" : False, "elements_dict" : {"Si" : 1.0}},

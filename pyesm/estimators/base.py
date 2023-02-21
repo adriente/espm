@@ -1,13 +1,13 @@
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
-from pyesm.estimators.updates import initialize_algorithms
-from pyesm.measures import KLdiv_loss, Frobenius_loss, find_min_angle, find_min_MSE
-from pyesm.conf import log_shift
-from pyesm.utils import rescaled_DH
+from espm.estimators.updates import initialize_algorithms
+from espm.measures import KLdiv_loss, Frobenius_loss, find_min_angle, find_min_MSE
+from espm.conf import log_shift
+from espm.utils import rescaled_DH
 import time
 from abc import ABC, abstractmethod
-from pyesm.utils import create_laplacian_matrix 
+from espm.utils import create_laplacian_matrix 
 from scipy.sparse import lil_matrix
 
 
@@ -18,7 +18,7 @@ def normalization_factor (X, nc) :
 class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     r""" Abstract class for NMF algorithms.
 
-    This abstract class `pyesm.estimators.NMFEstimator` is used to implement the different NMF algorithms. It solves problems of the form:
+    This abstract class `espm.estimators.NMFEstimator` is used to implement the different NMF algorithms. It solves problems of the form:
     
     .. math::
 

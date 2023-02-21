@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 from experiments import results_string
 import numpy.lib.recfunctions as rfn
-from pyesm import measures
+from espm import measures
 import sys
 from VCA import vca
 from sunsal import sunsal

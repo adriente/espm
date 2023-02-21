@@ -1,13 +1,13 @@
-from pyesm.datasets.spim import get_metadata
+from espm.datasets.spim import get_metadata
 import numpy as np
-from pyesm.datasets.base import generate_dataset, generate_spim, save_generated_spim
-from pyesm.models import EDXS
-from pyesm.datasets.generate_weights import generate_weights, random_weights, laplacian_weights, spheres_weights, gaussian_ripple_weights
-from pyesm.datasets.generate_EDXS_phases import generate_brem_params, generate_random_phases, unique_elts
+from espm.datasets.base import generate_dataset, generate_spim, save_generated_spim
+from espm.models import EDXS
+from espm.datasets.generate_weights import generate_weights, random_weights, laplacian_weights, spheres_weights, gaussian_ripple_weights
+from espm.datasets.generate_EDXS_phases import generate_brem_params, generate_random_phases, unique_elts
 import os
 import hyperspy.api as hs
 import shutil
-from pyesm.conf import DATASETS_PATH, DEFAULT_SYNTHETIC_DATA_DICT
+from espm.conf import DATASETS_PATH, DEFAULT_SYNTHETIC_DATA_DICT
 from pathlib import Path
 from hyperspy.misc.eds.utils import take_off_angle
 
@@ -99,7 +99,7 @@ def test_generate():
     filename = "test.hspy"
     save_generated_spim(filename, spim, DATA_DICT['N']*np.diag(densities)@phases1, maps, **DATA_DICT)
     si = hs.load(filename)
-    si.set_signal_type("EDS_pyesm")
+    si.set_signal_type("EDS_espm")
     G = si.build_G(problem_type = "bremsstrahlung")
     G = G()
     phases, maps = si.phases, si.maps_2d
@@ -221,7 +221,7 @@ def test_spim () :
     gen_folder = DATASETS_PATH / Path(DATA_DICT["data_folder"])
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
 
-    assert gen_si.metadata.Signal.signal_type == "EDS_pyesm"
+    assert gen_si.metadata.Signal.signal_type == "EDS_espm"
 
     mod_pars = get_metadata(gen_si)
     mod_pars["params_dict"]["Abs"]["atomic_fraction"] = False

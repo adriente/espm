@@ -1,8 +1,8 @@
-from pyesm import models
+from espm import models
 import numpy as np
-import pyesm.models.EDXS_function as ef
-from pyesm.conf import DEFAULT_EDXS_PARAMS
-from pyesm.utils import arg_helper
+import espm.models.EDXS_function as ef
+from espm.conf import DEFAULT_EDXS_PARAMS
+from espm.utils import arg_helper
 import lmfit as lm
 import re
 

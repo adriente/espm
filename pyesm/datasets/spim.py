@@ -1,14 +1,14 @@
 from  hyperspy.signals import Signal1D
-from pyesm.models import EDXS
-from pyesm import models
-from pyesm.models.edxs import G_EDXS
-from pyesm.datasets.generate_weights import generate_weights
+from espm.models import EDXS
+from espm import models
+from espm.models.edxs import G_EDXS
+from espm.datasets.generate_weights import generate_weights
 from hyperspy.misc.eds.utils import take_off_angle
-from pyesm.utils import number_to_symbol_list
+from espm.utils import number_to_symbol_list
 import numpy as np
 
 
-class EDS_pyesm(Signal1D) : 
+class EDS_espm(Signal1D) : 
 
     def __init__ (self,*args,**kwargs) : 
         super().__init__(*args,**kwargs)

@@ -1,6 +1,6 @@
 import numpy as np
 from skimage.filters import median
-from pyesm.models.EDXS_function import gaussian
+from espm.models.EDXS_function import gaussian
 import scipy.ndimage as ndimage
 from skimage.filters import threshold_otsu
 import hyperspy.api as hs

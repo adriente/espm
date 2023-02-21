@@ -1,5 +1,5 @@
-from pyesm.datasets.base import generate_dataset
-from pyesm.conf import DATASETS_PATH
+from espm.datasets.base import generate_dataset
+from espm.conf import DATASETS_PATH
 from pathlib import Path
 import hyperspy.api as hs
 import os

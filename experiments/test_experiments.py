@@ -1,10 +1,10 @@
 import experiments as exps
 from pathlib import Path
-from pyesm.conf import DATASETS_PATH
-from pyesm.datasets import generate_dataset, spim
+from espm.conf import DATASETS_PATH
+from espm.datasets import generate_dataset, spim
 import shutil
-from pyesm import estimators
-from pyesm import datasets
+from espm import estimators
+from espm import datasets
 import numpy as np
 
 DATA_DICT = {
@@ -99,7 +99,7 @@ def test_quick_load () :
     assert isinstance(estimator1,estimators.SmoothNMF)
     assert estimator1.shape_2d == (30,40)
     assert estimator1.max_iter == 1000
-    assert isinstance(spim1, datasets.EDS_pyesm)
+    assert isinstance(spim1, datasets.EDS_espm)
     assert spim1.data.shape == (30,40,1000)
     assert estimator1.true_H.shape == (4,30*40)
     assert estimator1.true_D.shape == (1000,4)

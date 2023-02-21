@@ -1,19 +1,19 @@
 import numpy as np
 
-from pyesm.estimators.updates import multiplicative_step_h, multiplicative_step_w, multiplicative_step_hq, proj_grad_step_h, proj_grad_step_w, gradH, gradW, estimate_Lipschitz_bound_h, estimate_Lipschitz_bound_w
-from pyesm.measures import trace_xtLx, log_reg
-from pyesm.estimators import NMFEstimator
-from pyesm.estimators.surrogates import diff_surrogate, quadratic_surrogate
-from pyesm.conf import dicotomy_tol, sigmaL
+from espm.estimators.updates import multiplicative_step_h, multiplicative_step_w, multiplicative_step_hq, proj_grad_step_h, proj_grad_step_w, gradH, gradW, estimate_Lipschitz_bound_h, estimate_Lipschitz_bound_w
+from espm.measures import trace_xtLx, log_reg
+from espm.estimators import NMFEstimator
+from espm.estimators.surrogates import diff_surrogate, quadratic_surrogate
+from espm.conf import dicotomy_tol, sigmaL
 from copy import deepcopy
-# from pyesm.measures import KL_loss_surrogate, KLdiv_loss, log_reg, log_surrogate
+# from espm.measures import KL_loss_surrogate, KLdiv_loss, log_reg, log_surrogate
 
 
 
 class SmoothNMF(NMFEstimator):
     r""" SmoothNMF - NMF with a smooth regularization term
 
-    The class :mod:`pyesm.estimators.smooth_nmf` implements the regularized NMF algorithm.  It solves problems of the form:
+    The class :mod:`espm.estimators.smooth_nmf` implements the regularized NMF algorithm.  It solves problems of the form:
 
     .. math::
 
@@ -55,7 +55,7 @@ class SmoothNMF(NMFEstimator):
     gamma : float, default=None
         Initial value for the step size. If None, it is set to Lipschitz constant of the gradient.
     **kwargs : dict
-        Additional parameters for the :class:`pyesm.estimators.nmf.NMFEstimator` class.
+        Additional parameters for the :class:`espm.estimators.nmf.NMFEstimator` class.
 
 
     """        
