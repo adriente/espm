@@ -5,7 +5,7 @@ from esmpy.measures import trace_xtLx
 
 
 def smooth_l2_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
-    """Compute the smooth L2 surrogate of the Laplacian regularizer :math:`\lambda_L/2 tr(H \Delta H^\top)` at :math:`H^t`
+    r"""Compute the smooth L2 surrogate of the Laplacian regularizer :math:`\lambda_L/2 tr(H \Delta H^\top)` at :math:`H^t`
 
     This function essentially computes:
 
@@ -63,7 +63,7 @@ def smooth_l2_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
 #     return lambda_L / 2 * (t1 + t2 + t3)
 
 def smooth_dgkl_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
-    """Compute the smooth KL surrogate of the Laplacian regularizer :math:`\lambda_L/2 tr(H \Delta H^\top)` at :math:`H^t`
+    r"""Compute the smooth KL surrogate of the Laplacian regularizer :math:`\lambda_L/2 tr(H \Delta H^\top)` at :math:`H^t`
 
     This function essentially computes:
 
@@ -114,7 +114,7 @@ def smooth_dgkl_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
     return lambda_L / 2 * (2*t2 - t1 + sigmaL * t3)
 
 def diff_surrogate(Ht, H, L, sigmaL=sigmaL, lambda_L=1, algo="log_surrogate"):
-    """Compute the difference between the surrogate and the true value of the Laplacian regularizer at :math:`H^t`.
+    r"""Compute the difference between the surrogate and the true value of the Laplacian regularizer at :math:`H^t`.
     
     Parameters
     ----------
