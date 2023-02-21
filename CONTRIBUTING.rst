@@ -44,13 +44,13 @@ Making a release
 #. Update the version number and release date in ``setup.py``,
    ``esmpy/__init__.py`` and ``CHANGELOG.rst``.
 #. Create a git tag with ``git tag -a v0.2.0 -m "esmpy v0.2.0"``.
-#. Push the tag to GitHub with ``git push github v0.2.0``. The tag should now
+#. Push the tag to GitHub with ``git push --tag``. The tag should now
    appear in the releases and tags tab.
 #. `Create a release <https://github.com/adriente/esmpy/releases/new>`_ on
    GitHub and select the created tag. 
 #. Build the distribution with ``make dist`` and check that the
    ``dist/esmpy-0.2.0.tar.gz`` source archive contains all required files. The
-   binary wheel should be found as ``dist/PyGSP-0.2.0.py3-none-any.whl``.
+   binary wheel should be found as ``dist/esmpy-0.2.0.py3-none-any.whl``.
 #. Test the upload and installation process::
 
     $ twine upload --repository-url https://test.pypi.org/legacy/ dist/*
