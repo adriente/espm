@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pyesm"
+name = "espm"
 version = "0.1.1"
 description = "Electron Spectro-Microscopy Python Library"
 readme = "README.md"

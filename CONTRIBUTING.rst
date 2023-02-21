@@ -3,21 +3,21 @@ Contributing
 ============
 
 Contributions are welcome, and they are greatly appreciated! The development of
-this package takes place on `GitHub <https://github.com/adriente/pyesm>`_.
+this package takes place on `GitHub <https://github.com/adriente/espm>`_.
 Issues, bugs, and feature requests should be reported `there
-<https://github.com/adriente/pyesm/issues>`_.
+<https://github.com/adriente/espm/issues>`_.
 Code and documentation can be improved by submitting a `pull request
-<https://github.com/adriente/pyesm/pulls>`_. Please add documentation and
+<https://github.com/adriente/espm/pulls>`_. Please add documentation and
 tests for any new code.
 
 The package can be set up (ideally in a fresh virtual environment) for local
 development with the following::
 
-    $ git clone https://github.com/adriente/pyesm.git
+    $ git clone https://github.com/adriente/espm.git
     $ pip install -e ".[dev]"
 
-You can improve or add functionality in the ``pyesm`` folder, along with
-corresponding unit tests in ``pyesm/tests/test_*.py`` (with reasonable
+You can improve or add functionality in the ``espm`` folder, along with
+corresponding unit tests in ``espm/tests/test_*.py`` (with reasonable
 coverage).
 If you have a nice example to demonstrate the use of the introduced
 functionality, please consider adding a notebook in ``doc/introduction/notebooks``.
@@ -35,22 +35,22 @@ documentation with the following ::
 To iterate faster, you can partially run the test suite, at various degrees of
 granularity, as follows::
 
-   $ pytest pyesm.test.test_utils.py
-   $ pytest pyesm.test.test_estimators.py
+   $ pytest espm.test.test_utils.py
+   $ pytest espm.test.test_estimators.py
 
 Making a release
 ----------------
 
 #. Update the version number and release date in ``setup.py``,
-   ``pyesm/__init__.py`` and ``CHANGELOG.rst``.
-#. Create a git tag with ``git tag -a v0.2.0 -m "pyesm v0.2.0"``.
+   ``espm/__init__.py`` and ``CHANGELOG.rst``.
+#. Create a git tag with ``git tag -a v0.2.0 -m "espm v0.2.0"``.
 #. Push the tag to GitHub with ``git push --tag``. The tag should now
    appear in the releases and tags tab.
-#. `Create a release <https://github.com/adriente/pyesm/releases/new>`_ on
+#. `Create a release <https://github.com/adriente/espm/releases/new>`_ on
    GitHub and select the created tag. 
 #. Build the distribution with ``make dist`` and check that the
-   ``dist/pyesm-0.2.0.tar.gz`` source archive contains all required files. The
-   binary wheel should be found as ``dist/pyesm-0.2.0.py3-none-any.whl``.
+   ``dist/espm-0.2.0.tar.gz`` source archive contains all required files. The
+   binary wheel should be found as ``dist/espm-0.2.0.py3-none-any.whl``.
 #. Test the upload and installation process::
 
     $ twine upload --repository-url https://test.pypi.org/legacy/ dist/*
@@ -71,11 +71,11 @@ Repository organization
   .gitignore          Files ignored by the git revision control system
   .travis.yml         Defines testing on Travis continuous integration
 
-  pyesm/              Contains the modules (the actual toolbox implementation)
+  espm/              Contains the modules (the actual toolbox implementation)
    __init.py__        Load modules at package import
    *.py               One file per module
 
-  pyesm/tests/        Contains the test suites (will be distributed to end user)
+  espm/tests/        Contains the test suites (will be distributed to end user)
    __init.py__        Load modules at package import
    test_*.py          One test suite per module
    test_docstrings.py Test the examples in the docstrings (reference doc)

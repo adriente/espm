@@ -1,7 +1,7 @@
 import hyperspy.api as hs
 import numpy as np
 from pathlib import Path
-from pyesm.utils import rescaled_DH
+from espm.utils import rescaled_DH
 from experiments import compute_metrics, results_string
 import numpy.lib.recfunctions as rfn
 import sys

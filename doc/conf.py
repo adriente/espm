@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import pyesm
+import espm
 
 extensions = [
     'sphinx.ext.viewcode',
@@ -43,7 +43,7 @@ plot_rcparams = {
 plot_pre_code = """
 import numpy as np
 import matplotlib.pyplot as plt
-import pyesm
+import espm
 import hyperspy.api as hs
 """
 
@@ -58,9 +58,9 @@ exclude_patterns = ['_build']
 source_suffix = '.rst'
 master_doc = 'index'
 
-project = 'pyesm'
-version = pyesm.__version__
-release = pyesm.__version__
+project = 'espm'
+version = espm.__version__
+release = espm.__version__
 copyright = 'Adrien Teurtrie and Nathanael Perraudin'
 
 pygments_style = 'sphinx'
@@ -73,6 +73,6 @@ latex_elements = {
     'pointsize': '10pt',
 }
 latex_documents = [
-    ('index', 'pyesm.tex', 'pyesm documentation',
+    ('index', 'espm.tex', 'espm documentation',
      'Adrien Teurtrie and Nathanael Perraudin', 'manual'),
 ]

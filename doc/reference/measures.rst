@@ -2,4 +2,4 @@
 Measures
 ========
 
-.. automodule:: pyesm.measures
+.. automodule:: espm.measures
