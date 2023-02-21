@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from esmpy.conf import BASE_PATH
+from pyesm.conf import BASE_PATH
 from pathlib import Path
 
 def syntheticG(L=200, C=15, seed=None):

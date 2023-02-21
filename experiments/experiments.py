@@ -1,13 +1,13 @@
-from esmpy import estimators 
-from  esmpy import  measures
+from pyesm import estimators 
+from  pyesm import  measures
 import numpy as np
 import conf
-import esmpy.utils as u
+import pyesm.utils as u
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
 import hyperspy.api as hs
-from esmpy.utils import number_to_symbol_list
-from esmpy.models.EDXS_function import elts_dict_from_dict_list
+from pyesm.utils import number_to_symbol_list
+from pyesm.models.EDXS_function import elts_dict_from_dict_list
 import numpy.lib.recfunctions as rfn
 
 #####################################################################

@@ -1,11 +1,11 @@
-from esmpy import models
+from pyesm import models
 import numpy as np
-from esmpy.conf import DATASETS_PATH
+from pyesm.conf import DATASETS_PATH
 from pathlib import Path
 from tqdm import tqdm
-from esmpy.datasets.generate_weights import generate_weights
+from pyesm.datasets.generate_weights import generate_weights
 import hyperspy.api as hs
-from esmpy.datasets.generate_EDXS_phases import unique_elts
+from pyesm.datasets.generate_EDXS_phases import unique_elts
 
 def generate_spim(phases, weights, densities, N, seed=0,continuous = False):
     """
@@ -56,7 +56,7 @@ def save_generated_spim(filename, spim, phases, weights, **kwargs) :
     """Convert dataset to a hyperspy signal."""
 
     s = hs.signals.Signal1D(spim)
-    s.set_signal_type("EDS_ESMPY")
+    s.set_signal_type("EDS_pyesm")
     model_params = kwargs["model_parameters"]
     misc_parameters = {
         "N" : kwargs["N"],

@@ -1,6 +1,6 @@
 import numpy as np
-from esmpy.conf import sigmaL
-from esmpy.measures import trace_xtLx
+from pyesm.conf import sigmaL
+from pyesm.measures import trace_xtLx
 
 
 

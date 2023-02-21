@@ -1,17 +1,17 @@
 import json
 from pathlib import Path
-from esmpy.conf import DB_PATH, SYMBOLS_PERIODIC_TABLE, SIEGBAHN_TO_IUPAC
+from pyesm.conf import DB_PATH, SYMBOLS_PERIODIC_TABLE, SIEGBAHN_TO_IUPAC
 import re
 import numpy as np
-import esmpy.utils as u
+import pyesm.utils as u
 
 def load_table (db_name) :
     """
-    Takes a filename in tables folder of esmpy and returns a tuple of dicts.
+    Takes a filename in tables folder of pyesm and returns a tuple of dicts.
     1st dict : table of the cross sections
     2nd dict : metadata of the table
     
-    Call esmpy.conf.DB_PATH to get the folder of the tables.
+    Call pyesm.conf.DB_PATH to get the folder of the tables.
     """
     db_path = DB_PATH / Path(db_name)
     with open(db_path,"r") as f :
@@ -77,7 +77,7 @@ def modify_table_lines (table, mdata, elements, line, coeff) :
 def save_table (filename, table, mdata) : 
     """
     Saves a table and its metadata in a json file.
-    The structure of the json file is compliant with esmpy.
+    The structure of the json file is compliant with pyesm.
     """
     d = {}
     d["table"] = table

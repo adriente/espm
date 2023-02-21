@@ -1,10 +1,10 @@
 import numpy as np
 from numpy.lib.function_base import kaiser
-from esmpy.measures import mse, spectral_angle, KLdiv_loss, KLdiv, find_min_MSE, find_min_angle, trace_xtLx, Frobenius_loss, ordered_angles, ordered_mse
-from esmpy.measures import KL_loss_surrogate, log_reg, log_surrogate
+from pyesm.measures import mse, spectral_angle, KLdiv_loss, KLdiv, find_min_MSE, find_min_angle, trace_xtLx, Frobenius_loss, ordered_angles, ordered_mse
+from pyesm.measures import KL_loss_surrogate, log_reg, log_surrogate
 import pytest
-from esmpy.conf import log_shift
-from esmpy.utils import create_laplacian_matrix
+from pyesm.conf import log_shift
+from pyesm.utils import create_laplacian_matrix
 
 def base_loss(x_matr, d_matr, a_matr, eps=log_shift):
     """

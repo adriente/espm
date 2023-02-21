@@ -1,5 +1,5 @@
 import numpy as np
-from esmpy.conf import dicotomy_tol, log_shift, maxit_dichotomy
+from pyesm.conf import dicotomy_tol, log_shift, maxit_dichotomy
 
 def dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol, maxit=maxit_dichotomy):
     """

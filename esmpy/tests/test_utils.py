@@ -1,6 +1,6 @@
 from hyperspy.misc.material import _density_of_mixture
 import numpy as np
-import esmpy.utils as u
+import pyesm.utils as u
 
 
 def test_rescale() :

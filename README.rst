@@ -1,4 +1,4 @@
-ESMPY: The Electron Spectro-Microscopy Python Library
+pyesm: The Electron Spectro-Microscopy Python Library
 =====================================================
 
 This library contains algorithms to perform non-negative matrix factorization with 
@@ -13,12 +13,12 @@ Installation
 
 You can install this package from PyPi using::
 
-    $ pip install esmpy
+    $ pip install pyesm
 
 If you want to develop, please use the option::
 
-    $ git clone https://github.com/adriente/esmpy.git
-    $ cd esmpy
+    $ git clone https://github.com/adriente/pyesm.git
+    $ cd pyesm
     $ pip install cython
     $ pip install -e ".[dev]" 
 
@@ -32,20 +32,20 @@ Generate the synthetic dataset. Run the script::
 Documentation
 -------------
 
-The documentation is available at https://esmpy.readthedocs.io/en/latest/
+The documentation is available at https://pyesm.readthedocs.io/en/latest/
 
 You can get started with the following notebooks:
 
-* https://esmpy.readthedocs.io/en/latest/introduction/notebooks/api.html
-* https://esmpy.readthedocs.io/en/latest/introduction/notebooks/toy-problem.html
+* https://pyesm.readthedocs.io/en/latest/introduction/notebooks/api.html
+* https://pyesm.readthedocs.io/en/latest/introduction/notebooks/toy-problem.html
 
 TODOs
 -----
 
 Here is a list of things that we need to do before the version 0.2.0, which will be the first
 official release of the library. The code is already available on github at the following address:  
-https://github.com/adriente/esmpy.git 
-A draft of the documentation is available at: https://esmpy.readthedocs.io/en/latest/
+https://github.com/adriente/pyesm.git 
+A draft of the documentation is available at: https://pyesm.readthedocs.io/en/latest/
 
 * Update the line 40 of `doc/introduction/index.rst` (@Adrien)
 * Make some doc for the dataset module (just the minimum) (@Adrien)

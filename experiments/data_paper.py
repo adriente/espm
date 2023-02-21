@@ -1,7 +1,7 @@
-from esmpy.utils import arg_helper
-from esmpy.datasets.base import generate_dataset, generate_weights
-from esmpy.datasets.generate_EDXS_phases import generate_modular_phases
-from esmpy.conf import DEFAULT_SYNTHETIC_DATA_DICT
+from pyesm.utils import arg_helper
+from pyesm.datasets.base import generate_dataset, generate_weights
+from pyesm.datasets.generate_EDXS_phases import generate_modular_phases
+from pyesm.conf import DEFAULT_SYNTHETIC_DATA_DICT
 import numpy as np
 
 n_phases = 3

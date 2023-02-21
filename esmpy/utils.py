@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.sparse import lil_matrix, block_diag
 from scipy.optimize import nnls
-from esmpy.conf import SYMBOLS_PERIODIC_TABLE, NUMBER_PERIODIC_TABLE
+from pyesm.conf import SYMBOLS_PERIODIC_TABLE, NUMBER_PERIODIC_TABLE
 import json
 from hyperspy.misc.material import atomic_to_weight, density_of_mixture
 from functools import wraps

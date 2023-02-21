@@ -1,14 +1,14 @@
 from sklearn.utils.estimator_checks import check_estimator
-from esmpy.estimators.surrogates import diff_surrogate, smooth_l2_surrogate, smooth_dgkl_surrogate
-from esmpy.estimators import SmoothNMF
-from esmpy.estimators.base import normalization_factor
+from pyesm.estimators.surrogates import diff_surrogate, smooth_l2_surrogate, smooth_dgkl_surrogate
+from pyesm.estimators import SmoothNMF
+from pyesm.estimators.base import normalization_factor
 import numpy as np
-from esmpy.models import EDXS
-from esmpy.datasets.generate_weights import generate_weights
-from esmpy.datasets.base import generate_spim
-from esmpy.measures import trace_xtLx
-from esmpy.utils import create_laplacian_matrix
-from esmpy.models.edxs import G_EDXS
+from pyesm.models import EDXS
+from pyesm.datasets.generate_weights import generate_weights
+from pyesm.datasets.base import generate_spim
+from pyesm.measures import trace_xtLx
+from pyesm.utils import create_laplacian_matrix
+from pyesm.models.edxs import G_EDXS
 import hyperspy.api as hs
 
 def generate_one_sample():
@@ -69,10 +69,10 @@ def generate_one_sample():
     cont = generate_spim(phases, weights, misc_params["densities"], misc_params["N"], seed=misc_params["seed"],continuous = True)
 
     spim_stoch = hs.signals.Signal1D(stoch)
-    spim_stoch.set_signal_type("EDS_ESMPY")
+    spim_stoch.set_signal_type("EDS_pyesm")
 
     spim_cont = hs.signals.Signal1D(cont)
-    spim_cont.set_signal_type("EDS_ESMPY")
+    spim_cont.set_signal_type("EDS_pyesm")
 
     X = spim_stoch.X
     X_cont = spim_cont.X

@@ -2,16 +2,16 @@ r"""
 EDXS model
 ----------
 
-The :mod:`esmpy.models.edxs` module implements the creation of the G matrix that contains a modelisation of the characteristic and continuous X-rays.
+The :mod:`pyesm.models.edxs` module implements the creation of the G matrix that contains a modelisation of the characteristic and continuous X-rays.
 
 """
 
 import numpy as np
-from esmpy.models import PhysicalModel
-from esmpy.models.EDXS_function import G_bremsstrahlung, continuum_xrays, gaussian, read_lines_db, read_compact_db, update_bremsstrahlung, elts_dict_from_dict_list
-from esmpy.conf import DEFAULT_EDXS_PARAMS
-from esmpy.utils import arg_helper, symbol_to_number_dict, symbol_to_number_list
-from esmpy.models.absorption_edxs import absorption_correction, det_efficiency, det_efficiency_from_curve, absorption_mass_thickness
+from pyesm.models import PhysicalModel
+from pyesm.models.EDXS_function import G_bremsstrahlung, continuum_xrays, gaussian, read_lines_db, read_compact_db, update_bremsstrahlung, elts_dict_from_dict_list
+from pyesm.conf import DEFAULT_EDXS_PARAMS
+from pyesm.utils import arg_helper, symbol_to_number_dict, symbol_to_number_list
+from pyesm.models.absorption_edxs import absorption_correction, det_efficiency, det_efficiency_from_curve, absorption_mass_thickness
 # Class to model the EDXS spectra. This is a temporary version since there are some design issues.
 
 
@@ -67,7 +67,7 @@ class EDXS(PhysicalModel):
 
         Notes
         -----
-        See our paper about the esmpy package for more information about the equations of this model.
+        See our paper about the pyesm package for more information about the equations of this model.
         """
         # Diagonal g_matr
         if g_type == "bremsstrahlung" : 
@@ -223,8 +223,8 @@ class EDXS(PhysicalModel):
         Examples
         --------
         >>> import matplotlib.pyplot as plt
-        >>> from esmpy.models.edxs import EDXS
-        >>> from esmpy.conf import DEFAULT_SYNTHETIC_DATA_DICT
+        >>> from pyesm.models.edxs import EDXS
+        >>> from pyesm.conf import DEFAULT_SYNTHETIC_DATA_DICT
         >>> b0, b1 = 5.5367e-5, 0.00192181
         >>> elts_dict = {"Si" : 1.0,"Ca" : 1.0,"O" : 3.0,"C" : 0.3}
         >>> model = EDXS(**DEFAULT_SYNTHETIC_DATA_DICT['model_parameters'])
@@ -291,7 +291,7 @@ def G_EDXS (model_params, g_params, part_W = None, G = None) :
     Parameters
     ----------
     model_params : 
-        :dict: Parameters of the edxs model. Check esmpy.conf.DEFAULT_EDXS_PARAMS for an example. 
+        :dict: Parameters of the edxs model. Check pyesm.conf.DEFAULT_EDXS_PARAMS for an example. 
     g_params : 
         :dict: Parameters specific to the creation of the G matrix.
     part_W : 

@@ -1,11 +1,11 @@
 r"""
-The :mod:`esmpy.models` module implements the physical modelling that is used both for the creation of the G matrix and for the simulation of data.
+The :mod:`pyesm.models` module implements the physical modelling that is used both for the creation of the G matrix and for the simulation of data.
 
 .. note::
 
-    For now esmpy supports only the modelling of EDS data but we will aim at supporting the modelling of EELS data too.
+    For now pyesm supports only the modelling of EDS data but we will aim at supporting the modelling of EELS data too.
 
 """
 
-from esmpy.models.base import PhysicalModel
-from esmpy.models.edxs import EDXS
+from pyesm.models.base import PhysicalModel
+from pyesm.models.edxs import EDXS

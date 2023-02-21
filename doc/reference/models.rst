@@ -2,12 +2,12 @@
 Models
 ======
 
-.. automodule:: esmpy.models
+.. automodule:: pyesm.models
 
-.. automodule:: esmpy.models.base
+.. automodule:: pyesm.models.base
 
-.. automodule:: esmpy.models.EDXS_function
+.. automodule:: pyesm.models.EDXS_function
 
-.. automodule:: esmpy.models.edxs
+.. automodule:: pyesm.models.edxs
 
-.. automodule:: esmpy.models.absorption_edxs
+.. automodule:: pyesm.models.absorption_edxs

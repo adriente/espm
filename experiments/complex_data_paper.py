@@ -1,11 +1,11 @@
-from esmpy.utils import arg_helper
-from esmpy.datasets.base import generate_dataset
-from esmpy.datasets.generate_EDXS_phases import generate_modular_phases
+from pyesm.utils import arg_helper
+from pyesm.datasets.base import generate_dataset
+from pyesm.datasets.generate_EDXS_phases import generate_modular_phases
 import hyperspy.api as hs
 import numpy as np
-from esmpy.datasets.base import generate_spim, save_generated_spim
-from esmpy.datasets.generate_weights import chemical_maps_weights
-from esmpy.conf import DATASETS_PATH, BASE_PATH, DEFAULT_SYNTHETIC_DATA_DICT
+from pyesm.datasets.base import generate_spim, save_generated_spim
+from pyesm.datasets.generate_weights import chemical_maps_weights
+from pyesm.conf import DATASETS_PATH, BASE_PATH, DEFAULT_SYNTHETIC_DATA_DICT
 from pathlib import Path
 
 n_phases = 3

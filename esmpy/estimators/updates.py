@@ -1,7 +1,7 @@
 import numpy as np
-from esmpy.conf import log_shift, dicotomy_tol, sigmaL
+from pyesm.conf import log_shift, dicotomy_tol, sigmaL
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
-from esmpy.estimators.dicotomy import dichotomy_simplex, dichotomy_simplex_acc, dichotomy_simplex_projected_gradient
+from pyesm.estimators.dicotomy import dichotomy_simplex, dichotomy_simplex_acc, dichotomy_simplex_projected_gradient
 
 def multiplicative_step_w(X, G, W, H, log_shift=log_shift, safe=True, l2=False, fixed_W = None):
     """

@@ -1,7 +1,7 @@
 import numpy as np
-from esmpy.models import EDXS
+from pyesm.models import EDXS
 from copy import deepcopy
-from esmpy.conf import DEFAULT_SYNTHETIC_DATA_DICT
+from pyesm.conf import DEFAULT_SYNTHETIC_DATA_DICT
 
 DEFAULT_ELTS = [{"b0" : 4.3298e-04 , "b1" : 6.7732e-02, "elements_dict" :  {"8": 1.0, "12": 0.51, "14": 0.61, "13": 0.07, "20": 0.04, "62": 0.02,
                         "26": 0.028, "60": 0.002, "71": 0.003, "72": 0.003, "29": 0.02}},

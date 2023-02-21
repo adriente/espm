@@ -2,20 +2,20 @@ r"""
 EDXS functions
 --------------
 
-The :mod:`esmpy.models.EDXS_function` module implements misceallenous functions required for the :mod: `esmpy.models.edxs`.
+The :mod:`pyesm.models.EDXS_function` module implements misceallenous functions required for the :mod: `pyesm.models.edxs`.
 This module include bremsstrahlung modelling, database reading and dicts and list manipulation functions.
 
 """
 
 import numpy as np
 from scipy.special import erfc
-from esmpy.models.absorption_edxs import det_efficiency_from_curve,det_efficiency,absorption_correction
-from esmpy.models import edxs as e
+from pyesm.models.absorption_edxs import det_efficiency_from_curve,det_efficiency,absorption_correction
+from pyesm.models import edxs as e
 from collections import Counter
-from esmpy.conf import SYMBOLS_PERIODIC_TABLE
+from pyesm.conf import SYMBOLS_PERIODIC_TABLE
 import json
 
-from esmpy.utils import number_to_symbol_list
+from pyesm.utils import number_to_symbol_list
     
 def gaussian(x, mu, sigma):
     r"""
@@ -210,7 +210,7 @@ def continuum_xrays(x,params_dict={},b0= 0, b1 = 0, E0 = 200,*,elements_dict = {
     Notes
     -----
     * When an empty dict is provided. The continuum X-rays are set to 0. This is useful to perform calculations without the bremsstrahlung for example.
-    * For an example structure of the params_dict parameter, check the DEFAULT_EDXS_PARAMS esmpy.conf.
+    * For an example structure of the params_dict parameter, check the DEFAULT_EDXS_PARAMS pyesm.conf.
     * For a custom detection efficiency, check the spectrum fit notebook.
     """
 
@@ -295,7 +295,7 @@ def elts_dict_from_W (part_W,*,elements = []) :
     Examples
     --------
     >>> import numpy as np
-    >>> from esmpy.models.EDXS_function import elts_dict_from_W
+    >>> from pyesm.models.EDXS_function import elts_dict_from_W
     >>> W = np.ones((4,3))
     >>> elts = ["Si","Ca","O","C"]
     >>> elts_dict_from_W(W,elements = elts)
@@ -303,7 +303,7 @@ def elts_dict_from_W (part_W,*,elements = []) :
 
     Notes
     -----
-    This function should maybe move to another part of esmpy.
+    This function should maybe move to another part of pyesm.
     """
     norm_P = np.mean(part_W / part_W.sum(axis = 0),axis=1)
     elements_dict = {}
@@ -333,7 +333,7 @@ def print_concentrations_from_W (part_W, *, elements = []) :
 
     Notes
     -----
-    This function should maybe move to another part of esmpy.
+    This function should maybe move to another part of pyesm.
     """
     norm_W = part_W / part_W.sum(axis = 0)
     print("Concentrations report")
@@ -368,14 +368,14 @@ def elts_dict_from_dict_list (dict_list) :
     Examples
     --------
     >>> import numpy as np
-    >>> from esmpy.models.EDXS_function import elts_dict_from_dict_list
+    >>> from pyesm.models.EDXS_function import elts_dict_from_dict_list
     >>> dicts = [{"Si" : 1.0},{"Ca" : 1.0},{"O" : 1.0},{"C" : 1.0}]
     >>> elts_dict_from_dict_list(dicts)
         {"Si" : 0.25, "Ca" : 0.25, "O" : 0.25, "C" : 0.25}
 
     Notes
     -----
-    This function should maybe move to another part of esmpy.
+    This function should maybe move to another part of pyesm.
     """
     unique_elts_dict = sum((Counter(x) for x in dict_list),Counter())
     sum_elts = sum(unique_elts_dict.values())
@@ -407,7 +407,7 @@ def update_bremsstrahlung (G,part_W,model_parameters,elements_list, norm = True)
 
     Notes
     -----
-    This function should maybe move to another part of esmpy.
+    This function should maybe move to another part of pyesm.
     """
     elts = elts_dict_from_W(part_W,elements = elements_list)
     model = e.EDXS(**model_parameters)
