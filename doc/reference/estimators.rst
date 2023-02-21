@@ -2,14 +2,14 @@
 Estimators
 ==========
 
-.. automodule:: esmpy.estimators
+.. automodule:: pyesm.estimators
 
 NMF Estimator
 =============
 
-.. autoclass:: esmpy.estimators.NMFEstimator
+.. autoclass:: pyesm.estimators.NMFEstimator
 
 SmoothNMF
 =========
 
-.. autoclass:: esmpy.estimators.SmoothNMF
+.. autoclass:: pyesm.estimators.SmoothNMF

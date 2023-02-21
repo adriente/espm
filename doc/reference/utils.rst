@@ -2,4 +2,4 @@
 Utils
 =====
 
-.. automodule:: esmpy.utils
+.. automodule:: pyesm.utils

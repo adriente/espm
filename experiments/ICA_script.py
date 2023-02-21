@@ -1,10 +1,10 @@
 import hyperspy.api as hs
 import numpy as np
 from pathlib import Path
-from esmpy.utils import rescaled_DH
+from pyesm.utils import rescaled_DH
 from experiments import results_string
 import numpy.lib.recfunctions as rfn
-from esmpy import measures
+from pyesm import measures
 import sys
 
 def metrics_statistics (k,metrics_summary,n_samples) : 

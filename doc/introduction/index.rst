@@ -1,10 +1,10 @@
 =========================
-Introduction to the esmpy
+Introduction to the pyesm
 =========================
 
 This tutorial will show you the basic operations of the toolbox. After
 installing the package with pip, start by opening a python shell, e.g.
-a Jupyter notebook, and import `esmpy`. The package `esmpy` is built on
+a Jupyter notebook, and import `pyesm`. The package `pyesm` is built on
 top of the `hyperspy` and the `scikit-learn` packages. 
 
 The `hyperspy` package is a Python library for multidimensional data analysis.
@@ -19,7 +19,7 @@ package.
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
     >>> import hyperspy.api as hs
-    >>> import esmpy
+    >>> import pyesm
 
 Datasets
 --------
@@ -30,7 +30,7 @@ artificial datasets using the following lines:
 .. plot::
     :context: close-figs
 
-    >>> import esmpy.datasets as ds
+    >>> import pyesm.datasets as ds
     >>> ds.generate_built_in_datasets(seeds_range=5)
     >>> spim = ds.load_particules(sample = 0)
     >>> spim.change_dtype('float64')
@@ -57,7 +57,7 @@ It will use the algorithm developped in this contribution_.
 
 
 .. note::
-    Please see the review article `esmpy : a Python library for the simulation 
+    Please see the review article `pyesm : a Python library for the simulation 
     of STEM-EDXS datasets` for an overview of
     the methods this package leverages.
 

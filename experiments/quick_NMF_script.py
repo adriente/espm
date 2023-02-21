@@ -1,4 +1,4 @@
-from esmpy.conf import DATASETS_PATH, BASE_PATH
+from pyesm.conf import DATASETS_PATH, BASE_PATH
 from pathlib import Path
 import hyperspy.api as hs
 import numpy as np
