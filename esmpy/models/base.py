@@ -11,9 +11,23 @@ import json
 import esmpy.conf as conf
 import numpy as np
 
-class PhysicalModel(ABC) :
+class Model(ABC):
+    def __init__(self):
+        super().__init__()
+
+    @abstractmethod
+    def generate_g_matr (self, g_parameters) :
+        pass
+
+    @abstractmethod
+    def generate_phases (self, phase_parameters) :
+        pass
+
+
+class PhysicalModel(Model) :
     """Abstract class of the models"""
     def __init__(self, e_offset, e_size, e_scale, params_dict,db_name="default_xrays.json", E0 = 200, **kwargs) :
+        super().__init__()
         self.x = self.build_energy_scale(e_offset, e_size, e_scale)
         self.params_dict = params_dict
         if db_name is None :
@@ -28,13 +42,6 @@ class PhysicalModel(ABC) :
         self.phases = None
         self.E0 = E0
 
-    @abstractmethod
-    def generate_g_matr (self, g_parameters) :
-        pass
-
-    @abstractmethod
-    def generate_phases (self, phase_parameters) :
-        pass
 
     def extract_DB (self,db_name) :
         r"""

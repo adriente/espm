@@ -47,7 +47,7 @@ class SmoothNMF(NMFEstimator):
     epsilon_reg : float, default=1
         Slope of log regularization/sparsity at 0.
     algo : str, default="log_surrogate"
-        Algorithm to use for the smooth regularization term. Can be "log_surrogate" or "l2_surrogate".
+        Algorithm to use for the smooth regularization term. Can be "log_surrogate", "l2_surrogate", or "projected_gradient".
     force_simplex : bool, default=True
         If True, force the solution to be in the simplex.
     dicotomy_tol : float, default=1e-3

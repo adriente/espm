@@ -112,12 +112,26 @@ def dicotomy(a, b, func, maxit, tol):
     """
     Dicotomy algorithm searching for func(x)=0.
 
-    Inputs:
-    * a: bound such that func(a) > 0
-    * b: bound such that func(b) < 0
-    * maxit: maximum number of iteration
-    * tol: tolerance - the algorithm stops if |func(sol)| < tol
+    Parameters
+    ----------
+
+    a : float or numpy array
+        Lower bound of the interval such that func(a) > 0
+    b : float or numpy array
+        Upper bound of the interval such that func(b) < 0
+    func : function
+        Function to solve
+    maxit : int
+        Maximum number of iterations - the algorithm stops if |func(sol)| < tol
+    tol : float
+        Tolerance - the algorithm stops if |func(sol)| < tol
     
+
+    Returns
+    -------
+    new : float or numpy array
+        Solution of the equation func(new) = 0
+
     This algorithm works for number or numpy array of any size.
     """
 

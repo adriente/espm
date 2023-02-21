@@ -30,40 +30,31 @@ Generate the synthetic dataset. Run the script::
     $ python experiments/generate_synthetic_dataset.py
 
 
-Running the algorithm
----------------------
+Documentation
+-------------
 
-@Adrien, I am suggesting to remove this section because it is not up to date and confusing. What do you think?
+The documentation is available at https://esmpy.readthedocs.io/en/latest/
 
-Fill a json file with the relevant input parameters such as dataset name, hyperparameters values, etc ... (see the template in scritps/config/). They are two types of configuration files:
-1. Dataset files
-2. Experiment files
+You can get started with the following notebooks:
 
-To run an experiment, you can use::
-
- $ python scripts/synthetic_exp.py json_filename
-
-For example the following line will execute the experiment with the NMF method and the toy dataset.
-```
-python scripts/synthetic_exp.py exp_NMF_Toy.json
-```
-Since the Toy dataset has 10 samples, it will run 10 different experiment. To only run one experiment, you can use
-```
-python scripts/synthetic_exp.py exp_NMF_Toy.json True 3
-```
-This will run the experiment with the sample 3. Here, the argument `True` set the saving of the matrices G,P and A.
-
-The experiment script produces two ouputs : 
-* A .npz file with the G, P and A matrices (one file for each sample if the second argument is set to `True`)
-* A .json file containing the scores obtained based on the ground truth (and informations on the input used). One file is used for all samples.
-
-
-For now it is supported for NMF only and the user needs to provide artificial data with ground truths
+* https://esmpy.readthedocs.io/en/latest/introduction/notebooks/api.html
+* https://esmpy.readthedocs.io/en/latest/introduction/notebooks/toy-problem.html
 
 TODOs
 -----
 
-* Update the `Running the algorithm` of this file (@Adrien)
+Here is a list of things that we need to do before the version 0.2.0, which will be the first
+official release of the library. The code is already available on github at the following address:  
+https://github.com/adriente/esmpy.git 
+A draft of the documentation is available at: https://esmpy.readthedocs.io/en/latest/
+
 * Update the line 40 of `doc/introduction/index.rst` (@Adrien)
 * Make some doc for the dataset module (just the minimum) (@Adrien)
+* Toy dataset: create model class, change outputs, adapts function (@Nati)
+* Separate the spectral and spacial parts
+    - Move generate_EDXS_phases to models
+    - Create a modules for weights
+* Clarify the code for the estimator: remove the L2 loss (@Nati)
+* Add the general problem that we solve in the doc (@Nati)
+* Update the ML notebook with more explanations (@Nati)
 * Check that the doc is somehow understanable and sufficiently complete (@Sebastian)

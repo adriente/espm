@@ -52,6 +52,9 @@ def generate_spim(phases, weights, densities, N, seed=0,continuous = False):
 
 
 def save_generated_spim(filename, spim, phases, weights, **kwargs) : 
+    # data2spim
+    """Convert dataset to a hyperspy signal."""
+
     s = hs.signals.Signal1D(spim)
     s.set_signal_type("EDS_ESMPY")
     model_params = kwargs["model_parameters"]
@@ -90,7 +93,35 @@ def save_generated_spim(filename, spim, phases, weights, **kwargs) :
 
     s.save(filename)
 
+# def generate_spim_sample(args):
+#     """Generate a spim sample."""
+#     # Build a EM model such as EDXS or EELS
+
+#     # Get G
+
+#     # Generate the weights
+
+#     # Generate the phases
+
+#     # Generate the spim
+
+#     # Build the output
+#     sample["model_parameters"] = model_parameters # default empty, dict
+#     sample["misc_parameters"] = misc_parameters # deault empty, dict
+#     sample["shape_2d"] = shape_2d # list of length 2
+#     sample["GW"] = phases # np.array
+#     sample["H"] = weights # np.array
+#     sample["X"] = spim # np.array
+#     sample["Xdot"] = spim2
+#     sample["G"] = G
+#     return sample
+
 def generate_dataset(base_path=DATASETS_PATH, seeds_range = 10, phases = None, weights = None, **kwargs):
+
+    # for seed in range(seeds_range) :
+    #     sample = generate_spim_sample(base_path, seed, phases, weights, **kwargs)
+    #     spim = data2spim(sample)
+    #     spim.save()
     
     # Handle paramters
 
@@ -141,3 +172,4 @@ def generate_dataset(base_path=DATASETS_PATH, seeds_range = 10, phases = None, w
         filename = str(folder / Path("sample_{}".format(seed - fixed_seed)))
         misc_parameters.update({"seed" : seed})
         save_generated_spim(filename, spim, g_phases, g_weights, **kwargs)
+        # save

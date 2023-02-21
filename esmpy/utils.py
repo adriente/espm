@@ -233,7 +233,21 @@ def approx_density(atomic_fraction = False,*,elements_dict = {}) :
         return density_of_mixture(list_wt,list_elts)
 
 def arg_helper(params, d_params):
-    """Check if all parameter of d_params are in params. If not, they are added to params."""
+    """ Check if all parameter of d_params are in params. If not, they are added to params with the default value.
+
+    Parameters
+    ----------
+    params : dict
+        Dictionary of parameters to be checked.
+    d_params : dict
+        Dictionary of default parameters.
+    
+    Returns
+    -------
+    params : dict
+        Dictionary of parameters with the default parameters added if not present.
+    
+    """
     for key in d_params.keys():
         params[key] = params.get(key, d_params[key])
         if isdict(params[key])  and isdict(d_params[key]):
@@ -242,7 +256,33 @@ def arg_helper(params, d_params):
     return params
 
 def check_keys(params, d_params, upperkeys = '',toprint = True):
-    """Check recursively if params and d_params if all the keys of params are in d_params."""
+    """ Check if all parameter of d_params are in params. If not, they are added to params with the default value.
+
+    Parameters
+    ----------
+    params : dict
+        Dictionary of parameters to be checked.
+    d_params : dict
+        Dictionary of default parameters.
+    upperkeys : str
+        String of the upper keys.
+    toprint : bool
+        If True, print the warning.
+    
+    Returns
+    -------
+    params : dict
+        Dictionary of parameters with the default parameters added if not present.
+
+    Examples
+    --------
+    >>> params = {'a':1,'b':2}
+    >>> d_params = {'a':1,'b':2,'c':3}
+    >>> check_keys(params,d_params)
+    >>> params
+    {'a': 1, 'b': 2, 'c': 3}
+    
+    """
     keys = set(d_params.keys())
     for key in params.keys():
         if key not in keys:

@@ -52,4 +52,12 @@ def create_toy_problem(L, C, n_poisson, seed=None):
 
     Y = 1/n_poisson * np.random.poisson(n_poisson * Ydot)
     shape_2d = Hdot.shape[1:]
+
+
     return G, Wdot, Ddot, Hdot, Hdotflat, Ydot, Y, shape_2d, K
+
+
+def data2hysample(out):
+
+
+    return ...

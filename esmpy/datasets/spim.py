@@ -8,7 +8,7 @@ from esmpy.utils import number_to_symbol_list
 import numpy as np
 
 
-class EDS_ESMPY (Signal1D) : 
+class EDS_ESMPY(Signal1D) : 
 
     def __init__ (self,*args,**kwargs) : 
         super().__init__(*args,**kwargs)
@@ -18,6 +18,7 @@ class EDS_ESMPY (Signal1D) :
         self._X = None
         self._Xdot = None
         self._maps_2d = None
+        self.G = None
 
     @property
     def shape_2d (self) : 
