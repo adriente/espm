@@ -35,6 +35,12 @@ artificial datasets using the following lines:
     >>> spim = ds.load_particules(sample = 0)
     >>> spim.change_dtype('float64')
 
+The command `generate_built_in_datasets` will save the generated datasets folder defined 
+in the `espm.conf.py` file. Alternatively, you can also define the path where the data 
+will be saved using the "base_path" argument.
+
+>>> ds.generate_built_in_datasets(base_path="generated_samples", seeds_range=1)
+
 Here the object `spim` is of the :class:`hyperspy._signals.signal1d.Signal1D`.
 This object has different useful attributes and methods. For example, 
 @ADRIEN --- summarize here some of them
