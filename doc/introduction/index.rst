@@ -31,7 +31,7 @@ artificial datasets using the following lines:
     :context: close-figs
 
     >>> import espm.datasets as ds
-    >>> ds.generate_built_in_datasets(seeds_range=5)
+    >>> ds.generate_built_in_datasets(seeds_range=1)
     >>> spim = ds.load_particules(sample = 0)
     >>> spim.change_dtype('float64')
 
