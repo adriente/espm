@@ -11,4 +11,4 @@ recursive-include espm/tables *.json
 recursive-include espm/tables *.txt
 recursive-include espm/ *.yaml
 recursive-include experiments/ *.py
-recursive-include espm/dataset/toy-problem/ *.png
+recursive-include espm/datasets/toy-problem/ *.png
