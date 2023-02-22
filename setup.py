@@ -17,7 +17,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     entry_points={'hyperspy.extensions': 'espm = espm'},
     include_package_data=True,
-    package_data={'tables': ['espm/tables/*.json', 'espm/tables/*.txt']},
+    package_data={'tables': ['espm/tables/*.json', 'espm/tables/*.txt', 'datasets/toy-problem/*.png']},
 
     extras_require={'dev': [
         'flake8', 'pytest', 'jupyterlab', 'twine', 'setuptools', 'wheel', 
