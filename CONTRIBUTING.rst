@@ -74,6 +74,10 @@ Repository organization
   espm/              Contains the modules (the actual toolbox implementation)
    __init.py__        Load modules at package import
    *.py               One file per module
+  espm/tables/       Contains data tables for the EDXS and EDSS models
+   __init.py__        Load modules at package import
+   *.json             data_files for the package  
+   *.txt              data_files for the package  
 
   espm/tests/        Contains the test suites (will be distributed to end user)
    __init.py__        Load modules at package import

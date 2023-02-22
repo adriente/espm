@@ -1,6 +1,12 @@
-include *.md
-include *.py
-include *.yaml
-include *.yml
-include *.json
+global-include *.md
+global-include *.txt
+global-include *.py
+global-include *.yaml
+global-include *.yml
+global-include . *.rst
 recursive-include notebooks *.ipynb
+recursive-include doc *.css
+include doc/reference.bib
+recursive-include espm/tables *.json
+recursive-include espm/tables *.txt
+recursive-include espm/ *.yaml

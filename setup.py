@@ -5,9 +5,9 @@ with open("README.rst", "r") as fh:
 
 setuptools.setup(
     name='espm',
-    version='0.1.3',
+    version='0.1.2',
     description='Electron SPectro-Microscopy Python Library',
-    url='https://github.com/adriente/espm',
+    url='https://github.com/adriente/esmpy',
     author='Adrien Teurtie, Nathanael Perraudin',
     author_email='nathanael.perraudin@sdsc.ethz.ch',
     license='MIT',
