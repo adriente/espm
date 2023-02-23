@@ -11,7 +11,29 @@ from functools import wraps
 _qtg_widgets = []
 _plt_figures = []
 
+def process_losses(losses):
+    """ Process the losses to be plotted
 
+    Parameters
+    ----------
+    losses: np.ndarray
+        Array of losses (output of `espm.estimators.NMFEstimator.get_losses` method)
+
+    Returns
+    -------
+    values: np.ndarray
+        Array of values
+    names: list
+        List of names
+
+    """
+    names = losses.dtype.names
+    values = [[] for _ in names]
+    for data in losses:
+        for i, d in enumerate(data):
+            values[i].append(d)
+    values = np.array(values)
+    return values, names
 
 def create_laplacian_matrix(nx, ny=None):
     """

@@ -39,10 +39,12 @@ def load_toy_weights():
     """
 
     im1 = plt.imread(BASE_PATH / Path("datasets/toy-problem/phase1.png"))
-    im1 = (1-np.mean(im1, axis=2)) *0.5
+    im1 = (1-np.mean(im1, axis=2))
+    im1 = im1/np.max(im1)*0.5
 
     im2 = plt.imread(BASE_PATH / Path("datasets/toy-problem/phase2.png"))
-    im2 = (1-np.mean(im2, axis=2)) *0.5
+    im2 = (1-np.mean(im2, axis=2))
+    im2 = im2/np.max(im2)*0.5
 
     im0 = 1 - im1 - im2 
 

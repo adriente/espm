@@ -19,7 +19,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     r""" Abstract class for NMF algorithms.
 
     This abstract class `espm.estimators.NMFEstimator` is used to implement the different NMF algorithms. It solves problems of the form:
-    
+
     .. math::
 
         \dot{W}, \dot{H} = \arg \min_{W \geq \epsilon, H \geq \epsilon} \frac{1}{2} L(X, GWH) + R(W, H)
@@ -352,7 +352,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 
                 if self.verbose > 0 and np.mod(self.n_iter_, self.eval_print) == 0:
                     print(
-                        f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:0.3f},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
+                        f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:3e},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
                     )
                     pass
                 eval_before = eval_after

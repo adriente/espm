@@ -45,6 +45,12 @@ Here the object `spim` is of the :class:`hyperspy._signals.signal1d.Signal1D`.
 This object has different useful attributes and methods. For example, 
 @ADRIEN --- summarize here some of them
 
+.. note::
+    Please see the review article `espm : a Python library for the simulation 
+    of STEM-EDXS datasets` for an overview of
+    the simulation methods this package leverages.
+
+
 Factorization
 -------------
 
@@ -57,15 +63,60 @@ Taking the non-negative matrix factorization (NMF) is done with the following:
     >>> spim.plot_decomposition_loadings(3)
     >>> spim.plot_decomposition_factors(3)
 
-It will use the algorithm developped in this `contribution`_.
+BIt will use the algorithms developped in this `contribution`_.
 
 .. _contribution: https://link-to-the-paper.com
 
+These algorithms are an important part of this package. They are specialized to solve regularized Poisson NMF problems. Mathematically, they can be expressed as:
 
-.. note::
-    Please see the review article `espm : a Python library for the simulation 
-    of STEM-EDXS datasets` for an overview of
-    the methods this package leverages.
+.. math::
+    
+    \dot{W}, \dot{H} = \arg\min_{W\geq\epsilon, H\geq\epsilon, \sum_i H_{ij}  = 1} D_{GKL}(X || GWH) + \lambda tr ( H^\top \Delta H) + \mu \sum_{i,j} (\log H_{ij} +  \epsilon_{reg})$$
+
+Here :math:`D_{GKL}` is the fidelity term, i.e. the Generalized KL divergence 
+
+.. math::
+    
+    D_{GKL}(X \| Y) = \sum_{i,j} X_{ij} \log \frac{X_{ij}}{Y_{ij}} - X_{ij} + Y_{ij}
+
+The loss is regularized using two terms: a Laplacian regularization on :math:`H` and a log regularization on :math:`H`. 
+:math:`\lambda` and :math:`\mu` are the regularization parameters.
+The Laplacian regularization is defined as:
+
+.. math:: 
+    
+    \lambda tr ( H^\top \Delta H)
+
+where :math:`\Delta` is the Laplacian operator (it can be created using the function :mod:`espm.utils.create_laplacian_matrix`). 
+**Note that the columns of the matrices :math:`H` and :math:`X` are assumed to be images.** 
+
+The log regularization is defined as:
+
+.. math:: 
+    
+    \mu \sum_{i,j} (\log H_{ij} +  \epsilon_{reg})
+
+where :math:``\epsilon_{reg}` is the slope of log regularization at 0. This term acts similarly to an L1 penalty but affects less larger values. 
+
+Finally, we assume :math:`W,H\geq \epsilon` and that the lines of :math:`H` sum to 1: 
+
+.. math:: 
+    
+    \sum_i H_{ij}  = 1.
+
+The size of:
+
+- :math:`X` is `(n, p)`
+- :math:`W` is `(m, k)`
+- :math:`H` is `(k, p)`
+- :math:`G` is `(n, m)`
+
+The columns of the matrices :math:`H` and :math:`X` are assumed to be images, typically for the smoothness regularization.
+In terms of shape, we have :math:`n_x \cdot n_y = p`, where :math:`n_x` and :math:`n_y` are the number of pixels in the x and y directions.
+
+A detailed example on the use these algorithms can be found in this `notebook`_.
+
+.. _notebook: https://github.com/adriente/espm/blob/main/notebooks/toy-ML.ipynb
 
 
 

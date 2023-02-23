@@ -11,37 +11,49 @@ from copy import deepcopy
 
 
 class SmoothNMF(NMFEstimator):
-    r""" SmoothNMF - NMF with a smooth regularization term
+    r"""SmoothNMF - NMF with a smooth regularization term
 
-    The class :class:`espm.estimators.smooth_nmf` implements the regularized NMF algorithm.  It solves problems of the form:
+    We encourage to read the example available in the documentation:    
+    https://espm.readthedocs.io/en/latest/introduction/notebooks/toy-problem.html 
+    
+    The corresponding notebook is available on github:
+    https://github.com/adriente/espm/blob/main/notebooks/toy-ML.ipynb
+
+
+    The class `SmoothNMF` implements the regularized NMF algorithm. It solves problems of the form:
 
     .. math::
 
-        \dot{W}, \dot{H} = \arg \min_{W \geq \epsilon, H \geq \epsilon} D_{GKL} ( X ||  GWH ) + \lambda_L tr ( H \Delta H^\top) + \mu^\top \log (H + \epsilon_{reg}) 1
+        \dot{W}, \dot{H} = \arg \min_{W \geq \epsilon, H \geq \epsilon} D_{GKL}(X || GWH) +
+        \lambda_L tr(H \Delta H^\top) + \mu  \sum_{ij} \log(H_{ij} + \epsilon_{reg})
 
-    where 
+    where:
     
-    * :math:`D_{GKL}` is a loss function, i.e the Generalized KL divergence, 
-        
+    - `D_{GKL}` is the Generalized KL divergence loss function defined as:
+
         .. math::
 
             D_{GKL}(X || Y) = \sum_{i,j} X_{ij} \log \frac{X_{ij}}{Y_{ij}} - X_{ij} + Y_{ij}
 
-        Check the documentation of the class :class:`espm.estimators.NMFEstimator` for more details.
+        See the documentation of the class :mod:`espm.estimators.NMFEstimator` for more details.
+    
+    - `\Delta` is the Laplacian operator (it can be created using the function `create_laplacian_matrix` from the `utils` module).
+    
+    - `\epsilon_{reg}` is the slope of the log regularization/sparsity at 0 (you probably want to leave this to 1).
 
-    * :math:`\Delta` is the Laplacian operator (it can be created using the function :mod:`espm.utils.create_laplacian_matrix`), 
-    * :math:`\epsilon_{reg}` is the slope of log regularization/sparsity at 0 (you probably want to leave this to one), and 
-    * :math:`\mu` is a regularization parameter, which is similar to an L1 sparsity penalty.
+    - `\lambda_L` is a regularization parameter, which encourages smoothness in the columns of `H`.
+    
+    - `\mu` is a regularization parameter, which is similar to an L1 sparsity penalty.
 
     The size of:
 
-    * :math:`X` is :math:`(n, p)`,
-    * :math:`W` is :math:`(m, k)`,
-    * :math:`H` is :math:`(k, p)`,
-    * :math:`G` is :math:`(n, m)`.
+    - `X` is `(n, p)`
+    - `W` is `(m, k)`
+    - `H` is `(k, p)`
+    - `G` is `(n, m)`
 
-    The columns of the matrices :math:`H` and :math:`X` are assumed to be images. This is used typically for the smoothness regularization.
-    The parameter `shape_2d` defines the shape of the images, i.e. `shape_2d[0]*shape_2d[1] = p`.
+    The columns of the matrices `H` and `X` are assumed to be images, typically for the smoothness regularization.
+    The parameter `shape_2d` defines the shape of the images, i.e., `shape_2d[0]*shape_2d[1] = p`.
     
     Parameters
     ----------
@@ -52,22 +64,17 @@ class SmoothNMF(NMFEstimator):
     mu : float, default=0
         Regularization parameter for the log regularization/sparsity term.
     epsilon_reg : float, default=1
-        Slope of log regularization/sparsity at 0.
+        Slope of the log regularization/sparsity at 0.
     algo : str, default="log_surrogate"
         Algorithm to use for the smooth regularization term. Can be "log_surrogate", "l2_surrogate", or "projected_gradient".
     force_simplex : bool, default=True
         If True, force the solution to be in the simplex.
     dicotomy_tol : float, default=1e-3
-        Tolerance for the dicotomy algorithm.
+        Tolerance for the dichotomy algorithm.
     gamma : float, default=None
-        Initial value for the step size. If None, it is set to Lipschitz constant of the gradient.
+        Initial value for the step size. If None, it is set to the Lipschitz constant of the gradient.
     **kwargs : dict
-        Additional parameters for the :class:`espm.estimators.nmf.NMFEstimator` class.
-
-    Examples
-    --------
-    
-
+        Additional parameters for the `NMFEstimator` class.
 
     """        
 
