@@ -24,6 +24,9 @@ export DISPLAY = :99
 test:
 	pytest espm
 
+clean-doc:
+	rm -rf doc/_build
+
 doc:
 	sphinx-build -b html -d doc/_build/doctrees doc doc/_build/html
 	sphinx-build -b linkcheck -d doc/_build/doctrees doc doc/_build/linkcheck

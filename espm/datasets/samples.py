@@ -2,29 +2,6 @@ import numpy as np
 from espm.models import ToyModel
 from espm.weights import load_toy_weights
 
-# def syntheticG(L=200, C=15, seed=None):
-
-#     np.random.seed(seed=seed)
-#     n_el = 45
-#     n_gauss = np.random.randint(2, 5,[C])
-#     l = np.arange(0, 1, 1/L)
-#     mu_gauss = np.random.rand(n_el)
-#     sigma_gauss = 1/n_el + np.abs(np.random.randn(n_el))/n_el/5
-
-#     G = np.zeros([L,C])
-
-#     def gauss(x, mu, sigma):
-#         # return np.exp(-(x-mu)**2/(2*sigma**2)) / (sigma * np.sqrt(2*np.pi))
-#         return np.exp(-(x-mu)**2/(2*sigma**2))
-
-#     for i, c in enumerate(n_gauss):
-#         inds = np.random.choice(n_el, size=[c] , replace=False)
-#         for ind in inds:
-#             w = 0.1+0.9*np.random.rand()
-#             G[:,i] += w * gauss(l, mu_gauss[ind], sigma_gauss[ind])
-#     return G
-
-
 def create_toy_sample(L, C, n_poisson, seed=None):
     """Create a toy sample.
 
@@ -43,33 +20,35 @@ def create_toy_sample(L, C, n_poisson, seed=None):
     -------
     sample : dict
         Dictionary containing the sample.
-        The dictionary contains the following keys:
-        - model_parameters: dict
-            Dictionary containing the model parameters.
-        - misc_parameters: dict
-            Dictionary containing the misc parameters. Default empty.
-        - shape_2d: list
-            List of length 2 containing the shape of the 2D images.
-        - GW: np.array
-            The marrix corresponding to the phases.
-        - H: np.array
-            The matrix corresponding to the weights.
-        - X: np.array
-            The matrix corresponding to the noisy data.
-        - Xdot: np.array
-            The matrix corresponding to the noiseless data.
-        - G: np.array
-            The matrix corresponding to the G matrix.
 
-    Examples:
-    ---------
+    The dictionary contains the following keys:
+    - model_parameters: dict
+        Dictionary containing the model parameters.
+    - misc_parameters: dict
+        Dictionary containing the misc parameters. Default empty.
+    - shape_2d: list
+        List of length 2 containing the shape of the 2D images.
+    - GW: np.array
+        The marrix corresponding to the phases.
+    - H: np.array
+        The matrix corresponding to the weights.
+    - X: np.array
+        The matrix corresponding to the noisy data.
+    - Xdot: np.array
+        The matrix corresponding to the noiseless data.
+    - G: np.array
+        The matrix corresponding to the G matrix.
+
+    Examples
+    --------
 
     .. plot::
         :context: close-figs
 
         >>> import matplotlib.pyplot as plt
         >>> from espm.datasets import create_toy_sample
-        >>> sample = create_toy_sample(200, 15, 400, seed=0)
+        >>> L, C, n_poisson = 200, 15, 400,
+        >>> sample = create_toy_sample(L, C, n_poisson, seed=0)
         >>> Hdot = sample["H"]
         >>> GW = sample["GW"]
         >>> G = sample["G"]
@@ -94,7 +73,7 @@ def create_toy_sample(L, C, n_poisson, seed=None):
 
     """
 
-    Hdot = load_toy_weights()
+    Hdot = load_toy_weights().transpose(2, 0, 1)
     K = len(Hdot)
     model = ToyModel(L, C, K, seed=seed)
     model.generate_g_matr()

@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
+r""" The :mod:`espm.measures` module implements different measures for the matrix factorisation problem.
+In particular it contains the different losses and regularizers used in :mod:`espm.estimator` module. 
+It also contains different metrics to evaluate the results.
 
-r"""
-The :mod:`espm.measures` module implements different measures for the matrix factorisation problem. In particular it contains the different losses and regularizers used in :mod:`espm.estimator` module. It also contains different metrics to evaluate the results.
 """
 
 import numpy as np
@@ -22,8 +22,8 @@ def spectral_angle(v1, v2):
     
     :rtype: float
 
-    Examples
-    --------
+    Example
+    -------
     
     >>> import numpy as np
     >>> from espm.measures import spectral_angle

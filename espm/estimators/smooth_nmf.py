@@ -88,6 +88,13 @@ class SmoothNMF(NMFEstimator):
     def fit_transform(self, X, y=None, W=None, H=None):
         """Fit the model to the data X and returns the transformed data.
 
+        The size of:
+
+        * :math:`X` is :math:`(n, p)`,
+        * :math:`W` is :math:`(m, k)`,
+        * :math:`H` is :math:`(k, p)`,
+        * :math:`G` is :math:`(n, m)`.    
+    
         Parameters
         ----------
         X : array-like, shape (n, p)
@@ -98,14 +105,6 @@ class SmoothNMF(NMFEstimator):
             If init='custom', it is used as initial guess for the solution.
         H : array-like, shape (k, p)
             If init='custom', it is used as initial guess for the solution.
-
-
-        The size of:
-
-        * :math:`X` is :math:`(n, p)`,
-        * :math:`W` is :math:`(m, k)`,
-        * :math:`H` is :math:`(k, p)`,
-        * :math:`G` is :math:`(n, m)`.
 
         Returns
         -------

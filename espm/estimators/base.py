@@ -173,6 +173,13 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         """Learn a NMF model for the data X and returns the transformed data.
         This is more efficient than calling fit followed by transform.
 
+        The size of:
+
+        * :math:`X` is :math:`(n, p)`,
+        * :math:`W` is :math:`(m, k)`,
+        * :math:`H` is :math:`(k, p)`,
+        * :math:`G` is :math:`(n, m)`.
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n, p)
@@ -183,14 +190,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             If specified, it is used as initial guess for the solution.
         H : array-like of shape (k, p)
             If specified, it is used as initial guess for the solution.
-        
-
-        The size of:
-
-        * :math:`X` is :math:`(n, p)`,
-        * :math:`W` is :math:`(m, k)`,
-        * :math:`H` is :math:`(k, p)`,
-        * :math:`G` is :math:`(n, m)`.
 
         Returns
         -------

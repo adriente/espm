@@ -15,8 +15,8 @@ def load_toy_weights():
     Hdot : np.ndarray
         The weights of the toy problem.
 
-    Example
-    -------
+    Examples
+    --------
 
     .. plot::
         :context: close-figs
@@ -25,12 +25,17 @@ def load_toy_weights():
         >>> import matplotlib.pyplot as plt
         >>> Hdot = load_toy_weights()
         >>> print(Hdot.shape)
-        (3, 200, 200)
+        (200, 200, 3)
         >>> print(Hdot.dtype)
         float64
-        >>> plt.imshow(Hdot[0])
-        >>> plt.show()       
-     
+        >>> plt.figure(figsize=(10,3))
+        >>> for i in range(3):
+        ...     plt.subplot(1,3,i+1)
+        ...     plt.imshow(Hdot[:,:,i], cmap=plt.cm.gray_r)
+        ...     plt.axis("off")
+        ...     plt.title(f"Map {i+1}")
+        >>> plt.show()
+
     """
 
     im1 = plt.imread(BASE_PATH / Path("datasets/toy-problem/phase1.png"))
@@ -41,10 +46,9 @@ def load_toy_weights():
 
     im0 = 1 - im1 - im2 
 
-    Hdot = np.array([im0, im1, im2])
+    Hdot = np.array([im0, im1, im2]).transpose(1,2,0)
 
     return Hdot
-   
 
 def random_weights(shape_2d, n_phases=3, seed=0) :
     """ Generates a random weight matrix with a uniform distribution.
@@ -66,6 +70,7 @@ def random_weights(shape_2d, n_phases=3, seed=0) :
         Weight matrix with uniform distribution.
     
     """
+
     np.random.seed(seed)
     rnd_array = np.random.rand(*shape_2d, n_phases)
     weights = rnd_array/np.sum(rnd_array, axis=2, keepdims=True)
@@ -92,19 +97,26 @@ def laplacian_weights(shape_2d, n_phases=3, seed=0) :
     weights : numpy.ndarray
         Weight matrix with laplacian distribution.
 
-    Example
-    -------
+    Examples
+    --------
 
     .. plot::
         :context: close-figs
 
         >>> import numpy as np
         >>> import matplotlib.pyplot as plt
+        >>> from espm.weights import laplacian_weights
         >>> weights = laplacian_weights((100,100), 3, 0)
-        >>> plt.imshow(weights[:,:,0])
+        >>> plt.figure(figsize=(10,3))
+        >>> for i in range(3):
+        ...     plt.subplot(1,3,i+1)
+        ...     plt.imshow(weights[:,:,i], cmap=plt.cm.gray_r)
+        ...     plt.axis("off")
+        ...     plt.title(f"Map {i+1}")
         >>> plt.show()
 
     """
+    
     np.random.seed(seed)
     rnd_array = np.random.rand(shape_2d[0], shape_2d[1], n_phases)
     rnd_f = []

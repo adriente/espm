@@ -31,3 +31,7 @@ jobs:
     - name: Test with pytest
       run: |
         pytest espm
+
+    - name: Test documentation
+      run: |
+        make doc

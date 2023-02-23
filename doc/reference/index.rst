@@ -6,7 +6,8 @@ API reference
    :maxdepth: 2
 
    models
-   estimators
    weights
+   datasets
+   estimators
    measures
    utils

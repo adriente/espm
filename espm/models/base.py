@@ -46,6 +46,24 @@ class ToyModel(Model):
     seed : int, optional
         Seed for the random number generator.
 
+    Examples
+    --------
+
+    .. plot::
+        :context: close-figs
+
+        >>> from espm.models import ToyModel
+        >>> import matplotlib.pyplot as plt
+        >>> model = ToyModel(L=200, C=15, K=3, seed=0)
+        >>> model.generate_g_matr()
+        >>> model.generate_phases()
+        >>> print(model.G.shape)
+        (200, 15)
+        >>> print(model.phases.shape)
+        (200, 3)
+        >>> plt.plot(model.phases)
+
+
     """
     def __init__(self, L: int=200, C: int=15, K: int=3, seed: Optional[int]=None) -> None:
         super().__init__()
