@@ -96,7 +96,7 @@ The log regularization is defined as:
     
     \mu \sum_{i,j} (\log H_{ij} +  \epsilon_{reg})
 
-where :math:``\epsilon_{reg}` is the slope of log regularization at 0. This term acts similarly to an L1 penalty but affects less larger values. 
+where :math:`\epsilon_{reg}` is the slope of log regularization at 0. This term acts similarly to an L1 penalty but affects less larger values. 
 
 Finally, we assume :math:`W,H\geq \epsilon` and that the lines of :math:`H` sum to 1: 
 

@@ -22,8 +22,8 @@ def spectral_angle(v1, v2):
     
     :rtype: float
 
-    Example
-    -------
+    Examples
+    --------
     
     >>> import numpy as np
     >>> from espm.measures import spectral_angle
