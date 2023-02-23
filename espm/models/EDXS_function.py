@@ -23,17 +23,17 @@ def gaussian(x, mu, sigma):
 
     Parameters
     ----------
-    x : 
-        :np.array 1D: Energy scale.
-    mu : 
-        :float: Mean of the gaussian.
-    sigma : 
-        :float: Standard deviation of the gaussian.
+    x : np.array 1D
+        Energy scale.
+    mu : float
+        Mean of the gaussian.
+    sigma : float
+        Standard deviation of the gaussian.
     
     Returns
     -------
-    gaussian
-        :np.array 1D: Gaussian distribution on x, with mean mu and standard deviation sigma.
+    gaussian : np.array 1D
+        Gaussian distribution on x, with mean mu and standard deviation sigma.
     """
     return (
         1

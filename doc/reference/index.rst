@@ -7,5 +7,6 @@ API reference
 
    models
    estimators
+   weights
    measures
    utils

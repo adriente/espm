@@ -1,6 +1,10 @@
 espm: The Electron Spectro-Microscopy Python Library
 =====================================================
 
+.. image:: https://readthedocs.org/projects/espm/badge/?version=latest
+    :target: https://espm.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
 This library contains algorithms to perform non-negative matrix factorization with 
 diverse regularisation (e.g. Laplacian or L1) and contraints (e.g. simplex).
 

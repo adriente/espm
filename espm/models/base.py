@@ -10,8 +10,10 @@ from pathlib import Path
 import json
 import espm.conf as conf
 import numpy as np
+from typing import Optional
 
 class Model(ABC):
+    """Abstract class for models."""
     def __init__(self):
         super().__init__()
 
@@ -23,6 +25,96 @@ class Model(ABC):
     def generate_phases (self, phase_parameters) :
         pass
 
+
+
+class ToyModel(Model):
+    r"""Toy model.
+    
+    Simple model with a random G matrix and phases.
+
+    The G matrix is generated with a random number of gaussians per column.
+    The phases are generated using a vector drawn from a Laplacian distribution and multiplied by the G matrix.
+    
+    Parameters
+    ----------
+    L : int
+        Length of the phases.
+    C : int
+        Number of possible components in the phases.
+    K : int
+        Number of phases.
+    seed : int, optional
+        Seed for the random number generator.
+
+    """
+    def __init__(self, L: int=200, C: int=15, K: int=3, seed: Optional[int]=None) -> None:
+        super().__init__()
+        self.L = L
+        self.C = C
+        self.K = K
+        self.seed = seed
+        self.G = None
+        self.phases = None
+    
+    def generate_g_matr (self, *args, **kwargs) -> None:
+        """Generate G matrix.
+
+        Parameters
+        ----------
+        args : ignored
+        kwargs : ignored
+
+        Returns
+        -------
+        None
+
+        """
+
+        if self.G is not None :
+            return
+        
+        np.random.seed(seed=self.seed)
+        n_el = 45
+        n_gauss = np.random.randint(2, 5,[self.C])
+        l = np.arange(0, 1, 1/self.L)
+        mu_gauss = np.random.rand(n_el)
+        sigma_gauss = 1/n_el + np.abs(np.random.randn(n_el))/n_el/5
+
+        G = np.zeros([self.L,self.C])
+
+        def gauss(x, mu, sigma):
+            # return np.exp(-(x-mu)**2/(2*sigma**2)) / (sigma * np.sqrt(2*np.pi))
+            return np.exp(-(x-mu)**2/(2*sigma**2))
+
+        for i, c in enumerate(n_gauss):
+            inds = np.random.choice(n_el, size=[c] , replace=False)
+            for ind in inds:
+                w = 0.1+0.9*np.random.rand()
+                G[:,i] += w * gauss(l, mu_gauss[ind], sigma_gauss[ind])
+        self.G = G
+
+    def generate_phases (self, *args, **kwargs) -> None:
+        """Generate phases.
+
+        Parameters
+        ----------
+        args : ignored
+        kwargs : ignored
+
+        Returns
+        -------
+        None
+
+        """
+
+        if self.phases is not None :
+            return
+        Wdot = np.abs(np.random.laplace(size=[self.C, self.K]))
+        self.Wdot = Wdot / np.mean(Wdot)/self.L
+
+        self.generate_g_matr()
+        self.phases = self.G @ self.Wdot
+    
 
 class PhysicalModel(Model) :
     """Abstract class of the models"""

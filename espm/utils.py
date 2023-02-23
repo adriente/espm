@@ -1,4 +1,4 @@
-""""""
+"""Utils for the ESPM package"""
 
 import numpy as np
 from scipy.sparse import lil_matrix, block_diag

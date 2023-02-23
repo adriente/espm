@@ -1,9 +1,9 @@
 import numpy as np
-from skimage.filters import median
 from espm.models.EDXS_function import gaussian
 import scipy.ndimage as ndimage
 from skimage.filters import threshold_otsu
 import hyperspy.api as hs
+from espm.weights import random_weights, laplacian_weights
 
 class Material(object):
     
@@ -94,23 +94,7 @@ class Material(object):
     def finalize_weight(self):
         self.weights[:,:,0] = 1 - np.sum(self.weights[:,:,0:], axis=2)
         return self.weights
-    
-
-def random_weights(shape_2d, n_phases=3, seed=0) :
-    np.random.seed(seed)
-    rnd_array = np.random.rand(shape_2d[0], shape_2d[1], n_phases)
-    weights = rnd_array/np.sum(rnd_array, axis=2, keepdims=True)
-    return weights
-    
-def laplacian_weights(shape_2d, n_phases=3, seed=0) :
-    np.random.seed(seed)
-    rnd_array = np.random.rand(shape_2d[0], shape_2d[1], n_phases)
-    rnd_f = []
-    for i in range(rnd_array.shape[2]):
-        rnd_f.append(median(median(rnd_array[:,:,i])))
-    rnd_f = np.array(rnd_f).transpose([1,2,0])
-    weights = rnd_f/np.sum(rnd_f, axis=2, keepdims=True)
-    return weights
+ 
 
 def gaussian_ripple_weights(shape_2d, width = 1, seed = 0, **kwargs) : 
     mat = Material(shape_2d, 2)
@@ -187,3 +171,4 @@ def generate_weights(weight_type, shape_2d, n_phases=3, seed=0, **params):
         return wedge_weights(shape_2d=shape_2d,seed=seed,**params)
     else:
         raise ValueError("Wrong weight_type: {}. Accepted types : random, laplacian, sphere, gaussian_ripple, wedge".format(weight_type))
+    
