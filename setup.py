@@ -22,7 +22,7 @@ setuptools.setup(
     extras_require={'dev': [
         'flake8', 'pytest', 'jupyterlab', 'twine', 'setuptools', 'wheel', 
         'sphinx','numpydoc','sphinxcontrib-bibtex','sphinx-gallery',
-        'memory_profiler','sphinx-rtd-theme','sphinx-copybutton', 'nbsphinx'
+        'memory_profiler','sphinx-rtd-theme','sphinx-copybutton', 'nbsphinx', 'pandoc'
         ]},
     classifiers=[
         'Development Status :: 5 - Production/Stable',
