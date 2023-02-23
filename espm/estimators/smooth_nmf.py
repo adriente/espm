@@ -13,18 +13,25 @@ from copy import deepcopy
 class SmoothNMF(NMFEstimator):
     r""" SmoothNMF - NMF with a smooth regularization term
 
-    The class :mod:`espm.estimators.smooth_nmf` implements the regularized NMF algorithm.  It solves problems of the form:
+    The class :class:`espm.estimators.smooth_nmf` implements the regularized NMF algorithm.  It solves problems of the form:
 
     .. math::
 
-        \dot{W}, \dot{H} = \arg \min_{W \geq \epsilon, H \geq \epsilon} L ( X,  GWH ) + \lambda_L tr ( H \Delta H^\top) + \mu^\top \log (H + \epsilon_{reg}) 1
+        \dot{W}, \dot{H} = \arg \min_{W \geq \epsilon, H \geq \epsilon} D_{GKL} ( X ||  GWH ) + \lambda_L tr ( H \Delta H^\top) + \mu^\top \log (H + \epsilon_{reg}) 1
 
     where 
     
-    * :math:`L` is a loss function (L2 or Generalized KL divergence), 
-    * :math:`\Delta` is the Laplacian operator, 
-    * :math:`\epsilon_{reg}` is the slope of log regularization/sparsity at 0, and 
-    * :math:`\mu` is a regularization parameter.
+    * :math:`D_{GKL}` is a loss function, i.e the Generalized KL divergence, 
+        
+        .. math::
+
+            D_{GKL}(X || Y) = \sum_{i,j} X_{ij} \log \frac{X_{ij}}{Y_{ij}} - X_{ij} + Y_{ij}
+
+        Check the documentation of the class :class:`espm.estimators.NMFEstimator` for more details.
+
+    * :math:`\Delta` is the Laplacian operator (it can be created using the function :mod:`espm.utils.create_laplacian_matrix`), 
+    * :math:`\epsilon_{reg}` is the slope of log regularization/sparsity at 0 (you probably want to leave this to one), and 
+    * :math:`\mu` is a regularization parameter, which is similar to an L1 sparsity penalty.
 
     The size of:
 
@@ -56,6 +63,10 @@ class SmoothNMF(NMFEstimator):
         Initial value for the step size. If None, it is set to Lipschitz constant of the gradient.
     **kwargs : dict
         Additional parameters for the :class:`espm.estimators.nmf.NMFEstimator` class.
+
+    Examples
+    --------
+    
 
 
     """        

@@ -22,14 +22,36 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     
     .. math::
 
-        \dot{W}, \dot{H} = \arg \min_{W \geq \epsilon, H \geq \epsilon} \frac{1}{2} L(X - GWH) + R(W, H)
+        \dot{W}, \dot{H} = \arg \min_{W \geq \epsilon, H \geq \epsilon} \frac{1}{2} L(X, GWH) + R(W, H)
 
     where 
     :math:`X` is the data matrix, 
     :math:`G` is a matrix of known values, 
     :math:`W` and :math:`H` are the matrices to be learned, 
     :math:`R` is a regularization term and 
-    :math:`L` is a loss function. The loss function can be the Frobenius norm (L2) or the KL divergence.
+    :math:`L` is a loss function. that represent the generalized KL divergence. As a reminder, the generalized KL divergence is defined as:
+
+    .. math::
+
+        D_{GKL}(X || Y) = \sum_{i,j} X_{ij} \log \frac{X_{ij}}{Y_{ij}} - X_{ij} + Y_{ij}
+
+    where :math:`Y = GWH`. Since :math:`X` does not depend on :math:`W` and :math:`H`, we obtain the loss function:
+
+    .. math::
+
+        L(X, Y) = - \sum_{i,j} X_{ij} \log \frac{GWH_{ij}} + GWH_{ij}
+
+    The Generalized KL divergence has the advantage of being zero when :math:`X = Y`, which is not the case for our loss.
+    Therefore, we shift the loss function by a constant :math:`C` such that it equals the Generalized KL divergence. 
+    This constant is stored in the attribute :attr:`espm.estimators.NMFEstimator.const_KL_`.
+
+    The loss function can also be selected to be the Frobenius norm. In this case, the loss function is:
+
+    .. math::
+
+        L(X, Y) = \frac{1}{2} \sum_{i,j} (X_{ij} - Y_{ij})^2
+
+    While the code will work, it is not recommended to use the Frobenius norm as a loss function. This code is optimized for the KL divergence.
 
     The size of:
 

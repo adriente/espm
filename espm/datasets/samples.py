@@ -74,6 +74,7 @@ def create_toy_sample(L, C, n_poisson, seed=None):
     """
 
     Hdot = load_toy_weights().transpose(2, 0, 1)
+    shape_2d = Hdot.shape[1:]
     K = len(Hdot)
     model = ToyModel(L, C, K, seed=seed)
     model.generate_g_matr()
@@ -81,11 +82,11 @@ def create_toy_sample(L, C, n_poisson, seed=None):
     G = model.G
     Ddot = model.phases
     Wdot = model.Wdot
-    Hdotflat = Hdot.reshape([K, -1])
-    Ydot = Ddot @ Hdotflat
+    Hdot = Hdot.reshape([K, -1])
+    Ydot = Ddot @ Hdot
 
     Y = 1/n_poisson * np.random.poisson(n_poisson * Ydot)
-    shape_2d = Hdot.shape[1:]
+    
 
     # Build sample
     model_parameters = {}
