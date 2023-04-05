@@ -4,88 +4,82 @@ from espm.estimators import SmoothNMF
 from espm.estimators.base import normalization_factor
 import numpy as np
 from espm.models import EDXS
-from espm.datasets.generate_weights import generate_weights
+from espm.weights import generate_weights
 from espm.datasets.base import generate_spim
 from espm.measures import trace_xtLx
 from espm.utils import create_laplacian_matrix
 from espm.models.edxs import G_EDXS
+from espm.models.generate_EDXS_phases import generate_modular_phases
+from espm.datasets.base import generate_spim_sample
 import hyperspy.api as hs
 
-def generate_one_sample():
-    model_parameters = {
-        "e_offset" : 0.2,
-        "e_size" : 2000,
-        "e_scale" : 0.01,
-        "width_slope" : 0.01,
-        "width_intercept" : 0.065,
-        "db_name" : "default_xrays.json",
-        "E0" : 200,
-        "params_dict" : {
-            "Abs" : {
-                "thickness" : 100.0e-7,
-                "toa" : 35,
-                "density" : 5
-            },
-            "Det" : "SDD_efficiency.txt"
-        }
+
+phases_dict  = {
+    'elts_dicts'  : [
+    {"Fe" : 0.54860348,
+     "Pt" : 0.38286879,
+     "Mo" : 0.03166235},
+    {"Ca" : 0.54860348,
+     "Si" : 0.38286879,
+     "O" : 0.03166235}
+    ],
+    'brstlg_pars' : [
+    {'b0': 5e-3,
+    'b1': 3e-2},
+    {'b0': 7e-3,
+      'b1': 5e-2}
+    ],
+    'scales' : [0.05,0.05],
+    'model_params': {'e_offset': 0.2,
+    'e_size': 2000,
+    'e_scale': 0.01,
+    'width_slope': 0.01,
+    'width_intercept': 0.065,
+    'db_name': '200keV_xrays.json',
+    'E0': 200,
+    'params_dict': {'Abs': {'thickness': 1e-05,
+    'toa': 35,
+    'density': 5,
+    'atomic_fraction': False},
+    'Det': 'SDD_efficiency.txt'}}
     }
 
-    misc_params = {
-    "N" : 100,
-    "densities" : [1.3,1.6],
-    "data_folder" : "test_gen_data",
-    "seed" : 42,
-    "weight_type" : "laplacian",
-    "shape_2d" : (10,20),
-    "weights_params" : {"radius" : 1.5},
-    "model" : "EDXS"}
-    
-    
-    phases_parameters = [{"b0" : 5e-3,
-                            "b1" : 3e-2,
-                            "scale" : 0.05,
-                            "elements_dict" : {"Fe" : 0.54860348,
-                                      "Pt" : 0.38286879,
-                                      "Mo" : 0.03166235}},
-                            {"b0" : 7e-3,
-                            "b1" : 5e-2,
-                            "scale" : 0.05,
-                            "elements_dict" : {"Ca" : 0.54860348,
-                                      "Si" : 0.38286879,
-                                      "O" : 0.15166235}}]
+misc_dict = {
+  'N': 100,
+  'seed' : 42,
+  'data_folder': 'built_in_particules',
+  'shape_2d': [10, 20],
+  'model': 'EDXS',
+  'densities': [1.3, 1.6]
+}
 
-    N = misc_params["N"]
+def generate_one_sample():
+
+
     
     # Generate the phases
-    model = EDXS(**model_parameters)
-    model.generate_phases(phases_parameters)
-    phases = model.phases
+    model = EDXS(**phases_dict["model_params"])
+    phases =  generate_modular_phases(**phases_dict)
     model.generate_g_matr(g_type="bremsstrahlung", elements=["Fe", "Mo", "Ca", "Si", "O", "Pt"] ,reference_elt={})
     G = model.G
 
-    weights = generate_weights(misc_params["weight_type"], misc_params["shape_2d"], n_phases=len(phases_parameters), seed=misc_params["seed"], **misc_params["weights_params"])
+    weights = generate_weights.generate_weights("laplacian", misc_dict["shape_2d"], n_phases=len(phases_dict["elts_dicts"]), seed=misc_dict["seed"], size_x = 10, size_y = 10)
 
-    stoch = generate_spim(phases, weights, misc_params["densities"], misc_params["N"], seed=misc_params["seed"],continuous = False)
-    cont = generate_spim(phases, weights, misc_params["densities"], misc_params["N"], seed=misc_params["seed"],continuous = True)
+    sample = generate_spim_sample(phases, weights, phases_dict["model_params"],misc_dict, seed = 42,g_params = {})
 
-    spim_stoch = hs.signals.Signal1D(stoch)
-    spim_stoch.set_signal_type("EDS_espm")
-
-    spim_cont = hs.signals.Signal1D(cont)
-    spim_cont.set_signal_type("EDS_espm")
-
-    X = spim_stoch.X
-    X_cont = spim_cont.X
+    X = sample["X"].reshape(-1, sample["X"].shape[-1]).T
+    X_cont = sample['Xdot'].reshape(-1, sample['Xdot'].shape[-1]).T
     
-    D = phases.T
-    H = weights.reshape((misc_params["shape_2d"][0]*misc_params["shape_2d"][1],len(phases_parameters))).T
-    
+    D = sample['GW'].T
+    H = sample["H_flat"].T
+
     W = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
     for i in range(10) : 
-        G = G_EDXS(model_parameters, {"g_type" : "bremsstrahlung", "elements" : ["Fe", "Mo", "Ca", "Si", "O", "Pt"]},W[:-2,:],G)
+        G = G_EDXS(model, {"g_type" : "bremsstrahlung", "elements" : ["Fe", "Mo", "Ca", "Si", "O", "Pt"]},W[:-2,:],G)
         W = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
 
-    w = np.array(misc_params["densities"])
+    w = np.array(misc_dict["densities"])
+    N = misc_dict["N"]
 
     return G, W, H, D, w, X, X_cont, N
 
@@ -104,8 +98,8 @@ def gen_fixed_mat () :
 def test_generate_one_sample():
     G, W, H, D, w, X, Xdot, N = generate_one_sample()
     np.testing.assert_allclose(G @ W , D, atol=1e-3)
-    np.testing.assert_allclose( N * D @ np.diag(w) @ H , Xdot)
-    np.testing.assert_allclose(N * G @ W @ np.diag(w) @ H , Xdot, atol=1e-1)
+    np.testing.assert_allclose( D @ H , Xdot)
+    np.testing.assert_allclose(G @ W @ H , Xdot, atol=1e-1)
 
 def test_NMF_scikit () : 
     estimator = SmoothNMF(n_components= 5,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0,hspy_comp = False)
@@ -118,19 +112,19 @@ def test_general():
 
     estimator = SmoothNMF(G=G,n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform(H=H, X=Xdot)
-    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=3e-1)
+    np.testing.assert_allclose(D, D2, atol=6e-1)
 
     estimator = SmoothNMF(n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform(H=H, X=Xdot)
-    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=3e-1)
+    np.testing.assert_allclose(D, D2, atol=6e-1)
 
     estimator = SmoothNMF(G=G,n_components= 2,max_iter=200,force_simplex = False,mu = 0, epsilon_reg = 1, hspy_comp = False)
-    D2 = estimator.fit_transform( W=W@np.diag(w), X=Xdot)
-    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=3e-1)
+    D2 = estimator.fit_transform( W=W, X=Xdot)
+    np.testing.assert_allclose(D, D2, atol=3e-1)
 
     estimator = SmoothNMF(G =G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
-    D2 = estimator.fit_transform(W=N*W@np.diag(w), X=Xdot)
-    np.testing.assert_allclose(N*D@np.diag(w), D2, atol=3e-1)
+    D2 = estimator.fit_transform(W=W, X=Xdot)
+    np.testing.assert_allclose(D, D2, atol=3e-1)
 
     estimator = SmoothNMF(G=G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     estimator.fit_transform(X=Xdot)

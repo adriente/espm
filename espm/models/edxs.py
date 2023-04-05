@@ -36,16 +36,14 @@ class EDXS(PhysicalModel):
         super().__init__(*args,**kwargs)
         self.width_slope = width_slope
         self.width_intercept = width_intercept
-
-        default_params = DEFAULT_EDXS_PARAMS
-        self.params_dict = arg_helper(self.params_dict,default_params)
         
         self.lines = self.db_mdata["lines"]
         self.norm = 1.0
+        self.model_elts = []
 
 
     @symbol_to_number_list
-    def generate_g_matr(self, g_type="bremsstrahlung", norm = True, reference_elt = {},*,elements=[], **kwargs):
+    def generate_g_matr(self, g_type="bremsstrahlung",reference_elt = {},*,elements=[], **kwargs):
         r"""
         Generate the G matrix. With a complete model the matrix is (e_size,n+2). The first n columns correspond to the sum of X-ray characteristic peaks associated to each shell of the elements. The last 2 columns correspond to a bremsstrahlung model. 
         
@@ -53,8 +51,6 @@ class EDXS(PhysicalModel):
         ----------
         g_type : 
             :string: Options of the edxs model to include in the G matrix. The three possibilities are "identity", "no_brstlg" and "bremsstrahlung". G is going to be the identity matrix, only characteristic X-ray peaks or characteristic X-rays plus bremsstrahlung model, respectively.
-        norm : 
-            :boolean: Norms the columns of G for computation purposes. That feature will be removed, for a better solution.
         reference_elt : 
             :dict: The keys are chemical elements (atomic number) and the values are cut-off energies. This argument is used to split some of the columns of G into 2 columns. The first column corresponds to characteristic X-rays before the cut-off and second one corresponds to characteristic X-rays before the cut-off. This feature is implemented to enable more accurate absorption correction.
         elements : 
@@ -69,15 +65,21 @@ class EDXS(PhysicalModel):
         -----
         See our paper about the espm package for more information about the equations of this model.
         """
-        # Diagonal g_matr
+        
+        # Reset the internally stored elements list
+        self.model_elts = []
+        
         if g_type == "bremsstrahlung" : 
             self.bkgd_in_G = True
+        else : 
+            self.bkgd_in_G = False
 
+        # None is a default value for the G matrix and thus G will be considered to be the identity matrix in most of espm functions.
         if len(elements) == 0:
-            return None
+            self.G = None
 
         elif g_type == "identity" : 
-            return None
+            self.G = None
         # model based on elements_list
         elif (g_type == "bremsstrahlung") or (g_type == "no_brstlg"):
             
@@ -144,6 +146,11 @@ class EDXS(PhysicalModel):
                 
                 if np.max(peaks) > 0.0:
                     self.G = np.concatenate((self.G, peaks), axis=1)
+                    if str(elt) in reference_elt : 
+                        self.model_elts.append(str(elt))
+                        self.model_elts.append(str(elt))
+                    else : 
+                        self.model_elts.append(str(elt))
                 else : 
                     print("No peak is present in the energy range for element : {}".format(elt))
             
@@ -157,14 +164,13 @@ class EDXS(PhysicalModel):
                     print("Bremsstrahlung parameters were not provided, bkgd not added in G")
                     self.bkgd_in_G = False
 
-            if norm : 
-                norms = np.sqrt(np.sum(self.G**2, axis=0, keepdims=True))
-                if g_type == "bremsstrahlung" : 
-                    norms[0][:-2] = np.mean(norms[0][:-2])
-                else : 
-                    norms[0] = np.mean(norms[0])
-                self.norm = norms
-                self.G /= self.norm
+            norms = np.sqrt(np.sum(self.G**2, axis=0, keepdims=True))
+            if g_type == "bremsstrahlung" : 
+                norms[0][:-2] = np.mean(norms[0][:-2])
+            else : 
+                norms[0] = np.mean(norms[0])
+            self.norm = norms
+            self.G /= self.norm
         else : 
             print("g_type has to be one of those : \"bremsstrahlung\", \"no_brstlg\" or \"identity\". G will be None, corresponding to \"identity\". ")
 
@@ -224,10 +230,10 @@ class EDXS(PhysicalModel):
         --------
         >>> import matplotlib.pyplot as plt
         >>> from espm.models.edxs import EDXS
-        >>> from espm.conf import DEFAULT_SYNTHETIC_DATA_DICT
+        >>> from espm.conf import DEFAULT_EDXS_PARAMETERS
         >>> b0, b1 = 5.5367e-5, 0.00192181
         >>> elts_dict = {"Si" : 1.0,"Ca" : 1.0,"O" : 3.0,"C" : 0.3}
-        >>> model = EDXS(**DEFAULT_SYNTHETIC_DATA_DICT['model_parameters'])
+        >>> model = EDXS(**DEFAULT_EDXS_PARAMETERS)
         >>> spectrum = model.generate_spectrum(b0,b1, elements_dict = elts_dict)
         >>> plt.plot(spectrum)
 
@@ -284,7 +290,7 @@ class EDXS(PhysicalModel):
     #     temp += absorption_mass_thickness(self.x, mass_thickness=mass_thickness,**self.params_dict["Abs"],elements_dict = elements_dict)
         
 
-def G_EDXS (model_params, g_params, part_W = None, G = None) : 
+def G_EDXS (model, g_params, part_W = None, G = None) : 
     r"""
     Update the bremsstrahlung part of the G matrix. This function is used for the NMF decomposition so that the absorption correction is updated in between each step.
 
@@ -305,12 +311,11 @@ def G_EDXS (model_params, g_params, part_W = None, G = None) :
         :np.array 2D: Updated G matrix with a new absorption correction.
     """
     if G is None : 
-        model = EDXS(**model_params)
         model.generate_g_matr(**g_params)
         G = model.G
 
     if part_W is None : 
         return G
     else : 
-        new_G = update_bremsstrahlung(G,part_W,model_params,g_params["elements"])
+        new_G = update_bremsstrahlung(G,part_W,model,g_params["elements"])
         return new_G

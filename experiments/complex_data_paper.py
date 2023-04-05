@@ -1,10 +1,10 @@
 from espm.utils import arg_helper
 from espm.datasets.base import generate_dataset
-from espm.datasets.generate_EDXS_phases import generate_modular_phases
+from espm.models.generate_EDXS_phases import generate_modular_phases
 import hyperspy.api as hs
 import numpy as np
 from espm.datasets.base import generate_spim, save_generated_spim
-from espm.datasets.generate_weights import chemical_maps_weights
+from espm.weights.abundance import chemical_maps_weights
 from espm.conf import DATASETS_PATH, BASE_PATH, DEFAULT_SYNTHETIC_DATA_DICT
 from pathlib import Path
 

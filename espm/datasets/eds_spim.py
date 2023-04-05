@@ -2,10 +2,10 @@ from  hyperspy.signals import Signal1D
 from espm.models import EDXS
 from espm import models
 from espm.models.edxs import G_EDXS
-from espm.datasets.generate_weights import generate_weights
 from hyperspy.misc.eds.utils import take_off_angle
 from espm.utils import number_to_symbol_list
 import numpy as np
+from espm.estimators import NMFEstimator
 
 
 class EDS_espm(Signal1D) : 
@@ -19,6 +19,7 @@ class EDS_espm(Signal1D) :
         self._Xdot = None
         self._maps_2d = None
         self.G = None
+        self.model_ = None
 
     @property
     def shape_2d (self) : 
@@ -60,6 +61,13 @@ class EDS_espm(Signal1D) :
         if self._maps_2d is None : 
             self._maps_2d = self.build_ground_truth(reshape = False)[1]
         return self._maps_2d
+    
+    @property
+    def model (self) : 
+        if self.model_ is None : 
+            mod_pars = get_metadata(self)
+            self.model_ = EDXS(**mod_pars)
+        return self.model_
 
     def build_ground_truth(self,reshape = True) : 
         if "phases" in self.metadata.Truth.Data : 
@@ -72,29 +80,29 @@ class EDS_espm(Signal1D) :
             raise AttributeError("There is no ground truth contained in this dataset")
         return phases, weights
 
-    def build_G(self, problem_type = "bremsstrahlung", norm = True, reference_elt = {"26" : 3.0}) :
+    def build_G(self, problem_type = "bremsstrahlung", reference_elt = {}) :
         self.problem_type = problem_type
-        self.norm = norm
         self.reference_elt = reference_elt
-        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements, "norm" : norm, "reference_elt" : reference_elt}
-        mod_pars = get_metadata(self)
-        if norm : 
-            model = EDXS(**mod_pars)
-            model.generate_g_matr(**g_pars)
-            self.G_norms = model.norm
+        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : reference_elt}
+        
         if problem_type == "bremsstrahlung" : 
-            G = self.update_G
+            self.G = self.update_G
+            # to init the model.model_elts and model.norm
+            self.G()
         else : 
-            G = build_G(mod_pars,g_pars)
-        
-        self.G = G
-        
-        return self.G
+            self.G = build_G(self.model,g_pars)
+
+        # Storing the model parameters in the metadata so that the decomposition does not erase them
+        # Indeed the decomposition re-creates a new object of the same class when it is called
+        self.metadata.EDS_model= {}
+        self.metadata.EDS_model.problem_type = problem_type
+        self.metadata.EDS_model.reference_elt = reference_elt
+        self.metadata.EDS_model.elements = self.model.model_elts
+        self.metadata.EDS_model.norm = self.model.norm
 
     def update_G(self, part_W=None, G=None):
-        model_params = get_metadata(self)
-        g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "norm" : self.norm, "reference_elt" : self.reference_elt}
-        G = G_EDXS(model_params, g_params, part_W=part_W, G=G)
+        g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : self.reference_elt}
+        G = G_EDXS(self.model, g_params, part_W=part_W, G=G)
         return G
 
     def set_analysis_parameters (self,beam_energy = 200, azimuth_angle = 0.0, elevation_angle = 22.0, tilt_stage = 0.0, elements = [], thickness = 200e-7, density = 3.5, detector_type = "SDD_efficiency.txt", width_slope = 0.01, width_intercept = 0.065, xray_db = "default_xrays.json") :
@@ -164,6 +172,73 @@ class EDS_espm(Signal1D) :
                     if key == elt : 
                         W[e,p] = phases_dict[phase][key]
         return W
+    
+    def print_concentration_report (self,abs = False) : 
+        r"""
+        Print a report of the chemical concentrations from a fitted W.
+
+        Parameters
+        ----------
+        abs : bool
+            If True, print the absolute concentrations, if False, print the relative concentrations.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        - This function is only available if the learning results contain a decomposition algorithm that has been fitted.
+        - The "absolute" concentrations correspond to some physical number. To retrieve the number of atoms per unit volume, you need to multiply by the correct pre-factors such as beam current, detector solid angle, etc...
+        """
+        if not(isinstance(self.learning_results.decomposition_algorithm,NMFEstimator)) :
+            raise ValueError("No espm learning results available, please run a decomposition with an espm algorithm first")
+        
+        W = self.learning_results.decomposition_algorithm.W_
+        
+        norm = self.metadata.EDS_model.norm
+        elts = self.metadata.EDS_model.elements
+
+        @number_to_symbol_list
+        def convert_elts(elements = []) :
+            return elements
+        
+        elements = convert_elts(elements = elts)
+        
+        norm_W = W / W.sum(axis = 0)
+        abs_W =   W / norm[0][:,np.newaxis] 
+        
+        if abs : 
+            print("Abs. quantif. report")
+            title_string = " "*5
+
+            for i in range(norm_W.shape[1]) : 
+                title_string += "{:}".format("p" + str(i)) + " "*8
+            print(title_string)
+            
+            for i,j in enumerate(elements) : 
+                main_string = ""
+                main_string += "{:2}".format(j) + " : "
+                for k in range(norm_W.shape[1]) :
+                    main_string += "{:.3e} ".format(abs_W[i,k])
+                print(main_string)
+
+        else : 
+            print("Concentrations report")
+            title_string = ""
+
+            for i in range(norm_W.shape[1]) : 
+                title_string += "{:>7}".format("p" + str(i))
+            print(title_string)
+            
+            for i,j in enumerate(elements) : 
+                main_string = ""
+                main_string += "{:2}".format(j) + " : "
+                for k in range(norm_W.shape[1]) :
+                    main_string += "{:05.4f} ".format(norm_W[i,k])
+                print(main_string)
+
+        
 
 
 ######################
@@ -200,8 +275,7 @@ def get_metadata(spim) :
 
     return mod_pars
 
-def build_G(model_params, g_params) : 
-    model = EDXS(**model_params)
+def build_G(model, g_params) :
     model.generate_g_matr(**g_params)
     return model.G
 

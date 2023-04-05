@@ -1,6 +1,6 @@
 from espm.utils import arg_helper
 from espm.datasets.base import generate_dataset, generate_weights
-from espm.datasets.generate_EDXS_phases import generate_modular_phases
+from espm.models.generate_EDXS_phases import generate_modular_phases
 from espm.conf import DEFAULT_SYNTHETIC_DATA_DICT
 import numpy as np
 

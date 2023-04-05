@@ -1,7 +1,7 @@
 import experiments as exps
 from pathlib import Path
 from espm.conf import DATASETS_PATH
-from espm.datasets import generate_dataset, spim
+from espm.datasets import eds_spim, generate_dataset
 import shutil
 from espm import estimators
 from espm import datasets
