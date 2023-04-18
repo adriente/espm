@@ -28,9 +28,7 @@ If you want to develop, please use the option::
 
 Getting started
 ---------------
-Generate the synthetic dataset. Run the script::
-
-    $ python experiments/generate_synthetic_dataset.py
+Try the api.ipynb notebook in the `notebooks` folder.
 
 
 Documentation

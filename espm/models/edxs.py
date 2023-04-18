@@ -4,6 +4,8 @@ EDXS model
 
 The :mod:`espm.models.edxs` module implements the creation of the G matrix that contains a modelisation of the characteristic and continuous X-rays.
 
+**This module is a key component of the EDXS data simulation and the EDXS data analysis.**
+
 """
 
 import numpy as np
@@ -36,25 +38,39 @@ class EDXS(PhysicalModel):
         super().__init__(*args,**kwargs)
         self.width_slope = width_slope
         self.width_intercept = width_intercept
-
-        default_params = DEFAULT_EDXS_PARAMS
-        self.params_dict = arg_helper(self.params_dict,default_params)
         
         self.lines = self.db_mdata["lines"]
         self.norm = 1.0
+        self.model_elts = []
 
 
     @symbol_to_number_list
-    def generate_g_matr(self, g_type="bremsstrahlung", norm = True, reference_elt = {},*,elements=[], **kwargs):
+    def generate_g_matr(self, g_type="bremsstrahlung",reference_elt = {},*,elements=[], **kwargs):
         r"""
         Generate the G matrix. With a complete model the matrix is (e_size,n+2). The first n columns correspond to the sum of X-ray characteristic peaks associated to each shell of the elements. The last 2 columns correspond to a bremsstrahlung model. 
+        
+        The first n columns of G (noted :math:`\kappa`), corresponding to the characteristic X-rays, can be calculated using the following formula:
+        
+        .. math::
+
+            \kappa_{k,Z} = \sum_{ij} x_{ij}(Z) \frac{1}{\Delta(\varepsilon_k) \sqrt{2\pi} } e{^{-\frac{1}{2} {\left( \frac{\varepsilon_k - \varepsilon^{ij}(Z)}{\Delta(\varepsilon_k)} \right)}^2}}
+        
+        where :math:`\varepsilon_k` is the energy of the kth energy channel, :math:`\varepsilon^{ij}(Z)` is the energy of the ijth line of the Zth element, :math:`\Delta(\varepsilon_k)` is the FWHM of the detector at the energy :math:`\varepsilon_k` and :math:`x_{ij}(Z)` is the intensity ratio of the ijth line of the Zth element. The last term of the equation is a gaussian function centered at :math:`\varepsilon^{ij}(Z)` and with a FWHM of :math:`\Delta(\varepsilon_k)`.
+
+        The last two columns of G (noted :math:`\beta`), corresponding to the bremsstrahlung model, can be calculated using the following formula:
+
+        .. math::
+
+            \beta_{k,n+1} = \frac{\varepsilon_0 - \varepsilon_k}{\varepsilon_0 \varepsilon_k} \times \frac{1 - (\varepsilon_0 - \varepsilon_k)}{\varepsilon_0}
+
+            \beta_{k,n+2} = \frac{(\varepsilon_0 - \varepsilon_k)^2}{\varepsilon^2_0 \varepsilon_k}
+
+        Note that there is no parameter for the bremsstrahlung since it is supposed to be learned with the W matrix (see espm.estimators).
         
         Parameters
         ----------
         g_type : 
             :string: Options of the edxs model to include in the G matrix. The three possibilities are "identity", "no_brstlg" and "bremsstrahlung". G is going to be the identity matrix, only characteristic X-ray peaks or characteristic X-rays plus bremsstrahlung model, respectively.
-        norm : 
-            :boolean: Norms the columns of G for computation purposes. That feature will be removed, for a better solution.
         reference_elt : 
             :dict: The keys are chemical elements (atomic number) and the values are cut-off energies. This argument is used to split some of the columns of G into 2 columns. The first column corresponds to characteristic X-rays before the cut-off and second one corresponds to characteristic X-rays before the cut-off. This feature is implemented to enable more accurate absorption correction.
         elements : 
@@ -67,17 +83,23 @@ class EDXS(PhysicalModel):
 
         Notes
         -----
-        See our paper about the espm package for more information about the equations of this model.
+        See our paper about the espm package :cite:p:`teurtrie2023espm` for more information about the equations of this model.
         """
-        # Diagonal g_matr
+        
+        # Reset the internally stored elements list
+        self.model_elts = []
+        
         if g_type == "bremsstrahlung" : 
             self.bkgd_in_G = True
+        else : 
+            self.bkgd_in_G = False
 
+        # None is a default value for the G matrix and thus G will be considered to be the identity matrix in most of espm functions.
         if len(elements) == 0:
-            return None
+            self.G = None
 
         elif g_type == "identity" : 
-            return None
+            self.G = None
         # model based on elements_list
         elif (g_type == "bremsstrahlung") or (g_type == "no_brstlg"):
             
@@ -144,6 +166,11 @@ class EDXS(PhysicalModel):
                 
                 if np.max(peaks) > 0.0:
                     self.G = np.concatenate((self.G, peaks), axis=1)
+                    if str(elt) in reference_elt : 
+                        self.model_elts.append(str(elt))
+                        self.model_elts.append(str(elt))
+                    else : 
+                        self.model_elts.append(str(elt))
                 else : 
                     print("No peak is present in the energy range for element : {}".format(elt))
             
@@ -157,14 +184,13 @@ class EDXS(PhysicalModel):
                     print("Bremsstrahlung parameters were not provided, bkgd not added in G")
                     self.bkgd_in_G = False
 
-            if norm : 
-                norms = np.sqrt(np.sum(self.G**2, axis=0, keepdims=True))
-                if g_type == "bremsstrahlung" : 
-                    norms[0][:-2] = np.mean(norms[0][:-2])
-                else : 
-                    norms[0] = np.mean(norms[0])
-                self.norm = norms
-                self.G /= self.norm
+            norms = np.sqrt(np.sum(self.G**2, axis=0, keepdims=True))
+            if g_type == "bremsstrahlung" : 
+                norms[0][:-2] = np.mean(norms[0][:-2])
+            else : 
+                norms[0] = np.mean(norms[0])
+            self.norm = norms
+            self.G /= self.norm
         else : 
             print("g_type has to be one of those : \"bremsstrahlung\", \"no_brstlg\" or \"identity\". G will be None, corresponding to \"identity\". ")
 
@@ -174,7 +200,7 @@ class EDXS(PhysicalModel):
 
     def generate_phases(self, phases_parameters) : 
         r"""
-        Generate a series of spectra from list of phase parameters
+        Generate a series of spectra from list of phase parameters. 
 
         Parameters
         ----------
@@ -201,7 +227,7 @@ class EDXS(PhysicalModel):
     @symbol_to_number_dict
     def generate_spectrum(self, b0=0, b1 = 0, scale = 1.0,abs_elts_dict = {},*,elements_dict = {}):
         r"""
-        Generate a spectrum from bremsstrahlung parameters and a chemical composition.
+        Generate a spectrum from bremsstrahlung parameters and a chemical composition. The modelling is done using the same formula as for the generate_g_matr function.
 
         Parameters
         ----------
@@ -224,10 +250,10 @@ class EDXS(PhysicalModel):
         --------
         >>> import matplotlib.pyplot as plt
         >>> from espm.models.edxs import EDXS
-        >>> from espm.conf import DEFAULT_SYNTHETIC_DATA_DICT
+        >>> from espm.conf import DEFAULT_EDXS_PARAMETERS
         >>> b0, b1 = 5.5367e-5, 0.00192181
         >>> elts_dict = {"Si" : 1.0,"Ca" : 1.0,"O" : 3.0,"C" : 0.3}
-        >>> model = EDXS(**DEFAULT_SYNTHETIC_DATA_DICT['model_parameters'])
+        >>> model = EDXS(**DEFAULT_EDXS_PARAMETERS)
         >>> spectrum = model.generate_spectrum(b0,b1, elements_dict = elts_dict)
         >>> plt.plot(spectrum)
 
@@ -284,7 +310,7 @@ class EDXS(PhysicalModel):
     #     temp += absorption_mass_thickness(self.x, mass_thickness=mass_thickness,**self.params_dict["Abs"],elements_dict = elements_dict)
         
 
-def G_EDXS (model_params, g_params, part_W = None, G = None) : 
+def G_EDXS (model, g_params, part_W = None, G = None) : 
     r"""
     Update the bremsstrahlung part of the G matrix. This function is used for the NMF decomposition so that the absorption correction is updated in between each step.
 
@@ -305,12 +331,11 @@ def G_EDXS (model_params, g_params, part_W = None, G = None) :
         :np.array 2D: Updated G matrix with a new absorption correction.
     """
     if G is None : 
-        model = EDXS(**model_params)
         model.generate_g_matr(**g_params)
         G = model.G
 
     if part_W is None : 
         return G
     else : 
-        new_G = update_bremsstrahlung(G,part_W,model_params,g_params["elements"])
+        new_G = update_bremsstrahlung(G,part_W,model,g_params["elements"])
         return new_G

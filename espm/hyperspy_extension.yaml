@@ -4,4 +4,4 @@ signals :
     signal_dimension : 1
     dtype : real
     lazy : False
-    module : espm.datasets.spim
+    module : espm.datasets.eds_spim

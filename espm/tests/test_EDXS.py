@@ -1,5 +1,5 @@
 from espm.models.absorption_edxs import det_efficiency, absorption_correction
-from espm.datasets.generate_EDXS_phases import generate_elts_dict
+from espm.models.generate_EDXS_phases import generate_elts_dict
 import numpy as np
 import espm.models.EDXS_function as ef
 from espm.models import EDXS
@@ -102,7 +102,7 @@ def test_update_bremsstrahlung () :
     model = EDXS(**model_parameters)
     model.generate_g_matr(elements=elts_list)
     G = model.G
-    new_G = ef.update_bremsstrahlung(G, part_P, model_parameters, elts_list)
+    new_G = ef.update_bremsstrahlung(G, part_P, model, elts_list)
 
     assert G.shape == new_G.shape
     np.testing.assert_allclose(G[:,:-2],new_G[:,:-2])
@@ -121,14 +121,12 @@ def test_generate_g_matr () :
     G_no_brstlg = model3.G
 
     assert G_brem.shape == (size, 6)
-    assert G_id.shape == (size, size)
     assert G_no_brstlg.shape == (size, 4)
 
-    np.testing.assert_allclose(G_id, np.diag(np.ones((size,))
-    ))
+    assert G_id is None
     np.testing.assert_allclose(G_brem[:,:-2], G_no_brstlg)
 
-    np.testing.assert_array_less(-1e-30, G_id)
+    # np.testing.assert_array_less(-1e-30, G_id)
     np.testing.assert_array_less(-1e-30, G_brem)
     np.testing.assert_array_less(-1e-30, G_no_brstlg)
 

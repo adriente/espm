@@ -19,7 +19,11 @@ from espm.utils import number_to_symbol_list
     
 def gaussian(x, mu, sigma):
     r"""
-    Calculate the gaussian function.
+    Calculate the gaussian function according to the following formula:
+
+    .. math::
+
+        f(x) = \frac{1}{\sigma \sqrt{2 \pi}} e^{-\frac{(x-\mu)^2}{2 \sigma^2}}
 
     Parameters
     ----------
@@ -110,7 +114,7 @@ def chapman_bremsstrahlung(x, b0, b1, b2):
 
     Notes
     -----
-    For details see Chapman et al. Journal of Microscopy, 136, pp. 179-191, (1984)
+    For details see :cite:p:`chapman1984understanding`
     """
     return b0 / x + b1 + b2 * x
     
@@ -179,7 +183,7 @@ def shelf(x, height, length):
         
     Notes
     -----
-    For details see Scholze, F. and Procop, M., X-Ray Spectrom., 38: 312-321. (2009)
+    For details see :cite:p:`scholze2009modelling`
     """
     return height * erfc(x - length)
 
@@ -314,43 +318,6 @@ def elts_dict_from_W (part_W,*,elements = []) :
     factor =  sum(elements_dict.values())
     return {key:elements_dict[key]/factor for key in elements_dict}
 
-@number_to_symbol_list
-def print_concentrations_from_W (part_W, *, elements = []) : 
-    r"""
-    Print a report of the chemical concentrations from a fitted W.
-
-    Parameters
-    ----------
-    part_W : 
-        :np.array 2D: W matrix output from the NMF calculation. It only makes sense when the NMF decomposition if performed with G.
-    elements : 
-        :list: List of elements as atomic number or symbol.
-
-    Returns
-    -------
-    None :
-        :None: None.
-
-    Notes
-    -----
-    This function should maybe move to another part of espm.
-    """
-    norm_W = part_W / part_W.sum(axis = 0)
-    print("Concentrations report")
-    title_string = ""
-
-    for i in range(norm_W.shape[1]) : 
-        title_string += "{:>7}".format("p" + str(i))
-    print(title_string)
-    
-    for i,j in enumerate(elements) : 
-        main_string = ""
-        main_string += "{:2}".format(j) + " : "
-        for k in range(norm_W.shape[1]) :
-            main_string += "{:05.4f} ".format(norm_W[i,k])
-        print(main_string)
-
-
 def elts_dict_from_dict_list (dict_list) : 
     r"""
     Create a single dictionnary of the elemental concentration from a list of dictionnary containing chemical compositions. The new dictionnary corresponds to the average chemical composition of the list.
@@ -383,7 +350,32 @@ def elts_dict_from_dict_list (dict_list) :
         unique_elts_dict[e] /= sum_elts
     return unique_elts_dict
 
-def update_bremsstrahlung (G,part_W,model_parameters,elements_list, norm = True) : 
+def elts_list_from_dict_list (dict_list) :
+    r"""
+    Create a list of elements from a list of dictionnary containing chemical compositions. The list contains all the elements contained in the input.
+
+    Parameters
+    ----------
+    dict_list :
+        :list [dict]: list of chemical composition dictionnary
+
+    Returns
+    -------
+    elements_list :
+        :list: List of elements as atomic number or symbol.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from espm.models.EDXS_function import elts_list_from_dict_list
+    >>> dicts = [{"Si" : 1.0, "C" : 0.5, "O" : 0.5},{"Ca" : 1.0, "K" : 2.0},{"O" : 1.0, "Si" : 0.5},{"C" : 1.0}] 
+    >>> elts_list_from_dict_list(dicts)
+        ["Si","Ca","O","C","K"]
+    """ 
+    unique_elts_dict = sum((Counter(x) for x in dict_list),Counter())
+    return list(unique_elts_dict.keys())
+
+def update_bremsstrahlung (G,part_W,model,elements_list) : 
     r"""
     Update the continuum X-rays part of the G matrix with the current average chemical composition.
 
@@ -393,12 +385,10 @@ def update_bremsstrahlung (G,part_W,model_parameters,elements_list, norm = True)
         :np.array 2D: EDXS modelling matrix.
     part_W : 
         :np.array 2D: Learned chemical concentrations.
-    model_parameters : 
-        :dict: Parameters of the EDXS model.
+    model : 
+        :espm.models.EDXS: EDXS model.
     elements_list :
         :list: List of elements as atomic number or symbol.
-    norm : 
-        :bool: work in progress
     
     Returns
     -------
@@ -410,14 +400,9 @@ def update_bremsstrahlung (G,part_W,model_parameters,elements_list, norm = True)
     This function should maybe move to another part of espm.
     """
     elts = elts_dict_from_W(part_W,elements = elements_list)
-    model = e.EDXS(**model_parameters)
     B = G_bremsstrahlung(model.x,model.E0,model.params_dict,elements_dict=elts)
     new_G = G.copy()
-    new_G[:,-2:] = B
-    if norm : 
-        norms = np.sqrt(np.sum(new_G**2, axis=0, keepdims=True))
-        norms[0][:-2] = np.mean(norms[0][:-2])
-        new_G = new_G / norms
+    new_G[:,-2:] = B/model.norm[0][-2:]
     return new_G
 
 
