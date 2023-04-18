@@ -34,7 +34,7 @@ def absorption_coefficient (x,atomic_fraction = False,*,elements_dict = {"Si" : 
 
     Notes
     -----
-    The mass-absorption coefficients are calculated using the database of hyperspy
+    The mass-absorption coefficients are calculated using the database of hyperspy :cite:p:`francisco_de_la_pena_2022_7263263`.
     """
     mu = np.zeros_like(x)
     if atomic_fraction : 
@@ -178,7 +178,15 @@ def det_efficiency_layer (x, thickness = 100e-7, density = None, atomic_fraction
 
 def det_efficiency (x,det_dict) :
     r"""
-    Simulate the detection efficiency of an EDX detector.
+    Simulate the detection efficiency of an EDX detector. The absorption wihtin one layer of the detector is calculated according to the following equation, corresponding to the Beer-Lambert law:
+
+    .. math::
+
+        d_k = \exp\left( - \mu(\varepsilon_k)\rho t \right)
+
+    where :math:`d_k` is the detection efficiency at the energy :math:`\varepsilon_k`, :math:`\mu(\varepsilon_k)` is the mass-absorption coefficient at the energy :math:`\varepsilon_k`, :math:`\rho` is the density of the material, and :math:`t` is the thickness of the material.
+
+    In a detection layer of the detector, an absobed photon counts as a detected photon so that the detection efficiency is equal to 1 minus the absorption. The detection efficiency is calculated as the product of the absorption of each layer of the detector.
 
     Parameters
     ----------

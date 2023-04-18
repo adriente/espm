@@ -4,6 +4,8 @@ EDXS model
 
 The :mod:`espm.models.edxs` module implements the creation of the G matrix that contains a modelisation of the characteristic and continuous X-rays.
 
+**This module is a key component of the EDXS data simulation and the EDXS data analysis.**
+
 """
 
 import numpy as np
@@ -47,6 +49,24 @@ class EDXS(PhysicalModel):
         r"""
         Generate the G matrix. With a complete model the matrix is (e_size,n+2). The first n columns correspond to the sum of X-ray characteristic peaks associated to each shell of the elements. The last 2 columns correspond to a bremsstrahlung model. 
         
+        The first n columns of G (noted :math:`\kappa`), corresponding to the characteristic X-rays, can be calculated using the following formula:
+        
+        .. math::
+
+            \kappa_{k,Z} = \sum_{ij} x_{ij}(Z) \frac{1}{\Delta(\varepsilon_k) \sqrt{2\pi} } e{^{-\frac{1}{2} {\left( \frac{\varepsilon_k - \varepsilon^{ij}(Z)}{\Delta(\varepsilon_k)} \right)}^2}}
+        
+        where :math:`\varepsilon_k` is the energy of the kth energy channel, :math:`\varepsilon^{ij}(Z)` is the energy of the ijth line of the Zth element, :math:`\Delta(\varepsilon_k)` is the FWHM of the detector at the energy :math:`\varepsilon_k` and :math:`x_{ij}(Z)` is the intensity ratio of the ijth line of the Zth element. The last term of the equation is a gaussian function centered at :math:`\varepsilon^{ij}(Z)` and with a FWHM of :math:`\Delta(\varepsilon_k)`.
+
+        The last two columns of G (noted :math:`\beta`), corresponding to the bremsstrahlung model, can be calculated using the following formula:
+
+        .. math::
+
+            \beta_{k,n+1} = \frac{\varepsilon_0 - \varepsilon_k}{\varepsilon_0 \varepsilon_k} \times \frac{1 - (\varepsilon_0 - \varepsilon_k)}{\varepsilon_0}
+
+            \beta_{k,n+2} = \frac{(\varepsilon_0 - \varepsilon_k)^2}{\varepsilon^2_0 \varepsilon_k}
+
+        Note that there is no parameter for the bremsstrahlung since it is supposed to be learned with the W matrix (see espm.estimators).
+        
         Parameters
         ----------
         g_type : 
@@ -63,7 +83,7 @@ class EDXS(PhysicalModel):
 
         Notes
         -----
-        See our paper about the espm package for more information about the equations of this model.
+        See our paper about the espm package :cite:p:`teurtrie2023espm` for more information about the equations of this model.
         """
         
         # Reset the internally stored elements list
@@ -180,7 +200,7 @@ class EDXS(PhysicalModel):
 
     def generate_phases(self, phases_parameters) : 
         r"""
-        Generate a series of spectra from list of phase parameters
+        Generate a series of spectra from list of phase parameters. 
 
         Parameters
         ----------
@@ -207,7 +227,7 @@ class EDXS(PhysicalModel):
     @symbol_to_number_dict
     def generate_spectrum(self, b0=0, b1 = 0, scale = 1.0,abs_elts_dict = {},*,elements_dict = {}):
         r"""
-        Generate a spectrum from bremsstrahlung parameters and a chemical composition.
+        Generate a spectrum from bremsstrahlung parameters and a chemical composition. The modelling is done using the same formula as for the generate_g_matr function.
 
         Parameters
         ----------

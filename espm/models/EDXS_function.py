@@ -19,7 +19,11 @@ from espm.utils import number_to_symbol_list
     
 def gaussian(x, mu, sigma):
     r"""
-    Calculate the gaussian function.
+    Calculate the gaussian function according to the following formula:
+
+    .. math::
+
+        f(x) = \frac{1}{\sigma \sqrt{2 \pi}} e^{-\frac{(x-\mu)^2}{2 \sigma^2}}
 
     Parameters
     ----------
@@ -110,7 +114,7 @@ def chapman_bremsstrahlung(x, b0, b1, b2):
 
     Notes
     -----
-    For details see Chapman et al. Journal of Microscopy, 136, pp. 179-191, (1984)
+    For details see :cite:p:`chapman1984understanding`
     """
     return b0 / x + b1 + b2 * x
     
@@ -179,7 +183,7 @@ def shelf(x, height, length):
         
     Notes
     -----
-    For details see Scholze, F. and Procop, M., X-Ray Spectrom., 38: 312-321. (2009)
+    For details see :cite:p:`scholze2009modelling`
     """
     return height * erfc(x - length)
 
