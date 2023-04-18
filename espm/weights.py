@@ -18,23 +18,20 @@ def load_toy_weights():
     Examples
     --------
 
-    .. plot::
-        :context: close-figs
-
-        >>> from espm.weights import load_toy_weights
-        >>> import matplotlib.pyplot as plt
-        >>> Hdot = load_toy_weights()
-        >>> print(Hdot.shape)
-        (200, 200, 3)
-        >>> print(Hdot.dtype)
-        float64
-        >>> plt.figure(figsize=(10,3))
-        >>> for i in range(3):
-        ...     plt.subplot(1,3,i+1)
-        ...     plt.imshow(Hdot[:,:,i], cmap=plt.cm.gray_r)
-        ...     plt.axis("off")
-        ...     plt.title(f"Map {i+1}")
-        >>> plt.show()
+    >>> from espm.weights import load_toy_weights
+    >>> import matplotlib.pyplot as plt
+    >>> Hdot = load_toy_weights()
+    >>> print(Hdot.shape)
+    (200, 200, 3)
+    >>> print(Hdot.dtype)
+    float64
+    >>> plt.figure(figsize=(10,3))
+    >>> for i in range(3):
+    ...     plt.subplot(1,3,i+1)
+    ...     plt.imshow(Hdot[:,:,i], cmap=plt.cm.gray_r)
+    ...     plt.axis("off")
+    ...     plt.title(f"Map {i+1}")
+    >>> plt.show()
 
     """
 
