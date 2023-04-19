@@ -219,7 +219,19 @@ def unique_min (matrix) :
 
 #     return mins, ind_mins
 
-def find_min_config(true_maps,true_spectra, algo_maps, algo_spectra,angles = True) : 
+def find_min_config(true_maps,true_spectra, algo_maps, algo_spectra,angles = True) :
+    r'''
+    Determines the best match between the true and the NMF spectra and maps by finding the configuration that minimizes either the sum of angles or the sum of MSE.
+    The function returns a warning (boolean) if the MSE and the angles disagree on the best configuration.
+
+    :param np.array 2D true_maps: true maps with shape (number of phases, number of pixels)
+    :param np.array 2D true_spectra: true spectra with shape (number of phases, number of energy channels)
+    :param np.array 2D algo_maps: NMF maps with shape (number of phases, number of pixels)
+    :param np.array 2D algo_spectra: NMF spectra with shape (number of phases, number of energy channels)
+    :param boolean angles: If True, the function will minimize the sum of angles between true and NMF spectra. If False, it will minimize the sum of MSE between true and NMF maps.
+
+    :returns: list of angles, list of MSE, configuration of the best match, warning
+    ''' 
     min_MSE_config = find_min_MSE(true_maps,algo_maps,get_ind=True,unique=True)[1]
     min_angle_config = find_min_angle(true_spectra,algo_spectra,get_ind=True,unique=True)[1]
     warning = False

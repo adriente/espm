@@ -11,3 +11,4 @@ API reference
    estimators
    measures
    utils
+   table_utils

@@ -122,7 +122,15 @@ def lifshin_bremsstrahlung(x, b0, b1, E0 = 200):
     r"""
     Calculate the custom parametrized bremsstrahlung inspired by the model of L.Lifshin.
 
-    The model is designed to be linear and positive in b0 and b1.
+    The model is designed to have the same definition set as the original model of L.Lifshin with :math:`b_0 > 0` and :math:`b_1 > 0`.
+
+    The model is defined as follows:
+
+    .. math::
+
+        f(\varepsilon) = b_0 \frac{\varepsilon_0 - \varepsilon}{\varepsilon_0 \varepsilon} \left(1 - \frac{\varepsilon_0 - \varepsilon}{\varepsilon_0}\right) + b_1 \frac{\left( \varepsilon_0 - \varepsilon \right) ^2}{\varepsilon_0^2 \varepsilon}
+
+    where :math:`\varepsilon_0` is the energy of the incident beam, :math:`\varepsilon` is the energy of the emitted photon and :math:`b_0` and :math:`b_1` are the parameters of the model.    
     
     Parameters
     ----------

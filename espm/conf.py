@@ -26,8 +26,6 @@ HSPY_MAC = macs.ffast_mac # Tabulated absorption coefficient in Hyperspy
 DEFAULT_MISC_PARAMS = {
     "data_folder" : "default_synth_data",
     "shape_2d" : (80,80),
-    "weight_type" : "sphere",
-    "weights_params" : {"radius" : 2.0},
     "N" : 100,
     "densities" : [2.33,19.3],
     "model" : "EDXS",

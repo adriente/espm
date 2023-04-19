@@ -1,8 +1,9 @@
 r"""
-Models abstract class
----------------------
+Models base classes
+-------------------
 
-Its main purpose is to read databases and set energy parameters. 
+The PhysicalModel is the abstract class from which the EDX model inherits. 
+The ToyModel can be used for testing data analysis algorithms.
 """
 
 from abc import ABC, abstractmethod
