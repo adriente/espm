@@ -11,7 +11,7 @@ from espm.conf import DEFAULT_EDXS_PARAMS
 #                         "62": 0.04, "26": 0.004, "60": 0.008, "72": 0.004, "29": 0.01}}]
 
 def generate_brem_params (seed) : 
-    """
+    r"""
     Generate random parameters for the Bremsstrahlung model with a scaling factor that somewhat resembles the real data.
 
     Parameters
@@ -31,7 +31,7 @@ def generate_brem_params (seed) :
     return {"b0" : b0,"b1" : b1}
 
 def generate_elts_dict (seed, nb_elements = 3) : 
-    """
+    r"""
     Generate a random dictionary of elements and their relative abundance. The elements are limited to the range 6-82.
 
     Parameters
@@ -54,7 +54,7 @@ def generate_elts_dict (seed, nb_elements = 3) :
     return elt_dict
 
 def unique_elts (dict_list) : 
-    """
+    r"""
     Generate a list of unique chemical elements from a list of chemical elements dictionnaries.
 
     Parameters
@@ -80,7 +80,7 @@ def unique_elts (dict_list) :
     return list(set(full_elts_list))
 
 def generate_random_phases(n_phases = 3, seed = 0):
-    """
+    r"""
     Generate a list of phases of the EDXS model with random elemental compositions and Bremsstrahlung parameters. The model parameters are set to the default values.
 
     Parameters
@@ -113,7 +113,7 @@ def generate_random_phases(n_phases = 3, seed = 0):
     return model.phases
 
 def generate_modular_phases (elts_dicts = 3, brstlg_pars = None, scales = None, model_params = None, seed = 0) :
-    """
+    r"""
     Generate an array of phases of the EDXS model with set model parameters, elemental compositions and bremsstrahlung parameters. 
 
     Parameters

@@ -1,4 +1,4 @@
-"""
+r"""
 Weights creation class
 ----------------------
 
@@ -82,7 +82,7 @@ class Abundance(object):
     #################
 
     def add_wedge(self, ind_origin, length, width, conc_min, conc_max, phase_id):
-        """
+        r"""
         Function to define a wedge abundance of a defined phase. The concentration is max at the top and min at the bottom.
 
         Parameters
@@ -138,7 +138,7 @@ class Abundance(object):
    
 
     def add_sphere(self, ind_origin, radius, conc_max, phase_id, asym_x=1.0, asym_y=1.0):
-        """
+        r"""
         Function to define a sphere abundance of a defined phase. The concentration is max at centre and 0.0 on the edges.
 
         Parameters
@@ -182,7 +182,7 @@ class Abundance(object):
         self.check_add_weights(scaled_sphere, phase_id)
     
     def add_gaussian_ripple(self, center, width, conc_max, phase_id) :
-        """
+        r"""
         Function to define a gaussian ripple spanning over the whole length of the weights abundance of a defined phase. The concentration is max at the center and 0.0 on the edges.
 
         Parameters
@@ -219,7 +219,7 @@ class Abundance(object):
         self.check_add_weights(scaled_gaussian_ripple, phase_id)
 
     def add_laplacian(self,seed, phase_id, conc_min, conc_max,size_x = 50, size_y = 50) : 
-        """
+        r"""
         Function to generate smooth noise. The characteristic length scale of the noise variations is defined by the scale_x and scale_y parameters. 
 
         Parameters
@@ -264,7 +264,7 @@ class Abundance(object):
         self.check_add_weights(scaled_res, phase_id)
 
     def add_random(self,seed, phase_id, conc_min, conc_max) : 
-        """
+        r"""
         Function to generate random noise.
 
         Parameters
@@ -300,7 +300,7 @@ class Abundance(object):
         self.check_add_weights(scaled_rnd, phase_id)
 
     def add_image(self, image, phase_id, conc_min, conc_max) : 
-        """
+        r"""
         Function to add a 2D numpy array as a phase. 
 
         Parameters
@@ -335,7 +335,7 @@ class Abundance(object):
         self.check_add_weights(scaled_image, phase_id)
 
     def add_chemical_map(self, file, element_line, conc_min,conc_max, sigma, phase_id, **kwargs) :
-        """
+        r"""
         Function to add a chemical map extracted from a EDS spectrum image as a phase. A threshold and blurring are automatically applied to the map to suppress noise.
 
         Parameters
@@ -404,7 +404,7 @@ class Abundance(object):
 #####################################
 
 # def add_sphere(self, ind_origin, radius_x, radius_y, conc_min, conc_max, phase_id):
-#     """
+#     r"""
 #     Function to define a sphere of a defined phase (from phases). The concentration is max at centre and min on the edges. The "spheres" can be defined to be elliptic
 #     Inputs :
 #         ind_origin : center of the sphere (tuple of integers)

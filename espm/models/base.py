@@ -14,7 +14,7 @@ import numpy as np
 from typing import Optional
 
 class Model(ABC):
-    """Abstract class for models."""
+    r"""Abstract class for models."""
     def __init__(self):
         super().__init__()
 
@@ -76,7 +76,7 @@ class ToyModel(Model):
         self.phases = None
     
     def generate_g_matr (self, *args, **kwargs) -> None:
-        """Generate G matrix.
+        r"""Generate G matrix.
 
         Parameters
         ----------
@@ -113,7 +113,7 @@ class ToyModel(Model):
         self.G = G
 
     def generate_phases (self, *args, **kwargs) -> None:
-        """Generate phases.
+        r"""Generate phases.
 
         Parameters
         ----------
@@ -136,7 +136,7 @@ class ToyModel(Model):
     
 
 class PhysicalModel(Model) :
-    """Abstract class of the models"""
+    r"""Abstract class of the models"""
     def __init__(self, e_offset, e_size, e_scale, params_dict,db_name="default_xrays.json", E0 = 200, **kwargs) :
         super().__init__()
         self.x = self.build_energy_scale(e_offset, e_size, e_scale)

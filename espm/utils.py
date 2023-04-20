@@ -1,4 +1,4 @@
-"""Utils for the ESPM package"""
+r"""Utils for the ESPM package"""
 
 import numpy as np
 from scipy.sparse import lil_matrix, block_diag
@@ -12,7 +12,7 @@ _qtg_widgets = []
 _plt_figures = []
 
 def process_losses(losses):
-    """ Process the losses to be plotted
+    r""" Process the losses to be plotted
 
     Parameters
     ----------
@@ -36,7 +36,7 @@ def process_losses(losses):
     return values, names
 
 def create_laplacian_matrix(nx, ny=None):
-    """
+    r"""
     Helper method to create the laplacian matrix for the laplacian regularization
     
     Parameters
@@ -76,7 +76,7 @@ def create_laplacian_matrix(nx, ny=None):
 
 
 def rescaled_DH(D,H) :
-    """Rescale the matrices D and H such that the columns of H sums approximately to one.
+    r"""Rescale the matrices D and H such that the columns of H sums approximately to one.
 
     :param np.array 2D D: n x k matrix
     :param np.array 2D H: k x m matrix
@@ -95,7 +95,7 @@ def rescaled_DH(D,H) :
     return D_rescale, H_rescale
 
 def bin_spim(data,n,m):
-    """ 
+    r""" 
     
     Take a 3D array of size (x,y,k) [px, py, e]
     Returns a 3D array of size (n,m,k) [new_px, new_py, e]
@@ -107,7 +107,7 @@ def bin_spim(data,n,m):
 
 
 def number_to_symbol_dict (func) : 
-    """
+    r"""
     Decorator
     Takes a dict of elements (a.k.a chemical composition) with atomic numbers as keys (e.g. 26 for Fe)
     returns a dict of elements with symbols as keys (e.g. Fe for iron)
@@ -136,7 +136,7 @@ def number_to_symbol_dict (func) :
     return inner
 
 def symbol_to_number_dict (func) : 
-    """
+    r"""
     Decorator
     Takes a dict of elements (a.k.a chemical composition) with symbols as keys (e.g. Fe for iron)
     returns a dict of elements with atomic numbers as keys (e.g. 26 for iron)
@@ -163,7 +163,7 @@ def symbol_to_number_dict (func) :
     return inner
 
 def symbol_to_number_list (func) : 
-    """
+    r"""
     Decorator
     Takes a dict of elements (a.k.a chemical composition) with symbols as keys (e.g. Fe for iron)
     returns a dict of elements with atomic numbers as keys (e.g. 26 for iron)
@@ -188,7 +188,7 @@ def symbol_to_number_list (func) :
     return inner
 
 def number_to_symbol_list (func) : 
-    """
+    r"""
     Decorator
     Takes a dict of elements (a.k.a chemical composition) with symbols as keys (e.g. Fe for iron)
     returns a dict of elements with atomic numbers as keys (e.g. 26 for iron)
@@ -214,7 +214,7 @@ def number_to_symbol_list (func) :
 
 @number_to_symbol_dict
 def atomic_to_weight_dict (*,elements_dict = {}) :
-    """
+    r"""
     Wrapper to the atomic_to_weight function of hyperspy. Takes a dict of chemical composition expressed in atomic fractions.
     Returns a dict of chemical composition expressed in atomic weight fratiom.
     """ 
@@ -236,7 +236,7 @@ def atomic_to_weight_dict (*,elements_dict = {}) :
 
 @number_to_symbol_dict
 def approx_density(atomic_fraction = False,*,elements_dict = {}) :
-    """
+    r"""
     Wrapper to the density_of_mixture function of hyperspy. Takes a dict of chemical composition expressed in atomic weight fractions.
     Returns an approximated density.
     """  
@@ -255,7 +255,7 @@ def approx_density(atomic_fraction = False,*,elements_dict = {}) :
         return density_of_mixture(list_wt,list_elts)
 
 def arg_helper(params, d_params):
-    """ Check if all parameter of d_params are in params. If not, they are added to params with the default value.
+    r""" Check if all parameter of d_params are in params. If not, they are added to params with the default value.
 
     Parameters
     ----------
@@ -278,7 +278,7 @@ def arg_helper(params, d_params):
     return params
 
 def check_keys(params, d_params, upperkeys = '',toprint = True):
-    """ Check if all parameter of d_params are in params. If not, they are added to params with the default value.
+    r""" Check if all parameter of d_params are in params. If not, they are added to params with the default value.
 
     Parameters
     ----------
@@ -322,7 +322,7 @@ def check_keys(params, d_params, upperkeys = '',toprint = True):
     return True
 
 def isdict(p):
-    """Return True if the variable a dictionary.
+    r"""Return True if the variable a dictionary.
     
     :param p: variable to check
     :type p: any
@@ -333,7 +333,7 @@ def isdict(p):
     return type(p) is dict
 
 def is_symbol (i) :
-    """ Return True if i is a chemical symbol
+    r""" Return True if i is a chemical symbol
     
     :param i: variable to check
     :type i: any
@@ -348,7 +348,7 @@ def is_symbol (i) :
         return False
 
 def is_number (i) :
-    """ Return True if i is a number
+    r""" Return True if i is a number
 
     :param i: variable to check
     :type i: any

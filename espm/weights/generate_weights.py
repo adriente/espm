@@ -1,4 +1,4 @@
-"""
+r"""
 Predetermined weights
 ---------------------
 
@@ -48,7 +48,7 @@ def toy_weights(**kwargs):
     return a.weights
 
 def random_weights(shape_2d, n_phases=3, seed=0) :
-    """ Generates a random weight matrix with a uniform distribution.
+    r""" Generates a random weight matrix with a uniform distribution.
 
     The random weights are then normalized to sum up to one.
 
@@ -91,7 +91,7 @@ def random_weights(shape_2d, n_phases=3, seed=0) :
     
 
 def laplacian_weights(shape_2d, n_phases=3, seed=0, size_x = 10, size_y = 10,**kwargs) :
-    """ Generates a random weight matrix with a laplacian distribution.
+    r""" Generates a random weight matrix with a laplacian distribution.
 
     The random weight are then filtered with median filter 2 times to smooth the distribution.
     Eventually, the result is normalized to sum up to one.
@@ -135,7 +135,7 @@ def laplacian_weights(shape_2d, n_phases=3, seed=0, size_x = 10, size_y = 10,**k
     return a.weights
 
 def gaussian_ripple_weights(shape_2d, width = 1, seed = 0, **kwargs) : 
-    """
+    r"""
     Generate a weight matrix with a gaussian ripple of the given width and randomly centered.
 
     Parameters
@@ -180,7 +180,7 @@ def gaussian_ripple_weights(shape_2d, width = 1, seed = 0, **kwargs) :
     
     
 def spheres_weights(shape_2d=[80, 80], n_phases=3,  seed=0, radius = 1, **kwargs):
-    """
+    r"""
     Generate a weight matrix with randomly placed spheres of the given radius.
 
     Parameters
@@ -223,7 +223,7 @@ def spheres_weights(shape_2d=[80, 80], n_phases=3,  seed=0, radius = 1, **kwargs
     return a.weights
 
 def wedge_weights(shape_2d=[80, 80]):
-    """
+    r"""
     Generate a weight matrix with a wedge of phase 2 and complementary phase 1.
 
     Parameters
@@ -259,7 +259,7 @@ def wedge_weights(shape_2d=[80, 80]):
     return a.weights
 
 def chemical_map_weights(file = None, line_list = [], conc_list = [] , **kwargs):
-    """
+    r"""
     Generate a weight matrix based on an experimental EDS spectrum image. For each selected line a map is generated with the corresponding concentration.
 
     Parameters
@@ -292,7 +292,7 @@ def chemical_map_weights(file = None, line_list = [], conc_list = [] , **kwargs)
     return a.weights
 
 def generate_weights(weight_type, shape_2d, n_phases=3, seed=0, **params):
-    """
+    r"""
     Generate a weight matrix with the given type. Additional parameters can be passed to the function as keyword arguments.
 
     Parameters
