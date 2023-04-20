@@ -133,6 +133,7 @@ class ToyModel(Model):
 
         self.generate_g_matr()
         self.phases = self.G @ self.Wdot
+        
     
 
 class PhysicalModel(Model) :

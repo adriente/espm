@@ -178,6 +178,7 @@ def generate_spim_sample(phases, weights, model_params,misc_params, seed = 0,g_p
     Xdot = generate_spim(phases, weights, misc_params["densities"], misc_params["N"], seed = seed,continuous=True)
     X = generate_spim(phases, weights, misc_params["densities"], misc_params["N"],seed= seed,continuous=False)
     shape_2d = weights.shape[:2]
+    
     if misc_params["model"] == "EDXS" : 
         G = None
     else : 
