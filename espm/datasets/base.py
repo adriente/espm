@@ -46,7 +46,7 @@ def generate_spim(phases, weights, densities, N, seed=0,continuous = False):
 
     Notes
     -----
-    More details about the spectrum image generation can be found in our paper: :cite:p:`teurtrie2023espm`.
+    More details about the spectrum image generation can be found in the contribution: :cite:p:`teurtrie2023espm`.
 
     """
     # Set the seed

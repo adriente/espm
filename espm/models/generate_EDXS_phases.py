@@ -23,7 +23,7 @@ def generate_brem_params (seed) :
     -------
     dict
         Dictionary containing the parameters for the Bremsstrahlung model.
-   
+
     """
     np.random.seed(seed)
     b0 = float(np.random.rand(1)*1e-2)
@@ -107,7 +107,7 @@ def generate_random_phases(n_phases = 3, seed = 0):
         temp["elements_dict"] = elt_dict
         temp["scale"] = 1.0
         dict_list.append(temp.copy())     
-   
+
     model.generate_phases(dict_list)
             
     return model.phases
@@ -146,6 +146,7 @@ def generate_modular_phases (elts_dicts = 3, brstlg_pars = None, scales = None, 
         ... brstlg_pars = [{"b0" : 0.03, "b1" : 0.01}, {"b0" : 0.002, "b1" : 0.0025}])
         >>> plt.plot(phases[0])
         >>> plt.plot(phases[1])
+
     """
     dict_list = []
     if type(elts_dicts) == int :
@@ -173,7 +174,7 @@ def generate_modular_phases (elts_dicts = 3, brstlg_pars = None, scales = None, 
         else : 
             temp["scale"] = scales[i]
         dict_list.append(temp.copy())     
-   
+
     model.generate_phases(dict_list)
 
     return model.phases
