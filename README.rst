@@ -66,14 +66,9 @@ A draft of the documentation is available at: https://espm.readthedocs.io/en/lat
 * Update the line 40 of `doc/introduction/index.rst` (@Adrien)
 * Make some doc for the dataset module (just the minimum) (@Adrien)
     - Nati: I started doint it. I suggest to put all the function that create samples in dataset.samples.
-* Toy dataset: create model class, change outputs, adapts function (@Nati) Done!
 * Separate the spectral and spacial parts (@Adrien)
     - Move generate_EDXS_phases to models
-    - Create a modules for weights (Nati: I started doing it)
 * Complete the general doc in `doc/introduction/index.rst` (@Adrien)
-* Clarify the code for the estimator: remove the L2 loss (@Nati) Done!
-* Add the general problem that we solve in the doc (@Nati) Done!
-* Update the ML notebook with more explanations (@Nati) Done!
 * Check that the doc is somehow understanable and sufficiently complete (@Sebastian)
 * Add the reference to the dataset paper (@Nati) 
 * add the reference to the algorithm paper (@Nati) 

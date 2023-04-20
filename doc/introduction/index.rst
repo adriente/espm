@@ -46,10 +46,9 @@ This object has different useful attributes and methods. For example,
 @ADRIEN --- summarize here some of them
 
 .. note::
-    Please see the review article `espm : a Python library for the simulation 
-    of STEM-EDXS datasets` for an overview of
+    Please see the review article :cite:p:`teurtrie2023espm`. 
+    `espm : a Python library for the simulation of STEM-EDXS datasets` for an overview of
     the simulation methods this package leverages.
-
 
 Factorization
 -------------
@@ -63,7 +62,7 @@ Taking the non-negative matrix factorization (NMF) is done with the following:
     >>> spim.plot_decomposition_loadings(3)
     >>> spim.plot_decomposition_factors(3)
 
-BIt will use the algorithms developped in this `contribution`_.
+It will use the algorithms developped in this `contribution`_.
 
 .. _contribution: https://link-to-the-paper.com
 

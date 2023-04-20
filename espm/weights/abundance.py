@@ -11,7 +11,9 @@ import scipy.ndimage as ndimage
 from skimage.filters import threshold_otsu
 import hyperspy.api as hs
 from skimage.filters import median
-from scipy.interpolate import interp2d
+from scipy.interpolate import RectBivariateSpline
+# from scipy.interpolate import interp2d
+
 
 class Abundance(object):
     
@@ -256,9 +258,10 @@ class Abundance(object):
         np.random.seed(seed)
         rnd = np.random.rand(size_x,size_y)
         lapl = median(median(rnd))
-        f = interp2d(np.arange(size_x), np.arange(size_y), lapl, kind='cubic')
+        # f = interp2d(np.arange(size_x), np.arange(size_y), lapl, kind='cubic')
+        f = RectBivariateSpline(np.arange(size_x), np.arange(size_y), lapl.T)
         # For some dumb reason, the interpolation function has to have the coordinates in the opposite order
-        res = f(np.linspace(0,size_y,num = self.shape_2d[1]),np.linspace(0,size_x,num = self.shape_2d[0]))
+        res = f(np.linspace(0,size_y,num = self.shape_2d[1]),np.linspace(0,size_x,num = self.shape_2d[0])).T
 
         scaled_res = self.scale_phase(res,conc_min,conc_max)
         self.check_add_weights(scaled_res, phase_id)
