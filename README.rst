@@ -44,34 +44,13 @@ You can get started with the following notebooks:
 CITING
 ------
 
-If you use this library, please cite the following paper: 
+If you use this library, please cite the following paper::
 
-@article{teurtrie2023espm,
-  title={espm: A Python library for the simulation of STEM-EDXS datasets},
-  author={Teurtrie, Adrien and Perraudin, Nathana{\"e}l and Holvoet, Thomas and Chen, Hui and Alexander, Duncan TL and Obozinski, Guillaume and H{\'e}bert, C{\'e}cile},
-  journal={Ultramicroscopy},
-  pages={113719},
-  year={2023},
-  publisher={Elsevier}
-}
-
-TODOs
------
-
-Here is a list of things that we need to do before the version 0.2.0, which will be the first
-official release of the library. The code is already available on github at the following address:  
-https://github.com/adriente/espm.git 
-A draft of the documentation is available at: https://espm.readthedocs.io/en/latest/
-
-* Update the line 40 of `doc/introduction/index.rst` (@Adrien)
-* Make some doc for the dataset module (just the minimum) (@Adrien)
-    - Nati: I started doint it. I suggest to put all the function that create samples in dataset.samples.
-* Separate the spectral and spacial parts (@Adrien)
-    - Move generate_EDXS_phases to models
-* Complete the general doc in `doc/introduction/index.rst` (@Adrien)
-* Check that the doc is somehow understanable and sufficiently complete (@Sebastian)
-* Add the reference to the dataset paper (@Nati) 
-* add the reference to the algorithm paper (@Nati) 
-
-@Adrien: Check the code in espm.weights. If you copy this code, you can generate figures for the doc. 
-It seems that you need to have the title `Examples` for the system to work. `Example` does not work!
+    @article{teurtrie2023espm,
+    title={espm: A Python library for the simulation of STEM-EDXS datasets},
+    author={Teurtrie, Adrien and Perraudin, Nathana{\"e}l and Holvoet, Thomas and Chen, Hui and Alexander, Duncan TL and Obozinski, Guillaume and H{\'e}bert, C{\'e}cile},
+    journal={Ultramicroscopy},
+    pages={113719},
+    year={2023},
+    publisher={Elsevier}
+    }

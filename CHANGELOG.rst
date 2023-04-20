@@ -15,3 +15,12 @@ First inofficial release
 * First version of the package on PyPi
 * All main functionality tested
 * Basic documentation
+
+
+0.2.0 (2023-20-04)
+------------------
+
+Second inofficial release
+
+* All important part of the documentation are present
+* This is a test before the first official release 1.0.0
