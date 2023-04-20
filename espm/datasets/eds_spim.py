@@ -274,12 +274,13 @@ class EDS_espm(Signal1D) :
     def set_fixed_W (self,phases_dict) : 
         r"""
         Helper function to create a fixed_W matrix. The output matrix will have -1 entries except for the elements (and bremsstrahlung parameters) that are present in the phases_dict dictionary.
-        In the output (fixed_W) matrix, the -1 will be ignored during the decomposition of 
+        In the output (fixed_W) matrix, the -1 entries will be ignored during the decomposition using :class:`espm.estimator.NMFEstimator` are normally learned while the non-negative entries will be fixed to the values given in the phases_dict dictionary.
+        Usually, the easiest is to fix some elements to 0.0 in some phases if you want to improve unmixing results. For example, if you have a phase with only Si and O, you can fix the Fe element to 0.0 in this phase.
 
         Parameters
         ----------
         phases_dict : dict
-            Determines which elements of fixed_W are going to be non-negative. 
+            Determines which elements of fixed_W are going to be non-negative. The dictionnary has typically the following structure : phases_dict = {"phase1_name" : {"Fe" : 0.0, "O" : 1.25e23}, "phase2_name" : {"Si" : 0.0, "b0" : 0.05}}.
         Returns
         -------
         W : numpy.ndarray
