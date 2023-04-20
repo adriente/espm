@@ -219,6 +219,10 @@ class EDS_espm(Signal1D) :
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.take_off_angle = take_off_angle(tilt_stage,azimuth_angle,elevation_angle)
 
     def set_additional_parameters(self,thickness = 200e-7, density = 3.5,  detector_type = "SDD_efficiency.txt", width_slope = 0.01, width_intercept = 0.065, xray_db = "default_xrays.json") : 
+        r"""
+        Helper function to set the metadata that are specific to the :mod:`espm` package so that it does not overwrite experimental metadata.
+        See the documentation of the :func:`set_analysis_parameters` function for the meaning of the parameters.
+        """
         self.metadata.Sample.thickness = thickness
         self.metadata.Sample.density = density
         try : 
@@ -237,6 +241,14 @@ class EDS_espm(Signal1D) :
 
     @number_to_symbol_list
     def add_elements(self, *, elements = []) :
+        r"""
+        Add elements to the existing list of elements in the metadata.
+
+        Parameters
+        ----------
+        elements : list, optional
+            List of the elements to be added to the existing list of elements in the metadata. They have to be chemical symbols (e.g. ['Si','Fe', 'O']).
+        """
         try : 
             self.metadata.Sample.elements = elements
         except AttributeError :
@@ -244,6 +256,10 @@ class EDS_espm(Signal1D) :
             self.metadata.Sample.elements = elements
 
     def set_microscope_parameters(self, beam_energy = 200, azimuth_angle = 0.0, elevation_angle = 22.0,tilt_stage = 0.0) : 
+        r"""
+        Helper function to set the microscope parameters of the :class:`EDS_espm` object. Be careful, it will overwrite the microscope parameters of the object.
+        See the documentation of the :func:`set_analysis_parameters` function for the meaning of the parameters.
+        """
         self.metadata.Acquisition_instrument = {}
         self.metadata.Acquisition_instrument.TEM = {}
         self.metadata.Acquisition_instrument.TEM.Stage = {}
@@ -256,6 +272,18 @@ class EDS_espm(Signal1D) :
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.energy_resolution_MnKa = 130.0
 
     def set_fixed_W (self,phases_dict) : 
+        r"""
+        Helper function to create a fixed_W matrix. The output matrix will have -1 entries except for the elements (and bremsstrahlung parameters) that are present in the phases_dict dictionary.
+        In the output (fixed_W) matrix, the -1 will be ignored during the decomposition of 
+
+        Parameters
+        ----------
+        phases_dict : dict
+            Determines which elements of fixed_W are going to be non-negative. 
+        Returns
+        -------
+        W : numpy.ndarray
+        """
         elements = self.metadata.Sample.elements
         if self.problem_type == "no_brstlg" : 
             W = -1* np.ones((len(elements), len(phases_dict.keys())))
@@ -348,6 +376,9 @@ class EDS_espm(Signal1D) :
 ######################
 
 def get_metadata(spim) : 
+    r"""
+    Get the metadata of the :class:`EDS_espm` object and format it as a model parameters dictionary.
+    """
     mod_pars = {}
     try :
         mod_pars["E0"] = spim.metadata.Acquisition_instrument.TEM.beam_energy
