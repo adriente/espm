@@ -56,6 +56,13 @@ def absorption_coefficient (x,atomic_fraction = False,*,elements_dict = {"Si" : 
 def absorption_correction (x,thickness = 100e-7,toa = 90,density = None,atomic_fraction = False,*,elements_dict = {"Si" : 1.0},**kwargs) : 
     r"""
     Calculate the contribution of the absorption on the EDX spectrum for a thin slab of material with a given composition at a certain energy or over a certain energy range.
+    The absorption correction is calculated using the following formula :
+    
+    .. math::
+      
+        \frac{1 - \exp(-\chi)}{\chi} 
+      
+    where :math:`\chi = \mu \rho t / \sin(\theta)`, :math:`\mu` is the mass-absorption coefficient, :math:`\rho` is the density of the material, :math:`t` is the thickness of the sample and :math:`\theta` is the average take-off angle of the x-rays travelling from the sample to the x-ray detectors.
 
     Parameters
     ----------

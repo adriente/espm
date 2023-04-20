@@ -136,12 +136,16 @@ def generate_modular_phases (elts_dicts = 3, brstlg_pars = None, scales = None, 
     
     Examples
     --------
-    >>> from espm.models.generate_EDXS_phases import generate_modular_phases
-    >>> import matplotlib.pyplot as plt
-    >>> phases = generate_modular_phases(elts_dicts = [{"8": 0.5, "14": 0.2, "26": 0.3}, {"8" : 0.5, "23" : 0.3, "7" : 0.2}],
-    ... brstlg_pars = [{"b0" : 0.03, "b1" : 0.1}, {"b0" : 0.02, "b1" : 0.25}])
-    >>> plt.plot(phases[0])
-    >>> plt.plot(phases[1])
+
+    .. plot::
+        :context: close-figs
+        
+        >>> from espm.models.generate_EDXS_phases import generate_modular_phases
+        >>> import matplotlib.pyplot as plt
+        >>> phases = generate_modular_phases(elts_dicts = [{"8": 0.5, "14": 0.2, "26": 0.3}, {"8" : 0.5, "23" : 0.3, "7" : 0.2}],
+        ... brstlg_pars = [{"b0" : 0.03, "b1" : 0.01}, {"b0" : 0.002, "b1" : 0.0025}])
+        >>> plt.plot(phases[0])
+        >>> plt.plot(phases[1])
     """
     dict_list = []
     if type(elts_dicts) == int :

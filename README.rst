@@ -41,6 +41,20 @@ You can get started with the following notebooks:
 * https://espm.readthedocs.io/en/latest/introduction/notebooks/api.html
 * https://espm.readthedocs.io/en/latest/introduction/notebooks/toy-problem.html
 
+CITING
+------
+
+If you use this library, please cite the following paper: 
+
+@article{teurtrie2023espm,
+  title={espm: A Python library for the simulation of STEM-EDXS datasets},
+  author={Teurtrie, Adrien and Perraudin, Nathana{\"e}l and Holvoet, Thomas and Chen, Hui and Alexander, Duncan TL and Obozinski, Guillaume and H{\'e}bert, C{\'e}cile},
+  journal={Ultramicroscopy},
+  pages={113719},
+  year={2023},
+  publisher={Elsevier}
+}
+
 TODOs
 -----
 

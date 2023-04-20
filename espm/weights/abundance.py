@@ -2,7 +2,7 @@
 Weights creation class
 ----------------------
 
-The :mod: `espm.weights.abundance` module implements the class :class: `Abundance` which is used to create the weights of the phases. The weights are stored in the attribute :attr: `weights` and are normalized to 1.
+The :mod:`espm.weights.abundance` module implements the class :class:`Abundance` which is used to create the weights of the phases. The weights are stored in the attribute :attr:`weights` and are normalized to 1.
 """
 
 import numpy as np

@@ -1,7 +1,6 @@
 r"""
-The :mod:`espm.models` module implements the physical modelling 
-that is used both for the creation of the G matrix and for the 
-simulation of data.
+The :mod:`espm.models` module implements the model objects that are used to simulate features of the data (e.g. in EDXS it corresponds to spectra).
+The models are also used for the creation of the G matrix, which can be later used for the decomposition of data using NMF.
 
 .. note::
 

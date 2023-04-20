@@ -2,7 +2,6 @@
 Models
 ======
 
-
 .. automodule:: espm.models
 
 .. automodule:: espm.models.base
@@ -12,3 +11,6 @@ Models
 .. automodule:: espm.models.EDXS_function
 
 .. automodule:: espm.models.absorption_edxs
+
+.. automodule:: espm.models.generate_EDXS_phases
+
