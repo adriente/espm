@@ -54,7 +54,7 @@ Making a release
 #. Test the upload and installation process::
 
     $ twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-    $ pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple emspy
+    $ pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple espm
 
 #. Build and upload the distribution to the real PyPI with ``make release``.
 

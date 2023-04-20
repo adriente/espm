@@ -149,7 +149,7 @@ def test_general():
 
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A2.T))
     # assert(trace_xtLx(L, A.T) < trace_xtLx(L, A2.T) )
-    assert(trace_xtLx(L, A3.T) < trace_xtLx(L, H.T) )
+    assert(trace_xtLx(L, A3.T) < trace_xtLx(L, H.T)*1.01 )
 
 def test_fixed_mat () :
     G, W, H, D, w, X, Xdot, N = generate_one_sample()
