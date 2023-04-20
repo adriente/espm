@@ -25,7 +25,7 @@ class EDXS(PhysicalModel):
         width_intercept=0.065,
         **kwargs
     ):
-        """
+        r"""
         :database_path: file path to a database of x-ray data (energy and intensity ratios of the peaks)
         :abs_db_path: file path to a database of attenuation coefficients (Useful for artificial data only for the moment)
         :brstlg_pars: dictionary of parameters for the continuum X-rays. Only a part of the parameters can be used without issues.

@@ -1,3 +1,9 @@
+r"""
+The module :mod:`espm.datasets.built_in_EDXS_datasets` implements the functions that generate two built-in datasets:
+- A dataset of 2 particles embedded in a matrix.
+- A dataset with a linear local accumulation of Sr.
+"""
+
 from espm.datasets.base import generate_dataset
 from espm.conf import DATASETS_PATH
 from pathlib import Path
@@ -94,6 +100,18 @@ boundary_misc_dict = {
 
 
 def generate_built_in_datasets (seeds_range = 2) : 
+    r"""
+    Generate the two built-in datasets if they are not already present in the datasets folder.
+
+    Parameters
+    ----------
+    seeds_range : int
+        The number of seeds to use for the generation of the built-in datasets. The built-in datasets are generated with a base_seed, and then the base_seed + 1, base_seed + 2, etc. up to base_seed + seeds_range -1.
+
+    Returns
+    -------
+    None
+    """
     if not(os.path.isdir(DATASETS_PATH / Path(particles_misc_dict["data_folder"]))) : 
         print("Generating 2 particles + one matrix built-in dataset. This will take a minute.")
         particle_phases = generate_modular_phases(**particles_phases_dict)
@@ -120,11 +138,37 @@ def generate_built_in_datasets (seeds_range = 2) :
                          elements = boundary_elements)
 
 def load_particules (sample = 0) : 
+    r"""
+    Load the built-in dataset of particles.
+
+    Parameters
+    ----------
+    sample : int
+        The sample number to load.
+
+    Returns
+    -------
+    spim : hyperspy.signals.EDS_espm
+        The loaded dataset.
+    """
     filename = DATASETS_PATH / Path("{}/sample_{}.hspy".format(particles_misc_dict["data_folder"],sample))
     spim = hs.load(filename)
     return spim
 
 def load_grain_boundary (sample = 0) :
+    r"""
+    Load the built-in dataset of a grain boundary.
+
+    Parameters
+    ----------
+    sample : int
+        The sample number to load.
+
+    Returns
+    -------
+    spim : hyperspy.signals.EDS_espm
+        The loaded dataset.
+    """
     filename = DATASETS_PATH / Path("{}/sample_{}.hspy".format(boundary_misc_dict["data_folder"],sample))
     spim = hs.load(filename)
     return spim
