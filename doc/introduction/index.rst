@@ -82,10 +82,18 @@ The syntax of the `hyperspy` package can be used for the decomposition and plott
 
 Thanks to the physics-guided approach a direct quantification is possible.
 
-.. code-block:: python
-
-    >>> print("An example of a very nice table")
-    >>> spim.print_concentration_report()
+>>> spim.print_concentration_report()
+Concentrations report
+     p0     p1     p2
+V  : 0.0178 0.0061 0.0569 
+Rb : 0.5262 0.0609 0.3005 
+W  : 0.0379 0.0055 0.0326 
+N  : 0.0090 0.0913 0.0110 
+Yb : 0.0000 0.0901 0.0000 
+Pt : 0.0003 0.0179 0.0011 
+Al : 0.0000 0.1100 0.0000 
+Ti : 0.0000 0.0957 0.0000 
+La : 0.0000 0.2163 0.0000
 
 It uses algorithms that will be presented in a coming contribution.
 
