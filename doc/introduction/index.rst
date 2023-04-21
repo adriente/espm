@@ -41,27 +41,51 @@ will be saved using the "base_path" argument.
 
 >>> ds.generate_built_in_datasets(base_path="generated_samples", seeds_range=1)
 
-Here the object `spim` is of the :class:`hyperspy._signals.signal1d.Signal1D`.
-This object has different useful attributes and methods. For example, 
-@ADRIEN --- summarize here some of them
+Here the object `spim` is of the :class:`espm.datasets.eds_spim.EDS_spim`. 
+It inheritates from the :class:`hyperspy.api.signals.Signal1D` class for a seamless integration in the hyperspy framework.
+This object also has additional attributes and methods to store simulated ground truth and get the results of the decomposition performed using the espm package.
 
 .. note::
     Please see the review article `espm : a Python library for the simulation 
     of STEM-EDXS datasets` for an overview of
     the simulation methods this package leverages.
 
+Including physics modelling in the decomposition
+------------------------------------------------
+
+To improve the hyperspectral unmixing of the data, :mod:`espm` offers the opportunity to include physics modelling in the decomposition throught the G matrix.
+The G matrix is easily built using the metadata store in the `spim` object.
+
+.. plot::
+    :context: close-figs
+
+    >>> spim.build_G()
+
+The G matrix is stored in the `spim` object and can be accessed using the `G` attribute. 
+The first columns of G correspond to the characteristic X-rays of the chemical elements that compose the sample and the two last columns correspond to the bremsstrahlung model.
+The modelling of the characteristic X-rays is based on tables produced using the :mod:`emtables` package.
 
 Factorization
 -------------
 
-Taking the non-negative matrix factorization (NMF) is done with the following:
+Using the :class:`espm.estimators.SmoothNMF`, we can use the physics-guided NMF algorithm to decompose the data. 
+The syntax of the `hyperspy` package can be used for the decomposition and plotting of the results. 
 
 .. plot::
     :context: close-figs
     
-    >>> out = spim.decomposition(3)
+    >>> from espm.estimators import SmoothNMF
+    >>> est = SmoothNMF( n_components = 3, max_iter = 500, G = spim.G,hspy_comp = True,l2 = True,lambda_L = 0)
+    >>> out = spim.decomposition(True,algorithm= est)
     >>> spim.plot_decomposition_loadings(3)
     >>> spim.plot_decomposition_factors(3)
+
+Thanks to the physics-guided approach a direct quantification is possible.
+
+.. code-block:: python
+
+    >>> print("An example of a very nice table")
+    >>> spim.print_concentration_report()
 
 BIt will use the algorithms developped in this `contribution`_.
 

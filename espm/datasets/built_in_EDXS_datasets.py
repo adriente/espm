@@ -115,7 +115,7 @@ def generate_built_in_datasets (seeds_range = 10) :
     if not(os.path.isdir(DATASETS_PATH / Path(particles_misc_dict["data_folder"]))) : 
         print("Generating 2 particles + one matrix built-in dataset. This will take a minute.")
         particle_phases = generate_modular_phases(**particles_phases_dict)
-        particles_weights = generate_weights("sphere", particles_misc_dict['shape_2d'], n_phases=3, seed=particles_misc_dict['seed'], radius = 15)
+        particles_weights = generate_weights("sphere", particles_misc_dict['shape_2d'], n_phases=3, seed=particles_misc_dict['seed'], radius = 20)
         particles_elements = elts_list_from_dict_list(particles_phases_dict['elts_dicts'])
         generate_dataset(base_seed=particles_misc_dict['seed'],
                          sample_number=seeds_range,

@@ -81,7 +81,7 @@ class SmoothNMF(NMFEstimator):
     loss_names_ = NMFEstimator.loss_names_ + ["log_reg_loss"] + ["Lapl_reg_loss"] + ["gamma"]
 
     # args and kwargs are copied from the init to the super instead of capturing them in *args and **kwargs to be scikit-learn compliant.
-    def __init__(self, lambda_L = 1.0, linesearch=False, mu=0, epsilon_reg=1, algo="log_surrogate", 
+    def __init__(self, lambda_L = 0.0, linesearch=False, mu=0, epsilon_reg=1, algo="log_surrogate", 
                  force_simplex=True, dicotomy_tol=dicotomy_tol, gamma=None, **kwargs):
 
         super().__init__( **kwargs)

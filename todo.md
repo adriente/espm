@@ -5,11 +5,6 @@ official release of the library. The code is already available on github at the 
 https://github.com/adriente/espm.git 
 A draft of the documentation is available at: https://espm.readthedocs.io/en/latest/
 
-* Update the line 40 of `doc/introduction/index.rst` (@Adrien)
-* Make some doc for the dataset module (just the minimum) (@Adrien)
-    - Nati: I started doint it. I suggest to put all the function that create samples in dataset.samples.
-* Separate the spectral and spacial parts (@Adrien)
-    - Move generate_EDXS_phases to models
 * Complete the general doc in `doc/introduction/index.rst` (@Adrien)
 * Check that the doc is somehow understanable and sufficiently complete (@Sebastian)
 * Add the reference to the dataset paper (@Nati) 
