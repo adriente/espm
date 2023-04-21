@@ -87,9 +87,7 @@ Thanks to the physics-guided approach a direct quantification is possible.
     >>> print("An example of a very nice table")
     >>> spim.print_concentration_report()
 
-BIt will use the algorithms developped in this `contribution`_.
-
-.. _contribution: https://link-to-the-paper.com
+It uses algorithms that will be presented in a coming contribution.
 
 These algorithms are an important part of this package. They are specialized to solve regularized Poisson NMF problems. Mathematically, they can be expressed as:
 
