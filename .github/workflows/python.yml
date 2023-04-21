@@ -31,7 +31,9 @@ jobs:
     - name: Test with pytest
       run: |
         make test
-
+    - name: Install Pandoc
+      run: |
+        apt-get install pandoc
     - name: Test doc
       run: |
         make doc
