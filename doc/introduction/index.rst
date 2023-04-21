@@ -63,9 +63,7 @@ Taking the non-negative matrix factorization (NMF) is done with the following:
     >>> spim.plot_decomposition_loadings(3)
     >>> spim.plot_decomposition_factors(3)
 
-BIt will use the algorithms developped in this `contribution`_.
-
-.. _contribution: https://link-to-the-paper.com
+BIt will use the algorithms developped in a coming contribution.
 
 These algorithms are an important part of this package. They are specialized to solve regularized Poisson NMF problems. Mathematically, they can be expressed as:
 
