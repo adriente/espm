@@ -6,7 +6,8 @@ build
 **.npz
 **#
 **~
-generated_datasets
+/generated_datasets/*
+!generated_datasets/71GPa_experimental_data.hspy
 results
 .DS_Store
 
