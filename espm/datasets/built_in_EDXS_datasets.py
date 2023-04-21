@@ -99,7 +99,7 @@ boundary_misc_dict = {
 }
 
 
-def generate_built_in_datasets (seeds_range = 2) : 
+def generate_built_in_datasets (seeds_range = 10) : 
     r"""
     Generate the two built-in datasets if they are not already present in the datasets folder.
 
@@ -118,7 +118,7 @@ def generate_built_in_datasets (seeds_range = 2) :
         particles_weights = generate_weights("sphere", particles_misc_dict['shape_2d'], n_phases=3, seed=particles_misc_dict['seed'], radius = 15)
         particles_elements = elts_list_from_dict_list(particles_phases_dict['elts_dicts'])
         generate_dataset(base_seed=particles_misc_dict['seed'],
-                         sample_number=10,
+                         sample_number=seeds_range,
                          model_params = particles_phases_dict['model_params'],
                          misc_params = particles_misc_dict,
                          phases = particle_phases,
@@ -130,13 +130,12 @@ def generate_built_in_datasets (seeds_range = 2) :
         boundary_weights = generate_weights("gaussian_ripple", boundary_misc_dict['shape_2d'], n_phases=2, seed=boundary_misc_dict['seed'], width = 10)
         boundary_elements = elts_list_from_dict_list(boundary_phases_dict['elts_dicts'])
         generate_dataset(base_seed=boundary_misc_dict['seed'],
-                         sample_number=10,
+                         sample_number=seeds_range,
                          model_params = boundary_phases_dict['model_params'],
                          misc_params = boundary_misc_dict,
                          phases = boundary_phases,
                          weights = boundary_weights,
                          elements = boundary_elements)
-
 def load_particules (sample = 0) : 
     r"""
     Load the built-in dataset of particles.
