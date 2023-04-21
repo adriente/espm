@@ -47,6 +47,7 @@ Making a release
    the latest version of the documentation.
 #. Update the version number and release date in ``setup.py``,
    ``espm/__init__.py`` and ``CHANGELOG.rst``.
+#. Commit the changes with ``git commit -am "Bump to version 0.2.0"``.
 #. Create a git tag with ``git tag -a v0.2.0 -m "espm v0.2.0"``.
 #. Push the tag to GitHub with ``git push --tag``. The tag should now
    appear in the releases and tags tab.
