@@ -24,3 +24,18 @@ Second inofficial release
 
 * All important part of the documentation are present
 * This is a test before the first official release 1.0.0
+
+0.2.1 (2023-21-04)
+------------------
+
+Third inofficial release
+
+* Test the final process for the first official release 1.0.0
+
+1.0.0 (2023-21-04)
+------------------
+
+First official release
+
+* All important part of the documentation are present
+* All main functionality tested

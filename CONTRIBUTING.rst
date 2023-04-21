@@ -41,6 +41,10 @@ granularity, as follows::
 Making a release
 ----------------
 
+#. Be sure that the test passes and that the documentation compiles.
+#. Log to `readthedoc <https://readthedocs.org/projects/espm>`, 
+   launch a build on latest and check that it can compile 
+   the latest version of the documentation.
 #. Update the version number and release date in ``setup.py``,
    ``espm/__init__.py`` and ``CHANGELOG.rst``.
 #. Create a git tag with ``git tag -a v0.2.0 -m "espm v0.2.0"``.
