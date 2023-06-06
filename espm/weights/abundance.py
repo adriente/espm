@@ -261,7 +261,7 @@ class Abundance(object):
         # f = interp2d(np.arange(size_x), np.arange(size_y), lapl, kind='cubic')
         f = RectBivariateSpline(np.arange(size_x), np.arange(size_y), lapl.T)
         # For some dumb reason, the interpolation function has to have the coordinates in the opposite order
-        res = f(np.linspace(0,size_y,num = self.shape_2d[1]),np.linspace(0,size_x,num = self.shape_2d[0])).T
+        res = f(np.linspace(0,size_y-1,num = self.shape_2d[1]),np.linspace(0,size_x-1,num = self.shape_2d[0])).T
 
         scaled_res = self.scale_phase(res,conc_min,conc_max)
         self.check_add_weights(scaled_res, phase_id)
