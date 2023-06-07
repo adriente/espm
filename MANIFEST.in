@@ -11,5 +11,5 @@ recursive-include espm/tables *.json
 recursive-include espm/tables *.txt
 recursive-include espm/ *.yaml
 recursive-include espm/datasets/toy-problem/ *.png
-generated_datasets/71GPa_experimental_data.hspy
+include generated_datasets/71GPa_experimental_data.hspy
 

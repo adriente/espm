@@ -134,9 +134,13 @@ def initialize_algorithms(X, G, W, H, n_components, init, random_state, force_si
             D, H = initialize_nmf(X, n_components=n_components, init=init, random_state=random_state)
             # D, A = u.rescaled_DA(D,A)
             if force_simplex:
+                H = np.nan_to_num(H, nan = 1.0/H.shape[0])
                 scale = np.sum(H, axis=0, keepdims=True)
-                H = np.nan_to_num(H/scale, nan = 1.0/H.shape[0] )
-        D = np.abs(np.linalg.lstsq(H.T, X.T,rcond=None)[0].T)
+                H = H/scale
+                
+                # D = np.abs(np.linalg.lstsq(H.T, X.T,rcond=None)[0].T)
+                D = D*np.mean(scale)
+
         if skip_second:
             W = D
         else:
