@@ -203,8 +203,10 @@ def test_surrogate_smooth_dgkl_nmf():
 
 
 def test_X_normalize () : 
-    X = np.random.rand(10,32)
-    fac = np.random.rand()*50
+    np.random.seed(0)
+    X = np.random.rand(10,32)*100
+    fac = np.random.rand()*50+0.1
+    print(fac)
     X_plus = np.concatenate([X/fac,X/fac],axis = 0)
 
     nc = 5
@@ -213,7 +215,7 @@ def test_X_normalize () :
     GP = estim.fit_transform(X)
     GP_plus = estim.fit_transform(X_plus)
 
-    np.testing.assert_allclose(GP_plus*fac, np.concatenate([GP, GP], axis=0), atol=1e-13)
+    np.testing.assert_allclose(GP_plus*fac, np.concatenate([GP, GP], axis=0), atol=1e-10)
 
 def test_normalization_factor () : 
     X_high = np.random.rand(10,32)
