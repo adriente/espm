@@ -8,6 +8,7 @@ from espm.weights import generate_weights as gw
 from espm.datasets.base import generate_spim_sample
 from espm.estimators.updates import initialize_algorithms
 from tqdm import tqdm
+from time import time, process_time
 
 
 # global parameters
@@ -15,7 +16,6 @@ global_param = dict()
 global_param["l2"] = False
 global_param["verbose"]= 0
 global_param["tol"] = 0
-global_param["max_iter"] = 10000
 global_param["dicotomy_tol"] = dicotomy_tol
 global_param["debug"] = False
 global_param["log_shift"] = log_shift 
@@ -25,10 +25,10 @@ global_param["no_stop_criterion"] = True
 global_param["init"] = "nndsvda"
 
 k = 3
-shape_2d = (25, 25)
+shape_2d = (64, 64)
 l = 25
 c = 10
-n_poisson = 500
+n_poisson = 200
 lambda_L = 1000
 
 def create_toy_problem(l = 25, k = 3, shape_2d = [10, 10], c = 10, n_poisson=200, seed=0, force_simplex=True):
@@ -58,7 +58,16 @@ def get_toy_sample(l = 25, k = 3, shape_2d = [10, 10], c = 10, n_poisson=200, se
     toy_model = ToyModel(**model_params)
     toy_model.generate_phases()
     phases = toy_model.phases.T
-    weights = gw.generate_weights("laplacian", shape_2d=shape_2d, k=k, seed=seed)
+    # # Option 1
+    # weights = gw.generate_weights("laplacian", shape_2d=shape_2d, n_phases=k, seed=seed)
+    # scale = np.max(weights[:,:,1] + weights[:,:,2])
+    # weights[:,:,1:] = weights[:,:,1:] / scale
+    # weights[:,:,0] = 1 - np.sum(weights[:,:,1:], axis=-1)
+
+    # Option 2
+    weights = gw.generate_weights("laplacian", shape_2d=shape_2d, n_phases=k+1, seed=seed)
+    weights = weights[:,:,1:]
+    weights = weights / np.sum(weights, axis=-1, keepdims=True)
 
     sample = generate_spim_sample(phases, weights, model_params,misc_params, seed = seed)
     return sample
@@ -81,22 +90,24 @@ def create_laplacian_problem(l = 25, k = 3, shape_2d = [10, 10], c = 10, n_poiss
 def one_experiment(X, experiment_param, algo_param, global_param):
     est = SmoothNMF(**algo_param, **experiment_param, **global_param)
     force_simplex_init = True
+    start_time = time()
     if force_simplex_init:
         _, W0, H0 = initialize_algorithms(X, est.G, None, None, n_components=est.n_components, init=est.init, random_state=est.random_state, force_simplex=True, logshift=log_shift)
         W = est.fit_transform(X, W=W0, H=H0)
     else:
         W = est.fit_transform(X)
+    end_time = time()
     H = est.H_
     losses = est.get_losses()
     loss = losses["full_loss"].copy()
     final_loss = loss[-1]
     gamma = losses["gamma"].copy()
-    return loss, final_loss, W.copy(), H.copy(), gamma
+    return loss, final_loss, W.copy(), H.copy(), gamma, end_time - start_time
 
 
 
 
-def run_experiment_set(laplacian, noise, force_simplex, seed = 0):
+def run_experiment_set(laplacian, noise, force_simplex, seed = 0, max_iter=1000):
 
     if laplacian:
         G, D, H, X, Xdot = create_laplacian_problem(l=l, k =k, shape_2d = shape_2d, c=c, n_poisson=n_poisson, seed=seed)
@@ -125,6 +136,7 @@ def run_experiment_set(laplacian, noise, force_simplex, seed = 0):
     experiment_param["true_D"] = true_D
     experiment_param["true_H"] = true_H
     experiment_param["random_state"] = seed
+    experiment_param["max_iter"] = max_iter
 
     losses = []
     final_losses = []
@@ -133,6 +145,7 @@ def run_experiment_set(laplacian, noise, force_simplex, seed = 0):
     params = []
     captions = []
     gammas = []
+    times = []
     if laplacian:
         algos = ["log_surrogate", "l2_surrogate"]
     else:
@@ -148,12 +161,13 @@ def run_experiment_set(laplacian, noise, force_simplex, seed = 0):
                 algo_param["algo"] = algo
                 # algo_param["gamma"] = sL
                 if algo == "projected_gradient":
-                    algo_param["gamma"] = [500*sL, 500*sL]
+                    algo_param["gamma"] = [10000*sL, 10000*sL]
                 else:
                     algo_param["gamma"] = sL
                 params.append(deepcopy([experiment_param, algo_param, global_param]))
 
-                loss, final_loss, W, H, gamma = one_experiment(Y, experiment_param, algo_param, global_param)
+                loss, final_loss, W, H, gamma, delta_t = one_experiment(Y, experiment_param, algo_param, global_param)
+                times.append(delta_t)
                 losses.append(loss)
                 final_losses.append(final_loss)
                 Ws.append(W)
@@ -163,15 +177,16 @@ def run_experiment_set(laplacian, noise, force_simplex, seed = 0):
                 # captions.append(f"{algo} - {cl} linesearch - $\gamma_0$={sL}")
                 captions.append(f"{algo} - {cl} linesearch")
 
+    times = np.array(times)
     i = np.argmin(final_losses)
-    global_param_m = deepcopy(global_param)
-    global_param_m["max_iter"] = global_param_m["max_iter"]*3
-    loss, l_infty, W, H, _ = one_experiment(Y, experiment_param, params[i][1], global_param_m)       
+    experiment_param_m = deepcopy(experiment_param)
+    experiment_param_m["max_iter"] = experiment_param_m["max_iter"]*3
+    loss, l_infty, W, H, _, _ = one_experiment(Y, experiment_param_m, params[i][1], global_param)       
     np.testing.assert_array_equal(loss[:len(losses[i])], losses[i])
     # plt.plot(loss)
     # plt.plot(losses[i])
     # plt.yscale("log")
-    return losses, final_losses, Ws, Hs, params, captions, gammas, l_infty, W, H, true_D, true_H, L, X, Xdot
+    return losses, final_losses, Ws, Hs, params, captions, gammas, l_infty, W, H, true_D, true_H, X, Xdot, times
 
 
 
@@ -210,9 +225,9 @@ if __name__ == "__main__":
 
     # get parameter from command line
     parser = argparse.ArgumentParser()
-    parser.add_argument("--laplacian", type=bool, default=True)
-    parser.add_argument("--noise", type=bool, default=True)
-    parser.add_argument("--force_simplex", type=bool, default=True)
+    parser.add_argument('--laplacian', action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument('--noise', action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument('--force_simplex', action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--repetitions", type=int, default=10)
     args = parser.parse_args()
 
@@ -228,15 +243,18 @@ if __name__ == "__main__":
 
     losses_l = []
     l_infty_l = []
-
+    times_l = []
     for seed in tqdm(range(repetitions), total=repetitions):
-        losses, final_losses, Ws, Hs, params, captions, gammas, l_infty, W, H, true_D, true_H, L, X, Xdot = run_experiment_set(laplacian, noise, force_simplex, seed=seed)
+        losses, final_losses, Ws, Hs, params, captions, gammas, l_infty, W, H, true_D, true_H, X, Xdot, times = run_experiment_set(laplacian, noise, force_simplex, seed=seed)
         losses_l.append(np.array(losses))
         l_infty_l.append(l_infty)
+        times_l.append(times)
 
     losses = np.array(losses_l)
     l_infty = np.array(l_infty_l)
+    times = np.array(times_l)
 
     # Save the results
     filename = f"losses_{laplacian}_{noise}_{force_simplex}.npz"
-    np.savez(filename, losses=losses, l_infty=l_infty, params=params, captions=captions, true_D=true_D, true_H=true_H, X=X, Xdot=Xdot, H=H, W=W, gammas=gammas)
+    np.savez(filename, losses=losses, l_infty=l_infty, params=params, captions=captions, true_D=true_D, true_H=true_H, X=X, Xdot=Xdot, H=H, W=W, gammas=gammas, times=times)
+
