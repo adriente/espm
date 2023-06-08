@@ -140,7 +140,8 @@ def initialize_algorithms(X, G, W, H, n_components, init, random_state, force_si
                 
                 # D = np.abs(np.linalg.lstsq(H.T, X.T,rcond=None)[0].T)
                 D = D*np.mean(scale)
-
+        else:
+            D = np.abs(np.linalg.lstsq(H.T, X.T,rcond=None)[0].T)
         if skip_second:
             W = D
         else:

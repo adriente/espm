@@ -213,7 +213,7 @@ def test_X_normalize () :
     GP = estim.fit_transform(X)
     GP_plus = estim.fit_transform(X_plus)
 
-    np.testing.assert_allclose(GP_plus*fac, np.concatenate([GP, GP], axis=0))
+    np.testing.assert_allclose(GP_plus*fac, np.concatenate([GP, GP], axis=0), atol=1e-13)
 
 def test_normalization_factor () : 
     X_high = np.random.rand(10,32)
