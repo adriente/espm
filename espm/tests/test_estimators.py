@@ -203,15 +203,14 @@ def test_surrogate_smooth_dgkl_nmf():
 
 
 def test_X_normalize () : 
-    np.random.seed(0)
-    X = np.random.rand(10,32)*100
+    X = np.random.rand(10,32)
     fac = np.random.rand()*50+0.1
     print(fac)
     X_plus = np.concatenate([X/fac,X/fac],axis = 0)
 
     nc = 5
 
-    estim = SmoothNMF(n_components = nc,lambda_L=1.0, max_iter = 10, init = "nndsvd", normalize=True, shape_2d = [8, 4])
+    estim = SmoothNMF(n_components = nc,lambda_L=1.0, max_iter = 10, init = "nndsvd", normalize=True, shape_2d = [8, 4], random_state = 0)
     GP = estim.fit_transform(X)
     GP_plus = estim.fit_transform(X_plus)
 
