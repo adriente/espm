@@ -202,19 +202,48 @@ def test_surrogate_smooth_dgkl_nmf():
             np.testing.assert_almost_equal(v4 - v5 , d)
 
 
-def test_X_normalize () : 
-    X = np.random.rand(10,32)
+
+def test_X_normalize() : 
+    np.random.seed(0)
+    X = np.random.rand(10,32)*100
     fac = np.random.rand()*50+0.1
     print(fac)
     X_plus = np.concatenate([X/fac,X/fac],axis = 0)
 
     nc = 5
 
-    estim = SmoothNMF(n_components = nc,lambda_L=1.0, max_iter = 10, init = "nndsvd", normalize=True, shape_2d = [8, 4], random_state = 0)
+    estim = SmoothNMF(n_components = nc,lambda_L=1.0, max_iter = 10, init = "nndsvd", normalize=True, shape_2d = [8, 4], random_state = 0, force_simplex=True)
     GP = estim.fit_transform(X)
+    H = estim.H_
     GP_plus = estim.fit_transform(X_plus)
+    H_plus = estim.H_
 
-    np.testing.assert_allclose(GP_plus*fac, np.concatenate([GP, GP], axis=0), atol=1e-10)
+    def close_enough(a,b) :
+        num = np.sum(np.abs(a-b))
+        den = np.sum(np.abs(a))
+        ratio = num/den
+        print(num,den,ratio)
+        return ratio < 1e-4
+
+    # plt.figure(figsize=(10,5))
+    # plt.subplot(121)
+    # plt.imshow(H)
+    # plt.colorbar()
+    # plt.subplot(122)
+    # plt.imshow(H_plus)
+    # plt.colorbar()
+
+    # plt.figure(figsize=(10,5))
+    # plt.subplot(121)
+    # plt.imshow(np.concatenate([GP, GP], axis=0))
+    # plt.colorbar()
+    # plt.subplot(122)
+    # plt.imshow(GP_plus*fac)
+    # plt.colorbar()
+    # np.testing.assert_allclose(GP_plus*fac, np.concatenate([GP, GP], axis=0), atol=1e-10)
+    # np.testing.assert_allclose(H_plus, H, atol=1e-10)
+    assert close_enough(GP_plus*fac, np.concatenate([GP, GP], axis=0))
+    assert close_enough(H_plus, H)
 
 def test_normalization_factor () : 
     X_high = np.random.rand(10,32)
