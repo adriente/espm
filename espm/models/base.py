@@ -128,6 +128,7 @@ class ToyModel(Model):
 
         if self.phases is not None :
             return
+        np.random.seed(seed=self.seed)
         Wdot = np.abs(np.random.laplace(size=[self.C, self.K]))
         self.Wdot = Wdot / np.mean(Wdot)/self.L
 

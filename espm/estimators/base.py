@@ -105,6 +105,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         If not None, it fixes the non-zero values of the matrix :math:`H`.
     fixed_W : np.array or None, default=None
         If not None, it fixes the non-zero values of the matrix :math:`W`.
+    no_stop_criterion : bool, default=False
+        If True, the algorithm will not stop when the stopping criterion is reached and will continue until max_iter is reached.
     hspy_comp : bool, default=False
         If True, the algorithm will use the format compatible with hyperspy.
         Use this option if you run the algorithm with the method decompositio in hyperspy.
@@ -112,7 +114,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         .. code-block::python
             >>> est = SmoothNMF( n_components = 3, hspy_comp = True)
             >>> out = spim.decomposition(algorithm = est, return_info=True)
-        
+
     """
     loss_names_ = ["KL_div_loss"]
     const_KL_ = None
@@ -120,7 +122,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     def __init__(self, n_components=2, init=None, tol=1e-4, max_iter=200,
                  random_state=None, verbose=1, debug=False,
                  l2=False,  G=None, shape_2d = None, normalize = False, log_shift=log_shift, 
-                 eval_print=10, true_D = None, true_H = None, fixed_H = None, fixed_W = None, hspy_comp = False
+                 eval_print=10, true_D = None, true_H = None, fixed_H = None, fixed_W = None, hspy_comp = False, 
+                 no_stop_criterion = False
                  ):
         self.n_components = n_components
         self.init = init
@@ -140,6 +143,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.fixed_W = fixed_W
         self.hspy_comp = hspy_comp
         self.normalize = normalize
+        self.no_stop_criterion = no_stop_criterion
 
     def _more_tags(self):
         return {'requires_positive_X': True}
@@ -319,43 +323,35 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 if self.n_iter_ >= self.max_iter:
                     print("exits because max_iteration was reached")
                     break
-
-                # If there is no regularization the algorithm stops with this criterion
-                # Otherwise it goes to the data fitting step
-                elif max(rel_H,rel_W) < self.tol:
-                    print(
-                        "exits because of relative change rel_A {} or rel_P {} < tol ".format(
-                            rel_H,rel_W
+                
+                if not self.no_stop_criterion:
+                    # If there is no regularization the algorithm stops with this criterion
+                    # Otherwise it goes to the data fitting step
+                    if max(rel_H,rel_W) < self.tol:
+                        print(
+                            "exits because of relative change rel_A {} or rel_P {} < tol ".format(
+                                rel_H,rel_W
+                            )
                         )
-                    )
                     break
                 elif abs((eval_before - eval_after)/eval_init) < self.tol:
-                    print(
-                        "exits because of relative change < tol: {}".format(
-                            (eval_before - eval_after)/eval_init
-                        )
-                    )
-                    break
+                    print("exits because of relative change < tol: {}".format((eval_before - eval_after)/eval_init))
+                        break
 
-                elif np.isnan(eval_after):
-                    print("exit because of the presence of NaN")
-                    break
+                    elif np.isnan(eval_after):
+                        print("exit because of the presence of NaN")
+                        break
 
-                elif (eval_before - eval_after) < 0:
-                    if hasattr(self, "accelerate"):
-                        if not self.accelerate:
-                            print("exit because of negative decrease {}: {}, {}".format((eval_before - eval_after), eval_before, eval_after))
-                            break
-                    else:
+                    elif (eval_before - eval_after) < 0:
                         print("exit because of negative decrease {}: {}, {}".format((eval_before - eval_after), eval_before, eval_after))
                         break
-                
-                if self.verbose > 0 and np.mod(self.n_iter_, self.eval_print) == 0:
-                    print(
-                        f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:3e},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
-                    )
-                    pass
-                eval_before = eval_after
+                    
+                    if self.verbose > 0 and np.mod(self.n_iter_, self.eval_print) == 0:
+                        print(
+                            f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:3e},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
+                        )
+                        pass
+                    eval_before = eval_after
         except KeyboardInterrupt:
             pass
         
