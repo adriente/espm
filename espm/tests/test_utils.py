@@ -113,3 +113,8 @@ def test_bin_spim () :
 
     assert u.bin_spim(array,50,10).shape == (50,10,30)
     assert u.bin_spim(array,30,6).shape == (30,6,30)
+
+def test_composition_parser() : 
+    compo1 = "Fe2.3Ge0.7O4Si12.365"
+    parsed = u.composition_parser(compo1)
+    assert parsed == {26: 0.11877097856958428, 32: 0.03614768912987348, 8: 0.20655822359927703, 14: 0.6385231087012652}

@@ -271,6 +271,9 @@ def test_spim () :
     assert gen_si.G().shape == (1900, 11)
     assert Xflat.shape == (1900, 120*100)
 
+    gen_si.build_G(problem_type = "bremsstrahlung",stoichiometries = ["Fe1Pt1", "Si1O2"])
+    assert gen_si.G().shape == (1900, 12)
+
     detector_dict = {
         "detection" : {
             "thickness" : 45,

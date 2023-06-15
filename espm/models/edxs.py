@@ -12,7 +12,7 @@ import numpy as np
 from espm.models import PhysicalModel
 from espm.models.EDXS_function import G_bremsstrahlung, continuum_xrays, gaussian, read_lines_db, read_compact_db, update_bremsstrahlung, elts_dict_from_dict_list
 from espm.conf import DEFAULT_EDXS_PARAMS
-from espm.utils import arg_helper, symbol_to_number_dict, symbol_to_number_list
+from espm.utils import arg_helper, symbol_to_number_dict, symbol_to_number_list, composition_parser
 from espm.models.absorption_edxs import absorption_correction, det_efficiency, det_efficiency_from_curve, absorption_mass_thickness
 # Class to model the EDXS spectra. This is a temporary version since there are some design issues.
 
@@ -43,9 +43,115 @@ class EDXS(PhysicalModel):
         self.norm = 1.0
         self.model_elts = []
 
+    def __add_elts_G(self, reference_elt = {}, *, elements=[]):
+        for elt in elements:
+            if self.lines : 
+                energies, cs = read_lines_db(elt,self.db_dict)
+            else : 
+                energies, cs = read_compact_db(elt,self.db_dict)
+            if str(elt) in reference_elt : 
+                peaks_low = np.zeros((self.x.shape[0], 1))
+                peaks_high = np.zeros((self.x.shape[0], 1))
+                for i, energy in enumerate(energies):
+                    if (energy > np.min(self.x)) and (energy < np.max(self.x)):
+                            
+                        if type(self.params_dict["Det"]) == str : 
+                            D = det_efficiency_from_curve(energy,self.params_dict["Det"])
+                        else : 
+                            D = det_efficiency(energy,self.params_dict["Det"])
+
+                        A = absorption_correction(energy,**self.params_dict["Abs"],elements_dict = {elt : 1.0})
+                        
+                        width = self.width_slope * energy + self.width_intercept
+                        if energy < reference_elt[str(elt)] : 
+                            peaks_low += (
+                                cs[i]
+                                * gaussian(self.x, energy, width / 2.3548)[
+                                    np.newaxis
+                                ].T
+                            )*D*A
+                        else : 
+                            peaks_high += (
+                                cs[i]
+                                * gaussian(self.x, energy, width / 2.3548)[
+                                    np.newaxis
+                                ].T
+                            )*D*A
+                peaks = np.hstack((peaks_low,peaks_high))
+            else : 
+                peaks = np.zeros((self.x.shape[0], 1))
+                for i, energy in enumerate(energies):
+                    
+                    # The actual detected width is calculated at each energy
+                    if (energy > np.min(self.x)) and (energy < np.max(self.x)):
+                        
+                        if type(self.params_dict["Det"]) == str : 
+                            D = det_efficiency_from_curve(energy,self.params_dict["Det"])
+                        else : 
+                            D = det_efficiency(energy,self.params_dict["Det"])
+
+                        A = absorption_correction(energy,**self.params_dict["Abs"],elements_dict = {elt : 1.0})
+                        
+                        width = self.width_slope * energy + self.width_intercept
+                        
+
+                        peaks += (
+                            cs[i]
+                            * gaussian(self.x, energy, width / 2.3548)[
+                                np.newaxis
+                            ].T
+                        )*D*A
+        
+            
+            if np.max(peaks) > 0.0:
+                self.G = np.concatenate((self.G, peaks), axis=1)
+                if str(elt) in reference_elt : 
+                    self.model_elts.append(str(elt))
+                    self.model_elts.append(str(elt))
+                else : 
+                    self.model_elts.append(str(elt))
+            else : 
+                print("No peak is present in the energy range for element : {}".format(elt))
+
+    def __add_stoichiometries_G(self, stoichiometries = []) : 
+        dict_stoichiometries = {s : composition_parser(s) for s in stoichiometries}
+        for stoich in dict_stoichiometries :
+            peaks = np.zeros((self.x.shape[0], 1)) 
+            for elt in dict_stoichiometries[stoich] : 
+                if self.lines : 
+                    energies, cs = read_lines_db(elt,self.db_dict)
+                else : 
+                    energies, cs = read_compact_db(elt,self.db_dict)
+                for i, energy in enumerate(energies):
+                    
+                    # The actual detected width is calculated at each energy
+                    if (energy > np.min(self.x)) and (energy < np.max(self.x)):
+                        
+                        if type(self.params_dict["Det"]) == str : 
+                            D = det_efficiency_from_curve(energy,self.params_dict["Det"])
+                        else : 
+                            D = det_efficiency(energy,self.params_dict["Det"])
+
+                        A = absorption_correction(energy,**self.params_dict["Abs"],elements_dict = {elt : 1.0})
+                        
+                        width = self.width_slope * energy + self.width_intercept
+                        
+
+                        peaks += dict_stoichiometries[stoich][elt] * (
+                            cs[i]
+                            * gaussian(self.x, energy, width / 2.3548)[
+                                np.newaxis
+                            ].T
+                        )*D*A
+            if np.max(peaks) > 0.0:
+                self.G = np.concatenate((self.G, peaks), axis=1)
+                self.model_elts.append(stoich)
+            else : 
+                print("No peak is present in the energy range for element : {}".format(elt))
+                
 
     @symbol_to_number_list
-    def generate_g_matr(self, g_type="bremsstrahlung",reference_elt = {},*,elements=[], **kwargs):
+    def generate_g_matr(self, g_type="bremsstrahlung",reference_elt = {}, stoichiometries = [],*,elements=[], **kwargs):
         r"""
         Generate the G matrix. With a complete model the matrix is (e_size,n+2). The first n columns correspond to the sum of X-ray characteristic peaks associated to each shell of the elements. The last 2 columns correspond to a bremsstrahlung model. 
         
@@ -75,6 +181,8 @@ class EDXS(PhysicalModel):
             :dict: The keys are chemical elements (atomic number) and the values are cut-off energies. This argument is used to split some of the columns of G into 2 columns. The first column corresponds to characteristic X-rays before the cut-off and second one corresponds to characteristic X-rays before the cut-off. This feature is implemented to enable more accurate absorption correction.
         elements : 
             :list: List of modeled chemical elements. The list can be populated either with atomic numbers or chemical symbols, e.g. "Fe" or 26.
+        stoichiometries :
+            :list: Optional list of stoichiometries as strings. Each string represent a fixed stoichiometry such as "Fe3O4" and calculate an addtional column of G for it to help the decomposition.  
 
         Returns
         -------
@@ -106,73 +214,8 @@ class EDXS(PhysicalModel):
             # The number of shells depend on the element, it is then not straightforward to pre-determine the size of g_matr
             self.G = np.zeros((self.x.shape[0], 0))
             # For each element we unpack all shells and then unpack all lines of each shell.
-            for elt in elements:
-                if self.lines : 
-                    energies, cs = read_lines_db(elt,self.db_dict)
-                else : 
-                    energies, cs = read_compact_db(elt,self.db_dict)
-                if str(elt) in reference_elt : 
-                    peaks_low = np.zeros((self.x.shape[0], 1))
-                    peaks_high = np.zeros((self.x.shape[0], 1))
-                    for i, energy in enumerate(energies):
-                        if (energy > np.min(self.x)) and (energy < np.max(self.x)):
-                                
-                            if type(self.params_dict["Det"]) == str : 
-                                D = det_efficiency_from_curve(energy,self.params_dict["Det"])
-                            else : 
-                                D = det_efficiency(energy,self.params_dict["Det"])
-
-                            A = absorption_correction(energy,**self.params_dict["Abs"],elements_dict = {elt : 1.0})
-                            
-                            width = self.width_slope * energy + self.width_intercept
-                            if energy < reference_elt[str(elt)] : 
-                                peaks_low += (
-                                    cs[i]
-                                    * gaussian(self.x, energy, width / 2.3548)[
-                                        np.newaxis
-                                    ].T
-                                )*D*A
-                            else : 
-                                peaks_high += (
-                                    cs[i]
-                                    * gaussian(self.x, energy, width / 2.3548)[
-                                        np.newaxis
-                                    ].T
-                                )*D*A
-                    peaks = np.hstack((peaks_low,peaks_high))
-                else : 
-                    peaks = np.zeros((self.x.shape[0], 1))
-                    for i, energy in enumerate(energies):
-                        
-                        # The actual detected width is calculated at each energy
-                        if (energy > np.min(self.x)) and (energy < np.max(self.x)):
-                            
-                            if type(self.params_dict["Det"]) == str : 
-                                D = det_efficiency_from_curve(energy,self.params_dict["Det"])
-                            else : 
-                                D = det_efficiency(energy,self.params_dict["Det"])
-
-                            A = absorption_correction(energy,**self.params_dict["Abs"],elements_dict = {elt : 1.0})
-                            
-                            width = self.width_slope * energy + self.width_intercept
-                            
-
-                            peaks += (
-                                cs[i]
-                                * gaussian(self.x, energy, width / 2.3548)[
-                                    np.newaxis
-                                ].T
-                            )*D*A
-                
-                if np.max(peaks) > 0.0:
-                    self.G = np.concatenate((self.G, peaks), axis=1)
-                    if str(elt) in reference_elt : 
-                        self.model_elts.append(str(elt))
-                        self.model_elts.append(str(elt))
-                    else : 
-                        self.model_elts.append(str(elt))
-                else : 
-                    print("No peak is present in the energy range for element : {}".format(elt))
+            self.__add_elts_G(reference_elt = reference_elt, elements = elements)
+            self.__add_stoichiometries_G(stoichiometries = stoichiometries)
             
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:

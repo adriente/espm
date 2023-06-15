@@ -11,7 +11,6 @@ The main purpose of this class is to provide an easy and clean interface between
 
 from  hyperspy.signals import Signal1D
 from espm.models import EDXS
-from espm import models
 from espm.models.edxs import G_EDXS
 from hyperspy.misc.eds.utils import take_off_angle
 from espm.utils import number_to_symbol_list
@@ -127,7 +126,7 @@ class EDS_espm(Signal1D) :
             raise AttributeError("There is no ground truth contained in this dataset")
         return phases, weights
 
-    def build_G(self, problem_type = "bremsstrahlung", reference_elt = {}) :
+    def build_G(self, problem_type = "bremsstrahlung", reference_elt = {},stoichiometries = []) :
         r"""
         Build the G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDS_espm` object and stores it as an attribute.
 
@@ -141,6 +140,10 @@ class EDS_espm(Signal1D) :
         reference_elt : dict, optional
             Dictionary containing atomic numbers and a corresponding cut-off energies. It is used to separate the characteristic X-rays of the given elements into two energies ranges and assign them each a column in the G matrix instead of having one column per element.
             For example reference_elt = {"26",3.0} will separate the characteristic X-rays of the element Fe into two energies ranges and assign them each a column in the G matrix. This is useful to circumvent issues with the absorption.
+        stoichiometries : list, optional
+            List of the stoichiometries of the phases in the sample. In the case the stoichiometry of one of the phase is known, it can be used to improve the accuracy of the decomposition by fixing the ratio between certain elements.
+            Each composition of the list should be given a string such as "Fe2O3" or "FeO" for example. A corresponding model element will be added in the metadata. 
+            For a clever use of this feature it is best to use it in combination with a fixed W matrix, see the :func:`EDS_espm.set_fixed_W` method.
 
         Returns
         -------
@@ -149,7 +152,8 @@ class EDS_espm(Signal1D) :
         """
         self.problem_type = problem_type
         self.reference_elt = reference_elt
-        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : reference_elt}
+        self.stoichiometries = stoichiometries
+        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : reference_elt, "stoichiometries" : stoichiometries}
         
         if problem_type == "bremsstrahlung" : 
             self.G = self.update_G
@@ -170,7 +174,7 @@ class EDS_espm(Signal1D) :
         r"""
         Update the absortion part of the bremsstrahlung of the G matrix.
         """
-        g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : self.reference_elt}
+        g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : self.reference_elt, "stoichiometries" : self.stoichiometries}
         G = G_EDXS(self.model, g_params, part_W=part_W, G=G)
         return G
 
@@ -285,7 +289,7 @@ class EDS_espm(Signal1D) :
         -------
         W : numpy.ndarray
         """
-        elements = self.metadata.Sample.elements
+        elements = self.metadata.EDS_model.elements
         if self.problem_type == "no_brstlg" : 
             W = -1* np.ones((len(elements), len(phases_dict.keys())))
         elif self.problem_type == "bremsstrahlung" : 
@@ -304,7 +308,7 @@ class EDS_espm(Signal1D) :
                     W[-1,p] = phases_dict[phase][key]
         return W
     
-    def print_concentration_report (self,abs = False) : 
+    def print_concentration_report (self,abs = False, selected_elts = []) : 
         r"""
         Print a report of the chemical concentrations from a fitted W.
 
@@ -326,37 +330,46 @@ class EDS_espm(Signal1D) :
             raise ValueError("No espm learning results available, please run a decomposition with an espm algorithm first")
         
         W = self.learning_results.decomposition_algorithm.W_
-        
-        norm = self.metadata.EDS_model.norm
+
         elts = self.metadata.EDS_model.elements
+        norm = self.metadata.EDS_model.norm
 
         @number_to_symbol_list
         def convert_elts(elements = []) :
             return elements
         
-        elements = convert_elts(elements = elts)
-        
+        single_elts = [e for e in elts if len(e) < 3]
+        elements = convert_elts(elements = single_elts)
+        elements += [e for e in elts if len(e) > 2]
+
+        if selected_elts : 
+            indices = [index for index,elt in enumerate(elements) if elt in selected_elts]
+            W = W[indices,:]
+            elements = [elt for elt in elements if elt in selected_elts]
+            norm = self.metadata.EDS_model.norm[:,indices]
+         
         norm_W = W / W.sum(axis = 0)
         abs_W =   W / norm[0][:,np.newaxis] 
+        longest_name = len(max(elements, key=len))
         
         if abs : 
             print("Abs. quantif. report")
-            title_string = " "*5
+            title_string = " "*longest_name
 
             for i in range(norm_W.shape[1]) : 
-                title_string += "{:}".format("p" + str(i)) + " "*8
+                title_string += "{:>10}".format("p" + str(i))
             print(title_string)
             
             for i,j in enumerate(elements) : 
                 main_string = ""
-                main_string += "{:2}".format(j) + " : "
+                main_string += "{:{}}".format(j,longest_name) + " : "
                 for k in range(norm_W.shape[1]) :
                     main_string += "{:.3e} ".format(abs_W[i,k])
                 print(main_string)
 
         else : 
             print("Concentrations report")
-            title_string = ""
+            title_string = " "* longest_name
 
             for i in range(norm_W.shape[1]) : 
                 title_string += "{:>7}".format("p" + str(i))
@@ -364,7 +377,7 @@ class EDS_espm(Signal1D) :
             
             for i,j in enumerate(elements) : 
                 main_string = ""
-                main_string += "{:2}".format(j) + " : "
+                main_string += "{:{}}".format(j,longest_name) + " : "
                 for k in range(norm_W.shape[1]) :
                     main_string += "{:05.4f} ".format(norm_W[i,k])
                 print(main_string)
@@ -412,5 +425,6 @@ def get_metadata(spim) :
 def build_G(model, g_params) :
     model.generate_g_matr(**g_params)
     return model.G
+
 
 

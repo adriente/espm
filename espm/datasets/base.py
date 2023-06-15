@@ -204,7 +204,7 @@ def generate_spim_sample(phases, weights, model_params,misc_params, seed = 0,g_p
     sample["G"] = G
     return sample
 
-def generate_dataset(base_path = DATASETS_PATH, sample_number = 10, base_seed = 0, elements = [],*args, **kwargs): 
+def generate_dataset(*args, base_path = DATASETS_PATH, sample_number = 10, base_seed = 0, elements = [], **kwargs): 
     r"""
     Generate a set of spectrum images files and save them in the generated dataset folder. Each spectrum image is saved in a separate file and was generated using a different seed.
 

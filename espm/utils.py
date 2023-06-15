@@ -7,6 +7,7 @@ from espm.conf import SYMBOLS_PERIODIC_TABLE, NUMBER_PERIODIC_TABLE
 import json
 from hyperspy.misc.material import atomic_to_weight, density_of_mixture
 from functools import wraps
+import re
 
 _qtg_widgets = []
 _plt_figures = []
@@ -384,3 +385,43 @@ def close_all():
     for fig in _plt_figures:
         plt.close(fig)
     _plt_figures = []
+
+def composition_parser(comp_string) : 
+    r"""
+    Parse a string of the form of a chemical formula to dictionarry of the normalize composition.
+
+    Parameters
+    ----------
+    comp_string : str
+        Chemical formula to parse.
+
+    Returns
+    -------
+    compo : dict
+        Dictionary of the chemical composition.
+
+    Examples
+    --------
+    >>> composition_parser("Bi3Fe4.5Ca0.5O12")
+    {'Bi': 3.0, 'Ca': 0.5, 'Fe': 4.5, 'O': 12.0}
+
+    """
+    compo = {}
+
+    @symbol_to_number_dict
+    def convert_compo(elements_dict = {}) :
+        return elements_dict
+    
+    def normalize_dict(d, target=1.0):
+        raw = sum(d.values())
+        factor = target/raw
+        return {key:d[key]*factor for key in d}
+
+    elt_concs = re.findall(r"([A-Z]{1}[a-z]?[0-9]*\.?[0-9]*)",comp_string)
+    for elt_conc in elt_concs :
+        m = re.match(r"([A-Z]{1}[a-z]?)([0-9]*\.?[0-9]*)",elt_conc)
+        if m :
+            compo[str(m.group(1))] = float(m.group(2))
+
+    num_compo = convert_compo(elements_dict=compo)
+    return normalize_dict(num_compo)

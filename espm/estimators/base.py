@@ -332,7 +332,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 elif abs((eval_before - eval_after)/eval_init) < self.tol:
                     print(
                         "exits because of relative change < tol: {}".format(
-                            (eval_before - eval_after)/min(eval_before, eval_after)
+                            (eval_before - eval_after)/eval_init
                         )
                     )
                     break
