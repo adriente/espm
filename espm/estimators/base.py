@@ -336,22 +336,22 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     break
                 elif abs((eval_before - eval_after)/eval_init) < self.tol:
                     print("exits because of relative change < tol: {}".format((eval_before - eval_after)/eval_init))
-                        break
+                    break
 
-                    elif np.isnan(eval_after):
-                        print("exit because of the presence of NaN")
-                        break
+                elif np.isnan(eval_after):
+                    print("exit because of the presence of NaN")
+                    break
 
-                    elif (eval_before - eval_after) < 0:
-                        print("exit because of negative decrease {}: {}, {}".format((eval_before - eval_after), eval_before, eval_after))
-                        break
-                    
-                    if self.verbose > 0 and np.mod(self.n_iter_, self.eval_print) == 0:
-                        print(
-                            f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:3e},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
-                        )
-                        pass
-                    eval_before = eval_after
+                elif (eval_before - eval_after) < 0:
+                    print("exit because of negative decrease {}: {}, {}".format((eval_before - eval_after), eval_before, eval_after))
+                    break
+                
+                if self.verbose > 0 and np.mod(self.n_iter_, self.eval_print) == 0:
+                    print(
+                        f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:3e},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
+                    )
+                    pass
+                eval_before = eval_after
         except KeyboardInterrupt:
             pass
         
