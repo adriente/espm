@@ -289,8 +289,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 eval_after = self.loss(self.W_, self.H_)
                 self.n_iter_ +=1
                 
-                rel_W = np.max((self.W_ - old_W)/(self.W_ + self.tol*np.mean(self.W_) ))
-                rel_H = np.max((self.H_ - old_H)/(self.H_ + self.tol*np.mean(self.H_) ))
+                rel_W = np.max(np.abs((self.W_ - old_W))/(self.W_ + self.tol*np.mean(self.W_) ))
+                rel_H = np.max(np.abs((self.H_ - old_H))/(self.H_ + self.tol*np.mean(self.H_) ))
 
                 # store some information for assessing the convergence
                 # for debugging purposes
@@ -329,22 +329,22 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     # Otherwise it goes to the data fitting step
                     if max(rel_H,rel_W) < self.tol:
                         print(
-                            "exits because of relative change rel_A {} or rel_P {} < tol ".format(
+                            "exits because of relative change rel_A {} and rel_P {} < tol ".format(
                                 rel_H,rel_W
                             )
                         )
-                    break
-                elif abs((eval_before - eval_after)/eval_init) < self.tol:
-                    print("exits because of relative change < tol: {}".format((eval_before - eval_after)/eval_init))
-                    break
+                        break
+                    elif abs((eval_before - eval_after)/eval_init) < self.tol:
+                        print("exits because of relative change < tol: {}".format((eval_before - eval_after)/eval_init))
+                        break
 
-                elif np.isnan(eval_after):
-                    print("exit because of the presence of NaN")
-                    break
+                    elif np.isnan(eval_after):
+                        print("exit because of the presence of NaN")
+                        break
 
-                elif (eval_before - eval_after) < 0:
-                    print("exit because of negative decrease {}: {}, {}".format((eval_before - eval_after), eval_before, eval_after))
-                    break
+                    elif (eval_before - eval_after) < 0:
+                        print("exit because of negative decrease {}: {}, {}".format((eval_before - eval_after), eval_before, eval_after))
+                        break
                 
                 if self.verbose > 0 and np.mod(self.n_iter_, self.eval_print) == 0:
                     print(

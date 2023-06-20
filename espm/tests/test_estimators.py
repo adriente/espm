@@ -110,17 +110,22 @@ def test_NMF_scikit () :
 def test_general():
     G, W, H, D, w, X, Xdot, N = generate_one_sample()
 
+    # Check if we can recover D from H and Xdot 
     estimator = SmoothNMF(G=G,n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform(H=H, X=Xdot)
     np.testing.assert_allclose(D, D2, atol=6e-1)
 
+    # Same without G 
     estimator = SmoothNMF(n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform(H=H, X=Xdot)
-    np.testing.assert_allclose(D, D2, atol=6e-1)
+    np.testing.assert_allclose(D, D2, atol=6e-2)
 
+    # Check if we can recover D, H from W and Xdot 
     estimator = SmoothNMF(G=G,n_components= 2,max_iter=200,force_simplex = False,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform( W=W, X=Xdot)
-    np.testing.assert_allclose(D, D2, atol=3e-1)
+    H2 = estimator.H_ 
+    np.testing.assert_allclose(D, D2, atol=3e-2)
+    np.testing.assert_allclose(H, H2, atol=3e-2)
 
     estimator = SmoothNMF(G =G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform(W=W, X=Xdot)
