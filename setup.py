@@ -39,7 +39,7 @@ setuptools.setup(
         'Topic :: Scientific/Engineering'
     ],
     install_requires=[
-        'hyperspy', 'tqdm', 'lmfit', 'scikit-learn'
+        'hyperspy', 'tqdm', 'lmfit', 'scikit-learn', 'traits @ git+https://github.com/enthought/traits.git'
     ],
     python_requires='>=3.7',
 )

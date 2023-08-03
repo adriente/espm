@@ -26,7 +26,7 @@ global_param["init"] = "nndsvda"
 
 k = 3
 shape_2d = (64, 64)
-l = 25
+
 c = 10
 n_poisson = 200
 lambda_L = 1000
@@ -39,9 +39,13 @@ def create_toy_problem(l = 25, k = 3, shape_2d = [10, 10], c = 10, n_poisson=200
     if force_simplex:
         H = H/np.sum(H, axis=0, keepdims=True)
     
-    G = np.random.rand(l,c)
-    W = np.random.rand(c,k)
-    D = G @ W
+    # G = np.random.rand(l,c)
+    # W = np.random.rand(c,k)
+    # D = G @ W
+
+    # Let us ignore G
+    D = np.random.rand(l,k)
+    G = None
 
     X = D @ H
 
@@ -107,7 +111,7 @@ def one_experiment(X, experiment_param, algo_param, global_param):
 
 
 
-def run_experiment_set(laplacian, noise, force_simplex, seed = 0, max_iter=1000):
+def run_experiment_set(laplacian, noise, force_simplex, seed = 0, max_iter=1000, l = 25):
 
     if laplacian:
         G, D, H, X, Xdot = create_laplacian_problem(l=l, k =k, shape_2d = shape_2d, c=c, n_poisson=n_poisson, seed=seed)
@@ -214,47 +218,73 @@ def test_create_toy_problem():
         np.testing.assert_array_equal(Xtrue3, Xtrue4)
         np.testing.assert_array_equal(X3, X4)
 
-        assert G.shape == G3.shape == (l, c)
+        # assert G.shape == G3.shape == (l, c)
         assert D.shape == D3.shape == (l, k)
         assert H.shape == H3.shape == (k, np.prod(shape_2d))
         assert Xtrue.shape == Xtrue3.shape == (l, np.prod(shape_2d))
     
 if __name__ == "__main__":
 
-    import argparse
+    # import argparse
 
-    # get parameter from command line
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--laplacian', action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument('--noise', action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument('--force_simplex', action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument("--repetitions", type=int, default=10)
-    args = parser.parse_args()
+    # # get parameter from command line
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--laplacian', action=argparse.BooleanOptionalAction, default=True)
+    # parser.add_argument('--noise', action=argparse.BooleanOptionalAction, default=True)
+    # parser.add_argument('--force_simplex', action=argparse.BooleanOptionalAction, default=True)
+    # parser.add_argument("--repetitions", type=int, default=10)
+    # args = parser.parse_args()
 
-    laplacian = args.laplacian
-    noise = args.noise
-    force_simplex = args.force_simplex
-    repetitions = args.repetitions
+    # laplacian = args.laplacian
+    # noise = args.noise
+    # force_simplex = args.force_simplex
+    # repetitions = args.repetitions
 
 
     test_create_toy_problem()
+    # Time test
+    force_simplex = True
+    repetitions = 5
+    for l in [25, 100, 500, 1000]:
+        for laplacian in [True, False]:
+            for noise in [True, False]:
+                losses_l = []
+                l_infty_l = []
+                times_l = []
+                for seed in tqdm(range(repetitions), total=repetitions):
+                    losses, final_losses, Ws, Hs, params, captions, gammas, l_infty, W, H, true_D, true_H, X, Xdot, times = run_experiment_set(laplacian, noise, force_simplex, seed=seed, max_iter=100, l=l)
+                    losses_l.append(np.array(losses))
+                    l_infty_l.append(l_infty)
+                    times_l.append(times)
+
+                losses = np.array(losses_l)
+                l_infty = np.array(l_infty_l)
+                times = np.array(times_l)
+
+                # Save the results
+                filename = f"losses_{laplacian}_{noise}_{force_simplex}_{l}.npz"
+                np.savez(filename, losses=losses, l_infty=l_infty, params=params, captions=captions, true_D=true_D, true_H=true_H, X=X, Xdot=Xdot, H=H, W=W, gammas=gammas, times=times)
 
 
+    # Convergence test
+    force_simplex = True
+    repetitions = 50
+    for laplacian in [True, False]:
+        for noise in [True, False]:
+            losses_l = []
+            l_infty_l = []
+            times_l = []
+            for seed in tqdm(range(repetitions), total=repetitions):
+                losses, final_losses, Ws, Hs, params, captions, gammas, l_infty, W, H, true_D, true_H, X, Xdot, times = run_experiment_set(laplacian, noise, force_simplex, seed=seed, max_iter=1000, l=25)
+                losses_l.append(np.array(losses))
+                l_infty_l.append(l_infty)
+                times_l.append(times)
 
-    losses_l = []
-    l_infty_l = []
-    times_l = []
-    for seed in tqdm(range(repetitions), total=repetitions):
-        losses, final_losses, Ws, Hs, params, captions, gammas, l_infty, W, H, true_D, true_H, X, Xdot, times = run_experiment_set(laplacian, noise, force_simplex, seed=seed)
-        losses_l.append(np.array(losses))
-        l_infty_l.append(l_infty)
-        times_l.append(times)
+            losses = np.array(losses_l)
+            l_infty = np.array(l_infty_l)
+            times = np.array(times_l)
 
-    losses = np.array(losses_l)
-    l_infty = np.array(l_infty_l)
-    times = np.array(times_l)
-
-    # Save the results
-    filename = f"losses_{laplacian}_{noise}_{force_simplex}.npz"
-    np.savez(filename, losses=losses, l_infty=l_infty, params=params, captions=captions, true_D=true_D, true_H=true_H, X=X, Xdot=Xdot, H=H, W=W, gammas=gammas, times=times)
+            # Save the results
+            filename = f"losses_{laplacian}_{noise}_{force_simplex}.npz"
+            np.savez(filename, losses=losses, l_infty=l_infty, params=params, captions=captions, true_D=true_D, true_H=true_H, X=X, Xdot=Xdot, H=H, W=W, gammas=gammas, times=times)
 
