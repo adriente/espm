@@ -254,25 +254,39 @@ def test_spim () :
     assert model_params == mod_pars
 
     shape = gen_si.shape_2d
+    gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
     gen_si.build_G(problem_type = "identity")
     assert shape == (100,120)
     assert gen_si.G is None
+    
+    gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
     gen_si.build_G(problem_type = "no_brstlg",reference_elt = {})
     assert gen_si.G.shape == (1900, 8)
+    
+    gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
     gen_si.build_G(problem_type = "bremsstrahlung",reference_elt = {})
     assert callable(gen_si.G)
     assert gen_si.G().shape == (1900, 10)
-    Xflat = gen_si.X
     
-
-    gen_si.build_G(problem_type = "no_brstlg",reference_elt = {"26" : 3.0})
-    assert gen_si.G.shape == (1900, 9)
-    gen_si.build_G(problem_type = "bremsstrahlung",reference_elt = {"26" : 3.0})
-    assert gen_si.G().shape == (1900, 11)
+    Xflat = gen_si.X
     assert Xflat.shape == (1900, 120*100)
 
+    gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
+    gen_si.build_G(problem_type = "bremsstrahlung",reference_elt = {"26" : 3.0})
+    print(gen_si.metadata.Sample.elements)
+    print(gen_si.metadata.EDS_model.elements)
+    assert gen_si.G().shape == (1900, 11)
+
+    gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
+    gen_si.build_G(problem_type = "no_brstlg",reference_elt = {"26" : 3.0})
+    assert gen_si.G.shape == (1900, 9)
+
+    gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
     gen_si.build_G(problem_type = "bremsstrahlung",stoichiometries = ["Fe1Pt1", "Si1O2"])
     assert gen_si.G().shape == (1900, 12)
+
+
+
 
     detector_dict = {
         "detection" : {
@@ -307,5 +321,54 @@ def test_spim () :
     shutil.rmtree(str(gen_folder))
 
 
+def test_carto_fixed_W() :
+
+    def create_data()  : 
+        a = np.random.rand(50,70,100)
+        s = hs.signals.Signal1D(a)
+        s.axes_manager[-1].offset = 0.2
+        s.axes_manager[-1].scale = 0.1
+        s.set_signal_type("EDS_espm")
+        s.set_analysis_parameters()
+        s.add_elements(elements = ["Si","O","Fe","Ca"])
+        return s
+     
+    s = create_data()
+    s.build_G(problem_type = "bremsstrahlung")
+    fw1 = s.carto_fixed_W(brstlg_comps = 2)
+    tw1_1 = np.diag(-1* np.ones(4))
+    tw1_2 = np.zeros((2,4))
+    tw1_prime = np.vstack((tw1_1,tw1_2))
+    tw1_3 = np.zeros((4,2))
+    tw1_4 = -1*np.ones((2,2))
+    tw1_second = np.vstack((tw1_3,tw1_4))
+    tw1 = np.hstack((tw1_prime,tw1_second))
+
+    assert(fw1.shape == (6,6))
+    np.testing.assert_array_equal(fw1,tw1)
+
+    s = create_data()
+    s.build_G(problem_type = "no_brstlg")
+    fw2 = s.carto_fixed_W()
+    tw2 = np.diag(-1* np.ones(4))
+
+    assert(fw2.shape == (4,4))
+    np.testing.assert_array_equal(fw2,tw2)
+
+    s = create_data()
+    s.build_G(problem_type = "no_brstlg", reference_elt = {"26" : 3.0})
+    fw3 = s.carto_fixed_W()
+    tw3 = np.diag(-1* np.ones(5))
+
+    assert(fw3.shape == (5,5))
+    np.testing.assert_array_equal(fw3,tw3)
+
+    s = create_data()
+    s.build_G(problem_type = "no_brstlg",stoichiometries = ["Fe3O4"])
+    fw4 = s.carto_fixed_W()
+    tw4 = np.diag(-1* np.ones(5))
+
+    assert(fw4.shape == (5,5))
+    np.testing.assert_array_equal(fw4,tw4)
 
 

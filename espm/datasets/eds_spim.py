@@ -16,6 +16,7 @@ from hyperspy.misc.eds.utils import take_off_angle
 from espm.utils import number_to_symbol_list
 import numpy as np
 from espm.estimators import NMFEstimator
+import re
 
 
 class EDS_espm(Signal1D) : 
@@ -174,7 +175,24 @@ class EDS_espm(Signal1D) :
         r"""
         Update the absortion part of the bremsstrahlung of the G matrix.
         """
-        g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : self.reference_elt, "stoichiometries" : self.stoichiometries}
+        try : 
+            nelts = (self.metadata.EDS_model.elements).copy()
+
+            for i in self.stoichiometries :
+                nelts.remove(i)
+
+            for i, elt in enumerate(nelts) : 
+                r = re.match(r'.*_lo',elt)
+                t = re.match(r'.*_hi',elt)
+                if r : 
+                    nelts[i] = nelts[i][:-3]
+                if t : 
+                    nelts[i] = nelts[i][:-3]
+            nelts = list(dict.fromkeys(nelts))
+
+            g_params = {"g_type" : self.problem_type, "elements" : nelts, "reference_elt" : self.reference_elt, "stoichiometries" : self.stoichiometries}
+        except AttributeError : 
+            g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : self.reference_elt, "stoichiometries" : self.stoichiometries}
         G = G_EDXS(self.model, g_params, part_W=part_W, G=G)
         return G
 
@@ -275,6 +293,38 @@ class EDS_espm(Signal1D) :
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.elevation_angle = elevation_angle
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.energy_resolution_MnKa = 130.0
 
+    def carto_fixed_W(self, brstlg_comps = 1) : 
+        r"""
+        Helper function to create a fixed_W matrix for chemical mapping. It will output a matrix 
+        It can be used to make a decomposition with as many components as they are  chemical elements and then allow each component to have only one of each element.
+        The spectral components are then the characteristic peaks of each element and the spatial components are the associated chemical maps.
+        The bremsstrahlung is calculated separately and added to other components.
+
+        Parameters
+        ----------
+        brstlg_comps : int, optional
+            Number of bremsstrahlung components to add to the decomposition.
+
+        Returns
+        -------
+        W : numpy.ndarray
+        """
+
+        elements = self.metadata.EDS_model.elements
+        if self.problem_type == "no_brstlg" : 
+            W = np.diag(-1* np.ones((len(elements), )))
+        elif self.problem_type == "bremsstrahlung" : 
+            W1 = np.diag(-1* np.ones((len(elements), )))
+            W2 = np.zeros((2, len(elements)))
+            W_elts = np.vstack((W1,W2))
+            W3 = np.zeros((len(elements),brstlg_comps))
+            W4 = -1*np.ones((2,brstlg_comps))
+            W_brstlg = np.vstack((W3,W4))
+            W = np.hstack((W_elts,W_brstlg))
+
+        return W
+
+
     def set_fixed_W (self,phases_dict) : 
         r"""
         Helper function to create a fixed_W matrix. The output matrix will have -1 entries except for the elements (and bremsstrahlung parameters) that are present in the phases_dict dictionary.
@@ -290,6 +340,18 @@ class EDS_espm(Signal1D) :
         W : numpy.ndarray
         """
         elements = self.metadata.EDS_model.elements
+
+        # convert elements to symbols but also omitting splitted lines or custom stoichiometries
+        @number_to_symbol_list
+        def convert_to_symbols(elements = []) : 
+            return elements
+        
+        for i, elt in enumerate(elements) :
+            try : 
+                elements[i] = convert_to_symbols(elements=[elt])[0]
+            except ValueError : 
+                elements[i] = elt
+
         if self.problem_type == "no_brstlg" : 
             W = -1* np.ones((len(elements), len(phases_dict.keys())))
         elif self.problem_type == "bremsstrahlung" : 
@@ -297,7 +359,7 @@ class EDS_espm(Signal1D) :
         else : 
             raise ValueError("problem type should be either no_brstlg or bremsstrahlung")
         for p, phase in enumerate(phases_dict) : 
-            for e, elt in enumerate(elements) : 
+            for e, elt in enumerate(elements) :
                 for key in phases_dict[phase] : 
                     if key == elt : 
                         W[e,p] = phases_dict[phase][key]
@@ -308,7 +370,7 @@ class EDS_espm(Signal1D) :
                     W[-1,p] = phases_dict[phase][key]
         return W
     
-    def print_concentration_report (self,abs = False, selected_elts = []) : 
+    def print_concentration_report (self,abs = False, selected_elts = [], W_input = None) : 
         r"""
         Print a report of the chemical concentrations from a fitted W.
 
@@ -316,6 +378,12 @@ class EDS_espm(Signal1D) :
         ----------
         abs : bool
             If True, print the absolute concentrations, if False, print the relative concentrations.
+
+        selected_elts : list, optional
+            List of the elements to be printed. If empty, all the elements will be printed.
+
+        W_input : numpy.ndarray, optional
+            If not None, the concentrations will be computed from this W matrix instead of the one fitted during the decomposition.
 
         Returns
         -------
@@ -326,10 +394,14 @@ class EDS_espm(Signal1D) :
         - This function is only available if the learning results contain a decomposition algorithm that has been fitted.
         - The "absolute" concentrations correspond to some physical number. To retrieve the number of atoms per unit volume, you need to multiply by the correct pre-factors such as beam current, detector solid angle, etc...
         """
-        if not(isinstance(self.learning_results.decomposition_algorithm,NMFEstimator)) :
-            raise ValueError("No espm learning results available, please run a decomposition with an espm algorithm first")
-        
-        W = self.learning_results.decomposition_algorithm.W_
+        if W_input is None :
+            if not(isinstance(self.learning_results.decomposition_algorithm,NMFEstimator)) :
+                raise ValueError("No espm learning results available, please run a decomposition with an espm algorithm first")
+            
+            W = self.learning_results.decomposition_algorithm.W_
+
+        else :
+            W = W_input
 
         elts = self.metadata.EDS_model.elements
         norm = self.metadata.EDS_model.norm
@@ -347,8 +419,9 @@ class EDS_espm(Signal1D) :
             W = W[indices,:]
             elements = [elt for elt in elements if elt in selected_elts]
             norm = self.metadata.EDS_model.norm[:,indices]
-         
-        norm_W = W / W.sum(axis = 0)
+
+        mask_zeros = W[:len(elements),:].sum(axis=0) !=0
+        norm_W = W[:len(elements),mask_zeros] / W[:len(elements),mask_zeros].sum(axis = 0)
         abs_W =   W / norm[0][:,np.newaxis] 
         longest_name = len(max(elements, key=len))
         

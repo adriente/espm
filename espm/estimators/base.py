@@ -242,6 +242,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
 
         self.X_ = self.remove_zeros_lines(self.X_, self.log_shift)
+
         self.const_KL_ = None
         if self.normalize : 
             self.norm_factor_ = normalization_factor(self.X_,self.n_components)
@@ -254,7 +255,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             G = self.G
         
         self.G_, self.W_, self.H_ = initialize_algorithms(X = self.X_, G = G, W = W, H = H, n_components = self.n_components, init = self.init, random_state = self.random_state, force_simplex = self.force_simplex)
-
         if not(self.shape_2d is None) :
             self.L_ = create_laplacian_matrix(*self.shape_2d)
         else : 
@@ -354,7 +354,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 eval_before = eval_after
         except KeyboardInterrupt:
             pass
-        
+
         if not(self.force_simplex):
             self.W_, self.H_ = rescaled_DH(self.W_, self.H_ )
         

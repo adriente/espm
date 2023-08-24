@@ -317,10 +317,11 @@ def elts_dict_from_W (part_W,*,elements = []) :
     -----
     This function should maybe move to another part of espm.
     """
-    norm_P = np.mean(part_W / part_W.sum(axis = 0),axis=1)
+    mask_zeros = np.sum(part_W,axis=0) != 0
+    norm_P = np.mean(part_W[:,mask_zeros] / part_W[:,mask_zeros].sum(axis = 0),axis=1)
     elements_dict = {}
-    with open(SYMBOLS_PERIODIC_TABLE,"r") as f : 
-        SPT = json.load(f)["table"]
+    #with open(SYMBOLS_PERIODIC_TABLE,"r") as f : 
+    #    SPT = json.load(f)["table"]
     for i,elt in enumerate(elements) :
         elements_dict[elt] = norm_P[i] # * SPT[elt]["atomic_mass"]
     factor =  sum(elements_dict.values())
