@@ -25,7 +25,7 @@ If you want to develop, please use the option::
     $ git clone https://github.com/adriente/espm.git
     $ cd espm
     $ pip install cython
-    $ pip install -e ".[dev]" 
+    $ pip install -e ."[dev]" 
 
 Getting started
 ---------------

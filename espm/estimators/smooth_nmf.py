@@ -130,16 +130,21 @@ class SmoothNMF(NMFEstimator):
             Transformed data.
             
         """
-        if self.gamma is None:
+        # To be remove in future versions. In this commented version below, G_ is called before intialisation which obviously causes issues.
+        # I'll move it to the _iteration method. Adrien
 
-            if self.algo in ["l2_surrogate", "log_surrogate"]:
-                self.gamma_ = sigmaL
-            else:
-                gamma_W = estimate_Lipschitz_bound_w(self.log_shift, X, self.G, k=self.n_components)
-                gamma_H = estimate_Lipschitz_bound_h(self.log_shift, X, self.G, k=self.n_components, lambda_L=self.lambda_L, mu=self.mu, epsilon_reg=self.epsilon_reg)
-                self.gamma_ = [gamma_H, gamma_W]
-        else:
-            self.gamma_ = deepcopy(self.gamma)
+        # if self.gamma is None:
+
+        #     if self.algo in ["l2_surrogate", "log_surrogate"]:
+        #         self.gamma_ = sigmaL
+        #     else:
+        #         gamma_W = estimate_Lipschitz_bound_w(self.log_shift, X, self.G_, k=self.n_components)
+        #         gamma_H = estimate_Lipschitz_bound_h(self.log_shift, X, self.G_, k=self.n_components, lambda_L=self.lambda_L, mu=self.mu, epsilon_reg=self.epsilon_reg)
+        #         self.gamma_ = [gamma_H, gamma_W]
+        # else:
+        #     self.gamma_ = deepcopy(self.gamma)
+
+        self.gamma_ = None
 
         return super().fit_transform(X, y=y, W=W, H=H)
 
@@ -148,6 +153,18 @@ class SmoothNMF(NMFEstimator):
         # KL_surr = KL_loss_surrogate(self.X_, W, H, H, eps=0)
         # log_surr = log_surrogate(H, H, mu=self.mu, epsilon=self.epsilon_reg)
         # print("loss before:", KL_surr, log_surr, log_surr+KL_surr)
+
+        if self.n_iter_ == 0:
+            if self.gamma is None:
+
+                if self.algo in ["l2_surrogate", "log_surrogate"]:
+                    self.gamma_ = sigmaL
+                else:
+                    gamma_W = estimate_Lipschitz_bound_w(self.log_shift, self.X_, self.G_, k=self.n_components)
+                    gamma_H = estimate_Lipschitz_bound_h(self.log_shift, self.X_, self.G_, k=self.n_components, lambda_L=self.lambda_L, mu=self.mu, epsilon_reg=self.epsilon_reg)
+                    self.gamma_ = [gamma_H, gamma_W]
+            else:
+                self.gamma_ = deepcopy(self.gamma)
 
         # 1. Update for H
         if self.linesearch:

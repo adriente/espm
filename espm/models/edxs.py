@@ -106,8 +106,8 @@ class EDXS(PhysicalModel):
             if np.max(peaks) > 0.0:
                 self.G = np.concatenate((self.G, peaks), axis=1)
                 if str(elt) in reference_elt : 
-                    self.model_elts.append(str(elt))
-                    self.model_elts.append(str(elt))
+                    self.model_elts.append(str(elt)+'_lo')
+                    self.model_elts.append(str(elt)+'_hi')
                 else : 
                     self.model_elts.append(str(elt))
             else : 
@@ -381,7 +381,7 @@ def G_EDXS (model, g_params, part_W = None, G = None) :
         model.generate_g_matr(**g_params)
         G = model.G
 
-    if part_W is None : 
+    if part_W is None :
         return G
     else : 
         new_G = update_bremsstrahlung(G,part_W,model,g_params["elements"])

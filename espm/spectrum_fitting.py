@@ -36,7 +36,7 @@ def make_partial_xy (list_energies,spectrum,x) :
 
 def residual(pars,x,data = None) : 
     kwargs = params_to_ndict(pars)
-    kwargs["params_dict"] = arg_helper(kwargs["params_dict"],DEFAULT_EDXS_PARAMS)
+    kwargs["params_dict"] = arg_helper(kwargs["params_dict"],DEFAULT_EDXS_PARAMS['params_dict'])
     
     model = ef.continuum_xrays(x,**kwargs)    
     
