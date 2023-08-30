@@ -5,9 +5,6 @@ build:
   tools:
     python: "3.11"
 
-formats:
-  - htmlzip
-
 sphinx:
   builder: html
   configuration: doc/conf.py
