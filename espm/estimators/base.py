@@ -254,7 +254,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         else : 
             G = self.G
         
-        self.G_, self.W_, self.H_ = initialize_algorithms(X = self.X_, G = G, W = W, H = H, n_components = self.n_components, init = self.init, random_state = self.random_state, force_simplex = self.force_simplex)
+        self.G_, self.W_, self.H_ = initialize_algorithms(X = self.X_, G = G, W = W, H = H, n_components = self.n_components, init = self.init, random_state = self.random_state, simplex_H = self.simplex_H, simplex_W = self.simplex_W)
         if not(self.shape_2d is None) :
             self.L_ = create_laplacian_matrix(*self.shape_2d)
         else : 
@@ -303,7 +303,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
                 if not(self.true_D is None) and not(self.true_H is None) :
                     if (self.true_D.shape[1] == self.n_components) and (self.true_H.shape[0] == self.n_components) : 
-                        if self.force_simplex:
+                        if self.simplex_H or self.simplex_W:
                             W, H = self.W_, self.H_ 
                         else:
                             W, H = rescaled_DH(self.W_, self.H_ )
@@ -355,7 +355,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         except KeyboardInterrupt:
             pass
 
-        if not(self.force_simplex):
+        if not(self.simplex_H) or not(self.simplex_W):
             self.W_, self.H_ = rescaled_DH(self.W_, self.H_ )
         
         algo_time = time.time() - algo_start
