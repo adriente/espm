@@ -355,7 +355,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         except KeyboardInterrupt:
             pass
 
-        if not(self.simplex_H) or not(self.simplex_W):
+        if not(self.simplex_H) and not(self.simplex_W):
             self.W_, self.H_ = rescaled_DH(self.W_, self.H_ )
         
         algo_time = time.time() - algo_start

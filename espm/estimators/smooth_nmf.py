@@ -206,7 +206,7 @@ class SmoothNMF(NMFEstimator):
 
         # 2. Update for W
         if self.algo in ["l2_surrogate", "log_surrogate"]:
-            W = multiplicative_step_w(self.X_, self.G_, W, H, log_shift=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W, simplex_W=self.simplex_W)
+            W = multiplicative_step_w(self.X_, self.G_, W, H, log_shift=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W, simplex_W=self.simplex_W, bremsstrahlung = callable(self.G))
         else:
             if self.linesearch:
                 Wold = W.copy()

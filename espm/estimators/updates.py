@@ -3,7 +3,7 @@ from espm.conf import log_shift, dicotomy_tol, sigmaL
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
 from espm.estimators.dicotomy import dichotomy_simplex, dichotomy_simplex_acc, dichotomy_simplex_projected_gradient
 
-def multiplicative_step_w(X, G, W, H, simplex_W = True, log_shift=log_shift, safe=True, l2=False, fixed_W = None):
+def multiplicative_step_w(X, G, W, H, simplex_W = True, log_shift=log_shift, safe=True, l2=False, fixed_W = None, bremsstrahlung=False):
     """
     Multiplicative step in W.
     """
@@ -27,25 +27,26 @@ def multiplicative_step_w(X, G, W, H, simplex_W = True, log_shift=log_shift, saf
     else:
         GW = G @ W
         GWH = GW @ H
+        # GWH = np.maximum(GWH, log_shift)
         # Split to debug timing...
         # term1 = G.T @ (X / (GWH + eps)) @ H.T
         op1 = X / GWH
+        if np.any(np.isnan(op1)):
+            GWH = np.maximum(GWH, log_shift)
+            op1 = X / GWH
         
         mult1 = G.T @ op1
-        num = (mult1 @ H.T)
+        num = W*(mult1 @ H.T)
         denum = np.sum(G, axis=0,  keepdims=True).T @ np.sum(H, axis=1,  keepdims=True).T
         if simplex_W:
-            if callable(G) :
+            if bremsstrahlung :
                 nu = dichotomy_simplex(num[:-2,:], denum[:-2,:], log_shift=log_shift, tol=dicotomy_tol)
+                denum[:-2,:] = denum[:-2,:] + nu
             else : 
                 nu = dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol)
-            denum = denum + nu
-        
-        
-        
-        new_W = W / denum * num
+                denum = denum + nu
     
-    new_W = np.maximum(new_W, log_shift)
+    new_W = np.maximum(num/denum, log_shift)
     
     if fixed_W is not None: 
         new_W[fixed_W >= 0] = fixed_W[fixed_W >=0]
@@ -91,7 +92,11 @@ def multiplicative_step_h(X, G, W, H, simplex_H =True, mu=0, log_shift=log_shift
         denum = WGGW @ H
     else:
         GWH = GW @ H
+        # GWH = np.maximum(GWH, log_shift)
         num = GW.T @ (X / GWH)
+        if np.any(np.isnan(num)):
+            GWH = np.maximum(GWH, log_shift)
+            num = GW.T @ (X / GWH)
         denum = np.sum(GW, axis=0, keepdims=True).T 
 
     if not(np.isscalar(mu) and mu==0):
