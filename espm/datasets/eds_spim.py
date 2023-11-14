@@ -9,7 +9,8 @@ The main purpose of this class is to provide an easy and clean interface between
     - set fixed W and H for the :class:`espm.estimators.NMFEstimator` decomposition
 """
 
-from  hyperspy.signals import Signal1D
+from hyperspy.signals import Signal1D
+from hyperspy.roi import RectangularROI
 from espm.models import EDXS
 from espm.models.edxs import G_EDXS
 from hyperspy.misc.eds.utils import take_off_angle
@@ -369,6 +370,110 @@ class EDS_espm(Signal1D) :
                 if key == "b1" : 
                     W[-1,p] = phases_dict[phase][key]
         return W
+    
+    def define_ROI(self):
+        r"""
+        A function to define a rectangular ROI on an HyperSpy EDXS signal.
+        
+        Parameters
+        ----------
+        data : hs.signals.EDSTEMSpectrum
+            Input EDXS datacube.
+            
+        Returns
+        -------
+        roi : hs.roi.RectangularROI
+            A rectangular ROI defined by the user.
+        """
+        
+        centre_x = self.axes_manager[0].size // 2
+        centre_y = self.axes_manager[1].size // 2
+        dx = self.axes_manager[0].size // 10
+        dy = self.axes_manager[1].size // 10
+        
+        roi = RectangularROI(left = centre_x - dx, top = centre_y - dy, right = centre_x + dx, bottom = centre_y + dy)
+        self.plot()
+        imr = roi.interactive(self, color = 'r')
+        
+        return roi
+    
+    def generate_part_fixed_H_matrix(self, type = None, mask = None, ROIs = None, value = 1):
+        r"""
+        A function to generate a component of the fixed H matrix for one phase.
+        
+        Parameters
+        ----------
+        type : str
+            Type of the fixed H matrix component. Can be 'mask' or 'ROI'.
+        mask : np.ndarray
+            A binary mask given by the user.
+        ROIs : list
+            A list of rectangular ROIs given by the user.
+        value : float
+            Value of the non-negative entries in the partial H matrix. Must be between 0 and 1.
+            
+        Returns
+        -------
+        part_f_H : np.ndarray
+            A fixed H matrix for one phase.
+        """
+        part_f_H = (-1) * np.ones(shape = (self.axes_manager[0].size, self.axes_manager[1].size), dtype = float)
+        
+        if value > 1 or value < 0:
+            raise ValueError("Value must be between 0 and 1.")
+        
+        if type is None:
+            raise ValueError("Type is not defined.")
+        
+        if type == 'mask':
+            if mask is None:
+                raise ValueError("Mask is not defined.")
+            else:
+                if mask.shape != (self.axes_manager[0].size, self.axes_manager[1].size):
+                    raise ValueError("Mask shape does not match data shape.")
+                part_f_H[mask == 0] = value
+        
+        if type == 'ROI':
+            if ROIs is None:
+                raise ValueError("ROIs are not defined.")
+            else:
+                for i in range(len(ROIs)):
+                    region_parameters = ROIs[i].parameters
+                    scale_i = self.axes_manager[0].scale
+                    scale_j = self.axes_manager[1].scale
+                    j_min = int(region_parameters['left']) // scale_j
+                    i_min = int(region_parameters['top']) // scale_i
+                    j_max = int(region_parameters['right']) // scale_j
+                    i_max = int(region_parameters['bottom']) // scale_i
+                    part_f_H[i_min:i_max, j_min:j_max] = value
+        
+        return part_f_H
+    
+    def set_fixed_H(self, areas_dict):
+        r"""
+        Helper function to generate a fixed H matrix for the SmoothNMF decomposition algorithm. The output matrix will have -1 entries except for the
+        areas that are specified in the input dictionary. The -1 entries will be ignored during the decomposition and learned normally, while the
+        non-negative entries will be kept fixed.
+        
+        Parameters
+        ----------
+        areas_dict : dict
+            Determines which areas are going to be non-negative. The dictionary has the following structure:
+            areas_dict = {"p0" : part_f_H_0, "p1" : part_f_H_1 ...}
+            where part_f_H_0, part_f_H_1, ... are NumPy arrays with the same dimensions as the input data's spatial dimensions. They are generated using the generate_part_fixed_H_matrix() function.
+            
+        Returns
+        -------
+        H : numpy.ndarray
+            A fixed H matrix for the SmoothNMF decomposition algorithm.
+        """
+        
+        H = (-1) * np.ones(shape = (len(areas_dict), self.axes_manager[0].size, self.axes_manager[1].size), dtype = float)
+        
+        for i, p in enumerate(areas_dict):
+            H[i, :, :] = areas_dict[p]
+            
+        return H.reshape((len(areas_dict), self.axes_manager[0].size * self.axes_manager[1].size))
     
     def print_concentration_report (self,abs = False, selected_elts = [], W_input = None) : 
         r"""
