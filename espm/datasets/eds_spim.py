@@ -397,6 +397,69 @@ class EDS_espm(Signal1D) :
         
         return roi
     
+    class MatplotlibBackendError(ValueError):
+        pass
+    
+    def generate_manual_mask(self, n_classes = 3, mask_alpha = 0.75):
+        r"""
+        Function used to manually draw a mask with multiple classes on the summed spatial map of the data.
+        [Warning] This function requires the 'mpl_interactions', 'ipywidgets' and, optionally, 'ipympl' modules to be installed.
+        [Warning] Using this function requires restarting the IPython kernel since it changes the Matplotlib backend.
+        
+        Parameters
+        ----------
+        n_classes : int
+            The number of classes to be used for the mask.
+        mask_alpha : float
+            The transparency of the mask.
+        
+        Returns
+        -------
+        None
+        
+        Note: The generated mask is saved as a NumPy array in the current working directory.
+        """
+        import matplotlib.pyplot as plt
+        
+        try:
+            from mpl_interactions import image_segmenter
+        except:
+            raise ImportError("Module 'mpl_interactions' is not installed.")
+        
+        try:
+            import ipywidgets as widgets
+        except:
+            raise ImportError("Module 'ipywidgets' is not installed.")
+        
+        if plt.get_backend() != 'module://ipympl.backend_nbagg':
+            raise MatplotlibBackendError("Please switch to the 'ipympl' or 'widget' Matplotlib backend.")
+        
+        image = self.sum(axis = 2).data
+
+        class_selector = widgets.Dropdown(options=list(range(1, n_classes + 1)), description = "class")
+
+
+        def update(change):
+            multi_class_segmenter.current_class = class_selector.value
+            multi_class_segmenter.erasing = erasing_button.value
+            
+        def on_done_clicked(b):
+            np.save(f"mask_{n_classes}_classes.npy", multi_class_segmenter.mask)
+            print("Mask saved!")
+
+
+        erasing_button = widgets.Checkbox(value = False, description = "Erasing")
+        erasing_button.observe(update, names = "value")
+
+        class_selector.observe(update, names = "value")
+        multi_class_segmenter = image_segmenter(image, nclasses = n_classes, mask_alpha = mask_alpha)
+        
+        done_button = widgets.Button(description = "Done", disabled = False, button_style = "success", tooltip = "Save mask", icon = "check")
+        done_button.on_click(on_done_clicked)
+        
+        display(widgets.HBox([erasing_button, class_selector, done_button]))
+        display(multi_class_segmenter)
+    
     def generate_part_fixed_H_matrix(self, type = None, mask = None, ROIs = None, value = 1):
         r"""
         A function to generate a component of the fixed H matrix for one phase.
@@ -431,7 +494,7 @@ class EDS_espm(Signal1D) :
             else:
                 if mask.shape != (self.axes_manager[0].size, self.axes_manager[1].size):
                     raise ValueError("Mask shape does not match data shape.")
-                part_f_H[mask == 0] = value
+                part_f_H[mask != 0] = value
         
         if type == 'ROI':
             if ROIs is None:
