@@ -504,10 +504,10 @@ class EDS_espm(Signal1D) :
                     region_parameters = ROIs[i].parameters
                     scale_i = self.axes_manager[0].scale
                     scale_j = self.axes_manager[1].scale
-                    j_min = int(region_parameters['left']) // scale_j
-                    i_min = int(region_parameters['top']) // scale_i
-                    j_max = int(region_parameters['right']) // scale_j
-                    i_max = int(region_parameters['bottom']) // scale_i
+                    j_min = int(region_parameters['left'] // scale_j)
+                    i_min = int(region_parameters['top'] // scale_i)
+                    j_max = int(region_parameters['right'] // scale_j)
+                    i_max = int(region_parameters['bottom'] // scale_i)
                     part_f_H[i_min:i_max, j_min:j_max] = value
         
         return part_f_H
