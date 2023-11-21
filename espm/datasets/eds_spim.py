@@ -386,10 +386,10 @@ class EDS_espm(Signal1D) :
             A rectangular ROI defined by the user.
         """
         
-        centre_x = self.axes_manager[0].size // 2
-        centre_y = self.axes_manager[1].size // 2
-        dx = self.axes_manager[0].size // 10
-        dy = self.axes_manager[1].size // 10
+        centre_x = self.data.shape[1] // 2
+        centre_y = self.data.shape[0] // 2
+        dx = self.data.shape[1] // 10
+        dy = self.data.shape[0] // 10
         
         roi = RectangularROI(left = centre_x - dx, top = centre_y - dy, right = centre_x + dx, bottom = centre_y + dy)
         self.plot()
@@ -467,7 +467,7 @@ class EDS_espm(Signal1D) :
         Parameters
         ----------
         type : str
-            Type of the fixed H matrix component. Can be 'mask' or 'ROI'.
+            Type of the fixed H matrix component. Can be 'mask', 'ROI' or 'not_fixed'.
         mask : np.ndarray
             A binary mask given by the user.
         ROIs : list
@@ -480,7 +480,7 @@ class EDS_espm(Signal1D) :
         part_f_H : np.ndarray
             A fixed H matrix for one phase.
         """
-        part_f_H = (-1) * np.ones(shape = (self.axes_manager[0].size, self.axes_manager[1].size), dtype = float)
+        part_f_H = (-1) * np.ones(shape = (self.data.shape[0], self.data.shape[1]), dtype = float)
         
         if value > 1 or value < 0:
             raise ValueError("Value must be between 0 and 1.")
@@ -488,11 +488,14 @@ class EDS_espm(Signal1D) :
         if type is None:
             raise ValueError("Type is not defined.")
         
+        if type == 'not_fixed':
+            return part_f_H
+        
         if type == 'mask':
             if mask is None:
                 raise ValueError("Mask is not defined.")
             else:
-                if mask.shape != (self.axes_manager[0].size, self.axes_manager[1].size):
+                if mask.shape != (self.data.shape[0], self.data.shape[1]):
                     raise ValueError("Mask shape does not match data shape.")
                 part_f_H[mask != 0] = value
         
@@ -531,12 +534,12 @@ class EDS_espm(Signal1D) :
             A fixed H matrix for the SmoothNMF decomposition algorithm.
         """
         
-        H = (-1) * np.ones(shape = (len(areas_dict), self.axes_manager[0].size, self.axes_manager[1].size), dtype = float)
+        H = (-1) * np.ones(shape = (len(areas_dict), self.data.shape[0], self.data.shape[1]), dtype = float)
         
         for i, p in enumerate(areas_dict):
             H[i, :, :] = areas_dict[p]
             
-        return H.reshape((len(areas_dict), self.axes_manager[0].size * self.axes_manager[1].size))
+        return H.reshape((len(areas_dict), self.data.shape[0] * self.data.shape[1]))
     
     def print_concentration_report (self,abs = False, selected_elts = [], W_input = None) : 
         r"""
