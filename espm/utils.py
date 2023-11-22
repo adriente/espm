@@ -8,6 +8,8 @@ import json
 from hyperspy.misc.material import atomic_to_weight, density_of_mixture
 from functools import wraps
 import re
+import espm
+from IPython.utils import io
 
 _qtg_widgets = []
 _plt_figures = []
@@ -468,7 +470,7 @@ def num_to_symbol(num):
     """
 
     try:
-        d = {str(i+1):el for i,el in enumerate(espm.utils.symbol_list())} 
+        d = {str(i+1):el for i,el in enumerate(symbol_list())} 
         return d[num]
     except:
         return num
