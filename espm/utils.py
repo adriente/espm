@@ -454,17 +454,17 @@ def process_manual_mask(mask):
 
 def num_to_symbol(num):
     r"""
-    Descript 
+    Converts number to atomic symbol.
 
     Parameters
     ----------
-    mask : str
-        The path to the file containing the mask.
+    num : str
+        Number to be converted to atomic symbol. E. g. "1" return "H"
     
     Returns
     -------
-    masks : dict
-        A dictionary containing the binary masks for each class.
+    element : str
+        Corresponding atomic symbol.
     """
 
     try:
@@ -474,24 +474,27 @@ def num_to_symbol(num):
         return num
 
 
-def quant_spectrum(s1,smetadata = "self"):
+def quant_spectrum(s1):
     r"""
-    Descript 
+    Performs quantification in atomic % for a single spectrum. Elements from the metadata of another spectrum can be passed.
+    The quantification is done using SmoothNMF with one component so as to only do the fitting.
     
     Parameters
     ----------
-    mask : str
-        The path to the file containing the mask.
+    s1 : hs.signals.Signal1D
+        Spectrum to be quantified. Elements to be quantified should be defined in the metadata.
+
     
     Returns
     -------
-    masks : dict
-        A dictionary containing the binary masks for each class.
+    quantification : dict
+        A dictionary containing the atomic % of each element.
+
+    s1 : hs.signals.EDS_espm
+        The spectrum after doing espm quantification. The object contains all espm related information. 
+
     """
 
-    
-    if smetadata == "self":
-        smetadata = s1.metadata
     s = s1.deepcopy()
     s.set_signal_type("EDS_espm")
     

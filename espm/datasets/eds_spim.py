@@ -18,7 +18,11 @@ from espm.utils import number_to_symbol_list
 import numpy as np
 from espm.estimators import NMFEstimator
 import re
-
+import espm
+import hyperspy.api as hs
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from espm.utils import num_to_symbol
 
 class EDS_espm(Signal1D) : 
 
@@ -200,6 +204,7 @@ class EDS_espm(Signal1D) :
     def set_analysis_parameters (self,  thickness = 200e-7, density = 3.5, detector_type = "SDD_efficiency.txt", width_slope = 0.01, width_intercept = 0.065, xray_db = "default_xrays.json") :
         r"""
         Helper function to set the metadata of the :class:`EDS_espm` object. Be careful, it will overwrite the metadata of the object.
+        New for LSME_development branch: Only sets espm especific parameters. Other parameters have to be set with self.set_microscope_parameters and self.add_elements.
 
         Parameters
         ----------
@@ -623,17 +628,16 @@ class EDS_espm(Signal1D) :
     def quantify(self):
         
         r"""
-        Descript 
+        Performs pixel-wise elemental quantification using the results of an espm decomposition.
+        Results are stored in self.quantification_signal and self.quantification_list.
 
         Parameters
         ----------
-        mask : str
-            The path to the file containing the mask.
+        None
         
         Returns
         -------
-        masks : dict
-            A dictionary containing the binary masks for each class.
+        None
         """
 
         self.build_G()
@@ -673,17 +677,17 @@ class EDS_espm(Signal1D) :
 
     def plot_comp_model(self,comp_index):
         r"""
-        Descript 
+        Plots espm model of the component #comp_index, showing contributions of each element and background.
 
         Parameters
         ----------
-        mask : str
-            The path to the file containing the mask.
+        comp_index : int
+            Component index for which the model plot is built.
         
         Returns
         -------
-        masks : dict
-            A dictionary containing the binary masks for each class.
+        Figure : matplotlib.pyplot.figure
+            The figure of the plot.
         """
 
         idx = comp_index
@@ -709,17 +713,16 @@ class EDS_espm(Signal1D) :
 
     def plot_data_model(self):
         r"""
-        Descript 
+        Plots espm decomposition model as a new signal, showing contributions of each element and background
+        to each pixel.
 
         Parameters
         ----------
-        mask : str
-            The path to the file containing the mask.
+        None
         
         Returns
         -------
-        masks : dict
-            A dictionary containing the binary masks for each class.
+        None
         """
 
 
