@@ -451,3 +451,56 @@ def process_manual_mask(mask):
             masks[int(value)] = (mask == value).astype(np.uint8)
     
     return masks
+
+def num_to_symbol(num):
+    r"""
+    Descript 
+
+    Parameters
+    ----------
+    mask : str
+        The path to the file containing the mask.
+    
+    Returns
+    -------
+    masks : dict
+        A dictionary containing the binary masks for each class.
+    """
+
+    try:
+        d = {str(i+1):el for i,el in enumerate(espm.utils.symbol_list())} 
+        return d[num]
+    except:
+        return num
+
+
+def quant_spectrum(s1,smetadata = "self"):
+    r"""
+    Descript 
+    
+    Parameters
+    ----------
+    mask : str
+        The path to the file containing the mask.
+    
+    Returns
+    -------
+    masks : dict
+        A dictionary containing the binary masks for each class.
+    """
+
+    
+    if smetadata == "self":
+        smetadata = s1.metadata
+    s = s1.deepcopy()
+    s.set_signal_type("EDS_espm")
+    
+    s.build_G()
+    est = espm.estimators.SmoothNMF(n_components = 1,G = s.G(),verbose=0)
+    with io.capture_output() as captured:
+        est.fit_transform(X = s1.data[:,np.newaxis], H = np.array([1.0])[:,np.newaxis])
+    s.learning_results.decomposition_algorithm=est
+    with io.capture_output() as captured:
+        s.print_concentration_report()
+    #print(captured)
+    return dict([[i.split(":")[0][:-1], float(i.split(":")[1]) ]for i in captured.stdout.splitlines()[2:]]),s
