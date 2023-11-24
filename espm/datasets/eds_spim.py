@@ -625,7 +625,17 @@ class EDS_espm(Signal1D) :
                     main_string += "{:05.4f} ".format(norm_W[i,k])
                 print(main_string)
 
-    def quantify(self):
+
+    def fix_masked_H(self):
+        n = self.learning_results.decomposition_algorithm.n_components
+        x = self.axes_manager.navigation_size
+        mask = self.learning_results.navigation_mask
+        H = np.zeros((n,x))
+        H[:,mask]=np.nan
+        H[:,~mask]=self.learning_results.decomposition_algorithm.H_
+        return H
+
+    def quantify(self,skip_elements=[]):
         
         r"""
         Performs pixel-wise elemental quantification using the results of an espm decomposition.
@@ -643,12 +653,20 @@ class EDS_espm(Signal1D) :
         self.build_G()
         els = self.metadata.EDS_model.elements
         est = self.learning_results.decomposition_algorithm
-        
-        # can't believe this isn't more readily available in espm.utils:
-        
+        W=est.W_
+        H=est.H_
+
+        if self.learning_results.navigation_mask is not None:
+            H = self.fix_masked_H()
+     
         els_names = [num_to_symbol(el) for el in els]
-        
-        WH = (est.W_@est.H_).reshape([len(els)+2]+list(self.data.shape[:-1]))[:-2]
+        WH = (W@H)
+        WH = WH.reshape([len(els)+2]+list(self.data.shape[:-1]))[:-2]
+
+        if not skip_elements is None:
+            els_names = [i for i in els_names if not i in skip_elements]
+            WH = WH[ [i for i,el in enumerate(els_names) if not el in skip_elements]]
+
         WH/=WH.sum(0)[np.newaxis,...]/100
 
 
@@ -672,7 +690,11 @@ class EDS_espm(Signal1D) :
             wh.axes_manager[1+i].update_from(self.axes_manager[i],["units","scale","name","offset"])
             
         self.quantification_list = qs
-        self.quantification_signal =wh
+        self.quantification_signal = wh
+        self.quantification_signal.metadata = self.metadata.copy()
+        self.quantification_signal.metadata.Sample.elements = els_names
+        self.quantification_signal.metadata.Sample.xray_lines = [i for i in self.quantification_signal.metadata.Sample.xray_lines if not i.split("_")[0] in skip_elements]
+        self.quantification_signal_1d = self.quantification_signal.as_signal1D(0)
         return
 
     def plot_comp_model(self,comp_index):
@@ -729,6 +751,8 @@ class EDS_espm(Signal1D) :
         W = self.learning_results.decomposition_algorithm.W_
         G = self.learning_results.decomposition_algorithm.G_
         H = self.learning_results.decomposition_algorithm.H_
+        if self.learning_results.navigation_mask is not None:
+            H = self.fix_masked_H()
 
         WH = W@H
 
@@ -760,6 +784,23 @@ class EDS_espm(Signal1D) :
                              color = ["k"]+list(mpl.colors.TABLEAU_COLORS.values())*10)
 
         return
+
+    def create_masking_signal(self,skip_elements=None):
+        sm = self.deepcopy()
+        sm.set_signal_type("EDS_TEM")
+        sm.decomposition()
+        # relevant elements in your sample
+        if not skip_elements is None:
+            sm.metadata.Sample.elements = [ i for i in sm.metadata.Sample.elements if not i in skip_elements]
+            sm.metadata.Sample.xray_lines = [i for i in sm.metadata.Sample.xray_lines if i.split("_")[0] in sm.metadata.Sample.elements]
+        sm = sm.get_decomposition_model(sm.estimate_elbow_position())
+
+        l1=[]
+        for i,j in sm.estimate_integration_windows():
+            l1.append(sm.isig[i:j].data)
+        self.mask = hs.signals.Signal1D(np.dstack(l1))
+
+
         
 
 

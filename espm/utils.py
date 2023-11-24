@@ -10,6 +10,9 @@ from functools import wraps
 import re
 import espm
 from IPython.utils import io
+import hyperspy.api as hs
+import seaborn
+import matplotlib as mpl
 
 _qtg_widgets = []
 _plt_figures = []
@@ -509,3 +512,45 @@ def quant_spectrum(s1):
         s.print_concentration_report()
     #print(captured)
     return dict([[i.split(":")[0][:-1], float(i.split(":")[1]) ]for i in captured.stdout.splitlines()[2:]]),s
+
+
+def cluster_analysis_concentration_report(s,cluster_source = None):
+
+    if cluster_source is None:
+        qs = s.learning_results.cluster_centroid_signals.T
+
+    elif isinstance(cluster_source,hs.signals.Signal1D):
+        ls = cluster_source.get_cluster_labels().data
+        qs = np.vstack([s.quantification_signal_1d.data[l].mean(0) for l in ls]).T
+
+    elif isinstance(cluster_source,np.array):
+        ls = cluster_source
+        qs = np.vstack([s.quantification_signal_1d.data[l].mean(0) for l in ls]).T
+
+    else:
+        return " Only hs.signals.Signal1D or np.array are accepted as cluster source"
+
+    qs = np.round(qs,2)
+    els = s.quantification_signal.metadata.Sample.elements
+
+
+    print("",end="\t")
+    print(*["c"+str(i+1) for i in range(qs.shape[1])],sep="\t" )
+    for el,q in zip(els,qs):
+        print(el,end="\t")
+        print(*q,sep="\t")
+
+    return qs
+
+def fancy_cluster_plot(s):
+    n=s.learning_results.cluster_labels.shape[0]
+    cmap = mpl.colors.ListedColormap(seaborn.color_palette("bright",n))
+    hs.signals.Signal2D((s.get_cluster_labels().data*np.array(range(1,n+1))[:,np.newaxis,np.newaxis]).sum(0)).plot(cmap=cmap)
+
+        
+
+
+
+
+        
+
