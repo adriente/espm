@@ -664,8 +664,9 @@ class EDS_espm(Signal1D) :
         WH = WH.reshape([len(els)+2]+list(self.data.shape[:-1]))[:-2]
 
         if not skip_elements is None:
-            els_names = [i for i in els_names if not i in skip_elements]
             WH = WH[ [i for i,el in enumerate(els_names) if not el in skip_elements]]
+            els_names = [i for i in els_names if not i in skip_elements]
+            
 
         WH/=WH.sum(0)[np.newaxis,...]/100
 
@@ -785,10 +786,33 @@ class EDS_espm(Signal1D) :
 
         return
 
-    def create_masking_signal(self,skip_elements=None):
+    def create_masking_signal(self,skip_elements=None,use_nav_mask=False):
+
+        r"""
+        Creates a signal suitable for generating mask via cluster analysis.
+        It is stored in self.mask
+
+        Parameters
+        ----------
+        skip_elements : list
+        Elements to be ignored when gereating the signal
+
+        use_nav_mask : bool
+        Wheter to look for navigation mask in self.learning_results.navigation_mask
+
+        Returns
+        -------
+        None
+        """
+
+
+
         sm = self.deepcopy()
         sm.set_signal_type("EDS_TEM")
-        sm.decomposition()
+        if use_nav_mask:
+            sm.decomposition(navigation_mask=sm.learning_results.navigation_mask)
+        else:
+            sm.decomposition()
         # relevant elements in your sample
         if not skip_elements is None:
             sm.metadata.Sample.elements = [ i for i in sm.metadata.Sample.elements if not i in skip_elements]
@@ -799,6 +823,26 @@ class EDS_espm(Signal1D) :
         for i,j in sm.estimate_integration_windows():
             l1.append(sm.isig[i:j].data)
         self.mask = hs.signals.Signal1D(np.dstack(l1))
+
+    def quantification_profile(self,**kwargs):
+        r"""
+        Plots quantification profiles of all elements. 
+
+        Parameters
+        ----------
+        **kwargs are passed to Line2DROI
+        
+        Returns
+        -------
+        Quantification profiles
+        """
+        line = hs.roi.Line2DROI(**kwargs)
+        p1 = self.quantification_list[0]
+        p1.plot()
+        line.interactive(p1,color="red")
+        p_contrib = [line.interactive(g,None) for g in self.quantification_list]#here are the profiles stored
+        hs.plot.plot_spectra(p_contrib,legend = "auto")
+        return p_contrib
 
 
         
