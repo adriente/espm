@@ -384,11 +384,13 @@ class EDS_espm(Signal1D) :
         roi : hs.roi.RectangularROI
             A rectangular ROI defined by the user.
         """
+        scale_x = self.axes_manager[0].scale
+        scale_y = self.axes_manager[1].scale
         
-        centre_x = self.data.shape[1] // 2
-        centre_y = self.data.shape[0] // 2
-        dx = self.data.shape[1] // 10
-        dy = self.data.shape[0] // 10
+        centre_x = self.data.shape[1] * scale_x / 2
+        centre_y = self.data.shape[0] * scale_y / 2
+        dx = self.data.shape[1] * scale_x / 10
+        dy = self.data.shape[0] * scale_y / 10
         
         roi = RectangularROI(left = centre_x - dx, top = centre_y - dy, right = centre_x + dx, bottom = centre_y + dy)
         self.plot()

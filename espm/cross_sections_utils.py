@@ -114,9 +114,21 @@ def modify_cross_sections(energy, input_type = None, lines_new_values = None, li
                 print(f"Set new cross-section for Element {element}, Line {line} based on a k-factor of {factor} having element {ref_element}, line {ref_line} as reference line.")
             else:
                 raise ValueError(f"Element {element} or Line {line} not found in the JSON data.")
-            
-    if output_filename is None:
-        output_filename = f"{energy}keV_xrays_modified.json"
+    
+    original_files_list = [
+        'SDD_efficiency.txt',
+        '200keV_xrays.json',
+        '__init__.py',
+        'default_xrays.json',
+        'periodic_table_symbols.json',
+        'siegbahn_to_iupac.json',
+        '300keV_xrays.json',
+        'periodic_table_number.json',
+        '100keV_xrays.json'
+        ]
+    
+    if output_filename in original_files_list:
+        raise ValueError("The output filename cannot be the same as one of the original files.")
 
     with open(DB_PATH / output_filename, 'w') as file:
         json.dump(cross_sections_data, file, indent = 4)
