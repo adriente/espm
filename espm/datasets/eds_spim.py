@@ -637,15 +637,20 @@ class EDS_espm(Signal1D) :
         H[:,~mask]=self.learning_results.decomposition_algorithm.H_
         return H
 
-    def quantify(self,skip_elements=[]):
+    def quantify(self,skip_elements=[],use_nav_mask=False):
         
         r"""
         Performs pixel-wise elemental quantification using the results of an espm decomposition.
         Results are stored in self.quantification_signal and self.quantification_list.
+        Sets self.quantification_list, self.quantification_signal, self.quantification_signal_1d.
 
         Parameters
         ----------
-        None
+        skip_elements : list
+            List of elements that will not be quantified, therefore renormaliying the remaing.
+
+        use_nav_mask : bool
+            Whether to use or not self.learning_results.navigation_mask to ignore pixels.
         
         Returns
         -------
@@ -658,7 +663,7 @@ class EDS_espm(Signal1D) :
         W=est.W_
         H=est.H_
 
-        if self.learning_results.navigation_mask is not None:
+        if (self.learning_results.navigation_mask is not None) and use_nav_mask==True:
             H = self.fix_masked_H()
      
         els_names = [num_to_symbol(el) for el in els]
@@ -685,19 +690,29 @@ class EDS_espm(Signal1D) :
         for q in qs:
             for i in range(self.axes_manager.navigation_dimension):
                 q.axes_manager[i].update_from(self.axes_manager[i],["units","scale","name","offset"])
-
+            q.metadata.Signal.quantity = "Atomic %"
             wh = Signal(WH)
 
-        wh.metadata.EDS_model = self.metadata.EDS_model
+
         for i in range(self.axes_manager.navigation_dimension):
             wh.axes_manager[1+i].update_from(self.axes_manager[i],["units","scale","name","offset"])
             
         self.quantification_list = qs
         self.quantification_signal = wh
-        self.quantification_signal.metadata = self.metadata.copy()
-        self.quantification_signal.metadata.Sample.elements = els_names
-        self.quantification_signal.metadata.Sample.xray_lines = [i for i in self.quantification_signal.metadata.Sample.xray_lines if not i.split("_")[0] in skip_elements]
+        self.quantification_signal.metadata = self.metadata.deepcopy()
+        self.quantification_signal.metadata.set_item("Sample.elements", els_names)
+        self.quantification_signal.metadata.set_item("Signal.quantity" ,"Atomic %")
+        self.quantification_signal.axes_manager[0].name = "Elements"
+        self.quantification_signal.metadata.set_item("Sample.xray_lines" , [i for i in self.quantification_signal.metadata.Sample.xray_lines if not i.split("_")[0] in skip_elements])
         self.quantification_signal_1d = self.quantification_signal.as_signal1D(0)
+        #hack to label elements. Horrible, I know.
+        def label_elements():
+            self.quantification_signal._plot.navigator_plot.ax.set_xticks(list(range(len(els_names))),els_names)
+            return
+
+        self.quantification_signal.axes_manager[0].events.index_changed.connect(label_elements,[])
+
+
         return
 
     def plot_comp_model(self,comp_index):
@@ -743,7 +758,8 @@ class EDS_espm(Signal1D) :
 
         Parameters
         ----------
-        None
+        WH : np.ndarray
+            WH model. by default is taken from the current decomposition.
         
         Returns
         -------
@@ -756,6 +772,7 @@ class EDS_espm(Signal1D) :
         H = self.learning_results.decomposition_algorithm.H_
         if self.learning_results.navigation_mask is not None:
             H = self.fix_masked_H()
+
 
         WH = W@H
 
@@ -788,7 +805,7 @@ class EDS_espm(Signal1D) :
 
         return
 
-    def create_masking_signal(self,skip_elements=None,use_nav_mask=False):
+    def create_masking_signal(self,skip_elements=None,use_nav_mask=False,use_comps=None):
 
         r"""
         Creates a signal suitable for generating mask via cluster analysis.
@@ -819,7 +836,11 @@ class EDS_espm(Signal1D) :
         if not skip_elements is None:
             sm.metadata.Sample.elements = [ i for i in sm.metadata.Sample.elements if not i in skip_elements]
             sm.metadata.Sample.xray_lines = [i for i in sm.metadata.Sample.xray_lines if i.split("_")[0] in sm.metadata.Sample.elements]
-        sm = sm.get_decomposition_model(sm.estimate_elbow_position())
+        
+        if use_comps is None: 
+            sm = sm.get_decomposition_model(sm.estimate_elbow_position())
+        else:
+            sm = sm.get_decomposition_model(use_comps)
 
         l1=[]
         for i,j in sm.estimate_integration_windows():
@@ -839,11 +860,20 @@ class EDS_espm(Signal1D) :
         Quantification profiles
         """
         line = hs.roi.Line2DROI(**kwargs)
-        p1 = self.quantification_list[0]
+        p1 = hs.signals.Signal2D(self.data.sum(-1))
+        if not self.learning_results.navigation_mask is None:
+            p1.data[self.learning_results.navigation_mask.reshape(self.data.shape[:-1])]=np.nan
+        for i in range(2):
+            p1.axes_manager[i].update_from(self.axes_manager[i],["units","scale","name","offset"])
         p1.plot()
         line.interactive(p1,color="red")
         p_contrib = [line.interactive(g,None) for g in self.quantification_list]#here are the profiles stored
+        for p in p_contrib:
+            p.axes_manager[0].name = "Profile"
+            p.metadata.Signal.quantity = "Atomic %"
         hs.plot.plot_spectra(p_contrib,legend = "auto")
+        ax = plt.gca()
+        ax.set_ylabel("Atomic %")
         return p_contrib
 
 

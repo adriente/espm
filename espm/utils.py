@@ -13,6 +13,10 @@ from IPython.utils import io
 import hyperspy.api as hs
 import seaborn
 import matplotlib as mpl
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression as LR
+import skimage as ski
+
 
 _qtg_widgets = []
 _plt_figures = []
@@ -514,40 +518,147 @@ def quant_spectrum(s1):
     return dict([[i.split(":")[0][:-1], float(i.split(":")[1]) ]for i in captured.stdout.splitlines()[2:]]),s
 
 
-def cluster_analysis_concentration_report(s,cluster_source = None):
+def cluster_analysis_concentration_report(s,cluster_source = None,print_std=False):
+    r"""
+    Performs quantification in atomic % each cluster.
+    s must have been quantified using .quantify() method. 
+    
+    Parameters
+    ----------
+    s : hs.signals.Signal1D
+        Quantified Spectrum Image. Must have valid s.quantification_signal_1d.
+
+    cluster_source: None, hs.signals.Signal1D or Numpy Array
+
+        Object that contains the labeled coordinates where to average the quantification.
+        If None, s.get_cluster_labels() is called.
+
+    print_std : Bool
+        If True, the method also prints the standard deviation of quantifications for each element, for each cluster.
+    
+    Returns
+    -------
+    quantification : np.ndarray
+        An array containing the atomic % of each element averaged for each cluster.
+
+    std : np.ndarray
+        An array containing the std of the atomic % for each element in each cluster.
+    """
 
     if cluster_source is None:
-        qs = s.learning_results.cluster_centroid_signals.T
-
+        ls = s.get_cluster_labels().data
+        
     elif isinstance(cluster_source,hs.signals.Signal1D):
         ls = cluster_source.get_cluster_labels().data
-        qs = np.vstack([s.quantification_signal_1d.data[l].mean(0) for l in ls]).T
 
-    elif isinstance(cluster_source,np.array):
+    elif isinstance(cluster_source,np.ndarray):
         ls = cluster_source
-        qs = np.vstack([s.quantification_signal_1d.data[l].mean(0) for l in ls]).T
 
     else:
         return " Only hs.signals.Signal1D or np.array are accepted as cluster source"
 
+    qs = np.vstack([s.quantification_signal_1d.data[l].mean(0) for l in ls]).T
+    ds = np.vstack([s.quantification_signal_1d.data[l].std(0) for l in ls]).T
     qs = np.round(qs,2)
+    ds = np.round(ds,2)
     els = s.quantification_signal.metadata.Sample.elements
 
 
     print("",end="\t")
     print(*["c"+str(i+1) for i in range(qs.shape[1])],sep="\t" )
-    for el,q in zip(els,qs):
+    for el,q,d in zip(els,qs,ds):
         print(el,end="\t")
-        print(*q,sep="\t")
+        if print_std:
+            q_d=[str(qi)+u"\u00B1"+str(di) for qi,di in zip(q,d)]
+            print(*q_d,sep="\t")
 
-    return qs
+        else:
+            print(*q,sep="\t")
+
+    return qs,ds
 
 def fancy_cluster_plot(s):
-    n=s.learning_results.cluster_labels.shape[0]
+    if isinstance(s,hs.signals.Signal1D):
+        data = s.get_cluster_labels().data
+    elif isinstance(s,np.ndarray):
+        data = s
+    n = data.shape[0]
+    d = (data*np.array(range(1,n+1))[:,np.newaxis,np.newaxis]).sum(0).astype("float")
+    d[d==0]=np.nan
     cmap = mpl.colors.ListedColormap(seaborn.color_palette("bright",n))
-    hs.signals.Signal2D((s.get_cluster_labels().data*np.array(range(1,n+1))[:,np.newaxis,np.newaxis]).sum(0)).plot(cmap=cmap)
+    hs.signals.Signal2D(d).plot(cmap=cmap)
 
+def quant_profile_linear_fit(pf,**linfit_kwargs):
+    lr = LR(**linfit_kwargs)
+    plt.figure()
+
+    n = len(pf)
+    rows = int(np.floor(np.sqrt(n)))
+    cols = int(np.ceil(np.sqrt(n)))
+    fit_results ={}
+    for i,p in enumerate(pf):
         
+        ax = plt.subplot(rows,cols,i+1)
+        xf = p.axes_manager[0].axis       
+        yf = p.data
+        keep = ~(np.isnan(xf)|np.isnan(yf))
+        out = lr.fit(xf[keep].reshape(-1,1),
+                     yf[keep].reshape(-1,1))
+
+        x = p.axes_manager[0].axis
+        el = p.metadata.General.name
+        plt.plot(x,p.data,label="Profile data "+el)
+        ax.set_xlabel(r"profile ({})".format(p.axes_manager[0].units))
+        ax.set_ylabel("Atomic %")
+        ax.set_title(el+" profile")
+
+
+        a = out.coef_[0]
+        b=out.intercept_
+        yfit = x*a+b
+
+        a,b =np.round([a,b],2)
+        fit_el={"slope":a,"intercept":b}
+        plt.plot(x,yfit,
+                 label= r"Fit : {}$\frac{{at \%}}{{{}}}$ x+{} at%".format(a[0],
+                                                                          p.axes_manager[0].units,b[0]))
+
+        plt.legend()
+        fit_results[el]=fit_el
+    return fit_results
+
+def radial_profile(data,center = "middle"):
+    if center == "middle":
+        center = np.array(data.shape)/2
+    
+    y, x = np.indices((data.shape))
+    r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
+    r = r.astype("int")
+    
+    keep = ~np.isnan(data.ravel())
+    tbin = np.bincount(r.ravel()[keep], data.ravel()[keep])
+    nr = np.bincount(r.ravel()[keep])
+
+    radialprofile = tbin / nr
+    return radialprofile
+
+def erode_masks(masks,erosion_radius=1,footprint = np.ones((3,3)),extra_safe = False):
+    out = masks.copy()
+
+    
+    for i,m in enumerate(out):
+        if erosion_radius > 0 and extra_safe:
+           m = ski.morphology.binary_erosion(m,ski.morphology.disk(erosion_radius))
+        m = ski.morphology.binary_opening(m,footprint=footprint)
+        m = ski.morphology.binary_closing(m,footprint=footprint)
+        #processed = ski.morphology.binary_dilation(processed,footprint=np.ones((3,3)))
+        if erosion_radius > 0:
+            m = ski.morphology.binary_erosion(m,ski.morphology.disk(erosion_radius))
+        out[i]=m
+        
+    return out 
+
+
 
 
 
