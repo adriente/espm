@@ -645,16 +645,26 @@ def radial_profile(data,center = "middle"):
 def erode_masks(masks,erosion_radius=1,footprint = np.ones((3,3)),extra_safe = False):
     out = masks.copy()
 
-    
-    for i,m in enumerate(out):
+    if out.ndim>2:
+        for i,m in enumerate(out):
+            if erosion_radius > 0 and extra_safe:
+               m = ski.morphology.binary_erosion(m,ski.morphology.disk(erosion_radius))
+            m = ski.morphology.binary_opening(m,footprint=footprint)
+            m = ski.morphology.binary_closing(m,footprint=footprint)
+            #processed = ski.morphology.binary_dilation(processed,footprint=np.ones((3,3)))
+            if erosion_radius > 0:
+                m = ski.morphology.binary_erosion(m,ski.morphology.disk(erosion_radius))
+            out[i]=m
+    else:
+        m=out
         if erosion_radius > 0 and extra_safe:
-           m = ski.morphology.binary_erosion(m,ski.morphology.disk(erosion_radius))
-        m = ski.morphology.binary_opening(m,footprint=footprint)
-        m = ski.morphology.binary_closing(m,footprint=footprint)
-        #processed = ski.morphology.binary_dilation(processed,footprint=np.ones((3,3)))
-        if erosion_radius > 0:
-            m = ski.morphology.binary_erosion(m,ski.morphology.disk(erosion_radius))
-        out[i]=m
+               m = ski.morphology.binary_erosion(m,ski.morphology.disk(erosion_radius))
+            m = ski.morphology.binary_opening(m,footprint=footprint)
+            m = ski.morphology.binary_closing(m,footprint=footprint)
+            #processed = ski.morphology.binary_dilation(processed,footprint=np.ones((3,3)))
+            if erosion_radius > 0:
+                m = ski.morphology.binary_erosion(m,ski.morphology.disk(erosion_radius))
+            out=m
         
     return out 
 
