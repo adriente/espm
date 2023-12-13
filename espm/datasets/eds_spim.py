@@ -637,6 +637,12 @@ class EDS_espm(Signal1D) :
         H[:,~mask]=self.learning_results.decomposition_algorithm.H_
         return H
 
+    def get_full_el_list(self):
+        els = self.metadata.EDS_model.elements.copy()
+        els_names = [num_to_symbol(el) for el in els]
+        return els_names
+
+
     def quantify(self,skip_elements=[],use_nav_mask=False):
         
         r"""
@@ -657,18 +663,25 @@ class EDS_espm(Signal1D) :
         None
         """
 
-        self.build_G()
-        els = self.metadata.EDS_model.elements
+        #self.build_G()
+        
         est = self.learning_results.decomposition_algorithm
-        W=est.W_
-        H=est.H_
+        W = est.W_
+        H = est.H_
+        G = est.G_
+
+        
+        els_names = self.get_full_el_list()
+
+
 
         if (self.learning_results.navigation_mask is not None) and use_nav_mask==True:
             H = self.fix_masked_H()
+
      
-        els_names = [num_to_symbol(el) for el in els]
+
         WH = (W@H)
-        WH = WH.reshape([len(els)+2]+list(self.data.shape[:-1]))[:-2]
+        WH = WH.reshape([G.shape[-1]]+list(self.data.shape[:-1]))[:-2]
 
         if not skip_elements is None:
             WH = WH[ [i for i,el in enumerate(els_names) if not el in skip_elements]]
@@ -703,7 +716,8 @@ class EDS_espm(Signal1D) :
         self.quantification_signal.metadata.set_item("Sample.elements", els_names)
         self.quantification_signal.metadata.set_item("Signal.quantity" ,"Atomic %")
         self.quantification_signal.axes_manager[0].name = "Elements"
-        self.quantification_signal.metadata.set_item("Sample.xray_lines" , [i for i in self.quantification_signal.metadata.Sample.xray_lines if not i.split("_")[0] in skip_elements])
+        if self.quantification_signal.metadata.has_item("Sample.xray_lines"):
+            self.quantification_signal.metadata.set_item("Sample.xray_lines" , [i for i in self.quantification_signal.metadata.Sample.xray_lines if not i.split("_")[0] in skip_elements])
         self.quantification_signal_1d = self.quantification_signal.as_signal1D(0)
         #hack to label elements. Horrible, I know.
         def label_elements():
@@ -731,8 +745,7 @@ class EDS_espm(Signal1D) :
         """
 
         idx = comp_index
-        els = self.metadata.EDS_model.elements
-        els = [num_to_symbol(el) for el in els]+["Background 1","Background 2"]
+        els = self.get_full_el_list()+["Background 1","Background 2"]
         self.GW = self.learning_results.decomposition_algorithm.G_@self.learning_results.decomposition_algorithm.W_
         gs,cs = self.learning_results.decomposition_algorithm.W_.shape
         G_idx = self.learning_results.decomposition_algorithm.G_*self.learning_results.decomposition_algorithm.W_[:,idx]
@@ -779,7 +792,7 @@ class EDS_espm(Signal1D) :
         contributions = [hs.signals.Signal1D((G[:,[i]]@(WH)[[i],:]).T.reshape(self.data.shape))  for i in range(G.shape[1])]
         contributions.append(hs.signals.Signal1D((G@WH).T.reshape(self.data.shape)))
         els = self.metadata.EDS_model.elements 
-        titles =[num_to_symbol(el) for el in els]+["Background 1","Bacground 2","Full Model"]
+        titles =self.get_full_el_list()+["Background 1","Background 2","Full Model"]
         for i,c in enumerate(contributions):
                 for a,b in zip(c.axes_manager._axes,self.axes_manager._axes):
                     a.update_from(b)

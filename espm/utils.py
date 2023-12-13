@@ -475,12 +475,14 @@ def num_to_symbol(num):
     element : str
         Corresponding atomic symbol.
     """
-
+    d = {str(i+1):el for i,el in enumerate(symbol_list())} 
     try:
-        d = {str(i+1):el for i,el in enumerate(symbol_list())} 
-        return d[num]
+        return d[num.split("_")[0]]+"_"+num.split("_")[1]
     except:
-        return num
+        try:
+            return d[num]
+        except:
+            return num
 
 
 def quant_spectrum(s1):

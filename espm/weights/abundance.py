@@ -28,8 +28,8 @@ class Abundance(object):
 
     @property
     def weights (self) : 
-        if np.sum(self._weights[:,:,0]) == 0.0 : 
-            self._weights[:,:,0] = 1 - np.sum(self._weights[:,:,0:], axis=2)
+        #if np.sum(self._weights[:,:,0]) == 0.0 : 
+        self._weights[:,:,0] = 1 - np.sum(self._weights[:,:,1:], axis=2)
         return self._weights
     
     def check_add_weights(self, val, phase_id):
@@ -47,11 +47,12 @@ class Abundance(object):
         -------
         None.
         """
-        s = self._weights.sum(axis=2)
+        s = self._weights[:,:,1:].sum(axis=2)
         s += val
         test = s <= 1
         if np.all(test) :
             self._weights[:, :, phase_id] += val
+            self.signal = hs.signals.Signal2D(np.rollaxis(self.weights,-1,0))
         else : 
             print("The weights contain values above 1, adding the new abundance was aborted.")
 
@@ -77,7 +78,7 @@ class Abundance(object):
             print('The abundance is zero everywhere, scaling was aborted.')
             return values
         else : 
-            return (values - np.min(values))/(np.max(values) - np.min(values))*(conc_max - conc_min)+conc_min
+            return ((values - np.min(values))/(np.max(values) - np.min(values)))*(conc_max - conc_min)+conc_min
         
     #################
     # Add functions #
