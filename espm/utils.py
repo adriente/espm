@@ -580,7 +580,7 @@ def cluster_analysis_concentration_report(s,cluster_source = None,print_std=Fals
     return qs,ds
 
 def fancy_cluster_plot(s):
-    if isinstance(s,hs.signals.Signal1D):
+    if isinstance(s,hs.signals.BaseSignal):
         data = s.get_cluster_labels().data
     elif isinstance(s,np.ndarray):
         data = s
