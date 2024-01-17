@@ -580,6 +580,15 @@ def cluster_analysis_concentration_report(s,cluster_source = None,print_std=Fals
     return qs,ds
 
 def fancy_cluster_plot(s):
+    r"""
+    Performs Cluster label plot with fancy colors.
+
+    Parameters
+    ----------
+    s : hs.signals.Signal1D
+        s should be a signal for which you have performed cluster analysis.
+
+    """
     if isinstance(s,hs.signals.BaseSignal):
         data = s.get_cluster_labels().data
     elif isinstance(s,np.ndarray):
@@ -591,6 +600,18 @@ def fancy_cluster_plot(s):
     hs.signals.Signal2D(d).plot(cmap=cmap)
 
 def quant_profile_linear_fit(pf,**linfit_kwargs):
+    r"""
+    Performs linear fit on profile data.
+
+    Parameters
+    ----------
+    pf : list of hs.signals.Signal1D
+        Output of s.quantification_profile
+
+    linfit_kwargs: are passed to sklearn.linear_model.LinearRegression 
+
+    """
+
     lr = LR(**linfit_kwargs)
     plt.figure()
 
@@ -645,7 +666,22 @@ def radial_profile(data,center = "middle"):
     return radialprofile
 
 def erode_masks(masks,erosion_radius=1,footprint = np.ones((3,3)),extra_safe = False):
-    out = masks.copy()
+    r"""
+    Erodes masks so as to prevent phase overlap regions
+
+    Parameters
+    ----------
+    masks: np.array
+        Tipically labels from cluster analysis
+
+    erosion_radius: int
+        The higher the more the masks are eroded
+
+
+    footprint: See skimage.morphology.binary erosion
+
+    extra_safe: bool
+        Perfroms erosion before opening/closing. In practice it creats a harsher erosion."""
 
     if out.ndim>2:
         for i,m in enumerate(out):
