@@ -100,7 +100,7 @@ class SmoothNMF(NMFEstimator):
         self.check_params()
 
     def check_params(self) : 
-        assert self.algo in ["l2_surrogate", "log_surrogate", "projected_gradient"], "The algorithm must be 'l2_surrogate', 'log_surrogate' or 'projected_gradient'"
+        assert self.algo in ["l2_surrogate", "log_surrogate", "projected_gradient", "bmd"], "The algorithm must be 'l2_surrogate', 'log_surrogate', 'bmd' or 'projected_gradient'"
         assert self.lambda_L >= 0 and self.epsilon_reg > 0.0 and np.all(np.array(self.mu)>=0), "The regularization parameters must be positive"
         assert (self.simplex_H and not(self.simplex_W)) or (not(self.simplex_H) and self.simplex_W) or (not(self.simplex_H) and not(self.simplex_W)), "Only one of simplex_H and simplex_W can be True"
         if self.linesearch:
@@ -183,9 +183,9 @@ class SmoothNMF(NMFEstimator):
         elif self.algo=="log_surrogate":
             H = multiplicative_step_h(self.X_, self.G_, W, H, simplex_H=self.simplex_H, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, sigmaL=self.gamma_)
         elif self.algo=="projected_gradient":
-            H = proj_grad_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, gamma=self.gamma_[0])
+            H = proj_grad_step_h(self.X_, self.G_, W, H, simplex_H=self.simplex_H, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, gamma=self.gamma_[0])
         elif self.algo=="bmd":
-            H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, sigmaL=self.gamma_, use_bregman=True)
+            H = multiplicative_step_h(self.X_, self.G_, W, H, simplex_H=self.simplex_H, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, sigmaL=self.gamma_, use_bregman=True)
         else:
             raise ValueError("Unknown algorithm")
 
