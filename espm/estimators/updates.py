@@ -3,7 +3,7 @@ from espm.conf import log_shift, dicotomy_tol, sigmaL
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
 from espm.estimators.dicotomy import dichotomy_simplex, dichotomy_simplex_acc, dichotomy_simplex_projected_gradient
 
-def multiplicative_step_w(X, G, W, H, simplex_W = True, log_shift=log_shift, safe=True, l2=False, fixed_W = None, bremsstrahlung=False, use_bregman=False):
+def multiplicative_step_w(X, G, W, H, simplex_W = False, log_shift=log_shift, safe=True, l2=False, fixed_W = None, bremsstrahlung=False, use_bregman=False):
     """
     Multiplicative step in W.
     """
@@ -33,7 +33,7 @@ def multiplicative_step_w(X, G, W, H, simplex_W = True, log_shift=log_shift, saf
                 sigmaR = np.sum(X, axis=1, keepdims=True)
             else:
                 sigmaR = np.sum(X)
-            num = sigmaR
+            num = sigmaR * W
             gradg = - G.T @ (X / GWH) @ H.T + np.sum(G, axis=0,  keepdims=True).T @ np.sum(H, axis=1,  keepdims=True).T
             denum = gradg * W + sigmaR
 
@@ -56,7 +56,7 @@ def multiplicative_step_w(X, G, W, H, simplex_W = True, log_shift=log_shift, saf
                     nu = dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol)
                     denum = denum + nu
 
-    new_W = W / denum * num
+        new_W = num / denum
     
     new_W = np.maximum(new_W, log_shift)
     
@@ -67,7 +67,7 @@ def multiplicative_step_w(X, G, W, H, simplex_W = True, log_shift=log_shift, saf
 
 
 
-def multiplicative_step_h(X, G, W, H, simplex_H =True, mu=0, log_shift=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, sigmaL=sigmaL, fixed_H = None, use_bregman=False):
+def multiplicative_step_h(X, G, W, H, simplex_H =False, mu=0, log_shift=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, sigmaL=sigmaL, fixed_H = None, use_bregman=False):
     """
     Multiplicative step in A.
     The main terms are calculated first.

@@ -451,15 +451,15 @@ def test_multiplicative_step_w():
 
     X = GP @ A
 
-    Pp = multiplicative_step_w(X, G, P, A, log_shift=0)
+    Pp = multiplicative_step_w(X, G, P, A, log_shift=0, simplex_W = False)
     np.testing.assert_array_almost_equal(Pp, P)
 
-    Pp = multiplicative_step_w(X, G, P, A, log_shift=0, l2=True)
+    Pp = multiplicative_step_w(X, G, P, A, log_shift=0, l2=True, simplex_W = False)
     np.testing.assert_array_almost_equal(Pp, P)
 
     for _ in range(10):
         P = np.random.rand(c,k)
-        Pp = multiplicative_step_w(X, G, P, A)
+        Pp = multiplicative_step_w(X, G, P, A, simplex_W = False)
         Pp2 = make_step_p(X, G, P, A)
         np.testing.assert_array_almost_equal(Pp, Pp2)
         GP = G @ P
@@ -472,7 +472,7 @@ def test_multiplicative_step_w():
 
     for _ in range(10):
         P = np.random.rand(c,k)
-        Pp = multiplicative_step_w(X, G, P, A, l2=True)
+        Pp = multiplicative_step_w(X, G, P, A, l2=True, simplex_W = False)
         GP = G @ P
         GPp = G @ Pp
         val1 = Frobenius_loss(X, GP, A)
@@ -752,7 +752,7 @@ def test_proj_step_w():
         grad = gradW(X, G, W0, H0, log_shift=log_shift, l2=False)
         W1 = W0 - 1/gamma_w * grad
         loss2 = KLdiv_loss(X, G@W1, H0, log_shift=log_shift)
-        W2 =proj_grad_step_w(X, G, W0, H0, gamma_w, log_shift=log_shift, safe=True, l2=False)
+        W2 =proj_grad_step_w(X, G, W0, H0, gamma_w, log_shift=log_shift, safe=True, l2=False, simplex_W = False)
         loss3 = KLdiv_loss(X, G@W2, H0, log_shift=log_shift)
         assert( loss1 >= loss2) 
         assert(loss1 >= loss3)
@@ -763,7 +763,7 @@ def test_proj_step_w():
         grad = gradW(X, G, W2, H0, log_shift=log_shift, l2=False)
         n_grad_old = np.sum(grad**2)
         for _ in range(maxit):
-            W2 = proj_grad_step_w(X, G, W2, H0, gamma_w, log_shift=log_shift, safe=True, l2=False)
+            W2 = proj_grad_step_w(X, G, W2, H0, gamma_w, log_shift=log_shift, safe=True, l2=False, simplex_W = False)
             grad = gradW(X, G, W2, H0, log_shift=log_shift, l2=False)
 
             n_grad = np.sum(grad**2)

@@ -129,7 +129,8 @@ def run_experiment_set(laplacian, noise, force_simplex, seed = 0, max_iter=1000,
 
     # experiment parameters
     experiment_param = dict()
-    experiment_param["force_simplex"] = force_simplex
+    experiment_param["simplex_H"] = force_simplex
+    experiment_param["simplex_W"] = False
     experiment_param["lambda_L"] = lambda_L 
     experiment_param["mu"] = 0
     experiment_param["epsilon_reg"] = 1
