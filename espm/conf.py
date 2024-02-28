@@ -1,5 +1,5 @@
 from pathlib import Path
-from ffast_mac import ffast_mac as macs
+from .ffast_mac import ffast_mac as macs
 
 # Path of the base
 BASE_PATH = Path(__file__).parent
