@@ -66,9 +66,11 @@ class SmoothNMF(NMFEstimator):
     epsilon_reg : float, default=1
         Slope of the log regularization/sparsity at 0.
     algo : str, default="log_surrogate"
-        Algorithm to use for the smooth regularization term. Can be "log_surrogate", "l2_surrogate", "projected_gradient", or ≈.
-    force_simplex : bool, default=True
-        If True, force the solution to be in the simplex.
+        Algorithm to use for the smooth regularization term. Can be "log_surrogate", "l2_surrogate", or "projected_gradient".
+    simplex_H : bool, default=False
+        If True, force the solution of H to be in the simplex.
+    simplex_W : bool, default=True
+        If True, force the solution of W to be in the simplex.
     dicotomy_tol : float, default=1e-3
         Tolerance for the dichotomy algorithm.
     gamma : float, default=None
@@ -82,25 +84,32 @@ class SmoothNMF(NMFEstimator):
 
     # args and kwargs are copied from the init to the super instead of capturing them in *args and **kwargs to be scikit-learn compliant.
     def __init__(self, lambda_L = 0.0, linesearch=False, mu=0, epsilon_reg=1, algo="log_surrogate", 
-                 force_simplex=True, dicotomy_tol=dicotomy_tol, gamma=None, **kwargs):
+                 simplex_H=False, simplex_W = True, dicotomy_tol=dicotomy_tol, gamma=None, **kwargs):
 
         super().__init__( **kwargs)
         self.lambda_L = lambda_L
         self.linesearch = linesearch
         self.mu = mu
         self.epsilon_reg = epsilon_reg
-        self.force_simplex = force_simplex
+        self.simplex_H = simplex_H
+        self.simplex_W = simplex_W
         self.dicotomy_tol = dicotomy_tol
         assert algo in ["l2_surrogate", "log_surrogate", "projected_gradient", "bmd"]
         self.algo = algo
         self.gamma = gamma
+        self.check_params()
 
+    def check_params(self) : 
+        assert self.algo in ["l2_surrogate", "log_surrogate", "projected_gradient"], "The algorithm must be 'l2_surrogate', 'log_surrogate' or 'projected_gradient'"
+        assert self.lambda_L >= 0 and self.epsilon_reg > 0.0 and np.all(np.array(self.mu)>=0), "The regularization parameters must be positive"
+        assert (self.simplex_H and not(self.simplex_W)) or (not(self.simplex_H) and self.simplex_W) or (not(self.simplex_H) and not(self.simplex_W)), "Only one of simplex_H and simplex_W can be True"
         if self.linesearch:
             assert not self.l2
-            assert lambda_L > 0
+            assert self.lambda_L > 0, "The regularization parameter lambda_L must be non-zero when using linesearch"
 
         if self.algo=="l2_surrogate":
-            assert not self.l2
+            assert not self.l2, "The l2 parameter must be False when using l2_surrogate"
+
         
 
     def fit_transform(self, X, y=None, W=None, H=None):
@@ -170,9 +179,9 @@ class SmoothNMF(NMFEstimator):
         if self.linesearch:
             Hold = H.copy()
         if self.algo=="l2_surrogate":
-            H = multiplicative_step_hq(self.X_, self.G_, W, H, force_simplex=self.force_simplex, log_shift=self.log_shift, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, sigmaL=self.gamma_, fixed_H=self.fixed_H)
+            H = multiplicative_step_hq(self.X_, self.G_, W, H, simplex_H=self.simplex_H, log_shift=self.log_shift, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, sigmaL=self.gamma_, fixed_H=self.fixed_H)
         elif self.algo=="log_surrogate":
-            H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, sigmaL=self.gamma_)
+            H = multiplicative_step_h(self.X_, self.G_, W, H, simplex_H=self.simplex_H, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, sigmaL=self.gamma_)
         elif self.algo=="projected_gradient":
             H = proj_grad_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, gamma=self.gamma_[0])
         elif self.algo=="bmd":
@@ -206,7 +215,7 @@ class SmoothNMF(NMFEstimator):
         else:
             if self.linesearch:
                 Wold = W.copy()
-            W = proj_grad_step_w(self.X_, self.G_, W, H, log_shift=self.log_shift, safe=self.debug, gamma=self.gamma_[1])
+            W = proj_grad_step_w(self.X_, self.G_, W, H, log_shift=self.log_shift, safe=self.debug, gamma=self.gamma_[1], simplex_W=self.simplex_W)
             if self.linesearch:
                 gradf_xt = gradW(self.X_, self.G_, Wold, H, log_shift=self.log_shift, safe=self.debug)
                 f_xt = self.loss(Wold, H, X = self.X_, average=False)

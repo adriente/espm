@@ -102,51 +102,51 @@ def test_generate_one_sample():
     np.testing.assert_allclose(G @ W @ H , Xdot, atol=1e-1)
 
 def test_NMF_scikit () : 
-    estimator = SmoothNMF(n_components= 5,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0,hspy_comp = False)
+    estimator = SmoothNMF(n_components= 5,max_iter=200,simplex_H = True,mu = 1.0, epsilon_reg = 1.0,hspy_comp = False)
     check_estimator(estimator)
-    estimator = SmoothNMF( n_components= 5,lambda_L=2,max_iter=200,force_simplex = True,mu = 1.0, epsilon_reg = 1.0,hspy_comp = False)
+    estimator = SmoothNMF( n_components= 5,lambda_L=2,max_iter=200,simplex_H = True,mu = 1.0, epsilon_reg = 1.0,hspy_comp = False)
     check_estimator(estimator)
 
 def test_general():
     G, W, H, D, w, X, Xdot, N = generate_one_sample()
 
     # Check if we can recover D from H and Xdot 
-    estimator = SmoothNMF(G=G,n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
+    estimator = SmoothNMF(G=G,n_components= 2,max_iter=200,simplex_H = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform(H=H, X=Xdot)
     np.testing.assert_allclose(D, D2, atol=6e-1)
 
     # Same without G 
-    estimator = SmoothNMF(n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
+    estimator = SmoothNMF(n_components= 2,max_iter=200,simplex_H = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform(H=H, X=Xdot)
     np.testing.assert_allclose(D, D2, atol=6e-2)
 
     # Check if we can recover D, H from W and Xdot 
-    estimator = SmoothNMF(G=G,n_components= 2,max_iter=200,force_simplex = False,mu = 0, epsilon_reg = 1, hspy_comp = False)
+    estimator = SmoothNMF(G=G,n_components= 2,max_iter=200,simplex_H = False,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform( W=W, X=Xdot)
     H2 = estimator.H_ 
     np.testing.assert_allclose(D, D2, atol=3e-2)
     np.testing.assert_allclose(H, H2, atol=3e-2)
 
-    estimator = SmoothNMF(G =G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
+    estimator = SmoothNMF(G =G, n_components= 2,max_iter=200,simplex_H = True,mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform(W=W, X=Xdot)
     np.testing.assert_allclose(D, D2, atol=3e-1)
 
-    estimator = SmoothNMF(G=G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False, tol = 1.0e-6)
+    estimator = SmoothNMF(G=G, n_components= 2,max_iter=200,simplex_H = True,mu = 0, epsilon_reg = 1, hspy_comp = False, tol = 1.0e-6)
     estimator.fit_transform(X=Xdot)
     P2, A2 = estimator.W_, estimator.H_ 
     np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
 
-    estimator = SmoothNMF(G=G, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False, tol = 1.0e-6)
+    estimator = SmoothNMF(G=G, n_components= 2,max_iter=200,simplex_H = True,mu = 0, epsilon_reg = 1, hspy_comp = False, tol = 1.0e-6)
     estimator.fit_transform(X=X)
     P2, A2 = estimator.W_, estimator.H_ 
     np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
 
-    estimator = SmoothNMF(G=G, shape_2d=[10,20], lambda_L=0, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, hspy_comp = False, tol = 1.0e-6)
+    estimator = SmoothNMF(G=G, shape_2d=[10,20], lambda_L=0, n_components= 2,max_iter=200,simplex_H = True,mu = 0, epsilon_reg = 1, hspy_comp = False, tol = 1.0e-6)
     estimator.fit_transform(X=X)
     P2, A2 = estimator.W_, estimator.H_ 
     np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
 
-    estimator = SmoothNMF(G=G, lambda_L=100, n_components= 2,max_iter=200,force_simplex = True,mu = 0, epsilon_reg = 1, shape_2d=[10,20], hspy_comp = False, tol = 1.0e-6)
+    estimator = SmoothNMF(G=G, lambda_L=100, n_components= 2,max_iter=200,simplex_H = True,mu = 0, epsilon_reg = 1, shape_2d=[10,20], hspy_comp = False, tol = 1.0e-6)
     estimator.fit_transform(X=X)
     P3, A3 = estimator.W_, estimator.H_ 
     np.testing.assert_allclose(G @ P3 @ A3,  Xdot, atol=1)
@@ -159,12 +159,12 @@ def test_general():
 def test_fixed_mat () :
     G, W, H, D, w, X, Xdot, N = generate_one_sample()
     fW, fH = gen_fixed_mat()
-    estimator = SmoothNMF(G=G, n_components= 2,max_iter=200,force_simplex = True, fixed_W = fW, hspy_comp = False)
+    estimator = SmoothNMF(G=G, n_components= 2,max_iter=200,simplex_H = True, fixed_W = fW, hspy_comp = False)
     estimator.fit_transform(X=X)
     P2, A2 = estimator.W_, estimator.H_ 
     np.testing.assert_allclose(P2[fW >= 0],fW[fW>=0])
 
-    estimator = SmoothNMF(G=G, n_components= 2,max_iter=200,force_simplex = True, fixed_H = fH, hspy_comp = False)
+    estimator = SmoothNMF(G=G, n_components= 2,max_iter=200,simplex_H = True, fixed_H = fH, hspy_comp = False)
     estimator.fit_transform(X=X)
     P2, A2 = estimator.W_, estimator.H_ 
     np.testing.assert_allclose(A2[fH >= 0],fH[fH>=0])
@@ -217,7 +217,7 @@ def test_X_normalize() :
 
     nc = 5
 
-    estim = SmoothNMF(n_components = nc,lambda_L=1.0, max_iter = 10, init = "nndsvd", normalize=True, shape_2d = [8, 4], random_state = 0, force_simplex=True)
+    estim = SmoothNMF(n_components = nc,lambda_L=1.0, max_iter = 10, init = "nndsvd", normalize=True, shape_2d = [8, 4], random_state = 0, simplex_H=True)
     GP = estim.fit_transform(X)
     H = estim.H_
     GP_plus = estim.fit_transform(X_plus)
@@ -284,7 +284,7 @@ def test_normalization_factor () :
 #     # }
 
 #     # params_snmf = {
-#     #     "force_simplex" : True,
+#     #     "simplex_H" : True,
 #     #     "mu": np.random.rand(k)
 #     # }
 
