@@ -140,9 +140,9 @@ def diff_surrogate(Ht, H, L, sigmaL=sigmaL, lambda_L=1, algo="log_surrogate"):
 
     """
     b_inf = trace_xtLx(L, H.T) * lambda_L / 2
-    if algo=="log_surrogate":
+    if algo in ["log_surrogate", "bmd"]:
         b_supp = smooth_dgkl_surrogate(Ht, L=L, H=H, sigmaL=sigmaL, lambda_L=lambda_L)
-    elif algo== "l2_surrogate":
+    elif algo=="l2_surrogate":
         b_supp = smooth_l2_surrogate(Ht, L=L, H=H, sigmaL=sigmaL, lambda_L=lambda_L)
     else: 
         raise "Unknown algorithm"

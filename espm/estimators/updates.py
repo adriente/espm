@@ -3,7 +3,7 @@ from espm.conf import log_shift, dicotomy_tol, sigmaL
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
 from espm.estimators.dicotomy import dichotomy_simplex, dichotomy_simplex_acc, dichotomy_simplex_projected_gradient
 
-def multiplicative_step_w(X, G, W, H, log_shift=log_shift, safe=True, l2=False, fixed_W = None):
+def multiplicative_step_w(X, G, W, H, log_shift=log_shift, safe=True, l2=False, fixed_W = None, use_bregman=False):
     """
     Multiplicative step in W.
     """
@@ -28,13 +28,26 @@ def multiplicative_step_w(X, G, W, H, log_shift=log_shift, safe=True, l2=False, 
     else:
         GW = G @ W
         GWH = GW @ H
-        # Split to debug timing...
-        # term1 = G.T @ (X / (GWH + eps)) @ H.T
-        op1 = X / GWH
-        
-        mult1 = G.T @ op1
-        term1 = (mult1 @ H.T)
-        term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(H, axis=1,  keepdims=True).T
+        if use_bregman:
+            # check if G is the identity matrix
+            if np.allclose(G, np.eye(G.shape[0])):
+                sigmaR = np.sum(X, axis=1, keepdims=True)
+            else:
+                sigmaR = np.sum(X)
+            term1 = sigmaR
+            gradg = - G.T @ (X / GWH) @ H.T + np.sum(G, axis=0,  keepdims=True).T @ np.sum(H, axis=1,  keepdims=True).T
+            term2 = gradg * W + sigmaR
+
+        else:
+          
+            # Split to debug timing...
+            # term1 = G.T @ (X / GWH) @ H.T
+            op1 = X / GWH
+            
+            mult1 = G.T @ op1
+            term1 = (mult1 @ H.T)
+            term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(H, axis=1,  keepdims=True).T
+
         new_W = W / term2 * term1
     
     new_W = np.maximum(new_W, log_shift)
@@ -45,7 +58,7 @@ def multiplicative_step_w(X, G, W, H, log_shift=log_shift, safe=True, l2=False, 
 
 
 
-def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, log_shift=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, sigmaL=sigmaL, fixed_H = None):
+def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, log_shift=log_shift, epsilon_reg=1, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, l2=False, sigmaL=sigmaL, fixed_H = None, use_bregman=False):
     """
     Multiplicative step in A.
     The main terms are calculated first.
@@ -82,18 +95,25 @@ def multiplicative_step_h(X, G, W, H, force_simplex=True, mu=0, log_shift=log_sh
         num = WGX
         denum = WGGW @ H
     else:
-        GWH = GW @ H
-        num = GW.T @ (X / GWH)
-        denum = np.sum(GW, axis=0, keepdims=True).T 
+        if use_bregman:
+            GWH = GW @ H
+            sigmaR = np.sum(X, axis=0, keepdims=True)
+            num = sigmaR / H
+            gradg = - GW.T @ (X / GWH) +  np.sum(GW, axis=0,  keepdims=True).T
+            denum = gradg + sigmaR / H
+        else:
+            GWH = GW @ H
+            num = GW.T @ (X / GWH)
+            denum = np.sum(GW, axis=0, keepdims=True).T 
 
-    if not(np.isscalar(mu) and mu==0):
-        if len(np.shape(mu))==1:
-            mu = np.expand_dims(mu, axis=1)
-        denum = denum + mu / (H + epsilon_reg)
-    if not(lambda_L==0):
-        maxH = np.max(H, axis=1, keepdims=True)
-        num = num + lambda_L * sigmaL * maxH
-        denum = denum + lambda_L * sigmaL * maxH + lambda_L * HL 
+        if not(np.isscalar(mu) and mu==0):
+            if len(np.shape(mu))==1:
+                mu = np.expand_dims(mu, axis=1)
+            denum = denum + mu / (H + epsilon_reg)
+        if not(lambda_L==0):
+            maxH = np.max(H, axis=1, keepdims=True)
+            num = num + lambda_L * sigmaL * maxH
+            denum = denum + lambda_L * sigmaL * maxH + lambda_L * HL 
     num = H * num
     if force_simplex:
         nu = dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol)

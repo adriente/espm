@@ -151,12 +151,15 @@ def run_experiment_set(laplacian, noise, force_simplex, seed = 0, max_iter=1000,
     gammas = []
     times = []
     if laplacian:
-        algos = ["log_surrogate", "l2_surrogate"]
+        algos = ["log_surrogate", "bmd", "l2_surrogate"]
+        # algos = ["bmd"]
     else:
-        algos = ["log_surrogate", "l2_surrogate", "projected_gradient"]
+        algos = ["log_surrogate", "l2_surrogate", "bmd", "projected_gradient"]
+        # algos = [ "bmd"]
     
     for algo in algos:
         for linesearch in [False, True]:
+        # for linesearch in [False]:
             # for sL in [sigmaL/4, sigmaL/2, sigmaL]:
             for sL in [sigmaL]:
                 # algo parameters
@@ -266,25 +269,25 @@ if __name__ == "__main__":
                 np.savez(filename, losses=losses, l_infty=l_infty, params=params, captions=captions, true_D=true_D, true_H=true_H, X=X, Xdot=Xdot, H=H, W=W, gammas=gammas, times=times)
 
 
-    # Convergence test
-    force_simplex = True
-    repetitions = 50
-    for laplacian in [True, False]:
-        for noise in [True, False]:
-            losses_l = []
-            l_infty_l = []
-            times_l = []
-            for seed in tqdm(range(repetitions), total=repetitions):
-                losses, final_losses, Ws, Hs, params, captions, gammas, l_infty, W, H, true_D, true_H, X, Xdot, times = run_experiment_set(laplacian, noise, force_simplex, seed=seed, max_iter=1000, l=25)
-                losses_l.append(np.array(losses))
-                l_infty_l.append(l_infty)
-                times_l.append(times)
+    # # Convergence test
+    # force_simplex = True
+    # repetitions = 50
+    # for laplacian in [True, False]:
+    #     for noise in [True, False]:
+    #         losses_l = []
+    #         l_infty_l = []
+    #         times_l = []
+    #         for seed in tqdm(range(repetitions), total=repetitions):
+    #             losses, final_losses, Ws, Hs, params, captions, gammas, l_infty, W, H, true_D, true_H, X, Xdot, times = run_experiment_set(laplacian, noise, force_simplex, seed=seed, max_iter=1000, l=25)
+    #             losses_l.append(np.array(losses))
+    #             l_infty_l.append(l_infty)
+    #             times_l.append(times)
 
-            losses = np.array(losses_l)
-            l_infty = np.array(l_infty_l)
-            times = np.array(times_l)
+    #         losses = np.array(losses_l)
+    #         l_infty = np.array(l_infty_l)
+    #         times = np.array(times_l)
 
-            # Save the results
-            filename = f"losses_{laplacian}_{noise}_{force_simplex}.npz"
-            np.savez(filename, losses=losses, l_infty=l_infty, params=params, captions=captions, true_D=true_D, true_H=true_H, X=X, Xdot=Xdot, H=H, W=W, gammas=gammas, times=times)
+    #         # Save the results
+    #         filename = f"losses_{laplacian}_{noise}_{force_simplex}.npz"
+    #         np.savez(filename, losses=losses, l_infty=l_infty, params=params, captions=captions, true_D=true_D, true_H=true_H, X=X, Xdot=Xdot, H=H, W=W, gammas=gammas, times=times)
 

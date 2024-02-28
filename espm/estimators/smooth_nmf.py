@@ -66,7 +66,7 @@ class SmoothNMF(NMFEstimator):
     epsilon_reg : float, default=1
         Slope of the log regularization/sparsity at 0.
     algo : str, default="log_surrogate"
-        Algorithm to use for the smooth regularization term. Can be "log_surrogate", "l2_surrogate", or "projected_gradient".
+        Algorithm to use for the smooth regularization term. Can be "log_surrogate", "l2_surrogate", "projected_gradient", or ≈.
     force_simplex : bool, default=True
         If True, force the solution to be in the simplex.
     dicotomy_tol : float, default=1e-3
@@ -91,7 +91,7 @@ class SmoothNMF(NMFEstimator):
         self.epsilon_reg = epsilon_reg
         self.force_simplex = force_simplex
         self.dicotomy_tol = dicotomy_tol
-        assert algo in ["l2_surrogate", "log_surrogate", "projected_gradient"]
+        assert algo in ["l2_surrogate", "log_surrogate", "projected_gradient", "bmd"]
         self.algo = algo
         self.gamma = gamma
 
@@ -157,7 +157,7 @@ class SmoothNMF(NMFEstimator):
         if self.n_iter_ == 0:
             if self.gamma is None:
 
-                if self.algo in ["l2_surrogate", "log_surrogate"]:
+                if self.algo in ["l2_surrogate", "log_surrogate", "bmd"]:
                     self.gamma_ = sigmaL
                 else:
                     gamma_W = estimate_Lipschitz_bound_w(self.log_shift, self.X_, self.G_, k=self.n_components)
@@ -175,11 +175,13 @@ class SmoothNMF(NMFEstimator):
             H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, sigmaL=self.gamma_)
         elif self.algo=="projected_gradient":
             H = proj_grad_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, gamma=self.gamma_[0])
+        elif self.algo=="bmd":
+            H = multiplicative_step_h(self.X_, self.G_, W, H, force_simplex=self.force_simplex, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, sigmaL=self.gamma_, use_bregman=True)
         else:
             raise ValueError("Unknown algorithm")
 
         if self.linesearch:
-            if self.algo in ["l2_surrogate", "log_surrogate"]:
+            if self.algo in ["l2_surrogate", "log_surrogate", "bmd"]:
                 d = diff_surrogate(Hold, H, L=self.L_, sigmaL=self.gamma_, algo=self.algo)
                 if d>0:
                     self.gamma_  = self.gamma_ / 1.05
@@ -199,6 +201,8 @@ class SmoothNMF(NMFEstimator):
         # 2. Update for W
         if self.algo in ["l2_surrogate", "log_surrogate"]:
             W = multiplicative_step_w(self.X_, self.G_, W, H, log_shift=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W)
+        elif self.algo=="bmd":
+            W = multiplicative_step_w(self.X_, self.G_, W, H, log_shift=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W, use_bregman=True)
         else:
             if self.linesearch:
                 Wold = W.copy()
