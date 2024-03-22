@@ -219,7 +219,7 @@ def spheres_weights(shape_2d=[80, 80], n_phases=3,  seed=0, radius = 1, **kwargs
     a = Abundance(shape_2d, n_phases)
     np.random.seed(seed)
     for i in range(1,n_phases) :
-        a.add_sphere((np.random.randint(1,shape_2d[0]),np.random.randint(1,shape_2d[1])),radius,1/n_phases,i)
+        a.add_sphere((np.random.randint(1,shape_2d[0]),np.random.randint(1,shape_2d[1])),radius,1/(n_phases-1),i)
     return a.weights
 
 def wedge_weights(shape_2d=[80, 80]):
