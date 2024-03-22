@@ -1,5 +1,7 @@
 from pathlib import Path
 import hyperspy.misc.eds.ffast_mac as macs
+# from exspy.misc.eds import ffast_mac as macs
+HSPY_MAC = macs.ffast_mac # Tabulated absorption coefficient in Hyperspy
 
 # Path of the base
 BASE_PATH = Path(__file__).parent
@@ -21,7 +23,6 @@ DATASETS_PATH = BASE_PATH.parent / Path("generated_datasets")
 DATASETS_PATH.mkdir(exist_ok=True, parents=True)
 
 
-HSPY_MAC = macs.ffast_mac # Tabulated absorption coefficient in Hyperspy
 
 DEFAULT_MISC_PARAMS = {
     "data_folder" : "default_synth_data",
