@@ -3,7 +3,17 @@ from espm.conf import log_shift, dicotomy_tol, sigmaL
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf 
 from espm.estimators.dicotomy import dichotomy_simplex, dichotomy_simplex_acc, dichotomy_simplex_projected_gradient
 
-def multiplicative_step_w(X, G, W, H, simplex_W = False, log_shift=log_shift, safe=True, l2=False, fixed_W = None, bremsstrahlung=False, use_bregman=False):
+def multiplicative_step_w(X,
+                          G,
+                          W,
+                          H,
+                          simplex_W = False,
+                          log_shift=log_shift,
+                          safe=True,
+                          l2=False,
+                          fixed_W = None,
+                          physics_model=None,
+                          use_bregman=False):
     """
     Multiplicative step in W.
     """
@@ -49,9 +59,10 @@ def multiplicative_step_w(X, G, W, H, simplex_W = False, log_shift=log_shift, sa
             num = W*(mult1 @ H.T)
             denum = np.sum(G, axis=0,  keepdims=True).T @ np.sum(H, axis=1,  keepdims=True).T
             if simplex_W:
-                if bremsstrahlung :
-                    nu = dichotomy_simplex(num[:-2,:], denum[:-2,:], log_shift=log_shift, tol=dicotomy_tol)
-                    denum[:-2,:] = denum[:-2,:] + nu
+                if physics_model != None:
+                    indices = physics_model.NMF_simplex()
+                    nu = dichotomy_simplex(num[indices,:], denum[indices,:], log_shift=log_shift, tol=dicotomy_tol)
+                    denum[indices,:] = denum[indices,:] + nu
                 else : 
                     nu = dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol)
                     denum = denum + nu
@@ -60,6 +71,7 @@ def multiplicative_step_w(X, G, W, H, simplex_W = False, log_shift=log_shift, sa
     
     new_W = np.maximum(new_W, log_shift)
     
+    # TODO: exclude the fixed values in the update process. It is not straightforward
     if fixed_W is not None: 
         new_W[fixed_W >= 0] = fixed_W[fixed_W >=0]
     return new_W
@@ -144,7 +156,7 @@ def multiplicative_step_h(X, G, W, H, simplex_H =False, mu=0, log_shift=log_shif
 
 
 
-def initialize_algorithms(X, G, W, H, n_components, init, random_state, simplex_H, simplex_W, logshift=log_shift):
+def initialize_algorithms(X, G, W, H, n_components, init, random_state, simplex_H, simplex_W, logshift=log_shift, physics_model = None):
     # Handle initialization
 
     if G is None : 
@@ -177,19 +189,17 @@ def initialize_algorithms(X, G, W, H, n_components, init, random_state, simplex_
         if skip_second:
             W = D
         else:
-            if callable(G) : 
+            if physics_model != None: 
             # [np.where(G[:,:-2].sum(axis=1)<(np.max(G[:,:-2].sum(axis=1))*0.001))[0],:]
             # Divide in two parts the initial fitting, otherwise the bremsstrahlung (which has a low intensity) tends to be poorly learned
             # First fit the caracteristic Xrays, then subtract that contribution to obtain a rough estimate of the bremsstralung parameters
-                Wcarac = (np.linalg.lstsq(G[:,:-2],D,rcond = None)[0]).clip(min = 0)
-                filter = np.where(np.mean(G[:,:-2],axis=1)<(np.max(np.mean(G[:,:-2],axis=1))*0.001))[0]
-                Wbrem = (np.linalg.lstsq(G[:,-2:][filter,:],D[filter,:],rcond = None)[0]).clip(min = 0)
+                W = physics_model.NMF_initialize_W(D)
                 # Wbrem = (np.linalg.lstsq(G[:,-2:],D - G[:,:-2]@Wcarac,rcond = None)[0]).clip(min = 0)
                 if simplex_W:
-                    Wcarac = np.nan_to_num(Wcarac, nan = 1.0/Wcarac.shape[0])
-                    scale = np.sum(Wcarac, axis=0, keepdims=True)
-                    Wcarac = Wcarac/scale
-                W = np.vstack((Wcarac,Wbrem))
+                    indices = physics_model.NMF_simplex()
+                    W = np.nan_to_num(W, nan = 1.0/W.shape[0])
+                    scale = np.sum(W[indices,:], axis=0, keepdims=True)
+                    W[indices,:] = W[indices,:]/scale
             # P = np.abs(np.linalg.lstsq(G, D,rcond=None)[0])
             else : 
                 W = np.abs(np.linalg.lstsq(G, D,rcond=None)[0])
@@ -218,7 +228,7 @@ def update_q(D, H, log_shift=log_shift):
     Ntmp = np.expand_dims(D @ H, axis=2) 
     return Htmp * (Dtmp / (Ntmp+log_shift))
    
-def multiplicative_step_wq(X, G, W, H, simplex_W = True, log_shift=log_shift, safe=True):
+def multiplicative_step_wq(X, G, W, H, simplex_W = True, log_shift=log_shift, safe=True, physics_model = None):
     """
     Multiplicative step in W using the WQ technique.
 
@@ -239,9 +249,14 @@ def multiplicative_step_wq(X, G, W, H, simplex_W = True, log_shift=log_shift, sa
     term1 = G.T @ (XQ / (GW + log_shift)) 
 
     term2 = np.sum(G, axis=0,  keepdims=True).T @ np.sum(H, axis=1,  keepdims=True).T
-    if simplex_W : 
-        nu = dichotomy_simplex(term1, term2, log_shift=log_shift, tol=dicotomy_tol)
-        term2 = term2 + nu
+    if simplex_W :
+        if physics_model != None:
+            indices = physics_model.NMF_simplex()
+            nu = dichotomy_simplex(term1[indices,:], term2[indices,:], log_shift=log_shift, tol=dicotomy_tol)
+            term2[indices,:] = term2[indices,:] + nu
+        else : 
+            nu = dichotomy_simplex(term1, term2, log_shift=log_shift, tol=dicotomy_tol)
+            term2 = term2 + nu
     return W / term2 * term1
 
 def multiplicative_step_hq(X, G, W, H, simplex_H=True, log_shift=log_shift, safe=True, dicotomy_tol=dicotomy_tol, lambda_L=0, L=None, sigmaL=sigmaL, fixed_H = None):

@@ -213,4 +213,53 @@ class PhysicalModel(Model) :
             :np.array 1D: Linear energy scale based on the given parameters of shape (e_size,)
         """
         return np.linspace(e_offset,e_offset+e_size*e_scale,num=e_size)
+    
+    @abstractmethod
+    def NMF_initialize_W (self, D) :
+        """
+        Function to be called when initializing the NMF optimization. It returns the matrices W.
+        The basic implementation is to return the pseudo-inverse of the matrix G.
+
+        Parameters
+        ----------
+        D : 
+            :np.array 2D: scikit-learn initialization matrix. It should have the shape (n_features, n_components).
+
+        Returns
+        -------
+        W :
+            :np.array 2D: The initialized matrix W of shape (n_G, n_components)
+        """
+        W = np.abs(np.linalg.lstsq(self.G, D,rcond=None)[0])
+        return W
+
+    @abstractmethod
+    def NMF_update (self, W = None) :
+        """
+        Function to be called when during the NMF optimization. It returns the matrix G, updated if necessary. It should be run in between each W iteration.
+        You do not need to implement it, if you do not need to update the matrix G during the optimization.
+
+        Parameters
+        ----------
+        W : 
+            :np.array 2D: The part of the matrix W that is required to update the matrix G.
+
+        Returns
+        -------
+        G :
+            :np.array 2D: The updated matrix G 
+        """
+        return self.G
+
+    @abstractmethod
+    def NMF_simplex (self) :
+        """
+        Function to be called when using the simplex constraint in the ESpM-NMF. Its purpose is to return the indices of the matrix W that will be considered to apply the simplex constraint.
+
+        Returns : 
+        --------
+        indices :
+            :np.array 1D: Indices to be considered to apply the simplex constraint
+        """
+        return np.arange(self.G.shape[1])
 

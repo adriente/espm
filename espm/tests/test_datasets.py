@@ -281,13 +281,6 @@ def test_spim () :
     gen_si.build_G(problem_type = "no_brstlg",reference_elt = {"26" : 3.0})
     assert gen_si.G.shape == (1900, 9)
 
-    gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
-    gen_si.build_G(problem_type = "bremsstrahlung",stoichiometries = ["Fe1Pt1", "Si1O2"])
-    assert gen_si.G().shape == (1900, 12)
-
-
-
-
     detector_dict = {
         "detection" : {
             "thickness" : 45,
@@ -362,13 +355,5 @@ def test_carto_fixed_W() :
 
     assert(fw3.shape == (5,5))
     np.testing.assert_array_equal(fw3,tw3)
-
-    s = create_data()
-    s.build_G(problem_type = "no_brstlg",stoichiometries = ["Fe3O4"])
-    fw4 = s.carto_fixed_W()
-    tw4 = np.diag(-1* np.ones(5))
-
-    assert(fw4.shape == (5,5))
-    np.testing.assert_array_equal(fw4,tw4)
 
 

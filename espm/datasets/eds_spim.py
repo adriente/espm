@@ -11,7 +11,6 @@ The main purpose of this class is to provide an easy and clean interface between
 
 from  hyperspy.signals import Signal1D
 from espm.models import EDXS
-from espm.models.edxs import G_EDXS
 from hyperspy.misc.eds.utils import take_off_angle
 from espm.utils import number_to_symbol_list
 import numpy as np
@@ -29,7 +28,7 @@ class EDS_espm(Signal1D) :
         self._X = None
         self._Xdot = None
         self._maps_2d = None
-        self.G = None
+        self.G_ = None
         self.model_ = None
 
     @property
@@ -92,7 +91,7 @@ class EDS_espm(Signal1D) :
         return self._maps_2d
     
     @property
-    def model (self) :
+    def model(self) :
         r"""
         The :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDS_espm` object.
         """ 
@@ -100,6 +99,15 @@ class EDS_espm(Signal1D) :
             mod_pars = get_metadata(self)
             self.model_ = EDXS(**mod_pars)
         return self.model_
+    
+    @property
+    def G(self) :
+        r"""
+        The G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDS_espm` object.
+        """
+        if self.G_ is None : 
+            raise AttributeError("The G matrix has not been built yet. Please use the build_G method.")
+        return self.G_
 
     def build_ground_truth(self,reshape = True) : 
         r"""
@@ -127,7 +135,7 @@ class EDS_espm(Signal1D) :
             raise AttributeError("There is no ground truth contained in this dataset")
         return phases, weights
 
-    def build_G(self, problem_type = "bremsstrahlung", reference_elt = {},stoichiometries = []) :
+    def build_G(self, problem_type = "bremsstrahlung", reference_elt = {}) :
         r"""
         Build the G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDS_espm` object and stores it as an attribute.
 
@@ -141,11 +149,6 @@ class EDS_espm(Signal1D) :
         reference_elt : dict, optional
             Dictionary containing atomic numbers and a corresponding cut-off energies. It is used to separate the characteristic X-rays of the given elements into two energies ranges and assign them each a column in the G matrix instead of having one column per element.
             For example reference_elt = {"26",3.0} will separate the characteristic X-rays of the element Fe into two energies ranges and assign them each a column in the G matrix. This is useful to circumvent issues with the absorption.
-        stoichiometries : list, optional
-            List of the stoichiometries of the phases in the sample. In the case the stoichiometry of one of the phase is known, it can be used to improve the accuracy of the decomposition by fixing the ratio between certain elements.
-            Each composition of the list should be given a string such as "Fe2O3" or "FeO" for example. A corresponding model element will be added in the metadata. 
-            For a clever use of this feature it is best to use it in combination with a fixed W matrix, see the :func:`EDS_espm.set_fixed_W` method.
-
         Returns
         -------
         G : None or numpy.ndarray or callable
@@ -153,48 +156,42 @@ class EDS_espm(Signal1D) :
         """
         self.problem_type = problem_type
         self.reference_elt = reference_elt
-        self.stoichiometries = stoichiometries
-        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : reference_elt, "stoichiometries" : stoichiometries}
-        
-        if problem_type == "bremsstrahlung" : 
-            self.G = self.update_G
-            # to init the model.model_elts and model.norm
-            self.G()
-        else : 
-            self.G = build_G(self.model,g_pars)
+        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : reference_elt}
 
-        # Storing the model parameters in the metadata so that the decomposition does not erase them
-        # Indeed the decomposition re-creates a new object of the same class when it is called
+        self.model.generate_g_matr(**g_pars)
+        self.G_ = self.model.G
+
         self.metadata.EDS_model= {}
         self.metadata.EDS_model.problem_type = problem_type
         self.metadata.EDS_model.reference_elt = reference_elt
         self.metadata.EDS_model.elements = self.model.model_elts
         self.metadata.EDS_model.norm = self.model.norm
 
-    def update_G(self, part_W=None, G=None):
-        r"""
-        Update the absortion part of the bremsstrahlung of the G matrix.
-        """
-        try : 
-            nelts = (self.metadata.EDS_model.elements).copy()
+        # Storing the model parameters in the metadata so that the decomposition does not erase them
+        # Indeed the decomposition re-creates a new object of the same class when it is called
+        
 
-            for i in self.stoichiometries :
-                nelts.remove(i)
+    # def update_G(self, part_W=None, G=None):
+    #     r"""
+    #     Update the absortion part of the bremsstrahlung of the G matrix.
+    #     """
+    #     try : 
+    #         nelts = (self.metadata.EDS_model.elements).copy()
 
-            for i, elt in enumerate(nelts) : 
-                r = re.match(r'.*_lo',elt)
-                t = re.match(r'.*_hi',elt)
-                if r : 
-                    nelts[i] = nelts[i][:-3]
-                if t : 
-                    nelts[i] = nelts[i][:-3]
-            nelts = list(dict.fromkeys(nelts))
+    #         for i, elt in enumerate(nelts) : 
+    #             r = re.match(r'.*_lo',elt)
+    #             t = re.match(r'.*_hi',elt)
+    #             if r : 
+    #                 nelts[i] = nelts[i][:-3]
+    #             if t : 
+    #                 nelts[i] = nelts[i][:-3]
+    #         nelts = list(dict.fromkeys(nelts))
 
-            g_params = {"g_type" : self.problem_type, "elements" : nelts, "reference_elt" : self.reference_elt, "stoichiometries" : self.stoichiometries}
-        except AttributeError : 
-            g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : self.reference_elt, "stoichiometries" : self.stoichiometries}
-        G = G_EDXS(self.model, g_params, part_W=part_W, G=G)
-        return G
+    #         g_params = {"g_type" : self.problem_type, "elements" : nelts, "reference_elt" : self.reference_elt}
+    #     except AttributeError : 
+    #         g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : self.reference_elt}
+    #     G = G_EDXS(self.model, g_params, part_W=part_W, G=G)
+    #     return G
 
     def set_analysis_parameters (self,beam_energy = 200, azimuth_angle = 0.0, elevation_angle = 22.0, tilt_stage = 0.0, elements = [], thickness = 200e-7, density = 3.5, detector_type = "SDD_efficiency.txt", width_slope = 0.01, width_intercept = 0.065, xray_db = "default_xrays.json") :
         r"""
@@ -309,7 +306,8 @@ class EDS_espm(Signal1D) :
         -------
         W : numpy.ndarray
         """
-
+        if self.G_ is None :
+            raise ValueError("The G matrix has not been built yet. Please use the build_G method.")
         elements = self.metadata.EDS_model.elements
         if self.problem_type == "no_brstlg" : 
             W = np.diag(-1* np.ones((len(elements), )))
@@ -339,6 +337,8 @@ class EDS_espm(Signal1D) :
         -------
         W : numpy.ndarray
         """
+        if self.G_ is None :
+            raise ValueError("The G matrix has not been built yet. Please use the build_G method.")
         elements = self.metadata.EDS_model.elements
 
         # convert elements to symbols but also omitting splitted lines or custom stoichiometries
@@ -403,6 +403,8 @@ class EDS_espm(Signal1D) :
         else :
             W = W_input
 
+        
+
         elts = self.metadata.EDS_model.elements
         norm = self.metadata.EDS_model.norm
 
@@ -410,33 +412,58 @@ class EDS_espm(Signal1D) :
         def convert_elts(elements = []) :
             return elements
         
-        single_elts = [e for e in elts if len(e) < 3]
-        elements = convert_elts(elements = single_elts)
-        elements += [e for e in elts if len(e) > 2]
+        elts_only = []
+        indices = []
+        if selected_elts :
+            for i, elt in enumerate(elts) :
+                m_hi = re.match(r'([0-9]*)(_hi)',elt)
+                m_lo = re.match(r'([0-9]*)(_lo)',elt)
+                if m_hi :
+                    if convert_elts(elements=[m_hi.group(1)])[0] in selected_elts :
+                        elts_only.append(m_hi.group(1))
+                        indices.append(i)
+                else : 
+                    if m_lo : 
+                        pass
+                    else :
+                        if convert_elts(elements=[elt])[0] in selected_elts :
+                            elts_only.append(elt)
+                            indices.append(i)
+        else :
+            for i, elt in enumerate(elts) :
+                m_hi = re.match(r'([0-9]*)(_hi)',elt)
+                m_lo = re.match(r'([0-9]*)(_lo)',elt)
+                if m_hi :
+                    elts_only.append(m_hi.group(1))
+                    indices.append(i)
+                else : 
+                    if m_lo : 
+                        pass
+                    else :
+                        elts_only.append(elt)
+                        indices.append(i)
 
-        if selected_elts : 
-            indices = [index for index,elt in enumerate(elements) if elt in selected_elts]
-            W = W[indices,:]
-            elements = [elt for elt in elements if elt in selected_elts]
-            norm = self.metadata.EDS_model.norm[:,indices]
+        conv_elts = convert_elts(elements = elts_only)
+        norm = self.metadata.EDS_model.norm[:,indices]
+        W = W[indices,:]/W[indices,:].sum(axis = 0)
+        abs_W = W / norm[0][:,np.newaxis]
 
-        mask_zeros = W[:len(elements),:].sum(axis=0) !=0
-        norm_W = W[:len(elements),mask_zeros] / W[:len(elements),mask_zeros].sum(axis = 0)
-        abs_W =   W / norm[0][:,np.newaxis] 
-        longest_name = len(max(elements, key=len))
+        # mask_zeros = W[:len(elements),:].sum(axis=0) !=0
+        # norm_W = W[:len(elements),mask_zeros] / W[:len(elements),mask_zeros].sum(axis = 0) 
+        longest_name = len(max(conv_elts, key=len))
         
         if abs : 
             print("Abs. quantif. report")
             title_string = " "*longest_name
 
-            for i in range(norm_W.shape[1]) : 
+            for i in range(abs_W.shape[1]) : 
                 title_string += "{:>10}".format("p" + str(i))
             print(title_string)
             
-            for i,j in enumerate(elements) : 
+            for i,j in enumerate(conv_elts) : 
                 main_string = ""
                 main_string += "{:{}}".format(j,longest_name) + " : "
-                for k in range(norm_W.shape[1]) :
+                for k in range(abs_W.shape[1]) :
                     main_string += "{:.3e} ".format(abs_W[i,k])
                 print(main_string)
 
@@ -444,15 +471,15 @@ class EDS_espm(Signal1D) :
             print("Concentrations report")
             title_string = " "* longest_name
 
-            for i in range(norm_W.shape[1]) : 
+            for i in range(W.shape[1]) : 
                 title_string += "{:>7}".format("p" + str(i))
             print(title_string)
             
-            for i,j in enumerate(elements) : 
+            for i,j in enumerate(conv_elts) : 
                 main_string = ""
                 main_string += "{:{}}".format(j,longest_name) + " : "
-                for k in range(norm_W.shape[1]) :
-                    main_string += "{:05.4f} ".format(norm_W[i,k])
+                for k in range(W.shape[1]) :
+                    main_string += "{:05.4f} ".format(W[i,k])
                 print(main_string)
 
         
@@ -495,9 +522,9 @@ def get_metadata(spim) :
 
     return mod_pars
 
-def build_G(model, g_params) :
-    model.generate_g_matr(**g_params)
-    return model.G
+# def build_G(model, g_params) :
+#     model.generate_g_matr(**g_params)
+#     return model.G
 
 
 

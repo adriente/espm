@@ -9,6 +9,7 @@ import time
 from abc import ABC, abstractmethod
 from espm.utils import create_laplacian_matrix 
 from scipy.sparse import lil_matrix
+from espm.models.base import PhysicalModel
 
 
 def normalization_factor (X, nc) : 
@@ -123,7 +124,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                  random_state=None, verbose=1, debug=False,
                  l2=False,  G=None, shape_2d = None, normalize = False, log_shift=log_shift, 
                  eval_print=10, true_D = None, true_H = None, fixed_H = None, fixed_W = None, hspy_comp = False, 
-                 no_stop_criterion = False
+                 no_stop_criterion = False, simplex_H=False, simplex_W = True
                  ):
         self.n_components = n_components
         self.init = init
@@ -134,7 +135,12 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.log_shift = log_shift
         self.debug = debug
         self.l2 = l2
-        self.G = G
+        if isinstance(G, PhysicalModel):
+            self.physics_model = G
+            self.G = G.NMF_update()
+        else:
+            self.physics_model = None
+            self.G = G
         self.shape_2d = shape_2d
         self.eval_print = eval_print
         self.true_D = true_D
@@ -144,6 +150,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.hspy_comp = hspy_comp
         self.normalize = normalize
         self.no_stop_criterion = no_stop_criterion
+        self.simplex_H = simplex_H
+        self.simplex_W = simplex_W
 
     def _more_tags(self):
         return {'requires_positive_X': True}
@@ -249,12 +257,18 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             self.X_ = self.norm_factor_ * self.X_
         
 
-        if callable(self.G): 
-            G = self.G()
-        else : 
-            G = self.G
+        G = self.G
         
-        self.G_, self.W_, self.H_ = initialize_algorithms(X = self.X_, G = G, W = W, H = H, n_components = self.n_components, init = self.init, random_state = self.random_state, simplex_H = self.simplex_H, simplex_W = self.simplex_W)
+        self.G_, self.W_, self.H_ = initialize_algorithms(X = self.X_,
+                                                          G = G,
+                                                          W = W,
+                                                          H = H,
+                                                          n_components = self.n_components,
+                                                          init = self.init,
+                                                          random_state = self.random_state,
+                                                          simplex_H = self.simplex_H,
+                                                          simplex_W = self.simplex_W,
+                                                          physics_model = self.physics_model)
         if not(self.shape_2d is None) :
             self.L_ = create_laplacian_matrix(*self.shape_2d)
         else : 

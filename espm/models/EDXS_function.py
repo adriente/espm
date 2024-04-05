@@ -225,7 +225,6 @@ def continuum_xrays(x,params_dict={},b0= 0, b1 = 0, E0 = 200,*,elements_dict = {
     * For an example structure of the params_dict parameter, check the DEFAULT_EDXS_PARAMS espm.conf.
     * For a custom detection efficiency, check the spectrum fit notebook.
     """
-
     if len(params_dict) == 0 : 
         return 0*x
     
@@ -287,45 +286,45 @@ def G_bremsstrahlung(x,E0,params_dict,*,elements_dict = {}):
     
     return B
 
-@number_to_symbol_list    
-def elts_dict_from_W (part_W,*,elements = []) : 
-    r"""
-    Create a dictionnary of the elemental concentration from a fitted W. It useful to recompute absorption during the our custom NMF calculations.
+# @number_to_symbol_list    
+# def elts_dict_from_W (part_W,*,elements = []) : 
+#     r"""
+#     Create a dictionnary of the elemental concentration from a fitted W. It useful to recompute absorption during the our custom NMF calculations.
 
-    Parameters
-    ----------
-    part_W : 
-        :np.array 2D: W matrix output from the NMF calculation. It only makes sense when the NMF decomposition if performed with G.
-    elements : 
-        :list: List of elements as atomic number or symbol.
+#     Parameters
+#     ----------
+#     part_W : 
+#         :np.array 2D: W matrix output from the NMF calculation. It only makes sense when the NMF decomposition if performed with G.
+#     elements : 
+#         :list: List of elements as atomic number or symbol.
 
-    Returns
-    -------
-    elements_dictionnary : 
-        :dict: Dictionnary containing the concentration associated to each chemical element of the problem.
+#     Returns
+#     -------
+#     elements_dictionnary : 
+#         :dict: Dictionnary containing the concentration associated to each chemical element of the problem.
     
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from espm.models.EDXS_function import elts_dict_from_W
-    >>> W = np.ones((4,3))
-    >>> elts = ["Si","Ca","O","C"]
-    >>> elts_dict_from_W(W,elements = elts)
-        {"Si" : 0.25, "Ca" : 0.25, "O" : 0.25, "C" : 0.25}
+#     Examples
+#     --------
+#     >>> import numpy as np
+#     >>> from espm.models.EDXS_function import elts_dict_from_W
+#     >>> W = np.ones((4,3))
+#     >>> elts = ["Si","Ca","O","C"]
+#     >>> elts_dict_from_W(W,elements = elts)
+#         {"Si" : 0.25, "Ca" : 0.25, "O" : 0.25, "C" : 0.25}
 
-    Notes
-    -----
-    This function should maybe move to another part of espm.
-    """
-    mask_zeros = np.sum(part_W,axis=0) != 0
-    norm_P = np.mean(part_W[:,mask_zeros] / part_W[:,mask_zeros].sum(axis = 0),axis=1)
-    elements_dict = {}
-    #with open(SYMBOLS_PERIODIC_TABLE,"r") as f : 
-    #    SPT = json.load(f)["table"]
-    for i,elt in enumerate(elements) :
-        elements_dict[elt] = norm_P[i] # * SPT[elt]["atomic_mass"]
-    factor =  sum(elements_dict.values())
-    return {key:elements_dict[key]/factor for key in elements_dict}
+#     Notes
+#     -----
+#     This function should maybe move to another part of espm.
+#     """
+#     mask_zeros = np.sum(part_W,axis=0) != 0
+#     norm_P = np.mean(part_W[:,mask_zeros] / part_W[:,mask_zeros].sum(axis = 0),axis=1)
+#     elements_dict = {}
+#     #with open(SYMBOLS_PERIODIC_TABLE,"r") as f : 
+#     #    SPT = json.load(f)["table"]
+#     for i,elt in enumerate(elements) :
+#         elements_dict[elt] = norm_P[i] # * SPT[elt]["atomic_mass"]
+#     factor =  sum(elements_dict.values())
+#     return {key:elements_dict[key]/factor for key in elements_dict}
 
 def elts_dict_from_dict_list (dict_list) : 
     r"""
@@ -383,36 +382,6 @@ def elts_list_from_dict_list (dict_list) :
     """ 
     unique_elts_dict = sum((Counter(x) for x in dict_list),Counter())
     return list(unique_elts_dict.keys())
-
-def update_bremsstrahlung (G,part_W,model,elements_list) : 
-    r"""
-    Update the continuum X-rays part of the G matrix with the current average chemical composition.
-
-    Parameters
-    ----------
-    G : 
-        :np.array 2D: EDXS modelling matrix.
-    part_W : 
-        :np.array 2D: Learned chemical concentrations.
-    model : 
-        :espm.models.EDXS: EDXS model.
-    elements_list :
-        :list: List of elements as atomic number or symbol.
-    
-    Returns
-    -------
-    new_G : 
-        :np.array 2D: New G matrix with updated continuum X-rays models.
-
-    Notes
-    -----
-    This function should maybe move to another part of espm.
-    """
-    elts = elts_dict_from_W(part_W,elements = elements_list)
-    B = G_bremsstrahlung(model.x,model.E0,model.params_dict,elements_dict=elts)
-    new_G = G.copy()
-    new_G[:,-2:] = B/model.norm[0][-2:]
-    return new_G
 
 
 

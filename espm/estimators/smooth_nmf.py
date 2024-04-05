@@ -83,16 +83,13 @@ class SmoothNMF(NMFEstimator):
     loss_names_ = NMFEstimator.loss_names_ + ["log_reg_loss"] + ["Lapl_reg_loss"] + ["gamma"]
 
     # args and kwargs are copied from the init to the super instead of capturing them in *args and **kwargs to be scikit-learn compliant.
-    def __init__(self, lambda_L = 0.0, linesearch=False, mu=0, epsilon_reg=1, algo="log_surrogate", 
-                 simplex_H=False, simplex_W = True, dicotomy_tol=dicotomy_tol, gamma=None, **kwargs):
+    def __init__(self, lambda_L = 0.0, linesearch=False, mu=0, epsilon_reg=1, algo="log_surrogate", dicotomy_tol=dicotomy_tol, gamma=None, **kwargs):
 
         super().__init__( **kwargs)
         self.lambda_L = lambda_L
         self.linesearch = linesearch
         self.mu = mu
         self.epsilon_reg = epsilon_reg
-        self.simplex_H = simplex_H
-        self.simplex_W = simplex_W
         self.dicotomy_tol = dicotomy_tol
         assert algo in ["l2_surrogate", "log_surrogate", "projected_gradient", "bmd"]
         self.algo = algo
@@ -170,7 +167,13 @@ class SmoothNMF(NMFEstimator):
                     self.gamma_ = sigmaL
                 else:
                     gamma_W = estimate_Lipschitz_bound_w(self.log_shift, self.X_, self.G_, k=self.n_components)
-                    gamma_H = estimate_Lipschitz_bound_h(self.log_shift, self.X_, self.G_, k=self.n_components, lambda_L=self.lambda_L, mu=self.mu, epsilon_reg=self.epsilon_reg)
+                    gamma_H = estimate_Lipschitz_bound_h(self.log_shift,
+                                                         self.X_,
+                                                         self.G_,
+                                                         k=self.n_components,
+                                                         lambda_L=self.lambda_L,
+                                                         mu=self.mu,
+                                                         epsilon_reg=self.epsilon_reg)
                     self.gamma_ = [gamma_H, gamma_W]
             else:
                 self.gamma_ = deepcopy(self.gamma)
@@ -179,13 +182,67 @@ class SmoothNMF(NMFEstimator):
         if self.linesearch:
             Hold = H.copy()
         if self.algo=="l2_surrogate":
-            H = multiplicative_step_hq(self.X_, self.G_, W, H, simplex_H=self.simplex_H, log_shift=self.log_shift, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, sigmaL=self.gamma_, fixed_H=self.fixed_H)
+            H = multiplicative_step_hq(self.X_,
+                                       self.G_,
+                                       W,
+                                       H,
+                                       simplex_H=self.simplex_H,
+                                       log_shift=self.log_shift,
+                                       safe=self.debug,
+                                       dicotomy_tol=self.dicotomy_tol,
+                                       lambda_L=self.lambda_L,
+                                       L=self.L_,
+                                       sigmaL=self.gamma_,
+                                       fixed_H=self.fixed_H)
         elif self.algo=="log_surrogate":
-            H = multiplicative_step_h(self.X_, self.G_, W, H, simplex_H=self.simplex_H, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, sigmaL=self.gamma_)
+            H = multiplicative_step_h(self.X_,
+                                      self.G_,
+                                      W,
+                                      H,
+                                      simplex_H=self.simplex_H,
+                                      mu=self.mu,
+                                      log_shift=self.log_shift,
+                                      epsilon_reg=self.epsilon_reg,
+                                      safe=self.debug,
+                                      dicotomy_tol=self.dicotomy_tol,
+                                      lambda_L=self.lambda_L,
+                                      L=self.L_,
+                                      l2=self.l2,
+                                      fixed_H=self.fixed_H,
+                                      sigmaL=self.gamma_)
         elif self.algo=="projected_gradient":
-            H = proj_grad_step_h(self.X_, self.G_, W, H, simplex_H=self.simplex_H, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, gamma=self.gamma_[0])
+            H = proj_grad_step_h(self.X_,
+                                 self.G_,
+                                 W,
+                                 H,
+                                 simplex_H=self.simplex_H,
+                                 mu=self.mu,
+                                 log_shift=self.log_shift,
+                                 epsilon_reg=self.epsilon_reg,
+                                 safe=self.debug,
+                                 dicotomy_tol=self.dicotomy_tol,
+                                 lambda_L=self.lambda_L,
+                                 L=self.L_,
+                                 l2=self.l2,
+                                 fixed_H=self.fixed_H,
+                                 gamma=self.gamma_[0])
         elif self.algo=="bmd":
-            H = multiplicative_step_h(self.X_, self.G_, W, H, simplex_H=self.simplex_H, mu=self.mu, log_shift=self.log_shift, epsilon_reg=self.epsilon_reg, safe=self.debug, dicotomy_tol=self.dicotomy_tol, lambda_L=self.lambda_L, L=self.L_, l2=self.l2, fixed_H=self.fixed_H, sigmaL=self.gamma_, use_bregman=True)
+            H = multiplicative_step_h(self.X_,
+                                      self.G_,
+                                      W,
+                                      H,
+                                      simplex_H=self.simplex_H,
+                                      mu=self.mu,
+                                      log_shift=self.log_shift,
+                                      epsilon_reg=self.epsilon_reg,
+                                      safe=self.debug,
+                                      dicotomy_tol=self.dicotomy_tol,
+                                      lambda_L=self.lambda_L,
+                                      L=self.L_,
+                                      l2=self.l2,
+                                      fixed_H=self.fixed_H,
+                                      sigmaL=self.gamma_,
+                                      use_bregman=True)
         else:
             raise ValueError("Unknown algorithm")
 
@@ -197,7 +254,16 @@ class SmoothNMF(NMFEstimator):
                 else:
                     self.gamma_  = self.gamma_ * 1.5
             else:
-                gradf_xt = gradH(self.X_, self.G_, W, Hold, mu= self.mu, lambda_L=self.lambda_L, L=self.L_, epsilon_reg=self.epsilon_reg, log_shift=self.log_shift, safe=self.debug)
+                gradf_xt = gradH(self.X_,
+                                 self.G_,
+                                 W,
+                                 Hold,
+                                 mu= self.mu,
+                                 lambda_L=self.lambda_L,
+                                 L=self.L_,
+                                 epsilon_reg=self.epsilon_reg,
+                                 log_shift=self.log_shift,
+                                 safe=self.debug)
                 f_xt = self.loss(W, Hold, X = self.X_, average=False)
                 f_x = self.loss(W, H, X = self.X_, average=False)
                 g_xxt = quadratic_surrogate(H, Hold, f_xt, gradf_xt, self.gamma_[0])
@@ -209,13 +275,39 @@ class SmoothNMF(NMFEstimator):
 
         # 2. Update for W
         if self.algo in ["l2_surrogate", "log_surrogate"]:
-            W = multiplicative_step_w(self.X_, self.G_, W, H, log_shift=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W)
+            W = multiplicative_step_w(self.X_,
+                                      self.G_,
+                                      W,
+                                      H,
+                                      log_shift=self.log_shift,
+                                      safe=self.debug,
+                                      l2=self.l2,
+                                      simplex_W=self.simplex_W,
+                                      fixed_W=self.fixed_W,
+                                      physics_model=self.physics_model)
         elif self.algo=="bmd":
-            W = multiplicative_step_w(self.X_, self.G_, W, H, log_shift=self.log_shift, safe=self.debug, l2=self.l2, fixed_W=self.fixed_W, use_bregman=True)
+            W = multiplicative_step_w(self.X_,
+                                      self.G_,
+                                      W,
+                                      H,
+                                      log_shift=self.log_shift,
+                                      safe=self.debug,
+                                      l2=self.l2,
+                                      simplex_W=self.simplex_W,
+                                      fixed_W=self.fixed_W,
+                                      use_bregman=True,
+                                      physics_model=self.physics_model)
         else:
             if self.linesearch:
                 Wold = W.copy()
-            W = proj_grad_step_w(self.X_, self.G_, W, H, log_shift=self.log_shift, safe=self.debug, gamma=self.gamma_[1], simplex_W=self.simplex_W)
+            W = proj_grad_step_w(self.X_,
+                                 self.G_,
+                                 W,
+                                 H,
+                                 log_shift=self.log_shift,
+                                 safe=self.debug,
+                                 gamma=self.gamma_[1],
+                                 simplex_W=self.simplex_W)
             if self.linesearch:
                 gradf_xt = gradW(self.X_, self.G_, Wold, H, log_shift=self.log_shift, safe=self.debug)
                 f_xt = self.loss(Wold, H, X = self.X_, average=False)
@@ -234,8 +326,8 @@ class SmoothNMF(NMFEstimator):
         # log_surr = log_surrogate(H, H, mu=self.mu, epsilon=self.epsilon_reg)
         # print("loss after:", KL_surr, log_surr, log_surr+KL_surr)
 
-        if callable(self.G) : 
-            self.G_ = self.G(part_W = W[:-2,:],G = self.G_)
+        if self.physics_model != None : 
+            self.G_ = self.physics_model.NMF_update(W)
         return  W, H
 
     def loss(self, W, H, average=True, X = None):

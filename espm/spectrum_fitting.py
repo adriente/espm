@@ -38,7 +38,7 @@ def residual(pars,x,data = None) :
     kwargs = params_to_ndict(pars)
     kwargs["params_dict"] = arg_helper(kwargs["params_dict"],DEFAULT_EDXS_PARAMS['params_dict'])
     
-    model = ef.continuum_xrays(x,**kwargs)    
+    model = ef.continuum_xrays(x,**kwargs)   
     
     if data is None : 
         return model

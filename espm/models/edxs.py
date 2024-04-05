@@ -9,8 +9,9 @@ The :mod:`espm.models.edxs` module implements the creation of the G matrix that 
 """
 
 import numpy as np
+import re
 from espm.models import PhysicalModel
-from espm.models.EDXS_function import G_bremsstrahlung, continuum_xrays, gaussian, read_lines_db, read_compact_db, update_bremsstrahlung, elts_dict_from_dict_list
+from espm.models.EDXS_function import G_bremsstrahlung, continuum_xrays, gaussian, read_lines_db, read_compact_db, elts_dict_from_dict_list
 from espm.conf import DEFAULT_EDXS_PARAMS
 from espm.utils import arg_helper, symbol_to_number_dict, symbol_to_number_list, composition_parser
 from espm.models.absorption_edxs import absorption_correction, det_efficiency, det_efficiency_from_curve, absorption_mass_thickness
@@ -111,47 +112,10 @@ class EDXS(PhysicalModel):
                 else : 
                     self.model_elts.append(str(elt))
             else : 
-                print("No peak is present in the energy range for element : {}".format(elt))
-
-    def __add_stoichiometries_G(self, stoichiometries = []) : 
-        dict_stoichiometries = {s : composition_parser(s) for s in stoichiometries}
-        for stoich in dict_stoichiometries :
-            peaks = np.zeros((self.x.shape[0], 1)) 
-            for elt in dict_stoichiometries[stoich] : 
-                if self.lines : 
-                    energies, cs = read_lines_db(elt,self.db_dict)
-                else : 
-                    energies, cs = read_compact_db(elt,self.db_dict)
-                for i, energy in enumerate(energies):
-                    
-                    # The actual detected width is calculated at each energy
-                    if (energy > np.min(self.x)) and (energy < np.max(self.x)):
-                        
-                        if type(self.params_dict["Det"]) == str : 
-                            D = det_efficiency_from_curve(energy,self.params_dict["Det"])
-                        else : 
-                            D = det_efficiency(energy,self.params_dict["Det"])
-
-                        A = absorption_correction(energy,**self.params_dict["Abs"],elements_dict = {elt : 1.0})
-                        
-                        width = self.width_slope * energy + self.width_intercept
-                        
-
-                        peaks += dict_stoichiometries[stoich][elt] * (
-                            cs[i]
-                            * gaussian(self.x, energy, width / 2.3548)[
-                                np.newaxis
-                            ].T
-                        )*D*A
-            if np.max(peaks) > 0.0:
-                self.G = np.concatenate((self.G, peaks), axis=1)
-                self.model_elts.append(stoich)
-            else : 
-                print("No peak is present in the energy range for element : {}".format(elt))
-                
+                print("No peak is present in the energy range for element : {}".format(elt))           
 
     @symbol_to_number_list
-    def generate_g_matr(self, g_type="bremsstrahlung",reference_elt = {}, stoichiometries = [],*,elements=[], **kwargs):
+    def generate_g_matr(self, g_type="bremsstrahlung",reference_elt = {},*,elements=[], **kwargs):
         r"""
         Generate the G matrix. With a complete model the matrix is (e_size,n+2). The first n columns correspond to the sum of X-ray characteristic peaks associated to each shell of the elements. The last 2 columns correspond to a bremsstrahlung model. 
         
@@ -181,8 +145,6 @@ class EDXS(PhysicalModel):
             :dict: The keys are chemical elements (atomic number) and the values are cut-off energies. This argument is used to split some of the columns of G into 2 columns. The first column corresponds to characteristic X-rays before the cut-off and second one corresponds to characteristic X-rays before the cut-off. This feature is implemented to enable more accurate absorption correction.
         elements : 
             :list: List of modeled chemical elements. The list can be populated either with atomic numbers or chemical symbols, e.g. "Fe" or 26.
-        stoichiometries :
-            :list: Optional list of stoichiometries as strings. Each string represent a fixed stoichiometry such as "Fe3O4" and calculate an addtional column of G for it to help the decomposition.  
 
         Returns
         -------
@@ -215,7 +177,6 @@ class EDXS(PhysicalModel):
             self.G = np.zeros((self.x.shape[0], 0))
             # For each element we unpack all shells and then unpack all lines of each shell.
             self.__add_elts_G(reference_elt = reference_elt, elements = elements)
-            self.__add_stoichiometries_G(stoichiometries = stoichiometries)
             
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
@@ -236,10 +197,6 @@ class EDXS(PhysicalModel):
             self.G /= self.norm
         else : 
             print("g_type has to be one of those : \"bremsstrahlung\", \"no_brstlg\" or \"identity\". G will be None, corresponding to \"identity\". ")
-
-            
-
-   
 
     def generate_phases(self, phases_parameters) : 
         r"""
@@ -335,7 +292,71 @@ class EDXS(PhysicalModel):
             temp += continuum_xrays(self.x,self.params_dict,b0,b1,self.E0,elements_dict=abs_elts_dict) * scale
         
         return temp
+    
+    def NMF_initialize_W(self, D):
+        if self.bkgd_in_G :
+            Wcarac = (np.linalg.lstsq(self.G[:,:-2],D,rcond = None)[0]).clip(min = 0)
+            filter = np.where(np.mean(self.G[:,:-2],axis=1)<(np.max(np.mean(self.G[:,:-2],axis=1))*0.001))[0]
+            Wbrem = (np.linalg.lstsq(self.G[:,-2:][filter,:],D[filter,:],rcond = None)[0]).clip(min = 0)
+            W = np.vstack((Wcarac,Wbrem))
+        else :
+            W = (np.linalg.lstsq(self.G,D,rcond = None)[0]).clip(min = 0)
+        return W
+    
+    def NMF_simplex(self):
+        """
+        Produce the indices of the rows of W on which to perform the simplex constraint.
+        """
+        ind_list = []
+        # We skip the low energy lines
+        for i, elt in enumerate(self.model_elts):
+            if re.match(r'[0-9]*(_lo)',elt) : 
+                pass
+            else : 
+                ind_list.append(i)
+        # We skip the bremsstrahlung
+        return ind_list
+    
+    def NMF_update(self, W=None):
+        """
+        Update the G matrix with the new absorption correction.
+        """
+        if W is None:
+            return self.G
+        if not(self.bkgd_in_G) :
+            return self.G
+        else :
+            new_brstlg = self.update_bremsstrahlung(W)
+            new_G = self.G.copy()
+            new_G[:,-2:] = new_brstlg/self.norm[0][-2:]
+            self.G = new_G
+            return self.G
 
+    def update_bremsstrahlung(self, W) : 
+        """
+        Update the bremsstrahlung part of the G matrix. This function is used for the NMF decomposition so that the absorption correction is updated in between each step.
+        """
+        if not(self.bkgd_in_G) :
+            raise AttributeError("The bremsstrahlung is not comprised in the model.")
+        
+        indices = self.NMF_simplex()
+        mean_compo = np.mean(W[indices,:],axis=1)
+        normed_compo = mean_compo/np.sum(mean_compo)
+        # We do a loop that is not optimal to make sure we keep the same order of elements from the self.model_elts list
+        # It is not a bottleneck since the number of elements is small (up to a 100)
+        elements_list = []
+        for elt in self.model_elts :
+            if re.match(r'[0-9]*(_lo)',elt) : 
+                pass
+            else :
+                m = re.match(r'([0-9]*)(_hi)',elt) 
+                if m :
+                    elt = m.group(1)
+                elements_list.append(elt)
+        elements_dict = {key : normed_compo[i] for i,key in enumerate(elements_list)}
+        bremsstrahlung = G_bremsstrahlung(self.x,self.E0,self.params_dict,elements_dict=elements_dict)
+        return bremsstrahlung
+                
     # @symbol_to_number_dict
     # def generate_abs_correction(self,mass_thickness : np.ndarray,*,elements_dict = {}) : 
     #     temp = np.zeros((self.x.shape[0],mass_thickness.shape[0]*mass_thickness.shape[1]))
@@ -355,34 +376,4 @@ class EDXS(PhysicalModel):
     #                     * gaussian(self.x, energy, width / 2.3548)[:,np.newaxis]
     #                 )*((A.reshape(-1)[:,np.newaxis]).T)
     #     temp += absorption_mass_thickness(self.x, mass_thickness=mass_thickness,**self.params_dict["Abs"],elements_dict = elements_dict)
-        
 
-def G_EDXS (model, g_params, part_W = None, G = None) : 
-    r"""
-    Update the bremsstrahlung part of the G matrix. This function is used for the NMF decomposition so that the absorption correction is updated in between each step.
-
-    Parameters
-    ----------
-    model_params : 
-        :dict: Parameters of the edxs model. Check espm.conf.DEFAULT_EDXS_PARAMS for an example. 
-    g_params : 
-        :dict: Parameters specific to the creation of the G matrix.
-    part_W : 
-        :np.array 2D: Concentrations determined during the NMF decomposition. It is used to determine the average composition that will be used to determine the absorption correction.
-    G : 
-        :np.array 2D: Current G matrix. Setting it to None will initialize the G matrix.
-
-    Returns
-    -------
-    updated G : 
-        :np.array 2D: Updated G matrix with a new absorption correction.
-    """
-    if G is None : 
-        model.generate_g_matr(**g_params)
-        G = model.G
-
-    if part_W is None :
-        return G
-    else : 
-        new_G = update_bremsstrahlung(G,part_W,model,g_params["elements"])
-        return new_G
