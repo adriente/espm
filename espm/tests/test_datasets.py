@@ -8,7 +8,7 @@ import hyperspy.api as hs
 import shutil
 from espm.conf import DATASETS_PATH
 from pathlib import Path
-from hyperspy.misc.eds.utils import take_off_angle
+from exspy.misc.eds.utils import take_off_angle
 import espm.weights.generate_weights as wts
 from espm.weights.generate_weights import generate_weights
 from espm.models.EDXS_function import elts_list_from_dict_list
@@ -63,7 +63,7 @@ def test_generate():
 
     # Generate the phases
     model = EDXS(**model_params)
-    model.generate_g_matr(g_type = "bremsstrahlung", elements=elements)
+    model.generate_g_matr(g_type = "bremsstrahlung", elements=elements, elements_dict = {})
     phases1 = generate_modular_phases(elts_dicts = elts_dicts, brstlg_pars =  brstlg_pars, scales = scales, model_params = model_params)
     G = model.G
     n_phases = len(elts_dicts)
@@ -89,7 +89,7 @@ def test_generate():
     hspy_spim.save(filename)
     si = hs.load(filename)
     si.build_G(problem_type = "bremsstrahlung")
-    G = si.G()
+    G = si.G
     phases, maps = si.phases, si.maps_2d
     # weights = weights.reshape((100,120,n_phases))
     X = si.data
@@ -260,25 +260,24 @@ def test_spim () :
     assert gen_si.G is None
     
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
-    gen_si.build_G(problem_type = "no_brstlg",reference_elt = {})
+    gen_si.build_G(problem_type = "no_brstlg",elements_dict = {})
     assert gen_si.G.shape == (1900, 8)
     
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
-    gen_si.build_G(problem_type = "bremsstrahlung",reference_elt = {})
-    assert callable(gen_si.G)
-    assert gen_si.G().shape == (1900, 10)
+    gen_si.build_G(problem_type = "bremsstrahlung",elements_dict = {})
+    assert gen_si.G.shape == (1900, 10)
     
     Xflat = gen_si.X
     assert Xflat.shape == (1900, 120*100)
 
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
-    gen_si.build_G(problem_type = "bremsstrahlung",reference_elt = {"26" : 3.0})
+    gen_si.build_G(problem_type = "bremsstrahlung",elements_dict = {"26" : 3.0})
     print(gen_si.metadata.Sample.elements)
     print(gen_si.metadata.EDS_model.elements)
-    assert gen_si.G().shape == (1900, 11)
+    assert gen_si.G.shape == (1900, 11)
 
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
-    gen_si.build_G(problem_type = "no_brstlg",reference_elt = {"26" : 3.0})
+    gen_si.build_G(problem_type = "no_brstlg",elements_dict = {"26" : 3.0})
     assert gen_si.G.shape == (1900, 9)
 
     detector_dict = {
@@ -349,11 +348,41 @@ def test_carto_fixed_W() :
     np.testing.assert_array_equal(fw2,tw2)
 
     s = create_data()
-    s.build_G(problem_type = "no_brstlg", reference_elt = {"26" : 3.0})
+    s.build_G(problem_type = "no_brstlg", elements_dict = {"26" : 3.0})
     fw3 = s.carto_fixed_W()
     tw3 = np.diag(-1* np.ones(5))
 
     assert(fw3.shape == (5,5))
     np.testing.assert_array_equal(fw3,tw3)
+
+def test_set_fixed_W() : 
+    def create_data()  : 
+        a = np.random.rand(50,70,100)
+        s = hs.signals.Signal1D(a)
+        s.axes_manager[-1].offset = 0.2
+        s.axes_manager[-1].scale = 0.1
+        s.set_signal_type("EDS_espm")
+        s.set_analysis_parameters()
+        s.add_elements(elements = ["Si","O","Fe","Ca"])
+        return s
+    
+    s = create_data()
+    s.build_G(problem_type = "bremsstrahlung")
+    fw1 = s.set_fixed_W({'p0' : {"Si" : 0.0, 'O' : 0.5, 'b1' : 10.0},'p1' : {}, 'p2' : {'O' : 0.4, 'Fe' : 0.6, 'b0' : 3.0} })
+    tw1 = (np.array([[0.0, 0.5, -1.0, -1.0, -1.0, 10.0],
+                    [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
+                    [-1.0, 0.4, 0.6, -1.0, 3.0, -1.0]])).T
+    assert(fw1.shape == (6,3))
+    np.testing.assert_array_equal(fw1,tw1)
+
+    s = create_data()
+    s.build_G(problem_type = "no_brstlg", elements_dict = {"Fe" : 3.0})
+    fw2 = s.set_fixed_W({'p0' : {"Si" : 0.0, 'O' : 0.5},'p1' : {}, 'p2' : {'O' : 0.4, 'Fe' : 0.6} })
+    tw2 = (np.array([[0.0, 0.5, -1.0, -1.0, -1.0],
+                    [-1.0, -1.0, -1.0, -1.0, -1.0],
+                    [-1.0, 0.4, -1.0, 0.6,-1.0]])).T
+    
+    assert(fw2.shape == (5,3))
+    np.testing.assert_array_equal(fw2,tw2)
 
 

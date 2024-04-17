@@ -151,7 +151,7 @@ class PhysicalModel(Model) :
             self.db_mdata = self.extract_DB_mdata(db_name)
         self.bkgd_in_G = False
         self.spectrum = np.zeros_like(self.x)
-        self.G = np.diag(np.ones_like(self.x))
+        self.G = None
         self.phases = None
         self.E0 = E0
 

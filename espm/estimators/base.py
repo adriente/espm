@@ -103,9 +103,11 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
     true_H : np.array or None, default=None
         Ground truth for the matrix :math:`H`. Used for evaluation purposes.
     fixed_H : np.array or None, default=None
-        If not None, it fixes the non-zero values of the matrix :math:`H`.
+        If not None, it fixes the non-zero values of the matrix :math:`H`. 
+        Note that convergence is not guaranteed with fixed_H enabled.
     fixed_W : np.array or None, default=None
         If not None, it fixes the non-zero values of the matrix :math:`W`.
+        Note that convergence is not guaranteed with fixed_W enabled.
     no_stop_criterion : bool, default=False
         If True, the algorithm will not stop when the stopping criterion is reached and will continue until max_iter is reached.
     hspy_comp : bool, default=False
@@ -204,7 +206,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         return loss_
 
     def fit_transform(self, X, y=None, W=None, H=None):
-        """Learn a NMF model for the data X and returns the transformed data.
+        """
+        Main function of the estimator object.
+        Learn a NMF model for the data X and returns the transformed data.
         This is more efficient than calling fit followed by transform.
 
         The size of:
@@ -231,6 +235,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             Transformed data.
         
         """
+        ############################
+        # Initialize the algorithm #
+        ############################
         if self.hspy_comp : 
             self.X_ = self._validate_data(X.T, dtype=[np.float64, np.float32])
         else : 
@@ -248,11 +255,12 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             except:
                 pass
 
-
+        # The algorithm does not work when full columns or lines of X are zero
         self.X_ = self.remove_zeros_lines(self.X_, self.log_shift)
 
         self.const_KL_ = None
         if self.normalize : 
+            # We normalize the data so that the strength of the regularization is somewhat the same for all datasets
             self.norm_factor_ = normalization_factor(self.X_,self.n_components)
             self.X_ = self.norm_factor_ * self.X_
         
@@ -269,6 +277,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                                                           simplex_H = self.simplex_H,
                                                           simplex_W = self.simplex_W,
                                                           physics_model = self.physics_model)
+        self.temp_init_GW = self.G_@self.W_
         if not(self.shape_2d is None) :
             self.L_ = create_laplacian_matrix(*self.shape_2d)
         else : 
@@ -276,13 +285,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             self.L_.setdiag([1]*self.X_.shape[1])
 
         algo_start = time.time()
-        # If mu_sparse != 0, this is the regularized step of the algorithm
-        # Otherwise this is directly the data fitting step
         eval_before = np.inf
         eval_init = self.loss(self.W_, self.H_)
         self.n_iter_ = 0
 
-        # if self.debug:
         self.losses_ = []
         self.rel_ = []
         self.detailed_losses_ = []
@@ -294,9 +300,13 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 true_DH = self.true_D @ self.true_H
             else : 
                 print("The chosen number of components does not match the number of components of the provided truth. The ground truth will be ignored.")
+        
+        #############
+        # Main loop #
+        #############
         try:
             while True:
-                # Take one step in A, P
+                # Take one step in W, H
                 old_W, old_H = self.W_.copy(), self.H_.copy()
                 
                 self.W_, self.H_ = self._iteration(self.W_, self.H_ )
@@ -365,10 +375,19 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                         f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:3e},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
                     )
                     pass
-                eval_before = eval_after
+                # Update G might increase the loss so we reevaluate the loss to avoid artificial negative decrease
+                # We do this update every 10 iterations, but it is arbitrary.
+                if self.physics_model != None and self.n_iter_%10 == 0: 
+                    self.G_ = self.physics_model.NMF_update(W)
+                    eval_before = self.loss(self.W_, self.H_)
+                else :
+                    eval_before = eval_after
         except KeyboardInterrupt:
             pass
 
+        ###################
+        # End of the loop #
+        ###################
         if not(self.simplex_H) and not(self.simplex_W):
             self.W_, self.H_ = rescaled_DH(self.W_, self.H_ )
         
@@ -450,7 +469,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         return self.G_ @ W @ self.H_
     
     def get_losses(self):
-        
+        """
+        For debug purposes : return the evolution of losses. 
+        """        
         if not(self.true_D is None) and not(self.true_H is None) :
             mse_list = []
             angles_list = []
@@ -471,7 +492,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             
             array = np.array(tup_list,dtype=dt)
         
-        #Bon j'ai copié ca comme un bourrin. Il y a moyen de faire mieux.
+        #TODO : Check this part for optimization
         else : 
             names = ["full_loss"] + self.loss_names_ + ["rel_W","rel_H"]
             dt_list = []

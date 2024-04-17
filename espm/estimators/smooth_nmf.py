@@ -325,9 +325,6 @@ class SmoothNMF(NMFEstimator):
         # KL_surr = KL_loss_surrogate(self.X_, W, H, H, eps=0)
         # log_surr = log_surrogate(H, H, mu=self.mu, epsilon=self.epsilon_reg)
         # print("loss after:", KL_surr, log_surr, log_surr+KL_surr)
-
-        if self.physics_model != None : 
-            self.G_ = self.physics_model.NMF_update(W)
         return  W, H
 
     def loss(self, W, H, average=True, X = None):

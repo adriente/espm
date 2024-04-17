@@ -5,7 +5,7 @@ from scipy.sparse import lil_matrix, block_diag
 from scipy.optimize import nnls
 from espm.conf import SYMBOLS_PERIODIC_TABLE, NUMBER_PERIODIC_TABLE
 import json
-from hyperspy.misc.material import atomic_to_weight, density_of_mixture
+from exspy.misc.material import atomic_to_weight, density_of_mixture
 from functools import wraps
 import re
 

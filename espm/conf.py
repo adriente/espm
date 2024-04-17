@@ -1,5 +1,5 @@
 from pathlib import Path
-import hyperspy.misc.eds.ffast_mac as macs
+import exspy.misc.eds.ffast_mac as macs
 # from exspy.misc.eds import ffast_mac as macs
 HSPY_MAC = macs.ffast_mac # Tabulated absorption coefficient in Hyperspy
 

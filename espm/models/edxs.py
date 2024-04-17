@@ -24,6 +24,7 @@ class EDXS(PhysicalModel):
         *args, 
         width_slope=0.01,
         width_intercept=0.065,
+        custom_init = False,
         **kwargs
     ):
         r"""
@@ -43,6 +44,7 @@ class EDXS(PhysicalModel):
         self.lines = self.db_mdata["lines"]
         self.norm = 1.0
         self.model_elts = []
+        self.custom_init = custom_init
 
     def __add_elts_G(self, reference_elt = {}, *, elements=[]):
         for elt in elements:
@@ -50,7 +52,7 @@ class EDXS(PhysicalModel):
                 energies, cs = read_lines_db(elt,self.db_dict)
             else : 
                 energies, cs = read_compact_db(elt,self.db_dict)
-            if str(elt) in reference_elt : 
+            if elt in reference_elt : 
                 peaks_low = np.zeros((self.x.shape[0], 1))
                 peaks_high = np.zeros((self.x.shape[0], 1))
                 for i, energy in enumerate(energies):
@@ -64,7 +66,7 @@ class EDXS(PhysicalModel):
                         A = absorption_correction(energy,**self.params_dict["Abs"],elements_dict = {elt : 1.0})
                         
                         width = self.width_slope * energy + self.width_intercept
-                        if energy < reference_elt[str(elt)] : 
+                        if energy < reference_elt[elt] : 
                             peaks_low += (
                                 cs[i]
                                 * gaussian(self.x, energy, width / 2.3548)[
@@ -106,7 +108,7 @@ class EDXS(PhysicalModel):
             
             if np.max(peaks) > 0.0:
                 self.G = np.concatenate((self.G, peaks), axis=1)
-                if str(elt) in reference_elt : 
+                if elt in reference_elt : 
                     self.model_elts.append(str(elt)+'_lo')
                     self.model_elts.append(str(elt)+'_hi')
                 else : 
@@ -115,7 +117,8 @@ class EDXS(PhysicalModel):
                 print("No peak is present in the energy range for element : {}".format(elt))           
 
     @symbol_to_number_list
-    def generate_g_matr(self, g_type="bremsstrahlung",reference_elt = {},*,elements=[], **kwargs):
+    @symbol_to_number_dict
+    def generate_g_matr(self, g_type="bremsstrahlung",*,elements=[],elements_dict = {},**kwargs):
         r"""
         Generate the G matrix. With a complete model the matrix is (e_size,n+2). The first n columns correspond to the sum of X-ray characteristic peaks associated to each shell of the elements. The last 2 columns correspond to a bremsstrahlung model. 
         
@@ -141,7 +144,7 @@ class EDXS(PhysicalModel):
         ----------
         g_type : 
             :string: Options of the edxs model to include in the G matrix. The three possibilities are "identity", "no_brstlg" and "bremsstrahlung". G is going to be the identity matrix, only characteristic X-ray peaks or characteristic X-rays plus bremsstrahlung model, respectively.
-        reference_elt : 
+        elements_dict : 
             :dict: The keys are chemical elements (atomic number) and the values are cut-off energies. This argument is used to split some of the columns of G into 2 columns. The first column corresponds to characteristic X-rays before the cut-off and second one corresponds to characteristic X-rays before the cut-off. This feature is implemented to enable more accurate absorption correction.
         elements : 
             :list: List of modeled chemical elements. The list can be populated either with atomic numbers or chemical symbols, e.g. "Fe" or 26.
@@ -176,7 +179,7 @@ class EDXS(PhysicalModel):
             # The number of shells depend on the element, it is then not straightforward to pre-determine the size of g_matr
             self.G = np.zeros((self.x.shape[0], 0))
             # For each element we unpack all shells and then unpack all lines of each shell.
-            self.__add_elts_G(reference_elt = reference_elt, elements = elements)
+            self.__add_elts_G(reference_elt = elements_dict, elements = elements)
             
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
@@ -293,20 +296,51 @@ class EDXS(PhysicalModel):
         
         return temp
     
-    def NMF_initialize_W(self, D):
-        if self.bkgd_in_G :
-            Wcarac = (np.linalg.lstsq(self.G[:,:-2],D,rcond = None)[0]).clip(min = 0)
-            filter = np.where(np.mean(self.G[:,:-2],axis=1)<(np.max(np.mean(self.G[:,:-2],axis=1))*0.001))[0]
-            Wbrem = (np.linalg.lstsq(self.G[:,-2:][filter,:],D[filter,:],rcond = None)[0]).clip(min = 0)
+    def get_elements(self) :
+        for elt in self.model_elts:
+            if re.match(r'[0-9]*(_lo)',elt) : 
+                pass
+            elif re.match(r'[0-9]*(_hi)',elt) :
+                m = re.match(r'([0-9]*)(_hi)',elt) 
+                yield m.group(1)
+            else : 
+                yield elt
+        
+    def carac_X_span(self) : 
+        all_indices = []
+        for elt in self.get_elements():
+            if self.lines : 
+                energies, cs = read_lines_db(elt,self.db_dict)
+            else : 
+                energies, cs = read_compact_db(elt,self.db_dict)
+            for energy in energies:
+                width = self.width_slope * energy + self.width_intercept
+                span = [energy - 2*width, energy + 2*width]
+                indices = np.where((self.x > span[0]) & (self.x < span[1]))[0]
+                all_indices.append(indices)
+        return np.unique(np.concatenate(all_indices))
+    
+    def NMF_initialize_W(self, D) :
+        if self.G is None :
+            raise ValueError('The G matrix is identity, the W matrix cannot be initialized. Please use a np.array for G in the ESpM-NMF instead of the model object')
+        if self.bkgd_in_G and self.custom_init:
+            idx = self.carac_X_span()
+            mask = np.ones(self.G.shape[0], bool)
+            mask[idx] = 0
+            Wbrem = (np.linalg.lstsq(self.G[mask,-2:],D[mask,:],rcond = None)[0]).clip(min = 0)
+            Wcarac = (np.linalg.lstsq(self.G[idx,:-2],D[idx,:] ,rcond = None)[0]).clip(min = 0)
+            # filter = np.where(np.mean(self.G[:,:-2],axis=1)<(np.max(np.mean(self.G[:,:-2],axis=1))*0.001))[0]
             W = np.vstack((Wcarac,Wbrem))
         else :
             W = (np.linalg.lstsq(self.G,D,rcond = None)[0]).clip(min = 0)
+
         return W
-    
+        
     def NMF_simplex(self):
         """
         Produce the indices of the rows of W on which to perform the simplex constraint.
         """
+        # We don't check here whether G was correctyl initialized since it is tested in the init.
         ind_list = []
         # We skip the low energy lines
         for i, elt in enumerate(self.model_elts):
@@ -321,6 +355,7 @@ class EDXS(PhysicalModel):
         """
         Update the G matrix with the new absorption correction.
         """
+        # We don't need to check whether G was correctyl initialized it should work anyway.
         if W is None:
             return self.G
         if not(self.bkgd_in_G) :
@@ -342,38 +377,6 @@ class EDXS(PhysicalModel):
         indices = self.NMF_simplex()
         mean_compo = np.mean(W[indices,:],axis=1)
         normed_compo = mean_compo/np.sum(mean_compo)
-        # We do a loop that is not optimal to make sure we keep the same order of elements from the self.model_elts list
-        # It is not a bottleneck since the number of elements is small (up to a 100)
-        elements_list = []
-        for elt in self.model_elts :
-            if re.match(r'[0-9]*(_lo)',elt) : 
-                pass
-            else :
-                m = re.match(r'([0-9]*)(_hi)',elt) 
-                if m :
-                    elt = m.group(1)
-                elements_list.append(elt)
-        elements_dict = {key : normed_compo[i] for i,key in enumerate(elements_list)}
+        elements_dict = {key : normed_compo[i] for i,key in enumerate(self.get_elements())}
         bremsstrahlung = G_bremsstrahlung(self.x,self.E0,self.params_dict,elements_dict=elements_dict)
         return bremsstrahlung
-                
-    # @symbol_to_number_dict
-    # def generate_abs_correction(self,mass_thickness : np.ndarray,*,elements_dict = {}) : 
-    #     temp = np.zeros((self.x.shape[0],mass_thickness.shape[0]*mass_thickness.shape[1]))
-    #     for elt in elements_dict.keys():
-    #         if self.lines : 
-    #             energies, cs = read_lines_db(elt,self.db_dict)
-    #         else : 
-    #             energies, cs = read_compact_db(elt,self.db_dict)
-    #         for i, energy in enumerate(energies):
-    #             if (energy > np.min(self.x)) and (energy < np.max(self.x)):
-    #                 A = absorption_mass_thickness(energy, mass_thickness=mass_thickness,**self.params_dict["Abs"],elements_dict = elements_dict)
-                
-    #                 width = self.width_slope * energy + self.width_intercept
-    #                 temp -= (
-    #                     elements_dict[elt]
-    #                     * cs[i]
-    #                     * gaussian(self.x, energy, width / 2.3548)[:,np.newaxis]
-    #                 )*((A.reshape(-1)[:,np.newaxis]).T)
-    #     temp += absorption_mass_thickness(self.x, mass_thickness=mass_thickness,**self.params_dict["Abs"],elements_dict = elements_dict)
-

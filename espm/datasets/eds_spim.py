@@ -11,11 +11,12 @@ The main purpose of this class is to provide an easy and clean interface between
 
 from  hyperspy.signals import Signal1D
 from espm.models import EDXS
-from hyperspy.misc.eds.utils import take_off_angle
+from exspy.misc.eds.utils import take_off_angle
 from espm.utils import number_to_symbol_list
 import numpy as np
 from espm.estimators import NMFEstimator
 import re
+import warnings
 
 
 class EDS_espm(Signal1D) : 
@@ -30,6 +31,25 @@ class EDS_espm(Signal1D) :
         self._maps_2d = None
         self.G_ = None
         self.model_ = None
+        self.custom_init_ = None
+
+    ##############
+    # Properties #
+    ##############
+
+    @property
+    def custom_init (self) :
+        r"""
+        Boolean setting whether using the custom_init (see espm.models.EDXS) or not.
+        If True, the custom_init will be used to initialise the decomposition.
+        If False, the default initialisation will be used.
+        If None, the custom_init will be set to False.
+        """
+        return self.custom_init_
+    
+    @custom_init.setter
+    def custom_init (self, value) :
+        self.custom_init_ = value
 
     @property
     def shape_2d (self) : 
@@ -97,7 +117,7 @@ class EDS_espm(Signal1D) :
         """ 
         if self.model_ is None : 
             mod_pars = get_metadata(self)
-            self.model_ = EDXS(**mod_pars)
+            self.model_ = EDXS(**mod_pars, custom_init=self.custom_init_)
         return self.model_
     
     @property
@@ -106,8 +126,17 @@ class EDS_espm(Signal1D) :
         The G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDS_espm` object.
         """
         if self.G_ is None : 
-            raise AttributeError("The G matrix has not been built yet. Please use the build_G method.")
+            try : 
+                if self.problem_type == "identity" :
+                    return None
+            except AttributeError :
+                warnings.warn("You did not used the build_G method to build the G matrix. In ESpM-NMF, an idenity matrix will be used for decomposition")
+                return None
         return self.G_
+    
+    ######################################
+    # Modelling and simulation functions #
+    ######################################
 
     def build_ground_truth(self,reshape = True) : 
         r"""
@@ -135,7 +164,7 @@ class EDS_espm(Signal1D) :
             raise AttributeError("There is no ground truth contained in this dataset")
         return phases, weights
 
-    def build_G(self, problem_type = "bremsstrahlung", reference_elt = {}) :
+    def build_G(self, problem_type = "bremsstrahlung",*, elements_dict = {}) :
         r"""
         Build the G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDS_espm` object and stores it as an attribute.
 
@@ -146,52 +175,32 @@ class EDS_espm(Signal1D) :
                 - "bremsstrahlung" : the G matrix is a callable with both characteristic X-rays and a bremsstrahlung model.
                 - "no_brstlg" : the G matrix is a matrix with only characteristic X-rays.
                 - "identity" : the G matrix is None which is equivalent to an identity matrix for espm functions.
-        reference_elt : dict, optional
+        elements_dict : dict, optional
             Dictionary containing atomic numbers and a corresponding cut-off energies. It is used to separate the characteristic X-rays of the given elements into two energies ranges and assign them each a column in the G matrix instead of having one column per element.
-            For example reference_elt = {"26",3.0} will separate the characteristic X-rays of the element Fe into two energies ranges and assign them each a column in the G matrix. This is useful to circumvent issues with the absorption.
+            For example elements_dict = {"26",3.0} will separate the characteristic X-rays of the element Fe into two energies ranges and assign them each a column in the G matrix. This is useful to circumvent issues with the absorption.
         Returns
         -------
         G : None or numpy.ndarray or callable
             The G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDS_espm` object.
         """
         self.problem_type = problem_type
-        self.reference_elt = reference_elt
-        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : reference_elt}
+        self.separated_lines = elements_dict
+        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements, "elements_dict" : elements_dict}
 
         self.model.generate_g_matr(**g_pars)
         self.G_ = self.model.G
-
+                
+        # Storing the model parameters in the metadata so that the decomposition does not erase them
+        # Indeed the decomposition re-creates a new object of the same class when it is called
         self.metadata.EDS_model= {}
         self.metadata.EDS_model.problem_type = problem_type
-        self.metadata.EDS_model.reference_elt = reference_elt
+        self.metadata.EDS_model.separated_lines = elements_dict
         self.metadata.EDS_model.elements = self.model.model_elts
         self.metadata.EDS_model.norm = self.model.norm
 
-        # Storing the model parameters in the metadata so that the decomposition does not erase them
-        # Indeed the decomposition re-creates a new object of the same class when it is called
-        
-
-    # def update_G(self, part_W=None, G=None):
-    #     r"""
-    #     Update the absortion part of the bremsstrahlung of the G matrix.
-    #     """
-    #     try : 
-    #         nelts = (self.metadata.EDS_model.elements).copy()
-
-    #         for i, elt in enumerate(nelts) : 
-    #             r = re.match(r'.*_lo',elt)
-    #             t = re.match(r'.*_hi',elt)
-    #             if r : 
-    #                 nelts[i] = nelts[i][:-3]
-    #             if t : 
-    #                 nelts[i] = nelts[i][:-3]
-    #         nelts = list(dict.fromkeys(nelts))
-
-    #         g_params = {"g_type" : self.problem_type, "elements" : nelts, "reference_elt" : self.reference_elt}
-    #     except AttributeError : 
-    #         g_params = {"g_type" : self.problem_type, "elements" : self.metadata.Sample.elements, "reference_elt" : self.reference_elt}
-    #     G = G_EDXS(self.model, g_params, part_W=part_W, G=G)
-    #     return G
+    ############################
+    # Metadata and model setup #
+    ############################
 
     def set_analysis_parameters (self,beam_energy = 200, azimuth_angle = 0.0, elevation_angle = 22.0, tilt_stage = 0.0, elements = [], thickness = 200e-7, density = 3.5, detector_type = "SDD_efficiency.txt", width_slope = 0.01, width_intercept = 0.065, xray_db = "default_xrays.json") :
         r"""
@@ -290,6 +299,10 @@ class EDS_espm(Signal1D) :
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.elevation_angle = elevation_angle
         self.metadata.Acquisition_instrument.TEM.Detector.EDS.energy_resolution_MnKa = 130.0
 
+    ############################
+    # Helper functions for NMF #
+    ############################
+
     def carto_fixed_W(self, brstlg_comps = 1) : 
         r"""
         Helper function to create a fixed_W matrix for chemical mapping. It will output a matrix 
@@ -322,7 +335,6 @@ class EDS_espm(Signal1D) :
 
         return W
 
-
     def set_fixed_W (self,phases_dict) : 
         r"""
         Helper function to create a fixed_W matrix. The output matrix will have -1 entries except for the elements (and bremsstrahlung parameters) that are present in the phases_dict dictionary.
@@ -341,16 +353,23 @@ class EDS_espm(Signal1D) :
             raise ValueError("The G matrix has not been built yet. Please use the build_G method.")
         elements = self.metadata.EDS_model.elements
 
-        # convert elements to symbols but also omitting splitted lines or custom stoichiometries
+        # convert elements to symbols but also omitting splitted lines
         @number_to_symbol_list
         def convert_to_symbols(elements = []) : 
             return elements
         
+        indices = []
+        conv_elts = []
         for i, elt in enumerate(elements) :
-            try : 
-                elements[i] = convert_to_symbols(elements=[elt])[0]
-            except ValueError : 
-                elements[i] = elt
+            # We always omit low energy lines when they are split (see generate_gmatre of espm.models.EDXS to build G with split lines)
+            if re.match(r'.*_lo',elt) :
+                pass
+            elif re.match(r'.*_hi',elt) :
+                indices.append(i)
+                conv_elts.append(convert_to_symbols(elements=[elt[:-3]])[0])
+            else :
+                indices.append(i)
+                conv_elts.append(convert_to_symbols(elements=[elt])[0])
 
         if self.problem_type == "no_brstlg" : 
             W = -1* np.ones((len(elements), len(phases_dict.keys())))
@@ -359,15 +378,19 @@ class EDS_espm(Signal1D) :
         else : 
             raise ValueError("problem type should be either no_brstlg or bremsstrahlung")
         for p, phase in enumerate(phases_dict) : 
-            for e, elt in enumerate(elements) :
-                for key in phases_dict[phase] : 
-                    if key == elt : 
-                        W[e,p] = phases_dict[phase][key]
             for key in phases_dict[phase] : 
                 if key == "b0" : 
-                    W[-2,p] = phases_dict[phase][key]
-                if key == "b1" : 
-                    W[-1,p] = phases_dict[phase][key]
+                    if self.problem_type == "bremsstrahlung" : 
+                        W[-2,p] = phases_dict[phase][key]
+                    else : 
+                        warnings.warn("The chosen EDXS modelling does not incorporate the bremsstrahlung. Input bremsstrahlung parameters will be ignored.")
+                if key == "b1" :
+                    if self.problem_type == "bremsstrahlung" :
+                        W[-1,p] = phases_dict[phase][key]
+                    else :
+                        warnings.warn("The chosen EDXS modelling does not incorporate the bremsstrahlung. Input bremsstrahlung parameters will be ignored.")
+                if key in conv_elts : 
+                    W[indices[conv_elts.index(key)],p] = phases_dict[phase][key]
         return W
     
     def print_concentration_report (self,abs = False, selected_elts = [], W_input = None) : 
@@ -403,8 +426,6 @@ class EDS_espm(Signal1D) :
         else :
             W = W_input
 
-        
-
         elts = self.metadata.EDS_model.elements
         norm = self.metadata.EDS_model.norm
 
@@ -412,6 +433,7 @@ class EDS_espm(Signal1D) :
         def convert_elts(elements = []) :
             return elements
         
+        # We systematically omit low energy lines when they are split(see generate_gmatre of espm.models.EDXS to build G with split lines)
         elts_only = []
         indices = []
         if selected_elts :
@@ -485,9 +507,9 @@ class EDS_espm(Signal1D) :
         
 
 
-######################
-# Axiliary functions #
-######################
+#######################
+# Auxiliary functions #
+#######################
 
 def get_metadata(spim) : 
     r"""
@@ -521,10 +543,5 @@ def get_metadata(spim) :
         print("You need to define the relevant parameters for the analysis. Use the set_analysis_parameters function.")
 
     return mod_pars
-
-# def build_G(model, g_params) :
-#     model.generate_g_matr(**g_params)
-#     return model.G
-
 
 

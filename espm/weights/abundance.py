@@ -12,8 +12,6 @@ from skimage.filters import threshold_otsu
 import hyperspy.api as hs
 from skimage.filters import median
 from scipy.interpolate import RectBivariateSpline
-# from scipy.interpolate import interp2d
-
 
 class Abundance(object):
     
