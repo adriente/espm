@@ -42,5 +42,5 @@ setuptools.setup(
         #'hyperspy<2.0.0', 'tqdm', 'lmfit', 'scikit-learn', 'traits @ git+https://github.com/enthought/traits.git'
         'hyperspy>=2.0.0', 'exspy', 'tqdm', 'lmfit', 'scikit-learn', 'traits @ git+https://github.com/enthought/traits.git'
     ],
-    python_requires='>=3.7',
+    python_requires='>=3.8',
 )

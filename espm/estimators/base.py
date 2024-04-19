@@ -260,8 +260,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             self.X_ = self.norm_factor_ * self.X_
         
         if isinstance(self.G, PhysicalModel):
-            self.physics_model_ = G
-            G = G.NMF_update()
+            self.physics_model_ = self.G
+            G = self.physics_model_.NMF_update()
         else:
             self.physics_model_ = None
             G = self.G

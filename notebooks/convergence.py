@@ -95,7 +95,7 @@ def one_experiment(X, experiment_param, algo_param, global_param):
     est = SmoothNMF(**algo_param, **experiment_param, **global_param)
     simplex_H_init = True
     start_time = time()
-    if force_simplex_init:
+    if simplex_H_init:
         _, W0, H0 = initialize_algorithms(X, est.G, None, None, n_components=est.n_components, init=est.init, random_state=est.random_state, simplex_H=True, simplex_W=False, logshift=log_shift)
         W = est.fit_transform(X, W=W0, H=H0)
     else:
@@ -129,7 +129,7 @@ def run_experiment_set(laplacian, noise, simplex_H, seed = 0, max_iter=1000, l =
 
     # experiment parameters
     experiment_param = dict()
-    experiment_param["simplex_H"] = force_simplex
+    experiment_param["simplex_H"] = simplex_H
     experiment_param["simplex_W"] = False
     experiment_param["lambda_L"] = lambda_L 
     experiment_param["mu"] = 0
