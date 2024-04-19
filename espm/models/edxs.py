@@ -356,6 +356,7 @@ class EDXS(PhysicalModel):
         Update the G matrix with the new absorption correction.
         """
         # We don't need to check whether G was correctyl initialized it should work anyway.
+        
         if W is None:
             return self.G
         if not(self.bkgd_in_G) :

@@ -48,3 +48,15 @@ First patch release
 * New notebook to reproduce the results of the paper
 * Fixing some minor bugs
 * Adding fixed stoichiometries in the G matrix
+
+1.1.0 (2024-04-19)
+------------------
+
+First major update
+
+Conceptual changes : 
+* In ESpM-NMF 
+
+Syntax changes :
+* In `spim.build_G()`, the keyword argument to separate high and low energy lines in the G matrix is now `elements_dict` instead of `reference_elt`. The dictionary allows atomic number or chemical symbol notation.
+* 

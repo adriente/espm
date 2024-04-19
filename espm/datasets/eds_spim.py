@@ -17,7 +17,7 @@ import numpy as np
 from espm.estimators import NMFEstimator
 import re
 import warnings
-from prettytable import PrettyTable
+from prettytable import PrettyTable, MSWORD_FRIENDLY
 from tqdm import tqdm
 
 
@@ -506,6 +506,7 @@ class EDS_espm(Signal1D) :
         table.float_format="0.3"
         table.align = "r"
         table.align["Elements"] = "l"
+        # table.set_style(MSWORD_FRIENDLY)
 
         print(table)
         if disclaimer and fit_error: 

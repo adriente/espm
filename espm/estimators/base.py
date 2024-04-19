@@ -375,9 +375,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     )
                     pass
                 # Update G might increase the loss so we reevaluate the loss to avoid artificial negative decrease
-                # We do this update every 10 iterations, but it is arbitrary.
-                if self.physics_model_ != None and self.n_iter_%10 == 0: 
-                    self.G_ = self.physics_model_.NMF_update(W)
+                # We do this update every 3 iterations, but it is arbitrary.
+                if self.physics_model_ != None and self.n_iter_%3 == 0: 
+                    self.G_ = self.physics_model_.NMF_update(self.W_)
                     eval_before = self.loss(self.W_, self.H_)
                 else :
                     eval_before = eval_after

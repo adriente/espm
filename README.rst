@@ -5,9 +5,11 @@ espm: The Electron Spectro-Microscopy Python Library
     :target: https://espm.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
+The espm package is designed for simulation and physics-guided NMF decomposition of hyperspectral data.
+Even though the package is mainly centered around electron spectro-microscopy applications, custom models can be implemented for other type of data.
+Currently espm supports the simulation and analysis of simultaneous scanning transmission electron microscopy and energy dispersive X-ray spectroscopy (STEM / EDXS). 
+In future implementation, we will try to extend the package to support electron energy loss spectroscopy (EELS).
 
-The espm package is designed for the simulation and analysis of scanning transmission electron microscopy (STEM) hyperspectral data analysis. 
-Currently it only supports energy dispersive X-ray spectroscopy (EDXS) data but we will try to extend it to electron energy loss spectroscopy (EELS) data in the future.
 The main components of the package are:
 - The simulation of STEM-EDXS datasets using :mod:`espm.datasets` which combines :mod:`espm.weights` for the simulation of spatial distributions and :mod:`èspm.models` for the simulation of spectra.
 - The hyperspectral unmixing of STEM-EDXS spectrum images using :mod:`espm.estimators`. This module contains algorithms to perform non-negative matrix factorization with diverse regularisation (e.g. Laplacian or L1) and contraints (e.g. simplex).
