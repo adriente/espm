@@ -385,4 +385,8 @@ def test_set_fixed_W() :
     assert(fw2.shape == (5,3))
     np.testing.assert_array_equal(fw2,tw2)
 
+def test_estimate_best_binning () : 
+    pass
+    # TODO : Implement this test
+
 

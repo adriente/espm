@@ -372,7 +372,6 @@ def symbol_list () :
         symbol_list.append(NPT[num]["symbol"])
     return symbol_list
 
-
 def close_all():
     r"""Close all opened windows."""
     import matplotlib.pyplot as plt
@@ -386,42 +385,19 @@ def close_all():
         plt.close(fig)
     _plt_figures = []
 
-def composition_parser(comp_string) : 
-    r"""
-    Parse a string of the form of a chemical formula to dictionarry of the normalize composition.
+def get_explained_intensity_W(G, W, H) : 
+    r""" Compute the explained intensity of each element of W.
 
-    Parameters
-    ----------
-    comp_string : str
-        Chemical formula to parse.
+    :param np.array 2D G: G matrix of the ESpM-NMF decomposition
+    :param np.array 2D W: W matrix of the ESpM-NMF decomposition
+    :param np.array 2D H: H matrix of the ESpM-NMF decomposition
 
-    Returns
-    -------
-    compo : dict
-        Dictionary of the chemical composition.
-
-    Examples
-    --------
-    >>> composition_parser("Bi3Fe4.5Ca0.5O12")
-    {'Bi': 3.0, 'Ca': 0.5, 'Fe': 4.5, 'O': 12.0}
+    :return: np.array 2D
 
     """
-    compo = {}
-
-    @symbol_to_number_dict
-    def convert_compo(elements_dict = {}) :
-        return elements_dict
-    
-    def normalize_dict(d, target=1.0):
-        raw = sum(d.values())
-        factor = target/raw
-        return {key:d[key]*factor for key in d}
-
-    elt_concs = re.findall(r"([A-Z]{1}[a-z]?[0-9]*\.?[0-9]*)",comp_string)
-    for elt_conc in elt_concs :
-        m = re.match(r"([A-Z]{1}[a-z]?)([0-9]*\.?[0-9]*)",elt_conc)
-        if m :
-            compo[str(m.group(1))] = float(m.group(2))
-
-    num_compo = convert_compo(elements_dict=compo)
-    return normalize_dict(num_compo)
+    # I couldn't find a linear algebra trick
+    int_matrix = np.zeros(W.shape)
+    for i in range(W.shape[0]) : 
+        for j in range(W.shape[1]) : 
+            int_matrix[i,j] = np.sum(G[:,i, np.newaxis]*W[i,j]*H[np.newaxis,j,:])
+    return int_matrix

@@ -8,10 +8,8 @@ from espm.weights import generate_weights
 from espm.datasets.base import generate_spim
 from espm.measures import trace_xtLx
 from espm.utils import create_laplacian_matrix
-from espm.models.edxs import G_EDXS
 from espm.models.generate_EDXS_phases import generate_modular_phases
 from espm.datasets.base import generate_spim_sample
-import hyperspy.api as hs
 
 
 phases_dict  = {
@@ -37,7 +35,7 @@ phases_dict  = {
     'width_intercept': 0.065,
     'db_name': '200keV_xrays.json',
     'E0': 200,
-    'params_dict': {'Abs': {'thickness': 1e-05,
+    'params_dict': {'Abs': {'thickness': 0.0,
     'toa': 35,
     'density': 5,
     'atomic_fraction': False},
@@ -54,13 +52,10 @@ misc_dict = {
 }
 
 def generate_one_sample():
-
-
-    
     # Generate the phases
     model = EDXS(**phases_dict["model_params"])
     phases =  generate_modular_phases(**phases_dict)
-    model.generate_g_matr(g_type="bremsstrahlung", elements=["Fe", "Mo", "Ca", "Si", "O", "Pt"] ,reference_elt={})
+    model.generate_g_matr(g_type="bremsstrahlung", elements=["Fe", "Mo", "Ca", "Si", "O", "Pt"] ,elements_dict={})
     G = model.G
 
     weights = generate_weights.generate_weights("laplacian", misc_dict["shape_2d"], n_phases=len(phases_dict["elts_dicts"]), seed=misc_dict["seed"], size_x = 10, size_y = 10)
@@ -74,9 +69,10 @@ def generate_one_sample():
     H = sample["H_flat"].T
 
     W = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
-    for i in range(10) : 
-        G = G_EDXS(model, {"g_type" : "bremsstrahlung", "elements" : ["Fe", "Mo", "Ca", "Si", "O", "Pt"]},W[:-2,:],G)
-        W = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
+    # for i in range(10) : 
+    #     G = model.NMF_update(W)
+    #     W = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
+
 
     w = np.array(misc_dict["densities"])
     N = misc_dict["N"]
@@ -121,7 +117,7 @@ def test_general():
     np.testing.assert_allclose(D, D2, atol=6e-2)
 
     # Check if we can recover D, H from W and Xdot 
-    estimator = SmoothNMF(G=G,n_components= 2,max_iter=200,simplex_W=True, simplex_H = False, mu = 0, epsilon_reg = 1, hspy_comp = False)
+    estimator = SmoothNMF(G=G,n_components= 2,max_iter=200,simplex_W=False, simplex_H = True, mu = 0, epsilon_reg = 1, hspy_comp = False)
     D2 = estimator.fit_transform( W=W, X=Xdot)
     H2 = estimator.H_ 
     np.testing.assert_allclose(D, D2, atol=3e-2)

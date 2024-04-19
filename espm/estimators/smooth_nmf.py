@@ -284,7 +284,7 @@ class SmoothNMF(NMFEstimator):
                                       l2=self.l2,
                                       simplex_W=self.simplex_W,
                                       fixed_W=self.fixed_W,
-                                      physics_model=self.physics_model)
+                                      physics_model=self.physics_model_)
         elif self.algo=="bmd":
             W = multiplicative_step_w(self.X_,
                                       self.G_,
@@ -296,7 +296,7 @@ class SmoothNMF(NMFEstimator):
                                       simplex_W=self.simplex_W,
                                       fixed_W=self.fixed_W,
                                       use_bregman=True,
-                                      physics_model=self.physics_model)
+                                      physics_model=self.physics_model_)
         else:
             if self.linesearch:
                 Wold = W.copy()

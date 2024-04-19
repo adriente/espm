@@ -137,12 +137,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.log_shift = log_shift
         self.debug = debug
         self.l2 = l2
-        if isinstance(G, PhysicalModel):
-            self.physics_model = G
-            self.G = G.NMF_update()
-        else:
-            self.physics_model = None
-            self.G = G
+        self.G = G
         self.shape_2d = shape_2d
         self.eval_print = eval_print
         self.true_D = true_D
@@ -264,8 +259,12 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             self.norm_factor_ = normalization_factor(self.X_,self.n_components)
             self.X_ = self.norm_factor_ * self.X_
         
-
-        G = self.G
+        if isinstance(self.G, PhysicalModel):
+            self.physics_model_ = G
+            G = G.NMF_update()
+        else:
+            self.physics_model_ = None
+            G = self.G
         
         self.G_, self.W_, self.H_ = initialize_algorithms(X = self.X_,
                                                           G = G,
@@ -276,8 +275,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                                                           random_state = self.random_state,
                                                           simplex_H = self.simplex_H,
                                                           simplex_W = self.simplex_W,
-                                                          physics_model = self.physics_model)
-        self.temp_init_GW = self.G_@self.W_
+                                                          physics_model = self.physics_model_)
+        
         if not(self.shape_2d is None) :
             self.L_ = create_laplacian_matrix(*self.shape_2d)
         else : 
@@ -377,8 +376,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     pass
                 # Update G might increase the loss so we reevaluate the loss to avoid artificial negative decrease
                 # We do this update every 10 iterations, but it is arbitrary.
-                if self.physics_model != None and self.n_iter_%10 == 0: 
-                    self.G_ = self.physics_model.NMF_update(W)
+                if self.physics_model_ != None and self.n_iter_%10 == 0: 
+                    self.G_ = self.physics_model_.NMF_update(W)
                     eval_before = self.loss(self.W_, self.H_)
                 else :
                     eval_before = eval_after

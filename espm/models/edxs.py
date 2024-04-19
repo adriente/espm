@@ -13,7 +13,7 @@ import re
 from espm.models import PhysicalModel
 from espm.models.EDXS_function import G_bremsstrahlung, continuum_xrays, gaussian, read_lines_db, read_compact_db, elts_dict_from_dict_list
 from espm.conf import DEFAULT_EDXS_PARAMS
-from espm.utils import arg_helper, symbol_to_number_dict, symbol_to_number_list, composition_parser
+from espm.utils import arg_helper, symbol_to_number_dict, symbol_to_number_list
 from espm.models.absorption_edxs import absorption_correction, det_efficiency, det_efficiency_from_curve, absorption_mass_thickness
 # Class to model the EDXS spectra. This is a temporary version since there are some design issues.
 
