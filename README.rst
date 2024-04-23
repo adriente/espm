@@ -41,8 +41,9 @@ The documentation is available at https://espm.readthedocs.io/en/latest/
 
 You can get started with the following notebooks:
 
-* https://espm.readthedocs.io/en/latest/introduction/notebooks/api.html
-* https://espm.readthedocs.io/en/latest/introduction/notebooks/toy-problem.html
+* Simulate STEM-EDXS data : https://espm.readthedocs.io/en/latest/introduction/notebooks/generate_data.ipynb
+* Physics-guided decomposition (ESpM-NMF) STEM-EDXS data : https://espm.readthedocs.io/en/latest/introduction/notebooks/api.html
+* Tests of the ESpM-NMF with a toy dataset : https://espm.readthedocs.io/en/latest/introduction/notebooks/toy-problem.html
 
 CITING
 ------

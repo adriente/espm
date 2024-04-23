@@ -84,16 +84,19 @@ Thanks to the physics-guided approach a direct quantification is possible.
 
 >>> spim.print_concentration_report()
 Concentrations report
-     p0     p1     p2
-V  : 0.0178 0.0061 0.0569 
-Rb : 0.5262 0.0609 0.3005 
-W  : 0.0379 0.0055 0.0326 
-N  : 0.0090 0.0913 0.0110 
-Yb : 0.0000 0.0901 0.0000 
-Pt : 0.0003 0.0179 0.0011 
-Al : 0.0000 0.1100 0.0000 
-Ti : 0.0000 0.0957 0.0000 
-La : 0.0000 0.2163 0.0000
++----------+-----------+-------------+-----------+------------+-----------+-------------+
+| Elements | p0 (at.%) |  p0 std (%) | p1 (at.%) | p1 std (%) | p2 (at.%) |  p2 std (%) |
++----------+-----------+-------------+-----------+------------+-----------+-------------+
+| V        |     4.277 |       0.815 |     0.345 |      5.236 |     0.000 |    5426.331 |
+| Rb       |    89.219 |       0.150 |     0.000 |   1217.568 |     0.000 |   10598.096 |
+| W        |     6.505 |       0.430 |     0.000 | 329274.377 |     0.000 |      93.434 |
+| N        |     0.000 | 3363320.886 |    52.263 |      0.848 |     0.000 |     423.423 |
+| Yb       |     0.000 | 1047375.510 |    38.941 |      0.306 |     0.000 | 1344821.409 |
+| Pt       |     0.000 | 1056115.710 |     8.450 |      0.663 |     0.000 |     172.134 |
+| Al       |     0.000 | 2353678.504 |     0.000 |    307.917 |    23.854 |       0.781 |
+| Ti       |     0.000 | 1773459.648 |     0.000 |    447.319 |    23.390 |       0.594 |
+| La       |     0.000 | 1510548.956 |     0.000 |  15734.933 |    52.756 |       0.337 |
++----------+-----------+-------------+-----------+------------+-----------+-------------+
 
 It uses algorithms that will be presented in a coming contribution.
 
@@ -101,7 +104,7 @@ These algorithms are an important part of this package. They are specialized to 
 
 .. math::
     
-    \dot{W}, \dot{H} = \arg\min_{W\geq\epsilon, H\geq\epsilon, \sum_i H_{ij}  = 1} D_{GKL}(X || GWH) + \lambda tr ( H^\top \Delta H) + \mu \sum_{i,j} (\log H_{ij} +  \epsilon_{reg})$$
+    \dot{W}, \dot{H} = \arg\min_{W\geq\epsilon, H\geq\epsilon, \sum_i H_{ij}  = 1} D_{GKL}(X || GWH) + \lambda tr ( H^\top \Delta H) + \mu \sum_{i,j} (\log H_{ij} +  \epsilon_{reg})
 
 Here :math:`D_{GKL}` is the fidelity term, i.e. the Generalized KL divergence 
 
@@ -128,11 +131,11 @@ The log regularization is defined as:
 
 where :math:`\epsilon_{reg}` is the slope of log regularization at 0. This term acts similarly to an L1 penalty but affects less larger values. 
 
-Finally, we assume :math:`W,H\geq \epsilon` and that the lines of :math:`H` sum to 1: 
+Finally, we assume :math:`W,H\geq \epsilon` and that the first :math:`M'` lines of :math:`W` sum to 1: 
 
 .. math:: 
     
-    \sum_i H_{ij}  = 1.
+    \sum_{i \leq M'} W_{ij}  = 1.
 
 The size of:
 

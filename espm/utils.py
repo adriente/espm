@@ -255,7 +255,7 @@ def approx_density(atomic_fraction = False,*,elements_dict = {}) :
         
         return density_of_mixture(list_wt,list_elts)
 
-def arg_helper(params, d_params):
+def arg_helper(params, d_params, replace = True):
     r""" Check if all parameter of d_params are in params. If not, they are added to params with the default value.
 
     Parameters
@@ -273,12 +273,12 @@ def arg_helper(params, d_params):
     """
     for key in d_params.keys():
         params[key] = params.get(key, d_params[key])
-        if isdict(params[key])  and isdict(d_params[key]):
-            params[key] = arg_helper(params[key], d_params[key])
-    check_keys(params, d_params)
+        if isdict(params[key]) and isdict(d_params[key]):
+            params[key] = arg_helper(params[key], d_params[key], replace=replace)
+    check_keys(params, d_params, replace = replace)
     return params
 
-def check_keys(params, d_params, upperkeys = '',toprint = True):
+def check_keys(params, d_params, upperkeys = '',toprint = True, replace = True):
     r""" Check if all parameter of d_params are in params. If not, they are added to params with the default value.
 
     Parameters
@@ -319,7 +319,15 @@ def check_keys(params, d_params, upperkeys = '',toprint = True):
 #                     check_keys(params[key],d_params[key],upperkeys=upperkeys+'[\'{}\']'.format(key))
                 if isdict(d_params[key]):
                     if toprint :
-                        check_keys(params[key],d_params[key],upperkeys=upperkeys+'[\'{}\']'.format(key))
+                        check_keys(params[key],d_params[key],upperkeys=upperkeys+'[\'{}\']'.format(key), toprint = toprint, replace = replace)
+            else:
+                if replace : 
+                    # If we prefer to keep the values of the default parameters
+                    pass
+                else : 
+                    # If we prefer to let the values of the default parameters unchanged
+                    # useful in EDS_espm to keep the original metadata
+                    params[key] = d_params[key]
     return True
 
 def isdict(p):

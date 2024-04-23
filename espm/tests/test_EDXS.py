@@ -51,7 +51,7 @@ def create_data()  :
     s.axes_manager[-1].scale = 0.1
     s.set_signal_type("EDS_espm")
     s.set_analysis_parameters()
-    s.add_elements(elements = ["Si","O","Fe","Ca"])
+    s.set_elements(elements = ["Si","O","Fe","Ca"])
     return s
 
 def test_lifshin_bremsstrahlung () : 

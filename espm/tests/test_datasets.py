@@ -13,6 +13,7 @@ import espm.weights.generate_weights as wts
 from espm.weights.generate_weights import generate_weights
 from espm.models.EDXS_function import elts_list_from_dict_list
 from espm.models.generate_EDXS_phases import generate_modular_phases
+from espm.estimators import SmoothNMF
 
 elts_dicts = [{"Fe" : 0.54860348,
                "Pt" : 0.38286879,
@@ -50,7 +51,7 @@ model_params = {"e_offset" : 0.2,
                     "Det" : "SDD_efficiency.txt"
                 }}  
 
-misc_params = {"N" : 40,
+misc_params = {"N" : 400,
                 "densities" : [1.3,1.6,1.9],
                 "data_folder" : "test_gen_data",
                 "seed" : 42,
@@ -230,6 +231,31 @@ def test_generate_gaussian_ripple() :
 #     unique_list = unique_elts(dicts)
 #     assert len(unique_list) == len(set(unique_list))
 
+def test_decomposition () :
+    if os.path.exists(str(DATASETS_PATH / Path(misc_params["data_folder"]))):
+        shutil.rmtree(str(DATASETS_PATH / Path(misc_params["data_folder"])))
+
+    phases1 = generate_modular_phases(elts_dicts = elts_dicts, brstlg_pars =  brstlg_pars, scales = scales, model_params = model_params)
+    maps = generate_weights(weight_type='sphere', shape_2d= misc_params["shape_2d"], n_phases=len(elts_dicts), seed=misc_params["seed"], radius = 15)
+    generate_dataset(base_seed=misc_params['seed'],
+                    sample_number=2,
+                    model_params = model_params,
+                    misc_params = misc_params,
+                    phases = phases1,
+                    weights = maps,
+                    elements = elements)
+
+    gen_folder = DATASETS_PATH / Path(misc_params["data_folder"])
+    gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
+    gen_si.change_dtype("float64")
+    gen_si.build_G()
+    est = SmoothNMF(n_components=3, G = gen_si.model, hspy_comp = True)
+    gen_si.decomposition(algorithm = est)
+    np.testing.assert_allclose((est.G_@est.W_@est.H_).sum(axis = 1), gen_si.X.sum(axis = 1), rtol = 0.5)
+    np.testing.assert_allclose(est.W_[:-2,:].sum(axis = 0), np.ones(3), rtol = 0.1)
+
+    shutil.rmtree(str(gen_folder))
+
 def test_spim () : 
 
     if os.path.exists(str(DATASETS_PATH / Path(misc_params["data_folder"]))):
@@ -272,8 +298,6 @@ def test_spim () :
 
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
     gen_si.build_G(problem_type = "bremsstrahlung",elements_dict = {"26" : 3.0})
-    print(gen_si.metadata.Sample.elements)
-    print(gen_si.metadata.EDS_model.elements)
     assert gen_si.G.shape == (1900, 11)
 
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
@@ -307,6 +331,19 @@ def test_spim () :
     assert gen_si.metadata.Acquisition_instrument.TEM.beam_energy == 100
     assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.take_off_angle == take_off_angle(4.0,2.0,3.0)
     assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.type.as_dictionary() == detector_dict
+    assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.width_slope == 0.3
+    assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.width_intercept == 65.0
+
+    gen_si.add_analysis_parameters(beam_energy = 200, azimuth_angle = 3.0, elevation_angle = 4.0, tilt_stage = 5.0, elements = ["Fe"], thickness = 400e-7, density = 3.5, detector_type = 'truc.txt', width_slope = 0.32, width_intercept = 85.0, xray_db = "400keV_xrays.json")
+
+    assert gen_si.metadata.Sample.thickness == 500e-7
+    assert gen_si.metadata.Sample.density == 4
+    assert gen_si.metadata.Sample.elements == ["Si", 'Fe'] or gen_si.metadata.Sample.elements == ["Fe", 'Si']
+    assert gen_si.metadata.xray_db == "100keV_xrays.json"
+    assert gen_si.metadata.Acquisition_instrument.TEM.Stage.tilt_alpha == 4.0
+    assert gen_si.metadata.Acquisition_instrument.TEM.beam_energy == 100
+    assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.take_off_angle == take_off_angle(4.0,2.0,3.0)
+    assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.type == 'truc.txt'
     assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.width_slope == 0.3
     assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.width_intercept == 65.0
 
@@ -363,7 +400,7 @@ def test_set_fixed_W() :
         s.axes_manager[-1].scale = 0.1
         s.set_signal_type("EDS_espm")
         s.set_analysis_parameters()
-        s.add_elements(elements = ["Si","O","Fe","Ca"])
+        s.set_elements(elements = ["Si","O","Fe","Ca"])
         return s
     
     s = create_data()

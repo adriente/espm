@@ -54,9 +54,23 @@ First patch release
 
 First major update
 
+In the following we refer to an instance of `espm.datasets.EDS_espm` as `spim`.
+
 Conceptual changes : 
 * In ESpM-NMF 
 
 Syntax changes :
 * In `spim.build_G()`, the keyword argument to separate high and low energy lines in the G matrix is now `elements_dict` instead of `reference_elt`. The dictionary allows atomic number or chemical symbol notation.
-* 
+* When calling `espm.estimators.SmoothNMF`, prefer the use of `spim.model` instead of `spim.G` to pass the EDXS modelling.
+* The metadata of the `spim` can be set in two ways : 
+    * with the set functions `spim.set_analysis_parameters` that replace the existing metadata.
+    * with the add functions `spim.add_analysis_parameters` that do not replace the existing metadata.
+
+Conceptual changes :
+* The `espm.estimators.SmoothNMF` object can take G as a keyword argument. The argument accepts either a `numpy.ndarray` (that can be called with `spim.G`) or an instance of `espm.models.EDXS` (that can be called with `spim.model`).
+* When calling, for example, `spim.build_G(elements_dict = {'Fe' : 4.0})` the Fe lines are split between high and low energy lines. Now, in the simplex constraint and in the quantification, the low energy lines are ignored.
+
+New features :
+* The `espm.datasets.EDS_espm.estimate_best_binning` can be used to estimate the best binning factor to apply on the data before performing the ESpM-NMF decompostion. Use the output (`bb`) of this function in `spim.rebin(scale = bb )` to apply the binning.
+* An alternative init for the ESpM-NMF decompostion can be activated by executing `spim.custom_init = True`. It works only when using `G = spim.model` in `espm.estimators.SmoothNMF`.
+* The `spim.print_concentration_report` was improved thanks to the `prettytable` package. Statistical errors on the quantifications are now displayed.

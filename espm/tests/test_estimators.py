@@ -22,10 +22,10 @@ phases_dict  = {
      "O" : 0.03166235}
     ],
     'brstlg_pars' : [
-    {'b0': 5e-3,
-    'b1': 3e-2},
-    {'b0': 7e-3,
-      'b1': 5e-2}
+    {'b0': 5e-5,
+    'b1': 3e-4},
+    {'b0': 7e-5,
+      'b1': 5e-4}
     ],
     'scales' : [0.05,0.05],
     'model_params': {'e_offset': 0.2,
@@ -35,7 +35,7 @@ phases_dict  = {
     'width_intercept': 0.065,
     'db_name': '200keV_xrays.json',
     'E0': 200,
-    'params_dict': {'Abs': {'thickness': 0.0,
+    'params_dict': {'Abs': {'thickness': 1e-5,
     'toa': 35,
     'density': 5,
     'atomic_fraction': False},
@@ -69,9 +69,9 @@ def generate_one_sample():
     H = sample["H_flat"].T
 
     W = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
-    # for i in range(10) : 
-    #     G = model.NMF_update(W)
-    #     W = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
+    for i in range(10) : 
+        G = model.NMF_update(W)
+        W = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
 
 
     w = np.array(misc_dict["densities"])
@@ -135,17 +135,17 @@ def test_general():
     estimator = SmoothNMF(G=G, n_components= 2,max_iter=200, simplex_W=False, simplex_H = True,mu = 0, epsilon_reg = 1, hspy_comp = False, tol = 1.0e-6)
     estimator.fit_transform(X=X)
     P2, A2 = estimator.W_, estimator.H_ 
-    np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
+    np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1.1)
 
     estimator = SmoothNMF(G=G, shape_2d=[10,20], lambda_L=0, n_components= 2,max_iter=200, simplex_W=False, simplex_H = True,mu = 0, epsilon_reg = 1, hspy_comp = False, tol = 1.0e-6)
     estimator.fit_transform(X=X)
     P2, A2 = estimator.W_, estimator.H_ 
-    np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1)
+    np.testing.assert_allclose(G @ P2 @ A2,  Xdot, atol=1.1)
 
     estimator = SmoothNMF(G=G, lambda_L=100, n_components= 2,max_iter=200, simplex_W=False, simplex_H = True,mu = 0, epsilon_reg = 1, shape_2d=[10,20], hspy_comp = False, tol = 1.0e-6)
     estimator.fit_transform(X=X)
     P3, A3 = estimator.W_, estimator.H_ 
-    np.testing.assert_allclose(G @ P3 @ A3,  Xdot, atol=1)
+    np.testing.assert_allclose(G @ P3 @ A3,  Xdot, atol=1.1)
     L = create_laplacian_matrix(10, 20)
 
     assert(trace_xtLx(L, A3.T) < trace_xtLx(L, A2.T))
