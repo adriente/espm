@@ -74,3 +74,10 @@ New features :
 * The `espm.datasets.EDS_espm.estimate_best_binning` can be used to estimate the best binning factor to apply on the data before performing the ESpM-NMF decompostion. Use the output (`bb`) of this function in `spim.rebin(scale = bb )` to apply the binning.
 * An alternative init for the ESpM-NMF decompostion can be activated by executing `spim.custom_init = True`. It works only when using `G = spim.model` in `espm.estimators.SmoothNMF`.
 * The `spim.print_concentration_report` was improved thanks to the `prettytable` package. Statistical errors on the quantifications are now displayed.
+
+1.1.1 (2024-04-25)
+------------------
+
+Patch of the 1.1.0
+
+* Fixing the version of traits, hyperspy 2.0.0 is not compatible with traits 6.0.0 and above.

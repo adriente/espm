@@ -29,6 +29,14 @@ If you want to develop, please use the option::
     $ pip install cython
     $ pip install -e ."[dev]" 
 
+If you get issues regarding pandoc when using `make doc`, you can install it using::
+
+    $ sudo apt-get install pandoc
+
+or
+    
+    $ conda install pandoc
+
 Getting started
 ---------------
 Try the api.ipynb notebook in the `notebooks` folder.

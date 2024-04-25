@@ -5,7 +5,7 @@ with open("README.rst", "r") as fh:
 
 setuptools.setup(
     name='espm',
-    version='1.1.0',
+    version='1.1.1',
     description='Electron SPectro-Microscopy Python Library',
     url='https://github.com/adriente/espm',
     author='Adrien Teurtie, Nathanael Perraudin',
@@ -40,7 +40,7 @@ setuptools.setup(
     ],
     install_requires=[
         #'hyperspy<2.0.0', 'tqdm', 'lmfit', 'scikit-learn', 'traits @ git+https://github.com/enthought/traits.git'
-        'hyperspy>=2.0.0', 'exspy', 'tqdm', 'lmfit', 'scikit-learn', 'traits @ git+https://github.com/enthought/traits.git'
+        'hyperspy>=2.0.0', 'exspy', 'tqdm', 'lmfit', 'scikit-learn', 'traits<6.0.0'
     ],
     python_requires='>=3.8',
 )
