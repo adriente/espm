@@ -5,7 +5,7 @@ from scipy.sparse import lil_matrix, block_diag
 from scipy.optimize import nnls
 from espm.conf import SYMBOLS_PERIODIC_TABLE, NUMBER_PERIODIC_TABLE
 import json
-from hyperspy.misc.material import atomic_to_weight, density_of_mixture
+from exspy.misc.material import atomic_to_weight, density_of_mixture
 from functools import wraps
 import re
 import espm
@@ -682,7 +682,7 @@ def erode_masks(masks,erosion_radius=1,footprint = np.ones((3,3)),extra_safe = F
 
     extra_safe: bool
         Perfroms erosion before opening/closing. In practice it creats a harsher erosion."""
-
+    out = masks.copy()
     if out.ndim>2:
         for i,m in enumerate(out):
             if erosion_radius > 0 and extra_safe:

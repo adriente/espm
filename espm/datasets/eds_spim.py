@@ -13,7 +13,7 @@ from hyperspy.signals import Signal1D
 from hyperspy.roi import RectangularROI
 from espm.models import EDXS
 from espm.models.edxs import G_EDXS
-from hyperspy.misc.eds.utils import take_off_angle
+from exspy.misc.eds.utils import take_off_angle
 from espm.utils import number_to_symbol_list
 import numpy as np
 from espm.estimators import NMFEstimator
@@ -712,7 +712,8 @@ class EDS_espm(Signal1D) :
             
         self.quantification_list = qs
         self.quantification_signal = wh
-        self.quantification_signal.metadata = self.metadata.deepcopy()
+
+        for k,m in self.metadata: self.quantification_signal.metadata.set_item(k,m)
         self.quantification_signal.metadata.set_item("Sample.elements", els_names)
         self.quantification_signal.metadata.set_item("Signal.quantity" ,"Atomic %")
         self.quantification_signal.axes_manager[0].name = "Elements"
