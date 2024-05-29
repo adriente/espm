@@ -33,7 +33,7 @@ If you get issues regarding pandoc when using `make doc`, you can install it usi
 
     $ sudo apt-get install pandoc
 
-or
+or::
     
     $ conda install pandoc
 
