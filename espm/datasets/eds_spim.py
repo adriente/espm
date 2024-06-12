@@ -818,6 +818,76 @@ class EDS_espm(Signal1D) :
                              color = ["k"]+list(mpl.colors.TABLEAU_COLORS.values())*10)
 
         return
+    
+    
+    def plot_data_model_ROI(self):
+        r"""
+        Plots ESPM EDXS model fit results on the experimental data, summed over the chosen region of interest.
+
+        Parameters
+        ----------
+        None : 
+            The data are taken from a previous decomposition.
+        
+        Returns
+        -------
+        None
+        """
+        
+        W = self.learning_results.decomposition_algorithm.W_
+        G = self.learning_results.decomposition_algorithm.G_
+        H = self.learning_results.decomposition_algorithm.H_
+        if self.learning_results.navigation_mask is not None:
+            H = self.fix_masked_H()
+
+        WH = np.matmul(W, H)
+
+        contributions = [hs.signals.Signal1D((G[:, [i]] @ (WH)[[i], :]).T.reshape(self.data.shape)) for i in range(G.shape[1])]
+        contributions.append(hs.signals.Signal1D((np.matmul(G, WH)).T.reshape(self.data.shape)))
+
+        titles = self.get_full_el_list() + ["Background 1", "Background 2", "Full Model"]
+        for i, c in enumerate(contributions):
+            for a, b in zip(c.axes_manager._axes, self.axes_manager._axes):
+                a.update_from(b)
+            c.metadata.General.title = titles[i]
+
+        fig, ax = plt.subplots()
+        self.plot()
+
+        roi = hs.roi.RectangularROI(left = 0, top = 0, right = self.axes_manager[1].size, bottom = self.axes_manager[0].size)
+        
+        imr = roi.interactive(self, color = 'green').sum(axis = 0).sum(axis = 0)
+        contributions_roi = [roi.interactive(g, None).sum(axis = 0).sum(axis = 0) for g in contributions]
+
+        spectra = [imr] + contributions_roi
+        lines = []
+        
+        line, = ax.plot(imr.data, label = imr.metadata.General.title, linestyle = "-")
+        lines.append(line)
+        
+        for spectrum in contributions_roi:
+            line, = ax.plot(spectrum.data, label = spectrum.metadata.General.title, linestyle = "--")
+            lines.append(line)
+        
+        ax.legend()
+
+        def update_plot(*args, **kwargs):
+            imr = roi.interactive(self, color = 'green').sum(axis = 0).sum(axis = 0)
+            contributions_roi = [roi.interactive(g, None).sum(axis = 0).sum(axis = 0) for g in contributions]
+
+            all_data = [imr] + contributions_roi
+            for line, new_data in zip(lines, all_data):
+                line.set_ydata(new_data.data)
+
+            ax.relim()
+            ax.autoscale_view()
+            fig.canvas.draw_idle()
+
+        roi.events.changed.connect(update_plot)
+        update_plot()
+        plt.show()
+
+        return
 
     def create_masking_signal(self,skip_elements=None,use_nav_mask=False,use_comps=None):
 
