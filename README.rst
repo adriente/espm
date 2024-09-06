@@ -10,6 +10,8 @@ Even though the package is mainly centered around electron spectro-microscopy ap
 Currently espm supports the simulation and analysis of simultaneous scanning transmission electron microscopy and energy dispersive X-ray spectroscopy (STEM / EDXS). 
 In future implementation, we will try to extend the package to support electron energy loss spectroscopy (EELS).
 
+This library is integrated as much as possible in the `hyperspy <https://hyperspy.org>` and `scikit-learn <https://scikit-learn.org>` frameworks.
+
 The main components of the package are:
 - The simulation of STEM-EDXS datasets using :mod:`espm.datasets` which combines :mod:`espm.weights` for the simulation of spatial distributions and :mod:`èspm.models` for the simulation of spectra.
 - The hyperspectral unmixing of STEM-EDXS spectrum images using :mod:`espm.estimators`. This module contains algorithms to perform non-negative matrix factorization with diverse regularisation (e.g. Laplacian or L1) and contraints (e.g. simplex).
@@ -36,6 +38,23 @@ If you get issues regarding pandoc when using `make doc`, you can install it usi
 or::
     
     $ conda install pandoc
+
+Recommended Installation
+------------------------
+
+We recommend to install the package in a virtual environment using conda::
+
+    $ conda create -n espm python=3.11
+    $ conda activate espm
+    $ pip install espm
+
+We also recommend that you install the following packages in the same environment::
+
+    $ pip install pyqt5
+    $ pip install hyperspy_gui_traitsui
+    $ pip install hyperspy_gui_ipywidgets
+
+It is especially useful for the interactive plotting in the notebooks.
 
 Getting started
 ---------------

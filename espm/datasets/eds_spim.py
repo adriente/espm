@@ -410,7 +410,7 @@ class EDS_espm(Signal1D) :
         For example elements = ['Si', '26', 22] will result in ['Si', 'Fe', 'Ti'].
         """
         try : 
-            previous_elements = self.metadata.Sample.elements
+            previous_elements = list(self.metadata.Sample.elements)
             elements = list(set(elements + previous_elements))
             self.metadata.Sample.elements = elements
         except AttributeError :

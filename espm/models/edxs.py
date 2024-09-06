@@ -105,8 +105,9 @@ class EDXS(PhysicalModel):
                             ].T
                         )*D*A
         
-            
-            if np.max(peaks) > 0.0:
+            print(np.max(peaks, axis = 0))
+            print(str(elt))
+            if np.all((np.max(peaks, axis = 0)) > 0.0):
                 self.G = np.concatenate((self.G, peaks), axis=1)
                 if elt in reference_elt : 
                     self.model_elts.append(str(elt)+'_lo')
@@ -114,7 +115,8 @@ class EDXS(PhysicalModel):
                 else : 
                     self.model_elts.append(str(elt))
             else : 
-                print("No peak is present in the energy range for element : {}".format(elt))           
+                print("The energy split of the element : {} leads to empty G columns. Please remove split or change its energy.".format(elt))
+                raise ValueError("Empty G column")           
 
     @symbol_to_number_list
     @symbol_to_number_dict
@@ -161,6 +163,12 @@ class EDXS(PhysicalModel):
         
         # Reset the internally stored elements list
         self.model_elts = []
+
+        valid_elts = self.__check_elts_in_G(elements)
+        print('Input elements')
+        print(elements)
+        print('Valid elements')
+        print(valid_elts)
         
         if g_type == "bremsstrahlung" : 
             self.bkgd_in_G = True
@@ -168,7 +176,7 @@ class EDXS(PhysicalModel):
             self.bkgd_in_G = False
 
         # None is a default value for the G matrix and thus G will be considered to be the identity matrix in most of espm functions.
-        if len(elements) == 0:
+        if len(valid_elts) == 0:
             self.G = None
 
         elif g_type == "identity" : 
@@ -179,11 +187,11 @@ class EDXS(PhysicalModel):
             # The number of shells depend on the element, it is then not straightforward to pre-determine the size of g_matr
             self.G = np.zeros((self.x.shape[0], 0))
             # For each element we unpack all shells and then unpack all lines of each shell.
-            self.__add_elts_G(reference_elt = elements_dict, elements = elements)
+            self.__add_elts_G(reference_elt = elements_dict, elements = valid_elts)
             
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
-                approx_elts = {key : 1.0/len(elements) for key in elements}
+                approx_elts = {key : 1.0/len(valid_elts) for key in valid_elts}
                 brstlg_spectrum = G_bremsstrahlung(self.x,self.E0,self.params_dict,elements_dict=approx_elts)
                 if np.max(brstlg_spectrum) > 0.0 : 
                     self.G = np.concatenate((self.G, brstlg_spectrum), axis=1)
@@ -200,7 +208,29 @@ class EDXS(PhysicalModel):
             self.G /= self.norm
         else : 
             print("g_type has to be one of those : \"bremsstrahlung\", \"no_brstlg\" or \"identity\". G will be None, corresponding to \"identity\". ")
+    
+    def __check_elts_in_G(self, elements):
+        """
+        Check if the elements of the metadata are in the range of the energy axis.
+        """
+        valid_elts = []
+        for elt in elements:
+            if self.lines : 
+                energies, cs = read_lines_db(elt,self.db_dict)
+            else : 
+                energies, cs = read_compact_db(elt,self.db_dict)
 
+            energy_range = [np.min(self.x), np.max(self.x)]
+            found = 0
+            for energy in energies:
+                if (energy > energy_range[0]) and (energy < energy_range[1]):
+                    valid_elts.append(elt)
+                    found = 1
+                    break
+            if not found:
+                print("No peak is present in the energy range for element : {}".format(elt))
+        return valid_elts
+    
     def generate_phases(self, phases_parameters) : 
         r"""
         Generate a series of spectra from list of phase parameters. 
