@@ -89,7 +89,7 @@ Patch of the 1.1.0
 1.1.2 (2024-09-09)
 ------------------
 
-Patch of the 1.1.1
+Patch of the 1.1.1 to fix the compatibility with hyperspy 2.0.0
 
 * Switching back to traits 6.0.0 and above that is now compatible with hyperspy 2.0.0 and above.
 * Update of the notebooks to be compatible with the new version of the package.
