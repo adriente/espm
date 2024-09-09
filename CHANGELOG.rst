@@ -85,3 +85,12 @@ New features :
 Patch of the 1.1.0
 
 * Fixing the version of traits, hyperspy 2.0.0 is not compatible with traits 6.0.0 and above.
+
+1.1.2 (2024-09-09)
+------------------
+
+Patch of the 1.1.1
+
+* Switching back to traits 6.0.0 and above that is now compatible with hyperspy 2.0.0 and above.
+* Update of the notebooks to be compatible with the new version of the package.
+* Adding a filter to the generation of the G matrix so that lines outside the energ range are correctly ignored.
