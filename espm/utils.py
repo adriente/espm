@@ -593,6 +593,15 @@ def fancy_cluster_plot(s):
         data = s.get_cluster_labels().data
     elif isinstance(s,np.ndarray):
         data = s
+
+    if isinstance(s,np.ndarray) and len(s.shape)==2:
+        n = data.max()+1
+        cmap = mpl.colors.ListedColormap(seaborn.color_palette("bright",n))
+        hs.signals.Signal2D(data).plot(cmap=cmap)
+        return
+
+
+
     n = data.shape[0]
     d = (data*np.array(range(1,n+1))[:,np.newaxis,np.newaxis]).sum(0).astype("float")
     d[d==0]=np.nan
