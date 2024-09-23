@@ -404,8 +404,11 @@ def get_explained_intensity_W(G, W, H) :
 
     """
     # I couldn't find a linear algebra trick
-    int_matrix = np.zeros(W.shape)
-    for i in range(W.shape[0]) : 
-        for j in range(W.shape[1]) : 
-            int_matrix[i,j] = np.sum(G[:,i, np.newaxis]*W[i,j]*H[np.newaxis,j,:])
+    #int_matrix = np.zeros(W.shape)
+    #for i in range(W.shape[0]) : 
+    #    for j in range(W.shape[1]) : 
+    #        int_matrix[i,j] = np.sum(G[:,i, np.newaxis]*W[i,j]*H[np.newaxis,j,:])
+
+    init_matrix =G.sum(0)[:,np.newaxis]*W*H.sum(1)[np.newaxis,:] #This?
+
     return int_matrix
