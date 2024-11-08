@@ -994,9 +994,10 @@ class EDS_espm(Signal1D) :
         eax = self.axes_manager[-1]
         ch2 = eax.value2index(current_e2)
         old_scale = eax.scale
+        old_offset = eax.offset
 
         new_scale = old_scale*(energy_right_peak-energy_left_peak)/(current_e2-current_e1)
-        new_offset = energy_right_peak-ch2*new_scale
+        new_offset = energy_right_peak-(current_e2-old_offset)*new_scale/old_scale
         print(new_scale)
         print(new_offset)
         with self.axes_manager.events.any_axis_changed.suppress():
