@@ -981,9 +981,9 @@ class EDS_espm(Signal1D) :
 
         hs.interactive(self.fit_plot_gauss,event = roi1.events.changed,roi_signal = roi_signal1,a=a,roi = roi1,i=1)
         hs.interactive(self.fit_plot_gauss,event = roi2.events.changed,roi_signal = roi_signal2,a=a,roi = roi2,i=2)
-        print("When ready, run self.calibrate_lines_to(enery_left_peak,energy_right_peak)")
+        print("When ready, run self.apply_interactive_calibration(enery_left_peak,energy_right_peak)")
 
-    def calibrate_lines_to(self,energy_left_peak,energy_right_peak):
+    def apply_interactive_calibration(self,energy_left_peak,energy_right_peak):
         #Dumbass hyperspy keeps events linked and has no "remove events" method
         self.axes_manager.events.any_axis_changed.trigger = hyperspy.events.Event().trigger
         self.axes_manager.events.any_axis_changed._connected_some={}
