@@ -23,6 +23,8 @@ import hyperspy.api as hs
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from espm.utils import num_to_symbol
+from scipy.optimize import curve_fit
+import hyperspy.events
 
 class EDS_espm(Signal1D) : 
 
@@ -961,6 +963,70 @@ class EDS_espm(Signal1D) :
         return p_contrib
 
 
+    def calibrate_from_lines(self):
+        self._gauss_means=np.zeros(2)
+        a = self.sum((0,1))
+        b = a.deepcopy()
+        b.data=np.zeros(b.data.shape)
+        a.plot()
+        hs.plot.plot_spectra([b,b],fig=plt.gcf(),ax=plt.gca(),color="k",linewidth=2)
+        eax = self.axes_manager[-1].axis
+        ne = self.axes_manager[-1].axis.shape[0]
+
+        roi1 = hs.roi.SpanROI(left=eax[ne//5],right=eax[2*ne//5])
+        roi_signal1 = roi1.interactive(a,color="blue")
+
+        roi2 = hs.roi.SpanROI(left=eax[3*ne//5],right=eax[4*ne//5])
+        roi_signal2 = roi2.interactive(a)
+
+        hs.interactive(self.fit_plot_gauss,event = roi1.events.changed,roi_signal = roi_signal1,a=a,roi = roi1,i=1)
+        hs.interactive(self.fit_plot_gauss,event = roi2.events.changed,roi_signal = roi_signal2,a=a,roi = roi2,i=2)
+        print("When ready, run self.calibrate_lines_to(enery_left_peak,energy_right_peak)")
+
+    def calibrate_lines_to(self,energy_left_peak,energy_right_peak):
+        #Dumbass hyperspy keeps events linked and has no "remove events" method
+        self.axes_manager.events.any_axis_changed.trigger = hyperspy.events.Event().trigger
+        self.axes_manager.events.any_axis_changed._connected_some={}
+        
+
+        current_e1 = min(self._gauss_means)
+        current_e2 = max(self._gauss_means)
+        eax = self.axes_manager[-1]
+        ch2 = eax.value2index(current_e2)
+        old_scale = eax.scale
+
+        new_scale = old_scale*(energy_right_peak-energy_left_peak)/(current_e2-current_e1)
+        new_offset = energy_right_peak-ch2*new_scale
+        print(new_scale)
+        print(new_offset)
+        with self.axes_manager.events.any_axis_changed.suppress():
+            self.axes_manager[-1].scale = new_scale
+        self.axes_manager[-1].offset = new_offset
+        return
+
+
+
+
+
+    def fit_plot_gauss(self,roi_signal,a,roi,i):
+
+        x = a.axes_manager[-1].axis
+        y = np.zeros(a.data.shape)
+        eax = a.axes_manager[-1]
+        y[eax.value2index(roi.left):eax.value2index(roi.right)]=roi_signal.data
+        
+        mean = (x*y).sum()/y.sum()
+
+        sigma =  np.sqrt((y * (x - mean)**2).sum() / y.sum())
+        popt,pcov = curve_fit(Gauss, x, y, p0=[max(y),mean ,sigma])
+        self._gauss_means[i-1]=popt[1]
+        
+        fig = plt.gcf()
+        l = fig.axes[0].lines[i] 
+        l.set_ydata(Gauss(x,*popt))
+        fig.canvas.draw()
+
+
         
 
 
@@ -1006,4 +1072,7 @@ def build_G(model, g_params) :
     return model.G
 
 
+
+def Gauss(x, a, x0, sigma):
+    return a * np.exp(-(x - x0)**2 / (2 * sigma**2))
 
