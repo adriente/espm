@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["espm", "espm.datasets", "espm.estimators", "espm.models", "espm.tables", "espm.tests", "espm.weights"]
+
+[project]
+name = "espm"
+version = "1.2.1"
+description = "Electron SPectro-Microscopy Python Library"
+requires-python = ">=3.8"
+readme = "README.rst"
+keywords=[
+    "python",
+    "data analysis",
+    "microscopy",
+    "electron microscopy",
+    "energy-dispersive X-ray spectroscopy",
+    "X-ray energy-dispersive spectroscopy",
+    "EDS",
+    "EDX",
+    "STEM",
+]
+classifiers = [
+    'Development Status :: 5 - Production/Stable',
+    'Intended Audience :: Science/Research',
+    'Intended Audience :: End Users/Desktop',
+    'Intended Audience :: Developers', 'Natural Language :: English',
+    'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+    'Operating System :: MacOS :: MacOS X',
+    'Operating System :: POSIX :: Linux', 'Programming Language :: C',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.8',
+    'Topic :: Scientific/Engineering :: Mathematics',
+    'Topic :: Scientific/Engineering'
+]
+dependencies = [
+  "exspy==0.3.1",
+  "hyperspy==2.2.0",
+  "hyperspy-gui-ipywidgets==2.0.3",
+  "hyperspy-gui-traitsui==2.0.1",
+  "intervaltree==3.1.0",
+  "tqdm==4.67.0",
+  "prettytable==3.12.0",
+  "scikit-learn",
+  "pyqt5==5.15.10",
+  "traits==6.4.3",
+]
+
+[project.entry-points."hyperspy.extensions"]
+espm = "espm"
+
+[project.license]
+file = "Licence.txt"
+
+[project.optional-dependencies]
+"dev" = [
+  "numpydoc",
+  "flake8",
+  "sphinx",
+  "setuptools",
+  "jupyterlab",
+  "wheel",
+  "sphinxcontrib-bibtex",
+  "memory_profiler",
+  "sphinx-rtd-theme",
+  "sphinx-copybutton",
+  "nbsphinx",
+  "pandoc",
+]
+
+[project.urls]
+"Homepage" = "https://espm.readthedocs.io/en/latest/"
+"Bug Reports" = "https://github.com/adriente/espm/issues"
+"Source" = "https://github.com/adriente/espm"

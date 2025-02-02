@@ -85,9 +85,9 @@ def generate_spim(phases, weights, densities, N, seed=0,continuous = False):
         # return stochastic_spim
 
 
-def sample_to_EDS_espm(sample,elements = []) : 
+def sample_to_EDSespm(sample,elements = []) : 
     # data2spim
-    r"""Convert dataset to a custom hyperspy signal type called EDS_espm containing the noisy spectrum image as data, the ground truth as metadata and other useful information.
+    r"""Convert dataset to a custom hyperspy signal type called EDSespm containing the noisy spectrum image as data, the ground truth as metadata and other useful information.
     
     Parameters
     ----------
@@ -98,12 +98,12 @@ def sample_to_EDS_espm(sample,elements = []) :
 
     Returns
     -------
-    EDS_espm
+    EDSespm
         The hyperspy compatible signal object of the :mod:`espm.eds_spim` module.   
     """
 
     s = hs.signals.Signal1D(sample["X"])
-    s.set_signal_type("EDS_espm")
+    s.set_signal_type("EDS_espm_Simulated")
     model_params = sample["model_parameters"]
     misc_parameters = sample['misc_parameters']
     s.metadata.Truth = {}
@@ -132,7 +132,7 @@ def sample_to_EDS_espm(sample,elements = []) :
 
 def sample_to_Signal1D(sample) : 
     r"""
-    Same as :func:`espm.datasets.base.sample_to_EDS_espm` but for non-EDS data such as the toy dataset.
+    Same as :func:`espm.datasets.base.sample_to_EDSespm` but for non-EDS data such as the toy dataset.
     """
     s = hs.signals.Signal1D(sample["X"])
     s.metadata.Truth = {}
@@ -224,7 +224,7 @@ def generate_dataset(*args, base_path = DATASETS_PATH, sample_number = 10, base_
     for i in tqdm(range(sample_number)) : 
         sample = generate_spim_sample(*args, **kwargs, seed = base_seed + i)
         if sample["misc_parameters"]["model"] == "EDXS" : 
-            hs_sig = sample_to_EDS_espm(sample,elements = elements) 
+            hs_sig = sample_to_EDSespm(sample,elements = elements) 
         elif sample["misc_parameters"]["model"] == "Toy" : 
             hs_sig = sample_to_Signal1D(sample)  
             # ajouter save  

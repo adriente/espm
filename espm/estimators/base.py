@@ -233,8 +233,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         ############################
         # Initialize the algorithm #
         ############################
+
         if self.hspy_comp : 
             self.X_ = self._validate_data(X.T, dtype=[np.float64, np.float32])
+
         else : 
             self.X_ = self._validate_data(X, dtype=[np.float64, np.float32])
 
@@ -252,7 +254,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
         # The algorithm does not work when full columns or lines of X are zero
         self.X_ = self.remove_zeros_lines(self.X_, self.log_shift)
-
         self.const_KL_ = None
         if self.normalize : 
             # We normalize the data so that the strength of the regularization is somewhat the same for all datasets
@@ -276,7 +277,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                                                           simplex_H = self.simplex_H,
                                                           simplex_W = self.simplex_W,
                                                           physics_model = self.physics_model_)
-        
+
         if not(self.shape_2d is None) :
             self.L_ = create_laplacian_matrix(*self.shape_2d)
         else : 
@@ -309,6 +310,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 old_W, old_H = self.W_.copy(), self.H_.copy()
                 
                 self.W_, self.H_ = self._iteration(self.W_, self.H_ )
+
                 eval_after = self.loss(self.W_, self.H_)
                 self.n_iter_ +=1
                 

@@ -45,6 +45,8 @@ class EDXS(PhysicalModel):
         self.norm = 1.0
         self.model_elts = []
         self.custom_init = custom_init
+        # Tranfer the ranges from eds_espm to the physical model
+        self.ranges = None
 
     def __add_elts_G(self, reference_elt = {}, *, elements=[]):
         for elt in elements:
@@ -105,8 +107,8 @@ class EDXS(PhysicalModel):
                             ].T
                         )*D*A
         
-            print(np.max(peaks, axis = 0))
-            print(str(elt))
+            # print(np.max(peaks, axis = 0))
+            # print(str(elt))
             if np.all((np.max(peaks, axis = 0)) > 0.0):
                 self.G = np.concatenate((self.G, peaks), axis=1)
                 if elt in reference_elt : 
@@ -116,11 +118,49 @@ class EDXS(PhysicalModel):
                     self.model_elts.append(str(elt))
             else : 
                 print("The energy split of the element : {} leads to empty G columns. Please remove split or change its energy.".format(elt))
-                raise ValueError("Empty G column")           
+                raise ValueError("Empty G column") 
+
+    def _add_ignored_elts(self, elements = []) : 
+        for elt in elements:
+            if self.lines : 
+                energies, cs = read_lines_db(elt,self.db_dict)
+            else : 
+                energies, cs = read_compact_db(elt,self.db_dict)
+ 
+            peaks_list = []
+            for i, energy in enumerate(energies):
+                
+                # The actual detected width is calculated at each energy
+                if (energy > np.min(self.x)) and (energy < np.max(self.x)):
+                    
+                    if type(self.params_dict["Det"]) == str : 
+                        D = det_efficiency_from_curve(energy,self.params_dict["Det"])
+                    else : 
+                        D = det_efficiency(energy,self.params_dict["Det"])
+
+                    A = absorption_correction(energy,**self.params_dict["Abs"],elements_dict = {elt : 1.0})
+                    
+                    width = self.width_slope * energy + self.width_intercept
+                    
+
+                    peaks_list.append(
+                        (
+                        cs[i]
+                        * gaussian(self.x, energy, width / 2.3548)
+                    )*D*A
+                    )
+            peaks = np.array(peaks_list).T
+            if np.all((np.max(peaks, axis = 0)) > 0.0):
+                self.G = np.concatenate((self.G, peaks), axis=1)
+                for i in range(peaks.shape[1]) :  
+                    self.model_elts.append(str(elt) + '_ign' + str(i))
+            else : 
+                print("The energy split of the element : {} leads to empty G columns. Please remove split or change its energy.".format(elt))
+                raise ValueError("Empty G column")
 
     @symbol_to_number_list
     @symbol_to_number_dict
-    def generate_g_matr(self, g_type="bremsstrahlung",*,elements=[],elements_dict = {},**kwargs):
+    def generate_g_matr(self, g_type="bremsstrahlung", ignored_elements = ['Cu'],*,elements=[],elements_dict = {},**kwargs):
         r"""
         Generate the G matrix. With a complete model the matrix is (e_size,n+2). The first n columns correspond to the sum of X-ray characteristic peaks associated to each shell of the elements. The last 2 columns correspond to a bremsstrahlung model. 
         
@@ -164,11 +204,14 @@ class EDXS(PhysicalModel):
         # Reset the internally stored elements list
         self.model_elts = []
 
+        @symbol_to_number_list
+        def convert_elts(elements = ignored_elements) : 
+            return elements
+        
+        conv_ignored_elts = convert_elts(elements=ignored_elements)
+
         valid_elts = self.__check_elts_in_G(elements)
-        print('Input elements')
-        print(elements)
-        print('Valid elements')
-        print(valid_elts)
+        valid_ignored = self.__check_elts_in_G(conv_ignored_elts)
         
         if g_type == "bremsstrahlung" : 
             self.bkgd_in_G = True
@@ -187,7 +230,8 @@ class EDXS(PhysicalModel):
             # The number of shells depend on the element, it is then not straightforward to pre-determine the size of g_matr
             self.G = np.zeros((self.x.shape[0], 0))
             # For each element we unpack all shells and then unpack all lines of each shell.
-            self.__add_elts_G(reference_elt = elements_dict, elements = valid_elts)
+            self.__add_elts_G( reference_elt = elements_dict, elements = valid_elts)
+            self._add_ignored_elts(elements=valid_ignored)
             
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
@@ -199,7 +243,7 @@ class EDXS(PhysicalModel):
                     print("Bremsstrahlung parameters were not provided, bkgd not added in G")
                     self.bkgd_in_G = False
 
-            norms = np.sqrt(np.sum(self.G**2, axis=0, keepdims=True))
+            norms = np.sum(self.G, axis=0, keepdims=True)
             if g_type == "bremsstrahlung" : 
                 norms[0][:-2] = np.mean(norms[0][:-2])
             else : 
@@ -326,9 +370,32 @@ class EDXS(PhysicalModel):
         
         return temp
     
-    def get_elements(self) :
+    @symbol_to_number_dict
+    def bremsstrahlung_only_tools(self,*,mass_thickness = 1.0, ranges = None,elements_dict = {}):
+        self.params_dict['Abs']['density'] = mass_thickness
+        self.params_dict['Abs']['thickness'] = 1.0
+        brstlg_lines = G_bremsstrahlung(self.x,self.E0,self.params_dict,elements_dict=elements_dict)
+        norms = np.sum(brstlg_lines, axis=0, keepdims=True)
+        normed_brstlg = brstlg_lines/norms
+        mask = self.carac_X_span(ranges) 
+
+        filtered_brstlg = normed_brstlg[mask,:]
+
+        return filtered_brstlg, mask
+
+    def get_elements(self, include_ignored = True) :
+        ign = include_ignored
+        # If include_ignored is True, it means that this generator will pass once to capture ignored elements
+        # To automatically calculate bremsstrahlung windows it is important to include ignore elements
+        # To estimate mass-thickness (see eds_spim.py), it is important to remove ignored elements
         for elt in self.model_elts:
             if re.match(r'[0-9]*(_lo)',elt) : 
+                pass
+            elif re.match(r'[0-9]*(_ign)[0-9]*', elt) and ign :
+                m = re.match(r'([0-9]*)(_ign)([0-9]*)', elt)
+                yield m.group(1)
+                ign = False
+            elif re.match(r'[0-9]*(_ign)[0-9]*', elt) and not(ign) : 
                 pass
             elif re.match(r'[0-9]*(_hi)',elt) :
                 m = re.match(r'([0-9]*)(_hi)',elt) 
@@ -336,29 +403,47 @@ class EDXS(PhysicalModel):
             else : 
                 yield elt
         
-    def carac_X_span(self) : 
+    def carac_X_span(self, ranges = None, include_ignored = True) :
         all_indices = []
-        for elt in self.get_elements():
-            if self.lines : 
-                energies, cs = read_lines_db(elt,self.db_dict)
-            else : 
-                energies, cs = read_compact_db(elt,self.db_dict)
-            for energy in energies:
-                width = self.width_slope * energy + self.width_intercept
-                span = [energy - 2*width, energy + 2*width]
+        if ranges is not None : 
+            for span in ranges : 
                 indices = np.where((self.x > span[0]) & (self.x < span[1]))[0]
                 all_indices.append(indices)
-        return np.unique(np.concatenate(all_indices))
+        else : 
+            for elt in self.get_elements(include_ignored=include_ignored):
+                if self.lines : 
+                    energies, cs = read_lines_db(elt,self.db_dict)
+                else : 
+                    energies, cs = read_compact_db(elt,self.db_dict)
+                for energy in energies:
+                    width = self.width_slope * energy + self.width_intercept
+                    span = [energy - 2*width, energy + 2*width]
+                    indices = np.where((self.x > span[0]) & (self.x < span[1]))[0]
+                    all_indices.append(indices)
+
+        idx = np.unique(np.concatenate(all_indices))
+
+        # If we use manually selected windows, the mask is True in selected windows (i.e. bremsstrahlung)
+        # If we automatically set windows, the mask is False in spectral areas where there are caracteristic X-rays
+
+        if self.ranges is None : 
+            mask = np.ones(self.G.shape[0], bool)
+            mask[idx] = 0
+        else : 
+            mask = np.zeros(self.G.shape[0], bool)
+            mask[idx] = 1
+
+        return mask
     
     def NMF_initialize_W(self, D) :
         if self.G is None :
             raise ValueError('The G matrix is identity, the W matrix cannot be initialized. Please use a np.array for G in the ESpM-NMF instead of the model object')
         if self.bkgd_in_G and self.custom_init:
-            idx = self.carac_X_span()
-            mask = np.ones(self.G.shape[0], bool)
-            mask[idx] = 0
+            mask = self.carac_X_span(self.ranges)
+            anti_mask = np.logical_not(mask)
+            
             Wbrem = (np.linalg.lstsq(self.G[mask,-2:],D[mask,:],rcond = None)[0]).clip(min = 0)
-            Wcarac = (np.linalg.lstsq(self.G[idx,:-2],D[idx,:] ,rcond = None)[0]).clip(min = 0)
+            Wcarac = (np.linalg.lstsq(self.G[anti_mask,:-2],D[anti_mask,:] ,rcond = None)[0]).clip(min = 0)
             # filter = np.where(np.mean(self.G[:,:-2],axis=1)<(np.max(np.mean(self.G[:,:-2],axis=1))*0.001))[0]
             W = np.vstack((Wcarac,Wbrem))
         else :
@@ -375,6 +460,8 @@ class EDXS(PhysicalModel):
         # We skip the low energy lines
         for i, elt in enumerate(self.model_elts):
             if re.match(r'[0-9]*(_lo)',elt) : 
+                pass
+            elif re.match(r'[0-9]*(_ign)[0-9]*', elt) :
                 pass
             else : 
                 ind_list.append(i)
@@ -408,6 +495,6 @@ class EDXS(PhysicalModel):
         indices = self.NMF_simplex()
         mean_compo = np.mean(W[indices,:],axis=1)
         normed_compo = mean_compo/np.sum(mean_compo)
-        elements_dict = {key : normed_compo[i] for i,key in enumerate(self.get_elements())}
+        elements_dict = {key : normed_compo[i] for i,key in enumerate(self.get_elements(False))}
         bremsstrahlung = G_bremsstrahlung(self.x,self.E0,self.params_dict,elements_dict=elements_dict)
         return bremsstrahlung

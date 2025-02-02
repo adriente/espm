@@ -1,4 +1,4 @@
-from exspy.misc.material import _density_of_mixture
+from exspy.material import _density_of_mixture
 import numpy as np
 import espm.utils as u
 

@@ -1,7 +1,13 @@
 signals : 
-  EDS_espm:
+  EDSespm:
     signal_type: EDS_espm
     signal_dimension : 1
     dtype : real
     lazy : False
     module : espm.datasets.eds_spim
+  EDSespmSimulated:
+    signal_type: EDS_espm_Simulated
+    signal_dimension : 1
+    dtype : real
+    lazy : False
+    module : espm.datasets.eds_spim_sim

@@ -5,7 +5,7 @@ from scipy.sparse import lil_matrix, block_diag
 from scipy.optimize import nnls
 from espm.conf import SYMBOLS_PERIODIC_TABLE, NUMBER_PERIODIC_TABLE
 import json
-from exspy.misc.material import atomic_to_weight, density_of_mixture
+from exspy.material import atomic_to_weight, density_of_mixture
 from functools import wraps
 import re
 
@@ -326,7 +326,7 @@ def check_keys(params, d_params, upperkeys = '',toprint = True, replace = True):
                     pass
                 else : 
                     # If we prefer to let the values of the default parameters unchanged
-                    # useful in EDS_espm to keep the original metadata
+                    # useful in EDSespm to keep the original metadata
                     params[key] = d_params[key]
     return True
 

@@ -1,51 +1,105 @@
 r"""
-The module :mod:`espm.eds_spim` implements the :class:`EDS_espm` class, which is a subclass of the :class:`hyperspy.signals.Signal1D` class.
+The module :mod:`espm.eds_spim` implements the :class:`EDSespm` class, which is a subclass of the :class:`hyperspy.signals.Signal1D` class.
 The main purpose of this class is to provide an easy and clean interface between the hyperspy framework and the espm package: 
 - The metadata are organised to correspond as much as possible to the typical metadata that can be found in hyperspy EDS_TEM object.
-- The machine learning algorithms of espm can be easily applied to the :class:`EDS_espm` object using the standard hyperspy decomposition method. See the notebooks for examples.
-- The :class:`EDS_espm` provides a convinient way to:
+- The machine learning algorithms of espm can be easily applied to the :class:`EDSespm` object using the standard hyperspy decomposition method. See the notebooks for examples.
+- The :class:`EDSespm` provides a convinient way to:
     - get the results of :class:`espm.estimators.NMFEstimator`
     - access ground truth in case of simulated data
     - estimate best binning thanks to the method developed by G. Obozinski, N. Perraudin and M. Martinez Ruts.
     - set fixed W for the :class:`espm.estimators.NMFEstimator` decomposition
 """
 
-from  hyperspy.signals import Signal1D
+from exspy.signals import EDSTEMSpectrum
 from espm.models import EDXS
-from exspy.misc.eds.utils import take_off_angle
-from espm.utils import number_to_symbol_list, get_explained_intensity_W, arg_helper
+from exspy.utils.eds import take_off_angle
+from espm.utils import number_to_symbol_list, get_explained_intensity_W, symbol_to_number_list
 import numpy as np
 from espm.estimators import NMFEstimator
 import re
 import warnings
-from prettytable import PrettyTable, MSWORD_FRIENDLY
+from prettytable import PrettyTable
 from tqdm import tqdm
+from espm.estimators import SmoothNMF
+from espm.conf import NUMBER_PERIODIC_TABLE
+import json
+from hyperspy.signal_tools import Signal1DRangeSelector
+from hyperspy.ui_registry import get_gui
+import intervaltree
 
-class EDS_espm(Signal1D) : 
+NPT = json.load(open(NUMBER_PERIODIC_TABLE))
+
+class EDSespm(EDSTEMSpectrum) : 
+
+    _signal_type = "EDS_espm"
 
     def __init__ (self,*args,**kwargs) : 
         super().__init__(*args,**kwargs)
         self.shape_2d_ = None
-        self._phases = None
-        self._maps = None
         self._X = None
-        self._Xdot = None
-        self._maps_2d = None
         self.G_ = None
         self.model_ = None
         self.custom_init_ = None
+        self.ranges = None
+        self._set_default_analysis_params()
 
     ##############
     # Properties #
     ##############
 
+    def _set_default_analysis_params(self) :
+        # TODO : make them fetch preferences from the user 
+        md = self.metadata
+        md.Signal.signal_type = "EDS_espm"
+        
+        if "Acquisition_instrument.TEM.Detector.EDS.width_slope" not in md :
+            md.set_item("Acquisition_instrument.TEM.Detector.EDS.width_slope", 0.01)
+        if "Acquisition_instrument.TEM.Detector.EDS.width_intercept" not in md :
+            md.set_item("Acquisition_instrument.TEM.Detector.EDS.width_intercept", 0.065)
+        if "xrays_db" not in md :
+            md.set_item("xray_db", "200keV_xrays.json")
+        if "Acquisition_instrument.TEM.Detector.EDS.type" not in md :
+            md.set_item("Acquisition_instrument.TEM.Detector.EDS.type", "SDD_efficiency.txt")
+
+    def _check_metadata_G(self) : 
+        md = self.metadata
+
+        if "Sample.elements" not in md :
+            raise ValueError("The elements of the sample are missing in the metadata. Please use the set_elements method to set the elements.")
+        if "Acquisition_instrument.TEM.beam_energy" not in md :
+            raise ValueError("The beam energy is missing in the metadata. Please use the set_microscope_parameters method to set the beam energy.")
+        if "Sample.density" not in md :
+            raise ValueError("The density of the sample is missing in the metadata. Please use the set_analysis_parameters method to set the density.")
+        if "Sample.thickness" not in md :
+            raise ValueError("The thickness of the sample is missing in the metadata. Please use the set_analysis_parameters method to set the thickness.")
+        if "Acquisition_instrument.TEM.Detector.EDS.type" not in md :
+            raise ValueError("The detector type is missing in the metadata. Please use the set_analysis_parameters method to set the detector type.")
+        if "Acquisition_instrument.TEM.Detector.EDS.take_off_angle" not in md :
+            raise ValueError("The take-off angle is missing in the metadata. Please use the set_microscope_parameters method to set the take-off angle.")
+        if "Acquisition_instrument.TEM.Detector.EDS.width_slope" not in md :
+            raise ValueError("The width slope is missing in the metadata. Please use the set_analysis_parameters method to set the width slope.")
+        if "Acquisition_instrument.TEM.Detector.EDS.width_intercept" not in md :
+            raise ValueError("The width intercept is missing in the metadata. Please use the set_analysis_parameters method to set the width intercept.")
+        if "xray_db" not in md :
+            raise ValueError("The xray database is missing in the metadata. Please use the set_analysis_parameters method to set the xray database.")
+        
+    def _check_metadata_quantification(self) : 
+        md = self.metadata
+
+        if "Acquisition_instrument.TEM.Detector.EDS.geometric_efficiency" not in md :
+            raise ValueError("The geometric efficiency of the detector is missing in the metadata. Please use the set_analysis_parameters method to set the geometric efficiency.")
+        if "Acquisition_instrument.TEM.beam_current" not in md :
+            raise ValueError("The beam current is missing in the metadata. Please use the set_microscope_parameters method to set the beam current.")
+        if "Acquisition_instrument.TEM.Detector.EDS.real_time" not in md :
+            raise ValueError("The acquisition time is missing in the metadata. Please use the set_microscope_parameters method to set the acquisition time.")
+        
     @property
     def custom_init (self) :
         r"""
         Boolean setting whether using the custom_init (see espm.models.EDXS) or not.
         If True, the custom_init will be used to initialise the decomposition.
         If False, the default initialisation will be used.
-        If None, the custom_init will be set to False.
+        If None, the  will be set to False.
         """
         return self.custom_init_
     
@@ -71,51 +125,11 @@ class EDS_espm(Signal1D) :
             shape = self.axes_manager[1].size, self.axes_manager[0].size, self.axes_manager[2].size
             self._X = self.data.reshape((shape[0]*shape[1], shape[2])).T
         return self._X
-
-    @property
-    def Xdot (self) : 
-        r"""
-        The ground truth in the form of a 3D array of shape (shape_2d[0],shape_2d[1],n_features), if available.
-        """
-        if self._Xdot is None : 
-            try : 
-                self._Xdot = self.phases @ self.maps
-            except AttributeError : 
-                print("This dataset contains no ground truth. Nothing was done.")
-        return self._Xdot
-
-
-    @property
-    def maps (self) :
-        r"""
-        Ground truth of the spatial distribution of the phases in the form of a 3D array of shape (shape_2d[0],shape_2d[1],n_phases), if available.
-        """ 
-        if self._maps is None : 
-            self._maps = self.build_ground_truth()[1]
-        return self._maps
-
-    @property
-    def phases (self) : 
-        r"""
-        Ground truth of the spectra of the phases in the form of a 2D array of shape (n_phases,n_features), if available.
-        """
-        if self._phases is None : 
-            self._phases = self.build_ground_truth()[0]
-        return self._phases
-
-    @property
-    def maps_2d (self) : 
-        r"""
-        Ground truth of the spatial distribution of the phases in the form of a 2D array of shape (shape_2d[0]*shape_2d[1],n_phases), if available.
-        """
-        if self._maps_2d is None : 
-            self._maps_2d = self.build_ground_truth(reshape = False)[1]
-        return self._maps_2d
     
     @property
     def model(self) :
         r"""
-        The :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDS_espm` object.
+        The :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDSespm` object.
         """ 
         if self.model_ is None : 
             mod_pars = get_metadata(self)
@@ -125,7 +139,7 @@ class EDS_espm(Signal1D) :
     @property
     def G(self) :
         r"""
-        The G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDS_espm` object.
+        The G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDSespm` object.
         """
         if self.G_ is None : 
             try : 
@@ -135,40 +149,10 @@ class EDS_espm(Signal1D) :
                 warnings.warn("You did not used the build_G method to build the G matrix. In ESpM-NMF, an idenity matrix will be used for decomposition")
                 return None
         return self.G_
-    
-    ######################################
-    # Modelling and simulation functions #
-    ######################################
 
-    def build_ground_truth(self,reshape = True) : 
+    def build_G(self, problem_type = "bremsstrahlung",ignored_elements = ['Cu'],*, elements_dict = {}) :
         r"""
-        Get the ground truth stored in the metadata of the :class:`EDS_espm` object, if available. The reshape arguments can be used to get the ground truth in a form easier to use for machine learning algorithms.
-
-        Parameters
-        ----------
-        reshape : bool, optional
-            If False, the ground truth is returned in the form of a 3D array of shape (shape_2d[0],shape_2d[1],n_phases) and a 2D array of shape (n_phases,n_features).
-        
-        Returns
-        -------
-        phases : numpy.ndarray
-            The ground truth of the spectra of the phases.
-        weights : numpy.ndarray
-            The ground truth of the spatial distribution of the phases.
-        """
-        if "phases" in self.metadata.Truth.Data : 
-            phases = self.metadata.Truth.Data.phases
-            weights = self.metadata.Truth.Data.weights
-            if reshape : 
-                phases = phases.T
-                weights = weights.reshape((weights.shape[0]*weights.shape[1], weights.shape[2])).T
-        else : 
-            raise AttributeError("There is no ground truth contained in this dataset")
-        return phases, weights
-
-    def build_G(self, problem_type = "bremsstrahlung",*, elements_dict = {}) :
-        r"""
-        Build the G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDS_espm` object and stores it as an attribute.
+        Build the G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDSespm` object and stores it as an attribute.
 
         Parameters
         ----------
@@ -182,12 +166,12 @@ class EDS_espm(Signal1D) :
             For example elements_dict = {"26",3.0} will separate the characteristic X-rays of the element Fe into two energies ranges and assign them each a column in the G matrix. This is useful to circumvent issues with the absorption.
         Returns
         -------
-        G : None or numpy.ndarray or callable
-            The G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDS_espm` object.
+        None 
         """
+        self._check_metadata_G()
         self.problem_type = problem_type
         self.separated_lines = elements_dict
-        g_pars = {"g_type" : problem_type, "elements" : self.metadata.Sample.elements, "elements_dict" : elements_dict}
+        g_pars = {"g_type" : problem_type, 'ignored_elements' : ignored_elements, "elements" : self.metadata.Sample.elements, "elements_dict" : elements_dict}
 
         self.model.generate_g_matr(**g_pars)
         self.G_ = self.model.G
@@ -201,307 +185,206 @@ class EDS_espm(Signal1D) :
         self.metadata.EDS_model.norm = self.model.norm
 
     ############################
-    # Metadata and model setup #
+    # Bremsstrahlung functions #
     ############################
 
-    # So far we don't use exspy methods of setting metadata. 
-    # 1) I don't really remember why but we can't inherit from exspy signals (maybe it was a decomposition thing)
-    # TODO : Check the inheritance from exspy signals
-    # 2) exspy sets only the metadata that are explicitly filled in the argument of the metadata setting functions.
-    # It does not really work for us, since all the arguments are required to build the G matrix and the model.
-
-    def set_analysis_parameters(self,
-                                beam_energy = 200,
-                                azimuth_angle = 0.0,
-                                elevation_angle = 22.0,
-                                tilt_stage = 0.0,
-                                elements = [],
-                                thickness = 200e-7,
-                                density = 3.5,
-                                detector_type = "SDD_efficiency.txt",
-                                width_slope = 0.01,
-                                width_intercept = 0.065,
-                                xray_db = "default_xrays.json") :
+    def estimate_mass_thickness(self, ignored_elements = ['Cu'],*, elements_dict = {}) :
         r"""
-        Helper function to set the metadata of the :class:`EDS_espm` object. Be careful, it will overwrite the metadata of the object.
+        Based on the complete metadata of the :class:`EDSespm` object, this function estimates the mass thickness of the sample. This function derives the mass-thickness from the characteristic X-rays. Then the bremsstrahlung parameters are estimated using that mass-thickness. The process is then repeated ten times to ensure convergence. The results are plotted on the spectrum.
+
+        Check the metadata to read the estimated mass-thickness.
+        
+        Parameters
+        ----------
+        elements_dict : dict, optional
+            Dictionary containing atomic numbers and a corresponding cut-off energies. It is used to separate the characteristic X-rays of the given elements into two energies ranges and assign them each a column in the G matrix instead of having one column per element. This is useful to circumvent issues with the mass-absorption coefficient.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        The mass-thickness :math:`\rho t` in g.cm^-2 is estimated using the following formula:
+
+        .. math::
+            \rho t = \frac{H}{I \times 10^{-9} \times \tau \times N_e \times \sigma \times \Omega / (4\pi)}
+
+        where :math:`H` is the intensity of the characteristic X-rays, :math:`I` is the beam current in nA, :math:`\tau` is the acquisition time in seconds, :math:`N_e` is the number of electrons in a Coulomb, :math:`sigma` is the average X-ray emission cross-section, and :math:`\Omega` is the geometric efficiency of the detector in sr.
+
+        We recommend to use the :meth:`select_background_windows` method to select the background windows before running this method.
+        """
+        # Let's implement for 1D data first. So we sum over dimensions if needed.
+        self._check_metadata_G()
+        self._check_metadata_quantification()
+        if len(self.axes_manager.navigation_axes) > 0 : 
+            raise NotImplementedError('For now this function is not fully implemented for spectrum images. Use this on an extracted 1D spectrum.')
+        curr_X = self.data
+        
+        _ = 0
+        curr_mt = self.metadata.Sample.thickness * self.metadata.Sample.density
+        while _ < 10 :
+            # first init of the model
+            
+            self.build_G(ignored_elements= ignored_elements, elements_dict=elements_dict)
+            # First estimation of the bremsstrahlung + elts
+            if _ == 0 :
+                estimator = SmoothNMF(n_components = 1, G=self.model)
+            else :
+                estimator = SmoothNMF(n_components = 1, G=self.model, fixed_W = W_brstlg)
+            estimator.fit(curr_X[:,np.newaxis])
+            
+            # Get the elements, their concentrations and the mass_thickness value
+            W_init = estimator.W_
+            H_init = estimator.H_
+            
+            elts = list(self.model.get_elements(include_ignored = False))
+            elts_indices = self.model.NMF_simplex()
+            new_elts_dict = {elts[i] : W_init[elts_indices[i]] for i in range(len(elts))}
+            total_weight = self._elements_dict_to_weights(new_elts_dict)
+            curr_mt = self._extract_mass_thickness(H_init.sum(), total_weight)
+
+            # Compute another model with only the bremsstrahlung and get the masked data
+            brstlg_model, mask = self.model.bremsstrahlung_only_tools(mass_thickness=curr_mt,elements_dict = new_elts_dict, ranges = self.ranges)
+            masked_X = curr_X[mask]
+
+            # Estimate the bremsstrahlung
+            brstlg_estimator = SmoothNMF(n_components = 1, G=brstlg_model, fixed_H = H_init )
+            brstlg_estimator.fit(masked_X[:,np.newaxis])
+            W_brstlg = np.vstack(( -1 * np.ones((W_init.shape[0] - brstlg_estimator.W_.shape[0], brstlg_estimator.W_.shape[1])),brstlg_estimator.W_))
+            _ += 1
+
+            print("The current estimated mass-thickness is {} g.cm^-3".format(curr_mt),flush = True)
+
+        self.plot(True)
+        axis = self.axes_manager.signal_axes[0].axis
+        self._plot.signal_plot.ax.plot(axis,
+                                       estimator.G_@estimator.W_@estimator.H_,
+                                       'b-',
+                                       label = 'Full model')
+        self._plot.signal_plot.ax.plot(axis[mask],
+                                       brstlg_estimator.G@brstlg_estimator.W_@brstlg_estimator.H_,
+                                       'g.',
+                                       label = 'Bremmstrahlung')
+        self._plot.signal_plot.ax.legend()
+
+        self.metadata.Sample.thickness = 1.0
+        self.metadata.Sample.density = curr_mt
+
+    def _elements_dict_to_weights(self,elements_dict) :
+        """
+        Convert a dictionary of elements and their quantities to total weight.
 
         Parameters
         ----------
-        beam_energy : float, optional
-            The energy of the electron beam in keV.
-        azimuth_angle : float, optional
-            The azimuth angle of the EDS detector in degrees.
-        elevation_angle : float, optional
-            The elevation angle of the EDS detector in degrees.
-        tilt_stage : float, optional
-            The tilt angle of the sample stage in degrees (usually it correspond to alpha on FEI instruments).
-        elements : list, optional
-            List of the elements to be used in the analysis.
-        thickness : float, optional
-            The thickness of the sample in centimeters.
-        density : float, optional
-            The density of the sample in g/cm^3.
-        detector_type : str, optional
-            The type of the detector. It is either the name of a text file containing the efficiency or a modeling dictionary.
-            (see the espm.models.absorption_edxs.det_efficiency function)
-        width_slope : float, optional
-            The slope of the linear fit of the detector width as a function of the energy.
-        width_intercept : float, optional
-            The intercept of the linear fit of the detector width as a function of the energy.
-        xray_db : str, optional
-            The name of the X-ray emission cross-section database to be used. The default tables are avalaible in the espm/tables folder. Additional tables can be generated by emtables.
-        """
-        self.set_microscope_parameters(beam_energy = beam_energy,
-                                       azimuth_angle = azimuth_angle,
-                                       elevation_angle = elevation_angle,
-                                       tilt_stage = tilt_stage,
-                                       detector_type = detector_type)
-        self.set_elements(elements = elements)
-        self.set_additional_parameters(thickness = thickness,
-                                       density = density,
-                                       width_slope = width_slope,
-                                       width_intercept = width_intercept,
-                                       xray_db = xray_db)
-        
-    def add_analysis_parameters(self,
-                                beam_energy = 200,
-                                azimuth_angle = 0.0,
-                                elevation_angle = 22.0,
-                                tilt_stage = 0.0,
-                                elements = [],
-                                thickness = 200e-7,
-                                density = 3.5,
-                                detector_type = "SDD_efficiency.txt",
-                                width_slope = 0.01,
-                                width_intercept = 0.065,
-                                xray_db = "default_xrays.json") :
-        r"""
-        Helper function to set the metadata of the :class:`EDS_espm` object without overwriting the existing metadata.
+        elements_dict : dict
+            Dictionary containing atomic numbers as keys and quantities as values.
 
-        Parameters
-        ----------
-        beam_energy : float, optional
-            The energy of the electron beam in keV.
-        azimuth_angle : float, optional
-            The azimuth angle of the EDS detector in degrees.
-        elevation_angle : float, optional
-            The elevation angle of the EDS detector in degrees.
-        tilt_stage : float, optional
-            The tilt angle of the sample stage in degrees (usually it correspond to alpha on FEI instruments).
-        elements : list, optional
-            List of the elements to be used in the analysis.
-        thickness : float, optional
-            The thickness of the sample in centimeters.
-        density : float, optional
-            The density of the sample in g/cm^3.
-        detector_type : str, optional
-            The type of the detector. It is either the name of a text file containing the efficiency or a modeling dictionary.
-            (see the espm.models.absorption_edxs.det_efficiency function)
-        width_slope : float, optional
-            The slope of the linear fit of the detector width as a function of the energy.
-        width_intercept : float, optional
-            The intercept of the linear fit of the detector width as a function of the energy.
-        xray_db : str, optional
-            The name of the X-ray emission cross-section database to be used. The default tables are avalaible in the espm/tables folder. Additional tables can be generated by emtables.
+        Returns
+        -------
+        total_weight : float
+            Total weight of the elements in grams.
         """
-        self.add_microscope_parameters(beam_energy = beam_energy,
-                                       azimuth_angle = azimuth_angle,
-                                       elevation_angle = elevation_angle,
-                                       tilt_stage = tilt_stage,
-                                       detector_type = detector_type)
-        self.add_elements(elements = elements)
-        self.add_additional_parameters(thickness = thickness,
-                                        density = density,
-                                        width_slope = width_slope,
-                                        width_intercept = width_intercept,
-                                        xray_db = xray_db)
-        
-    def set_additional_parameters(self,thickness = 200e-7, density = 3.5, width_slope = 0.01, width_intercept = 0.065, xray_db = "default_xrays.json") : 
-        r"""
-        Helper function to set the metadata that are specific to the :mod:`espm` package so that it does not overwrite experimental metadata.
-        See the documentation of the :func:`set_analysis_parameters` function for the meaning of the parameters.
-        """
-        try : 
-            self.metadata.Sample.thickness = thickness
-            self.metadata.Sample.density = density
-        except AttributeError : 
-            self.metadata.Sample = {}
-            self.metadata.Sample.thickness = thickness
-            self.metadata.Sample.density = density
+        total_weight = sum(
+            quantity * NPT['table'][element]['atomic_mass'] * 1.66053906660e-24
+            for element, quantity in elements_dict.items()
+        )
+        return total_weight
 
-        self.metadata.xray_db = xray_db
+    def _extract_mass_thickness(self,H_value, total_weight) : 
+        Na = 6.02214179e23 # TODO : Check the usefulness of Na. 
+        # If I am correct the concentrations we guess have no unit.
+        # Since they are not in mole, no need to normalize using Na
+        Ne = 6.25e18 # Number of electrons in a Coulomb
+        # real time shound be the whole acquisition time (without dead time but with all pixels)
+        return H_value* total_weight/(self.metadata.Acquisition_instrument.TEM.beam_current * 1e-9 *
+                  self.metadata.Acquisition_instrument.TEM.Detector.EDS.real_time *
+                  Ne  * self.model.norm[0][0] *
+                  (self.metadata.Acquisition_instrument.TEM.Detector.EDS.geometric_efficiency/(4*np.pi))
+                  )
     
-        try : 
-            tilt_stage = self.metadata.Acquisition_instrument.TEM.Stage.tilt_alpha
-            azimuth_angle = self.metadata.Acquisition_instrument.TEM.Detector.EDS.azimuth_angle
-            elevation_angle = self.metadata.Acquisition_instrument.TEM.Detector.EDS.elevation_angle
-            current_dict = self.metadata.Acquisition_instrument.TEM.as_dictionary()
-            input_dict = {'Detector' : {'EDS' :
-                                            {
-                                            'width_slope' : width_slope,
-                                            'width_intercept' : width_intercept,
-                                            'take_off_angle' : take_off_angle(tilt_stage,azimuth_angle,elevation_angle)
-                                            }
-                                       }
-                         }            
-            new_dict = arg_helper(input_dict,current_dict, replace = True)
-            self.metadata.Acquisition_instrument.TEM = new_dict
-        except AttributeError :
-            print('The microscope parameters have not been set yet. Please use the set_microscope_parameters method first.') 
-        
-    def add_additional_parameters(self,thickness = 200e-7, density = 3.5, width_slope = 0.01, width_intercept = 0.065, xray_db = "default_xrays.json") : 
+    def select_background_windows(self, num_windows = 4, ranges = None) :
         r"""
-        Helper function to set the metadata that are specific to the :mod:`espm` package so that it does not overwrite experimental metadata.
-        See the documentation of the :func:`set_analysis_parameters` function for the meaning of the parameters.
-        """
-        try : 
-            self.metadata.Sample
-        except AttributeError : 
-            self.metadata.Sample = {}
-            self.metadata.Sample.thickness = thickness
-            self.metadata.Sample.density = density
-
-        try :
-            self.metadata.Sample.thickness
-        except AttributeError :
-            self.metadata.Sample.thickness = thickness
-
-        try :
-            self.metadata.Sample.density
-        except AttributeError :
-            self.metadata.Sample.density = density
-
-        try : 
-            self.metadata.xray_db
-        except AttributeError :
-            self.metadata.xray_db = xray_db
-
-        try : 
-            tilt_stage = self.metadata.Acquisition_instrument.TEM.Stage.tilt_alpha
-            azimuth_angle = self.metadata.Acquisition_instrument.TEM.Detector.EDS.azimuth_angle
-            elevation_angle = self.metadata.Acquisition_instrument.TEM.Detector.EDS.elevation_angle
-            current_dict = self.metadata.Acquisition_instrument.TEM.as_dictionary()
-            input_dict = {'Detector' : {'EDS' :
-                                            {
-                                            'width_slope' : width_slope,
-                                            'width_intercept' : width_intercept,
-                                            'take_off_angle' : take_off_angle(tilt_stage,azimuth_angle,elevation_angle)
-                                            }
-                                       }
-                         }            
-            new_dict = arg_helper(input_dict,current_dict, replace = False)
-            self.metadata.Acquisition_instrument.TEM = new_dict
-        except AttributeError :
-            print('The microscope parameters have not been set yet. Please use the set_microscope_parameters method first.')    
-
-
-    @number_to_symbol_list
-    def add_elements(self, *, elements = []) :
-        r"""
-        Add elements to the existing list of elements in the metadata.
+        Select the background windows for the bremsstrahlung estimation. The function will open a window with the spectrum and the user will be able to select the background windows by clicking and dragging the mouse. Click then on 'Apply' to validate the selection. A bremmstrahlung model will be estimated and plotted on the spectrum.
 
         Parameters
         ----------
-        elements : list, optional
-            List of the elements to be added to the existing list of elements in the metadata.
-        
-        Note :     
-        The input can be either atomic numbers or chemical symbols.
-        For example elements = ['Si', '26', 22] will result in ['Si', 'Fe', 'Ti'].
+        num_windows : int, optional
+            Number of background windows to select.
+        ranges : list, optional
+            List of tuples containing the left and right bounds of the background windows. If provided, the function will not open a window and will directly use the provided ranges, bypassing the gui.
+
+        Returns
+        -------
+        None
         """
-        try : 
-            previous_elements = list(self.metadata.Sample.elements)
-            elements = list(set(elements + previous_elements))
-            self.metadata.Sample.elements = elements
-        except AttributeError :
-            self.metadata.Sample = {}
-            self.metadata.Sample.elements = elements
+        # The code is quite dirty, but it works.
+        # To code a proper gui we need to wait for an update of hyperspy
+        if ranges is not None :
+           self.ranges = ranges
+           self.model.ranges = self.ranges
+        else :  
+            if len(self.axes_manager.navigation_axes) > 0 : 
+                raise NotImplementedError('For now this function is not fully implemented for spectrum images. Use this on an extracted 1D spectrum.')
+            cm = self._register_ranges
+            init_ranges = self._generate_ranges(num_windows)
+            self.spans = []
+            for i in range(num_windows) : 
+                self.spans.append(Signal1DRangeSelector(self))
+            
+            for j, span in enumerate(self.spans) : 
+                span.span_selector.extents = init_ranges[j]
+                span.on_close.append((cm, self))
+                get_gui(span, toolkey = "hyperspy.interactive_range_selector")
 
-    @number_to_symbol_list
-    def set_elements(self, *, elements = []) :
-        r"""
-        Replace elements with the input list in the metadata.
+    def _register_ranges(self,signal, left, right) : 
+        # The unused args are required for the event to properly complete
+        coord_list = [[span.ss_left_value, span.ss_right_value] for span in self.spans]
+        coord_list.sort(key = lambda coord : coord[0])
+        tree = intervaltree.IntervalTree.from_tuples(coord_list)
+        self.ranges = []
+        for branch in tree : 
+            self.ranges.append([branch[0], branch[1]])
 
-        Parameters
-        ----------
-        elements : list, optional
-            List of the elements to be added in the metadata. 
+        self.model.ranges = self.ranges
 
-        Note :     
-        The input can be either atomic numbers or chemical symbols.
-        For example elements = ['Si', '26', 22] will result in ['Si', 'Fe', 'Ti'].
-        """
-        try : 
-            self.metadata.Sample.elements = elements
-        except AttributeError :
-            self.metadata.Sample = {}
-            self.metadata.Sample.elements = elements
+        model = self._compute_bremsstrahlung()
+        self._plot_background(model)
 
-    def set_microscope_parameters(self, beam_energy = 200, azimuth_angle = 0.0, elevation_angle = 22.0,tilt_stage = 0.0, detector_type = "SDD_efficiency.txt") : 
-        r"""
-        Helper function to set the microscope parameters of the :class:`EDS_espm` object. Be careful, it will overwrite the microscope parameters of the object.
-        See the documentation of the :func:`set_analysis_parameters` function for the meaning of the parameters.
-        """
-        try : 
-            current_dict = self.metadata.Acquisition_instrument.as_dictionary()
-            input_dict = {'TEM' :
-                          {'Stage' : {'tilt_alpha' : tilt_stage},
-                           'Detector' : {'EDS' :
-                                         {'azimuth_angle' : azimuth_angle,
-                                          'elevation_angle' : elevation_angle,
-                                          'energy_resolution_MnKa' : 130.0}
-                                        },
-                          'beam_energy' : beam_energy
-                          }
-                         }
-            new_dict = arg_helper(input_dict,current_dict)
-            self.metadata.Acquisition_instrument = new_dict
-            self.metadata.Acquisition_instrument.TEM.Detector.EDS.type = detector_type
-        except AttributeError :
-            self.metadata.Acquisition_instrument = {}
-            self.metadata.Acquisition_instrument.TEM = {}
-            self.metadata.Acquisition_instrument.TEM.Stage = {}
-            self.metadata.Acquisition_instrument.TEM.Detector = {}
-            self.metadata.Acquisition_instrument.TEM.Detector.EDS = {}
-            self.metadata.Acquisition_instrument.TEM.beam_energy = beam_energy
-            self.metadata.Acquisition_instrument.TEM.Stage.tilt_alpha = tilt_stage
-            self.metadata.Acquisition_instrument.TEM.Detector.EDS.azimuth_angle = azimuth_angle
-            self.metadata.Acquisition_instrument.TEM.Detector.EDS.elevation_angle = elevation_angle
-            self.metadata.Acquisition_instrument.TEM.Detector.EDS.energy_resolution_MnKa = 130.0
-            self.metadata.Acquisition_instrument.TEM.Detector.EDS.type = detector_type
+    def _compute_bremsstrahlung(self) :
+        mt = self.metadata.Sample.density * self.metadata.Sample.thickness
+        elts_dict = {elt : 1.0 for elt in self.metadata.Sample.elements} 
+        brstlg_model, mask = self.model.bremsstrahlung_only_tools(mass_thickness=mt,elements_dict = elts_dict, ranges= self.ranges)
+        curr_X = self.data
+        masked_X = curr_X[mask]
 
-    def add_microscope_parameters(self, beam_energy = 200, azimuth_angle = 0.0, elevation_angle = 22.0,tilt_stage = 0.0, detector_type = "SDD_efficiency.txt") : 
-        r"""
-        Helper function to set the microscope parameters of the :class:`EDS_espm` object. Be careful, it will overwrite the microscope parameters of the object.
-        See the documentation of the :func:`set_analysis_parameters` function for the meaning of the parameters.
-        """
-        try : 
-            current_dict = self.metadata.Acquisition_instrument.as_dictionary()
-            input_dict = {'TEM' :
-                          {'Stage' : {'tilt_alpha' : tilt_stage},
-                           'Detector' : {'EDS' :
-                                         {'azimuth_angle' : azimuth_angle,
-                                          'elevation_angle' : elevation_angle,
-                                          'energy_resolution_MnKa' : 130.0}
-                                        },
-                          'beam_energy' : beam_energy
-                          }
-                         }
-            new_dict = arg_helper(input_dict,current_dict, replace = False)
-            self.metadata.Acquisition_instrument = new_dict
-            self.metadata.Acquisition_instrument.TEM.Detector.EDS.type = detector_type
-        except AttributeError :
-            self.metadata.Acquisition_instrument = {}
-            self.metadata.Acquisition_instrument.TEM = {}
-            self.metadata.Acquisition_instrument.TEM.Stage = {}
-            self.metadata.Acquisition_instrument.TEM.Detector = {}
-            self.metadata.Acquisition_instrument.TEM.Detector.EDS = {}
-            self.metadata.Acquisition_instrument.TEM.beam_energy = beam_energy
-            self.metadata.Acquisition_instrument.TEM.Stage.tilt_alpha = tilt_stage
-            self.metadata.Acquisition_instrument.TEM.Detector.EDS.azimuth_angle = azimuth_angle
-            self.metadata.Acquisition_instrument.TEM.Detector.EDS.elevation_angle = elevation_angle
-            self.metadata.Acquisition_instrument.TEM.Detector.EDS.energy_resolution_MnKa = 130.0
-            self.metadata.Acquisition_instrument.TEM.Detector.EDS.type = detector_type
+        # Estimate the bremsstrahlung on the partial data
+        brstlg_estimator = SmoothNMF(n_components = 1, G=brstlg_model)
+        brstlg_estimator.fit(masked_X[:,np.newaxis])
+        # get the fitting results
+        fH = brstlg_estimator.H_
+        fW = brstlg_estimator.W_
+
+        # Now adapt to the full range
+        # It is not super efficient but I think it is not an issue. The model can't be easily continued, it is not a function.
+        axis = self.axes_manager.signal_axes[0]
+        full_range = [[axis.low_value, axis.high_value]]
+        full_brstlg_model, full_mask = self.model.bremsstrahlung_only_tools(mass_thickness=mt,elements_dict = elts_dict, ranges= full_range)
+
+        return full_brstlg_model@fW@fH
+    
+    def _plot_background(self, model) :
+        # The full range from self.compute_background misses both ends
+        # The axis needs to be trimmed accordingly
+        axis = self.axes_manager.signal_axes[0].axis[1:-1] 
+        self._plot.signal_plot.ax.plot(axis,model)
+            
+    def _generate_ranges(self, num) : 
+        axis = self.axes_manager.signal_axes[0]
+        bounds = (axis.low_value, axis.high_value)
+        values = np.linspace(bounds[0], bounds[1], num = 2*num + 2)
+        ranges_list = [(values[2*i-1],values[2*i]) for i in range(1,num+1)]
+        return ranges_list
 
     ############################
     # Helper functions for NMF #
@@ -597,6 +480,157 @@ class EDS_espm(Signal1D) :
                     W[indices[conv_elts.index(key)],p] = phases_dict[phase][key]
         return W
     
+    def decomposition(
+        self,
+        normalize_poissonian_noise=False,
+        navigation_mask=1.0,
+        closing=True,
+        *args,
+        **kwargs,
+    ):
+        """Apply a decomposition to a dataset with a choice of algorithms.
+
+        The results are stored in ``self.learning_results``.
+
+        Read more in the :ref:`User Guide <mva.decomposition>`.
+
+        Parameters
+        ----------
+        normalize_poissonian_noise : bool, default True
+            If True, scale the signal to normalize Poissonian noise using
+            the approach described in [*]_.
+        navigation_mask : None or float or boolean numpy array, default 1.0
+            The navigation locations marked as True are not used in the
+            decomposition. If float is given the vacuum_mask method is used to
+            generate a mask with the float value as threshold.
+        closing: bool, default True
+            If true, applied a morphologic closing to the mask obtained by
+            vacuum_mask.
+        algorithm : {"SVD", "MLPCA", "sklearn_pca", "NMF", "sparse_pca", "mini_batch_sparse_pca", "RPCA", "ORPCA", "ORNMF", custom object}, default "SVD"
+            The decomposition algorithm to use. If algorithm is an object,
+            it must implement a ``fit_transform()`` method or ``fit()`` and
+            ``transform()`` methods, in the same manner as a scikit-learn estimator.
+        output_dimension : None or int
+            Number of components to keep/calculate.
+            Default is None, i.e. ``min(data.shape)``.
+        centre : {None, "navigation", "signal"}, default None
+            * If None, the data is not centered prior to decomposition.
+            * If "navigation", the data is centered along the navigation axis.
+              Only used by the "SVD" algorithm.
+            * If "signal", the data is centered along the signal axis.
+              Only used by the "SVD" algorithm.
+        auto_transpose : bool, default True
+            If True, automatically transposes the data to boost performance.
+            Only used by the "SVD" algorithm.
+        signal_mask : boolean numpy array
+            The signal locations marked as True are not used in the
+            decomposition.
+        var_array : numpy array
+            Array of variance for the maximum likelihood PCA algorithm.
+            Only used by the "MLPCA" algorithm.
+        var_func : None or function or numpy array, default None
+            * If None, ignored
+            * If function, applies the function to the data to obtain ``var_array``.
+              Only used by the "MLPCA" algorithm.
+            * If numpy array, creates ``var_array`` by applying a polynomial function
+              defined by the array of coefficients to the data. Only used by
+              the "MLPCA" algorithm.
+        reproject : {None, "signal", "navigation", "both"}, default None
+            If not None, the results of the decomposition will be projected in
+            the selected masked area.
+        return_info: bool, default False
+            The result of the decomposition is stored internally. However,
+            some algorithms generate some extra information that is not
+            stored. If True, return any extra information if available.
+            In the case of sklearn.decomposition objects, this includes the
+            sklearn Estimator object.
+        print_info : bool, default True
+            If True, print information about the decomposition being performed.
+            In the case of sklearn.decomposition objects, this includes the
+            values of all arguments of the chosen sklearn algorithm.
+        svd_solver : {"auto", "full", "arpack", "randomized"}, default "auto"
+            If auto:
+                The solver is selected by a default policy based on `data.shape` and
+                `output_dimension`: if the input data is larger than 500x500 and the
+                number of components to extract is lower than 80% of the smallest
+                dimension of the data, then the more efficient "randomized"
+                method is enabled. Otherwise the exact full SVD is computed and
+                optionally truncated afterwards.
+            If full:
+                run exact SVD, calling the standard LAPACK solver via
+                :py:func:`scipy.linalg.svd`, and select the components by postprocessing
+            If arpack:
+                use truncated SVD, calling ARPACK solver via
+                :py:func:`scipy.sparse.linalg.svds`. It requires strictly
+                `0 < output_dimension < min(data.shape)`
+            If randomized:
+                use truncated SVD, calling :py:func:`sklearn.utils.extmath.randomized_svd`
+                to estimate a limited number of components
+        copy : bool, default True
+            * If True, stores a copy of the data before any pre-treatments
+              such as normalization in ``s._data_before_treatments``. The original
+              data can then be restored by calling ``s.undo_treatments()``.
+            * If False, no copy is made. This can be beneficial for memory
+              usage, but care must be taken since data will be overwritten.
+        **kwargs : extra keyword arguments
+            Any keyword arguments are passed to the decomposition algorithm.
+
+
+        Examples
+        --------
+        >>> s = exspy.data.EDS_TEM_FePt_nanoparticles()
+        >>> si = hs.stack([s]*3)
+        >>> si.change_dtype(float)
+        >>> si.decomposition()
+
+        See also
+        --------
+        vacuum_mask
+
+        References
+        ----------
+        .. [*] M. Keenan and P. Kotula, "Accounting for Poisson noise
+           in the multivariate analysis of ToF-SIMS spectrum images", Surf.
+           Interface Anal 36(3) (2004): 203-212.
+        """
+        super().decomposition(
+            normalize_poissonian_noise=normalize_poissonian_noise,
+            navigation_mask=navigation_mask,
+            *args,
+            **kwargs,
+        )
+
+    def plot_1D_results(self, elements = []) :
+        if not(isinstance(self.learning_results.decomposition_algorithm,NMFEstimator)) :
+            raise ValueError("No espm learning results available, please run a decomposition with an espm algorithm first")
+        
+        W = self.learning_results.decomposition_algorithm.W_
+        G = self.learning_results.decomposition_algorithm.G_
+        H = self.learning_results.decomposition_algorithm.H_.mean(axis = 1)
+
+        @symbol_to_number_list
+        def convert_elts(elements = []) :
+            return elements
+        
+        spectrum_1D = self.mean()
+        spectrum_1D.plot(True)
+        spectrum_1D._plot.signal_plot.ax.plot(spectrum_1D.axes_manager.signal_axes[0].axis, G@W@H, 'b-', label = 'Full model')
+        
+        conv_elts = convert_elts(elements = elements)
+        conv_elts_dict = {conv_elts[i] : elt for i, elt in enumerate(elements)}
+        line_styles = [ '--', '-.', ':']
+        colors = ['g', 'r', 'c', 'm', 'y', 'k']
+        
+        _ = 0
+        for elt in conv_elts:
+            indices = [i for i, mod_elt in enumerate(self.metadata.EDS_model.elements) if str(elt) == mod_elt[:2]]
+            if indices:
+                component = sum(G[:,idx][:,np.newaxis] @ W[idx,:][:,np.newaxis] @ H for idx in indices)
+                spectrum_1D._plot.signal_plot.ax.plot(self.axes_manager.signal_axes[0].axis, component, label=f'{conv_elts_dict[elt]}', linestyle=line_styles[_%len(line_styles)], color=colors[_%len(colors)])
+                _+=1
+
+        spectrum_1D._plot.signal_plot.ax.legend()
+
     def concentration_report(self, selected_elts = [], W_input = None, fit_error = True) : 
         if W_input is None :
             if not(isinstance(self.learning_results.decomposition_algorithm,NMFEstimator)) :
@@ -613,54 +647,46 @@ class EDS_espm(Signal1D) :
             W = W_input
             fit_error = False
 
-        elts = self.metadata.EDS_model.elements
-        norm = self.metadata.EDS_model.norm
-
+        
         @number_to_symbol_list
         def convert_elts(elements = []) :
             return elements
-        
-        # We systematically omit low energy lines when they are split(see generate_gmatre of espm.models.EDXS to build G with split lines)
-        elts_only = []
-        indices = []
-        if selected_elts :
-            for i, elt in enumerate(elts) :
-                m_hi = re.match(r'([0-9]*)(_hi)',elt)
-                m_lo = re.match(r'([0-9]*)(_lo)',elt)
-                if m_hi :
-                    if convert_elts(elements=[m_hi.group(1)])[0] in selected_elts :
-                        elts_only.append(m_hi.group(1))
-                        indices.append(i)
-                else : 
-                    if m_lo : 
-                        pass
-                    else :
-                        if convert_elts(elements=[elt])[0] in selected_elts :
-                            elts_only.append(elt)
-                            indices.append(i)
-        else :
-            for i, elt in enumerate(elts) :
-                m_hi = re.match(r'([0-9]*)(_hi)',elt)
-                m_lo = re.match(r'([0-9]*)(_lo)',elt)
-                if m_hi :
-                    elts_only.append(m_hi.group(1))
-                    indices.append(i)
-                else : 
-                    if m_lo : 
-                        pass
-                    else :
-                        elts_only.append(elt)
-                        indices.append(i)
 
-        conv_elts = convert_elts(elements = elts_only)
-        norm = self.metadata.EDS_model.norm[:,indices]
-        W = W[indices,:]/W[indices,:].sum(axis = 0)*100
-        if fit_error :
-            errors = percentages[indices, :]
+        elts = self.model.get_elements(False)
+        elts_indices = self.model.NMF_simplex()
+
+        if selected_elts : 
+            conv_elts = convert_elts(elements=elts)
+            conv_elts_dict = {conv_elts[i] : num for i, num in enumerate(elts_indices)}
+            new_elts_indices = []
+            for elt in selected_elts :
+                if elt in conv_elts_dict.keys() :  
+                    new_elts_indices.append(conv_elts_dict[elt])
+
+            W = W[new_elts_indices,:]*100 /W[new_elts_indices,:].sum(axis = 0)
+            if fit_error :
+                errors = percentages[new_elts_indices, :]
+                errors[errors > 10000] = np.inf
+            else : 
+                errors = np.zeros_like(W)
+
+            return selected_elts, W, errors
+
         else : 
-            errors = np.zeros_like(W)
+            conv_elts = convert_elts(elements=elts)
+
+            W = W[elts_indices,:]*100 # /W[indices,:].sum(axis = 0)
+            if fit_error :
+                errors = percentages[elts_indices, :]
+                errors[errors > 10000] = np.inf
+            else : 
+                errors = np.zeros_like(W)
+
+            return conv_elts, W, errors
         
-        return conv_elts, W, errors
+        # norm = self.metadata.EDS_model.norm
+
+        
     
     def print_concentration_report (self, selected_elts = [], W_input = None, fit_error = True, disclaimer = True) : 
         r"""
@@ -712,7 +738,7 @@ class EDS_espm(Signal1D) :
 
         print(table)
         if disclaimer and fit_error: 
-            print("\nDisclaimer : The presented errors correspond to the statistical error on the fitted intensity of the peaks.\nIn other words it corresponds to the precision of the measurment.\nThe accuracy of the measurment strongly depends on other factors such as absorption, cross-sections, etc...\nPlease consider these parameters when interpreting the results.")
+            print("\nDisclaimer : The presented errors correspond to the statistical error on the fitted intensity of the peaks according to a Poisson law.\nIn other words it corresponds to the precision of the measurment.\nThe accuracy of the measurment strongly depends on other factors such as absorption, cross-sections, etc...\nPlease consider these parameters when interpreting the results.")
 
     def estimate_best_binning(self, inspect = False) :
         r"""
@@ -767,6 +793,66 @@ class EDS_espm(Signal1D) :
             return mprimes_est, estimated_binning  
         else :
             return estimated_binning
+        
+    def set_analysis_parameters(
+        self,
+        thickness=None,
+        density=None,
+        detector_type=None,
+        width_slope=None,
+        width_intercept=None,
+        geom_eff=None,
+        xray_db=None
+    ):
+        r"""
+        Set the relevant parameters for the analysis in the metadata of the :class:`EDSespm` object.
+
+        Parameters
+        ----------
+        thickness : float
+            Thickness of the sample in cm.
+        density : float
+            Density of the sample in g/cm^3.
+        detector_type : str
+            Type of the detector. The default is "SDD_efficiency.txt".
+        width_slope : float
+            Slope of the width of the peaks in the EDS spectrum.
+        width_intercept : float
+            Intercept of the width of the peaks in the EDS spectrum.
+        geom_eff : float
+            Geometric efficiency of the detector.
+        acq_time : float
+            Acquisition time of the spectrum in seconds.
+        probe_current : float
+            Probe current in A.
+        xray_db : str
+            Path to the xray database file. The default is "200keV_xrays.json".
+        """
+        md = self.metadata
+
+        if thickness is not None:
+            md.set_item("Sample.thickness", thickness)
+        if density is not None:
+            md.set_item("Sample.density", density)
+        if detector_type is not None:
+            md.set_item("Acquisition_instrument.TEM.Detector.EDS.type", detector_type)
+        if width_slope is not None:
+            md.set_item("Acquisition_instrument.TEM.Detector.EDS.width_slope", width_slope)
+        if width_intercept is not None:
+            md.set_item("Acquisition_instrument.TEM.Detector.EDS.width_intercept", width_intercept)
+        if geom_eff is not None:
+            md.set_item("Acquisition_instrument.TEM.Detector.EDS.geometric_efficiency", geom_eff)
+        if xray_db is not None:
+            md.set_item("xray_db", xray_db)
+
+        try : 
+            md.set_item("Acquisition_instrument.TEM.Detector.EDS.take_off_angle",
+                        take_off_angle(tilt_stage = md.Acquisition_instrument.TEM.Stage.tilt_alpha,
+                                       azimuth_angle = md.Acquisition_instrument.TEM.Detector.EDS.azimuth_angle,
+                                       elevation_angle = md.Acquisition_instrument.TEM.Detector.EDS.elevation_angle,
+                                       beta_tilt = md.Acquisition_instrument.TEM.Stage.tilt_beta))
+        except AttributeError :
+            print("You need to define the azimuth and elevation of the detector as well as the alpha and beta tilt of the sample holder. Please, use the set_microscope_parameters function.")
 
 
 #######################
@@ -775,7 +861,7 @@ class EDS_espm(Signal1D) :
 
 def get_metadata(spim) : 
     r"""
-    Get the metadata of the :class:`EDS_espm` object and format it as a model parameters dictionary.
+    Get the metadata of the :class:`EDSespm` object and format it as a model parameters dictionary.
     """
     mod_pars = {}
     try :

@@ -68,12 +68,13 @@ def multiplicative_step_w(X,
                     denum = denum + nu
 
         new_W = num / denum
-    
+
     new_W = np.maximum(new_W, log_shift)
-    
+
     # TODO: exclude the fixed values in the update process. It is not straightforward
     if fixed_W is not None: 
         new_W[fixed_W >= 0] = fixed_W[fixed_W >=0]
+
     return new_W
 
 

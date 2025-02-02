@@ -147,7 +147,7 @@ def load_particules (sample = 0) :
 
     Returns
     -------
-    spim : hyperspy.signals.EDS_espm
+    spim : hyperspy.signals.EDSespm
         The loaded dataset.
     """
     filename = DATASETS_PATH / Path("{}/sample_{}.hspy".format(particles_misc_dict["data_folder"],sample))
@@ -165,7 +165,7 @@ def load_grain_boundary (sample = 0) :
 
     Returns
     -------
-    spim : hyperspy.signals.EDS_espm
+    spim : hyperspy.signals.EDSespm
         The loaded dataset.
     """
     filename = DATASETS_PATH / Path("{}/sample_{}.hspy".format(boundary_misc_dict["data_folder"],sample))

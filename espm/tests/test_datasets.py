@@ -1,6 +1,6 @@
 from espm.datasets.eds_spim import get_metadata
 import numpy as np
-from espm.datasets.base import generate_dataset, generate_spim_sample, sample_to_EDS_espm, generate_spim
+from espm.datasets.base import generate_dataset, generate_spim_sample, sample_to_EDSespm, generate_spim
 from espm.models import EDXS
 from espm.models.generate_EDXS_phases import generate_brem_params, generate_random_phases, unique_elts
 import os
@@ -8,7 +8,7 @@ import hyperspy.api as hs
 import shutil
 from espm.conf import DATASETS_PATH
 from pathlib import Path
-from exspy.misc.eds.utils import take_off_angle
+from exspy.utils.eds import take_off_angle
 import espm.weights.generate_weights as wts
 from espm.weights.generate_weights import generate_weights
 from espm.models.EDXS_function import elts_list_from_dict_list
@@ -86,9 +86,10 @@ def test_generate():
     if os.path.exists("test.hspy"):
         os.remove("test.hspy")
     filename = "test.hspy"
-    hspy_spim = sample_to_EDS_espm(spim_sample,elements=elements)
+    hspy_spim = sample_to_EDSespm(spim_sample,elements=elements)
     hspy_spim.save(filename)
     si = hs.load(filename)
+    assert si.metadata.Signal.signal_type == "EDS_espm_Simulated"
     si.build_G(problem_type = "bremsstrahlung")
     G = si.G
     phases, maps = si.phases, si.maps_2d
@@ -251,6 +252,7 @@ def test_decomposition () :
     gen_si.build_G()
     est = SmoothNMF(n_components=3, G = gen_si.model, hspy_comp = True)
     gen_si.decomposition(algorithm = est)
+    assert gen_si.metadata.Signal.signal_type == "EDS_espm_Simulated"
     np.testing.assert_allclose((est.G_@est.W_@est.H_).sum(axis = 1), gen_si.X.sum(axis = 1), rtol = 0.5)
     np.testing.assert_allclose(est.W_[:-2,:].sum(axis = 0), np.ones(3), rtol = 0.1)
 
@@ -272,7 +274,7 @@ def test_spim () :
     gen_folder = DATASETS_PATH / Path(misc_params["data_folder"])
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
 
-    assert gen_si.metadata.Signal.signal_type == "EDS_espm"
+    assert gen_si.metadata.Signal.signal_type == "EDS_espm_Simulated"
 
     mod_pars = get_metadata(gen_si)
     # mod_pars["params_dict"]["Abs"]["atomic_fraction"] = False
