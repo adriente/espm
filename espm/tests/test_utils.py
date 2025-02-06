@@ -1,4 +1,4 @@
-from exspy.material import _density_of_mixture
+from exspy.material import density_of_mixture
 import numpy as np
 import espm.utils as u
 
@@ -69,7 +69,7 @@ def test_hspy_wrappers () :
     assert res_wt == weight_fractions
 
     res_dens = u.approx_density(atomic_fraction = True, elements_dict=atomic_fractions)
-    hspy_dens = _density_of_mixture([0.03174415159035731, 0.08358598161408992, 0.055400582070687154, 0.8292692847248655],['O','Si','Fe','Bi'])
+    hspy_dens = density_of_mixture([0.03174415159035731, 0.08358598161408992, 0.055400582070687154, 0.8292692847248655],['O','Si','Fe','Bi'])
 
     assert res_dens == hspy_dens
 

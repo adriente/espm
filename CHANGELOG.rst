@@ -54,7 +54,7 @@ First patch release
 
 First major update
 
-In the following we refer to an instance of `espm.datasets.EDS_espm` as `spim`.
+In the following we refer to an instance of `espm.datasets.EDSespm` as `spim`.
 
 Conceptual changes : 
 
@@ -75,7 +75,7 @@ Conceptual changes :
 
 New features :
 
-* The `espm.datasets.EDS_espm.estimate_best_binning` can be used to estimate the best binning factor to apply on the data before performing the ESpM-NMF decompostion. Use the output (`bb`) of this function in `spim.rebin(scale = bb )` to apply the binning.
+* The `espm.datasets.EDSespm.estimate_best_binning` can be used to estimate the best binning factor to apply on the data before performing the ESpM-NMF decompostion. Use the output (`bb`) of this function in `spim.rebin(scale = bb )` to apply the binning.
 * An alternative init for the ESpM-NMF decompostion can be activated by executing `spim.custom_init = True`. It works only when using `G = spim.model` in `espm.estimators.SmoothNMF`.
 * The `spim.print_concentration_report` was improved thanks to the `prettytable` package. Statistical errors on the quantifications are now displayed.
 
@@ -94,3 +94,24 @@ Patch of the 1.1.1
 * Switching back to traits 6.0.0 and above that is now compatible with hyperspy 2.0.0 and above.
 * Update of the notebooks to be compatible with the new version of the package.
 * Adding a filter to the generation of the G matrix so that lines outside the energ range are correctly ignored.
+
+1.1.3 (2025-02-05)
+------------------
+
+Patch of the 1.1.2
+
+Major changes : 
+
+* The `espm.datasets.EDSespm` now inherits from the `exspy.signals.EDSTEMSpectrum` enabling all the corresponding functionalities.
+* EDXS model : It is possible to add ignored elements such as Cu (`ignored_elements = ['Cu']`), so that it is fitted independently of the mass-thickness. It helps the fitting process for stray X-rays from the sample environment such as the Cu grid.
+* Fitting of 1D spectra : Added functionalities to fit and quantify 1D spectra.
+* Energy windows on which the bremsstrahlung is fitted can be set with the `select_background_windows` gui method. It also displays the fitted background.
+
+Syntax changes :
+
+* The methods setting the metadata that are relevant for modelling are now functionning like exspy. The microscope parameters are set using exspy's `set_microscope_parameters` method. The metadata of the `espm.datasets.EDSespm` object can be set using the `set_analysis_parameters` method.
+* Currently, the beta_tilt has to be set using `data_object.metadata.Acquisition_instrument.TEM.Stage.beta_tilt = value`. 
+
+Technical changes : 
+
+* Update of the installation process by using pyproject.toml

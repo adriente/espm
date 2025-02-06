@@ -1,14 +1,12 @@
 import numpy as np
-
 from espm.estimators.updates import multiplicative_step_h, multiplicative_step_w, multiplicative_step_hq, proj_grad_step_h, proj_grad_step_w, gradH, gradW, estimate_Lipschitz_bound_h, estimate_Lipschitz_bound_w
 from espm.measures import trace_xtLx, log_reg
 from espm.estimators import NMFEstimator
 from espm.estimators.surrogates import diff_surrogate, quadratic_surrogate
 from espm.conf import dicotomy_tol, sigmaL
 from copy import deepcopy
+from espm.conf import log_shift
 # from espm.measures import KL_loss_surrogate, KLdiv_loss, log_reg, log_surrogate
-
-
 
 class SmoothNMF(NMFEstimator):
     r"""SmoothNMF - NMF with a smooth regularization term
@@ -83,31 +81,160 @@ class SmoothNMF(NMFEstimator):
     loss_names_ = NMFEstimator.loss_names_ + ["log_reg_loss"] + ["Lapl_reg_loss"] + ["gamma"]
 
     # args and kwargs are copied from the init to the super instead of capturing them in *args and **kwargs to be scikit-learn compliant.
-    def __init__(self, lambda_L = 0.0, linesearch=False, mu=0, epsilon_reg=1, algo="log_surrogate", dicotomy_tol=dicotomy_tol, gamma=None, **kwargs):
+    def __init__(self,
+                 lambda_L = 0.0,
+                 linesearch=False,
+                 mu=0,
+                 epsilon_reg=1,
+                 algo="log_surrogate",
+                 dicotomy_tol=dicotomy_tol,
+                 gamma=None,
+                 n_components=2,
+                 init=None,
+                 tol=1e-4,
+                 max_iter=200,
+                 random_state=None,
+                 verbose=1,
+                 debug=False,
+                 l2=False,
+                 G=None,
+                 shape_2d = None,
+                 normalize = False,
+                 log_shift=log_shift,
+                 eval_print=10,
+                 true_D = None,
+                 true_H = None,
+                 fixed_H = None,
+                 fixed_W = None,
+                 hspy_comp = False,
+                 no_stop_criterion = False,
+                 simplex_H=False,
+                 simplex_W = True
+                 ):
 
-        super().__init__( **kwargs)
+        super().__init__(n_components=n_components,
+                         init=init,
+                         tol=tol,
+                         max_iter=max_iter,
+                         random_state=random_state,
+                         verbose=verbose,
+                         debug=debug,
+                         l2=l2,
+                         G=G,
+                         shape_2d = shape_2d,
+                         normalize = normalize,
+                         log_shift=log_shift,
+                         eval_print=eval_print,
+                         true_D = true_D,
+                         true_H = true_H,
+                         fixed_H = fixed_H,
+                         fixed_W = fixed_W,
+                         hspy_comp = hspy_comp,
+                         no_stop_criterion = no_stop_criterion,
+                         simplex_H=simplex_H,
+                         simplex_W = simplex_W)
         self.lambda_L = lambda_L
         self.linesearch = linesearch
         self.mu = mu
         self.epsilon_reg = epsilon_reg
         self.dicotomy_tol = dicotomy_tol
-        assert algo in ["l2_surrogate", "log_surrogate", "projected_gradient", "bmd"]
         self.algo = algo
         self.gamma = gamma
         self.check_params()
 
     def check_params(self) : 
-        assert self.algo in ["l2_surrogate", "log_surrogate", "projected_gradient", "bmd"], "The algorithm must be 'l2_surrogate', 'log_surrogate', 'bmd' or 'projected_gradient'"
-        assert self.lambda_L >= 0 and self.epsilon_reg > 0.0 and np.all(np.array(self.mu)>=0), "The regularization parameters must be positive"
-        assert (self.simplex_H and not(self.simplex_W)) or (not(self.simplex_H) and self.simplex_W) or (not(self.simplex_H) and not(self.simplex_W)), "Only one of simplex_H and simplex_W can be True"
+        """Check the parameters of the model."""
+        # Type checking of the parameters
+        # TODO: Add typing from the __init__ method. I don't know why it didn't work ...
+        if not isinstance(self.lambda_L, (int, float)):
+            print("The regularization parameter lambda_L must be a float or int")
+            print("The regularization parameter lambda_L is set to 0.0")
+            self.lambda_L = 0.0
+        if not isinstance(self.linesearch, bool):
+            print("The linesearch parameter must be a boolean")
+            print("The linesearch parameter is set to False")
+            self.linesearch = False
+        if not isinstance(self.mu, (int, float, np.ndarray)):
+            print("The regularization parameter mu must be a float, int or np.ndarray")
+            print("The regularization parameter mu is set to 0")
+            self.mu = 0
+        if not isinstance(self.epsilon_reg, (int, float)):
+            print("The regularization parameter epsilon_reg must be a float or int")
+            print("The regularization parameter epsilon_reg is set to 1")
+            self.epsilon_reg = 1
+        if not isinstance(self.algo, str):
+            print("The algorithm parameter must be a string")
+            print("The algorithm is set to 'log_surrogate'")
+            self.algo = "log_surrogate"
+        if not isinstance(self.simplex_H, bool):
+            print("The simplex_H parameter must be a boolean")
+            print("The simplex_H parameter is set to False")
+            self.simplex_H = False
+        if not isinstance(self.simplex_W, bool):
+            print("The simplex_W parameter must be a boolean")
+            print("The simplex_W parameter is set to True")
+            self.simplex_W = True
+        if not isinstance(self.dicotomy_tol, (int, float)):
+            print("The dicotomy_tol parameter must be a float or int")
+            print("The dicotomy_tol parameter is set to 1e-3")
+            self.dicotomy_tol = 1e-3
+        if self.gamma is not None and not isinstance(self.gamma, (int, float, list)):
+            print("The gamma parameter must be a float, int, or list")
+            print("The gamma parameter is set to None")
+            self.gamma = None
+        if not isinstance(self.verbose, (bool, int)):
+            print("The verbose parameter must be a boolean or int")
+            print("The verbose parameter is set to 1")
+            self.verbose = 1
+        if not isinstance(self.debug, bool):
+            print("The debug parameter must be a boolean")
+            print("The debug parameter is set to False")
+            self.debug = False
+        if not isinstance(self.l2, bool):
+            print("The l2 parameter must be a boolean")
+            print("The l2 parameter is set to False")
+            self.l2 = False
+        if not isinstance(self.n_components, int):
+            print("The n_components parameter must be an int")
+            print("The n_components parameter is set to 2")
+            self.n_components = 2
+        # Value checking of the parameters
+        if not(self.algo in ["l2_surrogate", "log_surrogate", "projected_gradient", "bmd"]) :
+            print("The algorithm must be 'l2_surrogate', 'log_surrogate', 'bmd' or 'projected_gradient'")
+            print("The algorithm is set to 'log_surrogate'")
+            self.algo = "log_surrogate"
+        if not(self.lambda_L >= 0) :
+            print("The regularization parameter lambda_L must be non-negative")
+            print("The regularization parameter lambda_L is set to 0")
+            self.lambda_L = 0
+        if not(self.epsilon_reg > 0.0) :
+            print("The regularization parameter epsilon_reg must be positive")
+            print("The regularization parameter epsilon_reg is set to 1")
+            self.epsilon_reg = 1.0 
+        if not(np.all(np.array(self.mu)>=0)) : 
+            print("The regularization parameter mu must be non-negative")
+            print("The regularization parameter mu is set to 0")
+            self.mu = 0
+        if not((self.simplex_H and not(self.simplex_W)) or (not(self.simplex_H) and self.simplex_W) or (not(self.simplex_H) and not(self.simplex_W))) :
+            print("The simplex constraint must be applied to either W or H or none of them")
+            print("The simplex constraint is applied to W and not to H")
+            self.simplex_W = True
+            self.simplex_H = False
         if self.linesearch:
-            assert not self.l2
-            assert self.lambda_L > 0, "The regularization parameter lambda_L must be non-zero when using linesearch"
+            if self.l2 :
+                print("The l2 parameter must be False when using linesearch")
+                print("The l2 parameter is set to False")
+                self.l2 = False 
+            if not(self.lambda_L > 0) : 
+                print("The regularization parameter lambda_L must be non-zero when using linesearch")
+                print("The regularization parameter lambda_L is set to 1")
+                self.lambda_L = 1
 
-        if self.algo=="l2_surrogate":
-            assert not self.l2, "The l2 parameter must be False when using l2_surrogate"
-
-        
+        if not(self.algo=="l2_surrogate") :
+            if self.l2 : 
+                print("The l2 parameter must be False when using the algorithm "+self.algo)
+                print("The l2 parameter is set to False")
+                self.l2 = False
 
     def fit_transform(self, X, y=None, W=None, H=None):
         """Fit the model to the data X and returns the transformed data.

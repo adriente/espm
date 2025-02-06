@@ -55,7 +55,7 @@ def generate_one_sample():
     # Generate the phases
     model = EDXS(**phases_dict["model_params"])
     phases =  generate_modular_phases(**phases_dict)
-    model.generate_g_matr(g_type="bremsstrahlung", elements=["Fe", "Mo", "Ca", "Si", "O", "Pt"] ,elements_dict={})
+    model.generate_g_matr(g_type="bremsstrahlung", elements=["Fe", "Mo", "Ca", "Si", "O", "Pt"] ,elements_dict={}, ignored_elements=[])
     G = model.G
 
     weights = generate_weights.generate_weights("laplacian", misc_dict["shape_2d"], n_phases=len(phases_dict["elts_dicts"]), seed=misc_dict["seed"], size_x = 10, size_y = 10)

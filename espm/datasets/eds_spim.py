@@ -60,6 +60,8 @@ class EDSespm(EDSTEMSpectrum) :
             md.set_item("xray_db", "200keV_xrays.json")
         if "Acquisition_instrument.TEM.Detector.EDS.type" not in md :
             md.set_item("Acquisition_instrument.TEM.Detector.EDS.type", "SDD_efficiency.txt")
+        if "Acquisition_instrument.TEM.Stage.tilt_beta" not in md :
+            md.set_item("Acquisition_instrument.TEM.Stage.tilt_beta", 0.0)
 
     def _check_metadata_G(self) : 
         md = self.metadata
@@ -188,7 +190,7 @@ class EDSespm(EDSTEMSpectrum) :
     # Bremsstrahlung functions #
     ############################
 
-    def estimate_mass_thickness(self, ignored_elements = ['Cu'],*, elements_dict = {}) :
+    def estimate_mass_thickness(self, ignored_elements = ['Cu'], tol = 1e-8,*, elements_dict = {}) :
         r"""
         Based on the complete metadata of the :class:`EDSespm` object, this function estimates the mass thickness of the sample. This function derives the mass-thickness from the characteristic X-rays. Then the bremsstrahlung parameters are estimated using that mass-thickness. The process is then repeated ten times to ensure convergence. The results are plotted on the spectrum.
 
@@ -220,18 +222,30 @@ class EDSespm(EDSTEMSpectrum) :
         if len(self.axes_manager.navigation_axes) > 0 : 
             raise NotImplementedError('For now this function is not fully implemented for spectrum images. Use this on an extracted 1D spectrum.')
         curr_X = self.data
+
+        # First init of fit
+        self.build_G(ignored_elements= ignored_elements, elements_dict=elements_dict)
+        estimator = SmoothNMF(n_components = 1, G=self.model)
+        estimator.fit(curr_X[:,np.newaxis])
+        H_init = estimator.H_
+        W_init = estimator.W_
+        elts = list(self.model.get_elements(include_ignored = False))
+        elts_indices = self.model.NMF_simplex()
+        new_elts_dict = {elts[i] : W_init[elts_indices[i]] for i in range(len(elts))}
         
         _ = 0
         curr_mt = self.metadata.Sample.thickness * self.metadata.Sample.density
-        while _ < 10 :
+        while _ < 5 :
             # first init of the model
-            
+            brstlg_model, mask = self.model.bremsstrahlung_only_tools(mass_thickness=curr_mt,elements_dict = new_elts_dict, ranges = self.ranges)
+            masked_X = curr_X[mask]
+            brstlg_estimator = SmoothNMF(n_components = 1, G=brstlg_model, fixed_H = H_init, tol = tol )
+            brstlg_estimator.fit(masked_X[:,np.newaxis])
+            W_brstlg = np.vstack(( -1 * np.ones((W_init.shape[0] - brstlg_estimator.W_.shape[0], brstlg_estimator.W_.shape[1])),brstlg_estimator.W_))
+
             self.build_G(ignored_elements= ignored_elements, elements_dict=elements_dict)
             # First estimation of the bremsstrahlung + elts
-            if _ == 0 :
-                estimator = SmoothNMF(n_components = 1, G=self.model)
-            else :
-                estimator = SmoothNMF(n_components = 1, G=self.model, fixed_W = W_brstlg)
+            estimator = SmoothNMF(n_components = 1, G=self.model, fixed_W = W_brstlg, tol = tol)
             estimator.fit(curr_X[:,np.newaxis])
             
             # Get the elements, their concentrations and the mass_thickness value
@@ -244,19 +258,13 @@ class EDSespm(EDSTEMSpectrum) :
             total_weight = self._elements_dict_to_weights(new_elts_dict)
             curr_mt = self._extract_mass_thickness(H_init.sum(), total_weight)
 
-            # Compute another model with only the bremsstrahlung and get the masked data
-            brstlg_model, mask = self.model.bremsstrahlung_only_tools(mass_thickness=curr_mt,elements_dict = new_elts_dict, ranges = self.ranges)
-            masked_X = curr_X[mask]
-
-            # Estimate the bremsstrahlung
-            brstlg_estimator = SmoothNMF(n_components = 1, G=brstlg_model, fixed_H = H_init )
-            brstlg_estimator.fit(masked_X[:,np.newaxis])
-            W_brstlg = np.vstack(( -1 * np.ones((W_init.shape[0] - brstlg_estimator.W_.shape[0], brstlg_estimator.W_.shape[1])),brstlg_estimator.W_))
             _ += 1
 
-            print("The current estimated mass-thickness is {} g.cm^-3".format(curr_mt),flush = True)
+            print("The current estimated mass-thickness is {} g.cm^-2".format(curr_mt),flush = True)
 
         self.plot(True)
+        self._plot.signal_plot.ax.set_title("Estimated mass-thickness : {} g.cm^-2".format(curr_mt))
+        
         axis = self.axes_manager.signal_axes[0].axis
         self._plot.signal_plot.ax.plot(axis,
                                        estimator.G_@estimator.W_@estimator.H_,
@@ -320,6 +328,8 @@ class EDSespm(EDSTEMSpectrum) :
         """
         # The code is quite dirty, but it works.
         # To code a proper gui we need to wait for an update of hyperspy
+        if self.model is None : 
+            raise ValueError("The G matrix has not been built yet. Please use the build_G method.")
         if ranges is not None :
            self.ranges = ranges
            self.model.ranges = self.ranges
@@ -438,30 +448,21 @@ class EDSespm(EDSTEMSpectrum) :
         """
         if self.G_ is None :
             raise ValueError("The G matrix has not been built yet. Please use the build_G method.")
-        elements = self.metadata.EDS_model.elements
+        raw_elts = self.metadata.EDS_model.elements
+        elements = self.model.get_elements()
+        indices = self.model.NMF_simplex()
 
         # convert elements to symbols but also omitting splitted lines
         @number_to_symbol_list
         def convert_to_symbols(elements = []) : 
             return elements
         
-        indices = []
-        conv_elts = []
-        for i, elt in enumerate(elements) :
-            # We always omit low energy lines when they are split (see generate_gmatre of espm.models.EDXS to build G with split lines)
-            if re.match(r'.*_lo',elt) :
-                pass
-            elif re.match(r'.*_hi',elt) :
-                indices.append(i)
-                conv_elts.append(convert_to_symbols(elements=[elt[:-3]])[0])
-            else :
-                indices.append(i)
-                conv_elts.append(convert_to_symbols(elements=[elt])[0])
+        conv_elts = convert_to_symbols(elements=elements)
 
         if self.problem_type == "no_brstlg" : 
-            W = -1* np.ones((len(elements), len(phases_dict.keys())))
+            W = -1* np.ones((len(raw_elts), len(phases_dict.keys())))
         elif self.problem_type == "bremsstrahlung" : 
-            W = -1* np.ones((len(elements)+2, len(phases_dict.keys())))
+            W = -1* np.ones((len(raw_elts)+2, len(phases_dict.keys())))
         else : 
             raise ValueError("problem type should be either no_brstlg or bremsstrahlung")
         for p, phase in enumerate(phases_dict) : 
@@ -483,7 +484,7 @@ class EDSespm(EDSTEMSpectrum) :
     def decomposition(
         self,
         normalize_poissonian_noise=False,
-        navigation_mask=1.0,
+        navigation_mask=None,
         closing=True,
         *args,
         **kwargs,
@@ -593,12 +594,14 @@ class EDSespm(EDSTEMSpectrum) :
            in the multivariate analysis of ToF-SIMS spectrum images", Surf.
            Interface Anal 36(3) (2004): 203-212.
         """
+        model_ = self.model_
         super().decomposition(
             normalize_poissonian_noise=normalize_poissonian_noise,
             navigation_mask=navigation_mask,
             *args,
             **kwargs,
         )
+        self.model_ = model_
 
     def plot_1D_results(self, elements = []) :
         if not(isinstance(self.learning_results.decomposition_algorithm,NMFEstimator)) :

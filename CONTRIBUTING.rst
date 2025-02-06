@@ -14,7 +14,7 @@ The package can be set up (ideally in a fresh virtual environment) for local
 development with the following::
 
     $ git clone https://github.com/adriente/espm.git
-    $ pip install -e ".[dev]"
+    $ pip install -e .[dev]
 
 You can improve or add functionality in the ``espm`` folder, along with
 corresponding unit tests in ``espm/tests/test_*.py`` (with reasonable

@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from espm.utils import create_laplacian_matrix 
 from scipy.sparse import lil_matrix
 from espm.models.base import PhysicalModel
+from sklearn.utils.validation import validate_data, check_array
 
 
 def normalization_factor (X, nc) : 
@@ -150,6 +151,11 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.simplex_H = simplex_H
         self.simplex_W = simplex_W
 
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.input_tags.positive_only = True
+        return tags
+
     def _more_tags(self):
         return {'requires_positive_X': True}
 
@@ -235,10 +241,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         ############################
 
         if self.hspy_comp : 
-            self.X_ = self._validate_data(X.T, dtype=[np.float64, np.float32])
+            self.X_ = validate_data(self,X.T, dtype=[np.float64, np.float32])
 
         else : 
-            self.X_ = self._validate_data(X, dtype=[np.float64, np.float32])
+            self.X_ = validate_data(self,X, dtype=[np.float64, np.float32])
 
         if self.hspy_comp==False:
             try:
@@ -372,8 +378,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                         break
                 
                 if self.verbose > 0 and np.mod(self.n_iter_, self.eval_print) == 0:
+                    # I added a log shift since check_estimator seems to run so fast that elapsed time is 0
                     print(
-                        f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:3e},  {self.n_iter_/(time.time()-algo_start):0.3f} it/s",
+                        f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:3e},  {self.n_iter_/(time.time()-algo_start + log_shift):0.3f} it/s",
                     )
                     pass
                 # Update G might increase the loss so we reevaluate the loss to avoid artificial negative decrease
@@ -518,5 +525,5 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             new_X[np.where(sum_rows == 0),:] = epsilon
             return new_X
         else : 
-            raise ValueError("There are negative values in X")
+            raise ValueError("Negative values in data")
 

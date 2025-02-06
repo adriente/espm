@@ -50,7 +50,9 @@ def create_data()  :
     s.axes_manager[-1].offset = 0.2
     s.axes_manager[-1].scale = 0.1
     s.set_signal_type("EDS_espm")
-    s.set_analysis_parameters()
+    s.set_microscope_parameters( beam_energy = 200, tilt_stage = 0.0, azimuth_angle = 0.0, elevation_angle = 35.0)
+    s.metadata.Acquisition_instrument.TEM.Stage.tilt_beta = 0.0
+    s.set_analysis_parameters( thickness = 1e-6, density = 2.7)
     s.set_elements(elements = ["Si","O","Fe","Ca"])
     return s
 
@@ -99,32 +101,47 @@ def test_get_elements () :
     s = create_data()
     s.build_G(elements_dict ={'Fe' : 3.0})
     nelts = []
-    for i in s.model.get_elements() :
+    for i in s.model.get_elements(False) :
         nelts.append(i)
-    assert nelts == ['14', '8', '26', '20'] 
+    assert nelts == ['20', '26', '8', '14'] 
+    nelts = []
+    for i in s.model.get_elements(True) :
+        nelts.append(i)
+    print(nelts)
+    assert nelts == ['20', '26', '8', '14', '29']
         
 def test_carac_x_span () :
     # TODO : Find a way to implement the test of this function
     pass
 
+def test_bremsstrahlung_only_tools () :
+    # TODO : Find a way to implement the test of this function
+    pass
+
 def test_NMF_initialize_W () : 
     model = EDXS(**model_parameters)
-    model.generate_g_matr(g_type = "bremsstrahlung", elements = ["Na", "Sr", "Ge", "Nb"], elements_dict={})
+    model.generate_g_matr(g_type = "bremsstrahlung", elements = ["Na", "Sr", "Ge", "Nb"], elements_dict={}, ignored_elements=[])
     D = np.random.rand(1900,2)
     W = model.NMF_initialize_W(D)
     assert W.shape == (6,2)
 
     model = EDXS(**model_parameters)
-    model.generate_g_matr(g_type = "no_brstlg", elements = ["Na", "Sr", "Ge", "Nb"], elements_dict={'Nb' : 3.0})
+    model.generate_g_matr(g_type = "no_brstlg", elements = ["Na", "Sr", "Ge", "Nb"], elements_dict={'Nb' : 3.0}, ignored_elements=[])
     D = np.random.rand(1900,4)
     W = model.NMF_initialize_W(D)
     assert W.shape == (5,4)
 
     model = EDXS(**model_parameters)
-    model.generate_g_matr(g_type = "identity", elements = ["Na", "Sr", "Ge", "Nb"], elements_dict={})
+    model.generate_g_matr(g_type = "identity", elements = ["Na", "Sr", "Ge", "Nb"], elements_dict={}, ignored_elements=[])
     with np.testing.assert_raises(ValueError) : 
         D = np.random.rand(1900,4)
         W = model.NMF_initialize_W(D)
+
+    model = EDXS(**model_parameters)
+    model.generate_g_matr(g_type = "bremsstrahlung", elements = ["Na", "Ge", "Nb"], elements_dict={'Nb' : 3.0}, ignored_elements=["Sr"])
+    D = np.random.rand(1900,2)
+    W = model.NMF_initialize_W(D)
+    assert W.shape == (23,2)
 
 def test_NMF_simplex () :
     model = EDXS(**model_parameters)
@@ -136,6 +153,11 @@ def test_NMF_simplex () :
     model.generate_g_matr(g_type = "no_brstlg", elements = ["Na", "Sr", "Ge", "Nb"], elements_dict={'Nb' : 3.0})
     inds = model.NMF_simplex()
     assert inds == [0,1,2,4]
+
+    model = EDXS(**model_parameters)
+    model.generate_g_matr(g_type = "bremsstrahlung", elements = ["Sr", "Ge", "Nb"], elements_dict={'Nb' : 3.0}, ignored_elements=["Na"])
+    inds = model.NMF_simplex()
+    assert inds == [0,1,3]
 
 def test_NMF_update () : 
     model = EDXS(**model_parameters)
@@ -157,20 +179,24 @@ def test_generate_g_matr () :
     model2 = EDXS(**model_parameters)
     model3 = EDXS(**model_parameters)
     model4 = EDXS(**model_parameters)
+    model5 = EDXS(**model_parameters)
     size = model_parameters["e_size"]
     elts_list = ["Na", "Sr", "Ge", "Nb"]
-    model1.generate_g_matr(g_type = "bremsstrahlung", elements = elts_list, elements_dict={})
+    model1.generate_g_matr(g_type = "bremsstrahlung", elements = elts_list, elements_dict={}, ignored_elements=[])
     G_brem = model1.G
-    model2.generate_g_matr(g_type = "identity", elements = elts_list, elements_dict={})
+    model2.generate_g_matr(g_type = "identity", elements = elts_list, elements_dict={}, ignored_elements=[])
     G_id = model2.G
-    model3.generate_g_matr(g_type = "no_brstlg", elements = elts_list, elements_dict={})
+    model3.generate_g_matr(g_type = "no_brstlg", elements = elts_list, elements_dict={},ignored_elements=[])
     G_no_brstlg = model3.G
-    model4.generate_g_matr(g_type = "bremsstrahlung", elements = elts_list, elements_dict={'Ge' : 3.0})
+    model4.generate_g_matr(g_type = "bremsstrahlung", elements = elts_list, elements_dict={'Ge' : 3.0}, ignored_elements=[])
     G_brem_ge = model4.G
+    model5.generate_g_matr(g_type = "bremsstrahlung", elements = ['Na', 'Ge', 'Nb'], elements_dict={'Ge' : 3.0}, ignored_elements=['Sr'])
+    G_brem_ge_ign = model5.G
 
     assert G_brem.shape == (size, 6)
     assert G_no_brstlg.shape == (size, 4)
     assert G_brem_ge.shape == (size, 7)
+    assert G_brem_ge_ign.shape == (size, 23)
 
     assert G_id is None
     np.testing.assert_allclose(G_brem[:,:-2], G_no_brstlg)
@@ -183,6 +209,7 @@ def test_generate_g_matr () :
     assert(model2.model_elts == [])
     assert(model3.model_elts == ['11', '38', '32', '41'])
     assert(model4.model_elts == ['11', '38', '32_lo', '32_hi', '41'])
+    assert(model5.model_elts == ['11', '32_lo', '32_hi', '41', '38_ign0', '38_ign1', '38_ign2', '38_ign3', '38_ign4', '38_ign5', '38_ign6', '38_ign7', '38_ign8', '38_ign9', '38_ign10', '38_ign11', '38_ign12', '38_ign13', '38_ign14', '38_ign15', '38_ign16'])
 
 def test_G_bremsstrahlung() : 
     model = EDXS(**model_parameters)

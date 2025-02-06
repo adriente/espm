@@ -46,7 +46,7 @@ dependencies = [
   "prettytable==3.12.0",
   "scikit-learn",
   "pyqt5==5.15.10",
-  "traits==6.4.3",
+  "traits==7.0.2",
 ]
 
 [project.entry-points."hyperspy.extensions"]
@@ -67,8 +67,10 @@ file = "Licence.txt"
   "memory_profiler",
   "sphinx-rtd-theme",
   "sphinx-copybutton",
+  "sphinx-gallery",
   "nbsphinx",
   "pandoc",
+  "pytest"
 ]
 
 [project.urls]

@@ -40,7 +40,7 @@ model_params = {"e_offset" : 0.2,
                 "e_scale" : 0.01,
                 "width_slope" : 0.01,
                 "width_intercept" : 0.065,
-                "db_name" : "default_xrays.json",
+                "db_name" : "200keV_xrays.json",
                 "E0" : 200,
                 "params_dict" : {
                     "Abs" : {
@@ -250,11 +250,12 @@ def test_decomposition () :
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
     gen_si.change_dtype("float64")
     gen_si.build_G()
-    est = SmoothNMF(n_components=3, G = gen_si.model, hspy_comp = True)
+    est = SmoothNMF(n_components=3, G = gen_si.model, tol = 1e-7, hspy_comp = True)
     gen_si.decomposition(algorithm = est)
     assert gen_si.metadata.Signal.signal_type == "EDS_espm_Simulated"
     np.testing.assert_allclose((est.G_@est.W_@est.H_).sum(axis = 1), gen_si.X.sum(axis = 1), rtol = 0.5)
-    np.testing.assert_allclose(est.W_[:-2,:].sum(axis = 0), np.ones(3), rtol = 0.1)
+    indices = gen_si.model.NMF_simplex()
+    np.testing.assert_allclose(est.W_[indices,:].sum(axis = 0), np.ones(3), rtol = 0.1)
 
     shutil.rmtree(str(gen_folder))
 
@@ -288,23 +289,27 @@ def test_spim () :
     assert gen_si.G is None
     
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
-    gen_si.build_G(problem_type = "no_brstlg",elements_dict = {})
+    gen_si.build_G(problem_type = "no_brstlg",elements_dict = {}, ignored_elements = [])
     assert gen_si.G.shape == (1900, 8)
     
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
-    gen_si.build_G(problem_type = "bremsstrahlung",elements_dict = {})
+    gen_si.build_G(problem_type = "bremsstrahlung",elements_dict = {}, ignored_elements = [])
     assert gen_si.G.shape == (1900, 10)
     
     Xflat = gen_si.X
     assert Xflat.shape == (1900, 120*100)
 
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
-    gen_si.build_G(problem_type = "bremsstrahlung",elements_dict = {"26" : 3.0})
+    gen_si.build_G(problem_type = "bremsstrahlung",elements_dict = {"26" : 3.0}, ignored_elements = [])
     assert gen_si.G.shape == (1900, 11)
 
     gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
-    gen_si.build_G(problem_type = "no_brstlg",elements_dict = {"26" : 3.0})
+    gen_si.build_G(problem_type = "no_brstlg",elements_dict = {"26" : 3.0}, ignored_elements = [])
     assert gen_si.G.shape == (1900, 9)
+
+    gen_si = hs.load(gen_folder / Path("sample_0.hspy"))
+    gen_si.build_G(problem_type = "bremsstrahlung",elements_dict = {"26" : 3.0}, ignored_elements = ['Cu'])
+    assert gen_si.G.shape == (1900, 22)
 
     detector_dict = {
         "detection" : {
@@ -323,7 +328,11 @@ def test_spim () :
         }
     }
 
-    gen_si.set_analysis_parameters (beam_energy = 100, azimuth_angle = 2.0, elevation_angle = 3.0, tilt_stage = 4.0, elements = ["Si"], thickness = 500e-7, density = 4, detector_type = detector_dict, width_slope = 0.3, width_intercept = 65.0, xray_db = "100keV_xrays.json")
+    gen_si.set_microscope_parameters(beam_energy = 100, azimuth_angle = 2.0, elevation_angle = 3.0, tilt_stage = 4.0 )
+    gen_si.set_elements(elements = ["Si"])
+    gen_si.metadata.Acquisition_instrument.TEM.Stage.tilt_beta = 0.0
+
+    gen_si.set_analysis_parameters(thickness = 500e-7, density = 4, detector_type = detector_dict, width_slope = 0.3, width_intercept = 65.0, xray_db = "100keV_xrays.json")
 
     assert gen_si.metadata.Sample.thickness == 500e-7
     assert gen_si.metadata.Sample.density == 4
@@ -333,19 +342,6 @@ def test_spim () :
     assert gen_si.metadata.Acquisition_instrument.TEM.beam_energy == 100
     assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.take_off_angle == take_off_angle(4.0,2.0,3.0)
     assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.type.as_dictionary() == detector_dict
-    assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.width_slope == 0.3
-    assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.width_intercept == 65.0
-
-    gen_si.add_analysis_parameters(beam_energy = 200, azimuth_angle = 3.0, elevation_angle = 4.0, tilt_stage = 5.0, elements = ["Fe"], thickness = 400e-7, density = 3.5, detector_type = 'truc.txt', width_slope = 0.32, width_intercept = 85.0, xray_db = "400keV_xrays.json")
-
-    assert gen_si.metadata.Sample.thickness == 500e-7
-    assert gen_si.metadata.Sample.density == 4
-    assert gen_si.metadata.Sample.elements == ["Si", 'Fe'] or gen_si.metadata.Sample.elements == ["Fe", 'Si']
-    assert gen_si.metadata.xray_db == "100keV_xrays.json"
-    assert gen_si.metadata.Acquisition_instrument.TEM.Stage.tilt_alpha == 4.0
-    assert gen_si.metadata.Acquisition_instrument.TEM.beam_energy == 100
-    assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.take_off_angle == take_off_angle(4.0,2.0,3.0)
-    assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.type == 'truc.txt'
     assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.width_slope == 0.3
     assert gen_si.metadata.Acquisition_instrument.TEM.Detector.EDS.width_intercept == 65.0
 
@@ -360,12 +356,14 @@ def test_carto_fixed_W() :
         s.axes_manager[-1].offset = 0.2
         s.axes_manager[-1].scale = 0.1
         s.set_signal_type("EDS_espm")
-        s.set_analysis_parameters()
         s.add_elements(elements = ["Si","O","Fe","Ca"])
+        s.set_microscope_parameters(beam_energy = 100, azimuth_angle = 2.0, elevation_angle = 3.0, tilt_stage = 4.0 )
+        s.metadata.Acquisition_instrument.TEM.Stage.tilt_beta = 0.0
+        s.set_analysis_parameters(thickness = 500e-7, density = 4, detector_type = 'SDD_efficiency.txt', width_slope = 0.3, width_intercept = 65.0, xray_db = "100keV_xrays.json")
         return s
      
     s = create_data()
-    s.build_G(problem_type = "bremsstrahlung")
+    s.build_G(problem_type = "bremsstrahlung",ignored_elements = [])
     fw1 = s.carto_fixed_W(brstlg_comps = 2)
     tw1_1 = np.diag(-1* np.ones(4))
     tw1_2 = np.zeros((2,4))
@@ -379,7 +377,7 @@ def test_carto_fixed_W() :
     np.testing.assert_array_equal(fw1,tw1)
 
     s = create_data()
-    s.build_G(problem_type = "no_brstlg")
+    s.build_G(problem_type = "no_brstlg", ignored_elements = [])
     fw2 = s.carto_fixed_W()
     tw2 = np.diag(-1* np.ones(4))
 
@@ -387,7 +385,7 @@ def test_carto_fixed_W() :
     np.testing.assert_array_equal(fw2,tw2)
 
     s = create_data()
-    s.build_G(problem_type = "no_brstlg", elements_dict = {"26" : 3.0})
+    s.build_G(problem_type = "no_brstlg", elements_dict = {"26" : 3.0}, ignored_elements = [])
     fw3 = s.carto_fixed_W()
     tw3 = np.diag(-1* np.ones(5))
 
@@ -401,28 +399,39 @@ def test_set_fixed_W() :
         s.axes_manager[-1].offset = 0.2
         s.axes_manager[-1].scale = 0.1
         s.set_signal_type("EDS_espm")
-        s.set_analysis_parameters()
-        s.set_elements(elements = ["Si","O","Fe","Ca"])
+        s.add_elements(elements = ["Si","O","Fe","Ca"])
+        s.set_microscope_parameters(beam_energy = 100, azimuth_angle = 2.0, elevation_angle = 3.0, tilt_stage = 4.0 )
+        s.metadata.Acquisition_instrument.TEM.Stage.tilt_beta = 0.0
+        s.set_analysis_parameters(thickness = 500e-7, density = 4, detector_type = 'SDD_efficiency.txt', width_slope = 0.3, width_intercept = 65.0, xray_db = "100keV_xrays.json")
         return s
     
     s = create_data()
-    s.build_G(problem_type = "bremsstrahlung")
+    s.build_G(problem_type = "bremsstrahlung", ignored_elements = [])
     fw1 = s.set_fixed_W({'p0' : {"Si" : 0.0, 'O' : 0.5, 'b1' : 10.0},'p1' : {}, 'p2' : {'O' : 0.4, 'Fe' : 0.6, 'b0' : 3.0} })
-    tw1 = (np.array([[0.0, 0.5, -1.0, -1.0, -1.0, 10.0],
-                    [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
-                    [-1.0, 0.4, 0.6, -1.0, 3.0, -1.0]])).T
+    tw1 = (np.array([[-1.0, -1.0, 0.5, 0.0, -1.0, 10.0],
+                [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
+                [-1.0, 0.6, 0.4, -1.0, 3.0, -1.0]])).T
     assert(fw1.shape == (6,3))
     np.testing.assert_array_equal(fw1,tw1)
 
     s = create_data()
-    s.build_G(problem_type = "no_brstlg", elements_dict = {"Fe" : 3.0})
+    s.build_G(problem_type = "no_brstlg", elements_dict = {"Fe" : 3.0}, ignored_elements = [])
     fw2 = s.set_fixed_W({'p0' : {"Si" : 0.0, 'O' : 0.5},'p1' : {}, 'p2' : {'O' : 0.4, 'Fe' : 0.6} })
-    tw2 = (np.array([[0.0, 0.5, -1.0, -1.0, -1.0],
-                    [-1.0, -1.0, -1.0, -1.0, -1.0],
-                    [-1.0, 0.4, -1.0, 0.6,-1.0]])).T
+    tw2 = (np.array([[-1.0, -1.0, -1.0, 0.5,0.0],
+                [-1.0, -1.0, -1.0, -1.0, -1.0],
+                [-1.0, -1.0, 0.6, 0.4, -1.0]])).T
     
     assert(fw2.shape == (5,3))
     np.testing.assert_array_equal(fw2,tw2)
+        
+    s = create_data()
+    s.build_G(problem_type = "bremsstrahlung", ignored_elements = ['Cu'])
+    fw3 = s.set_fixed_W({'p0' : {"Si" : 0.0, 'O' : 0.5, 'b1' : 10.0},'p1' : {}, 'p2' : {'O' : 0.4, 'Fe' : 0.6, 'b0' : 3.0} })
+    tw3 = (np.array([[-1.0,-1.0, 0.5, 0.0, -1.0, -1.0, -1.0, -1.0,-1.0, -1.0,-1.0, -1.0,-1.0, -1.0,-1.0, -1.0, 10.0],
+                [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0,-1.0, -1.0,-1.0, -1.0,-1.0, -1.0,-1.0, -1.0,-1.0, -1.0, -1.0],
+                [-1.0, 0.6, 0.4, -1.0, -1.0, -1.0, -1.0, -1.0,-1.0, -1.0,-1.0, -1.0,-1.0, -1.0,-1.0, 3.0, -1.0]])).T
+    assert(fw1.shape == (6,3))
+    np.testing.assert_array_equal(fw3,tw3)
 
 def test_estimate_best_binning () : 
     pass
