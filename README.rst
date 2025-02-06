@@ -13,9 +13,9 @@ In future implementation, we will try to extend the package to support electron 
 This library is integrated as much as possible in the `hyperspy <https://hyperspy.org>` and `scikit-learn <https://scikit-learn.org>` frameworks.
 
 The main components of the package are:
-- The simulation of STEM-EDXS datasets using :mod:`espm.datasets` which combines :mod:`espm.weights` for the simulation of spatial distributions and :mod:`èspm.models` for the simulation of spectra.
-- The hyperspectral unmixing of STEM-EDXS spectrum images using :mod:`espm.estimators`. This module contains algorithms to perform non-negative matrix factorization with diverse regularisation (e.g. Laplacian or L1) and contraints (e.g. simplex).
-- The :mod:`espm.models` module can also be used to perform a physics-guided decomposition of STEM-EDXS datasets.
+- The simulation of STEM-EDXS datasets using `espm.datasets` which combines `espm.weights` for the simulation of spatial distributions and `espm.models` for the simulation of spectra.
+- The hyperspectral unmixing of STEM-EDXS spectrum images using `espm.estimators`. This module contains algorithms to perform non-negative matrix factorization with diverse regularisation (e.g. Laplacian or L1) and contraints (e.g. simplex).
+- The `espm.models` module can also be used to perform a physics-guided decomposition of STEM-EDXS datasets.
 
 Installation
 ------------
