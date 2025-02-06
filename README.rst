@@ -29,7 +29,7 @@ If you want to develop, please use the option::
     $ git clone https://github.com/adriente/espm.git
     $ cd espm
     $ pip install cython
-    $ pip install -e ."[dev]" 
+    $ pip install -e .[dev] 
 
 If you get issues regarding pandoc when using `make doc`, you can install it using::
 
@@ -47,12 +47,7 @@ We recommend to install the package in a virtual environment using conda::
     $ conda create -n espm python=3.11
     $ conda activate espm
     $ pip install espm
-
-We also recommend that you install the following packages in the same environment::
-
-    $ pip install pyqt5
-    $ pip install hyperspy_gui_traitsui
-    $ pip install hyperspy_gui_ipywidgets
+    $ conda install jupyterlab
 
 It is especially useful for the interactive plotting in the notebooks.
 
@@ -75,7 +70,7 @@ You can get started with the following notebooks:
 CITING
 ------
 
-If you use this library, please cite the following paper::
+If you use this library, please cite on of the following papers::
 
     @article{teurtrie2023espm,
     title={espm: A Python library for the simulation of STEM-EDXS datasets},
@@ -84,4 +79,17 @@ If you use this library, please cite the following paper::
     pages={113719},
     year={2023},
     publisher={Elsevier}
+    }
+
+    @article{Teurtrie_2024,
+    doi = {10.1088/2632-2153/ad9192},
+    year = {2024},
+    month = {nov},
+    publisher = {IOP Publishing},
+    volume = {5},
+    number = {4},
+    pages = {045050},
+    author = {Teurtrie, Adrien and Perraudin, Nathanaël and Holvoet, Thomas and Chen, Hui and Alexander, Duncan T L and Obozinski, Guillaume and Hébert, Cécile},
+    title = {From STEM-EDXS data to phase separation and quantification using physics-guided NMF},
+    journal = {Machine Learning: Science and Technology}
     }

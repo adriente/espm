@@ -7,7 +7,7 @@ packages = ["espm", "espm.datasets", "espm.estimators", "espm.models", "espm.tab
 
 [project]
 name = "espm"
-version = "1.2.1"
+version = "1.1.3"
 description = "Electron SPectro-Microscopy Python Library"
 requires-python = ">=3.8"
 readme = "README.rst"

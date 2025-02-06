@@ -328,7 +328,7 @@ class EDSespm(EDSTEMSpectrum) :
         """
         # The code is quite dirty, but it works.
         # To code a proper gui we need to wait for an update of hyperspy
-        if self.model is None : 
+        if self.model_ is None : 
             raise ValueError("The G matrix has not been built yet. Please use the build_G method.")
         if ranges is not None :
            self.ranges = ranges
