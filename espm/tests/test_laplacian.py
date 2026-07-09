@@ -1,7 +1,9 @@
 import numpy as np
-from espm.utils import create_laplacian_matrix
-from espm.conf import sigmaL
 from scipy.sparse.linalg import eigs
+
+from espm.conf import sigmaL
+from espm.utils import create_laplacian_matrix
+
 
 def my_laplacian_op(image):
     nx, ny = image.shape
@@ -14,10 +16,10 @@ def my_laplacian_op(image):
 
     return -(dxx + dyy)
 
+
 def test_laplacian_matrix():
     for nx in range(2, 5):
-        for ny in range(2,8):
-
+        for ny in range(2, 8):
             L1 = []
             for i in range(nx):
                 for j in range(ny):
@@ -30,9 +32,10 @@ def test_laplacian_matrix():
 
             np.testing.assert_array_almost_equal(L2.todense(), L1)
 
+
 def test_sigma_L():
     for nx in range(4, 100, 20):
         for ny in range(5, 100, 30):
             Delta = create_laplacian_matrix(nx, ny)
             l2 = np.abs(eigs(Delta, k=1)[0][0])
-            assert(l2 <= sigmaL)
+            assert l2 <= sigmaL

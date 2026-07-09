@@ -84,3 +84,15 @@ hyperspy_ui = [
 "Homepage" = "https://espm.readthedocs.io/en/latest/"
 "Bug Reports" = "https://github.com/adriente/espm/issues"
 "Source" = "https://github.com/adriente/espm"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.20",
+]
+
+[tool.ruff.lint]
+ignore = ["E711", "E712", "E741"]
+extend-select = ["I"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]

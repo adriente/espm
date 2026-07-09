@@ -4,7 +4,7 @@ The models are also used for the creation of the G matrix, which can be later us
 
 .. note::
 
-    For now espm supports only the modelling of EDS data but we aim 
+    For now espm supports only the modelling of EDS data but we aim
     at supporting the modelling of EELS data too.
 
 """
