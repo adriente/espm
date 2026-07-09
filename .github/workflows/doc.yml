@@ -12,10 +12,10 @@ jobs:
         python-version: ["3.10"]
     steps:
       - name: Checkout code
-        uses: actions/checkout
+        uses: actions/checkout@v7
 
       - name: Set up uv
-        uses: astral-sh/setup-uv
+        uses: astral-sh/setup-uv@v8
         with:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
