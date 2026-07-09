@@ -27,18 +27,18 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "Intended Audience :: End Users/Desktop",
-    "Intended Audience :: Developers", 
+    "Intended Audience :: Developers",
     "Natural Language :: English",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: MacOS :: MacOS X",
-    "Operating System :: POSIX :: Linux", 
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: C",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Mathematics",
-    "Topic :: Scientific/Engineering"
+    "Topic :: Scientific/Engineering",
 ]
 dependencies = [
     "exspy>=0.3.2",
@@ -75,10 +75,7 @@ dev = [
     "sphinxcontrib-bibtex>=2.7.0",
 ]
 
-hyperspy_ui = [
-    "hyperspy_gui_ipywidgets>=2.0",
-    "hyperspy_gui_traitsui>2.0"
-]
+hyperspy_ui = ["hyperspy_gui_ipywidgets>=2.0", "hyperspy_gui_traitsui>2.0"]
 
 [project.urls]
 "Homepage" = "https://espm.readthedocs.io/en/latest/"
@@ -86,9 +83,7 @@ hyperspy_ui = [
 "Source" = "https://github.com/adriente/espm"
 
 [dependency-groups]
-dev = [
-    "ruff>=0.15.20",
-]
+dev = ["ruff>=0.15.20"]
 
 [tool.ruff.lint]
 ignore = ["E711", "E712", "E741"]
@@ -96,3 +91,10 @@ extend-select = ["I"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "F403"]
+
+[tool.pytest]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    'ignore:function ham\(\) is deprecated:DeprecationWarning',
+]
