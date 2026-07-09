@@ -67,6 +67,7 @@ hyperspy_ui = ["hyperspy_gui_ipywidgets>=2.0", "hyperspy_gui_traitsui>2.0"]
 dev = ["ruff>=0.15.20"]
 test = ["pytest>=9.1.1"]
 doc = [
+    "ipykernel",
     "nbsphinx>=0.9.8",
     "numpydoc>=1.10.0",
     "pandoc>=2.4",
