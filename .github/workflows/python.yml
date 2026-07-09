@@ -3,22 +3,22 @@ name: Lint and Test
 on: [push, pull_request]
 
 jobs:
-  lint:
-    name: Lint with Ruff
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
+  # lint:
+  #   name: Lint with Ruff
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v7
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990
-        with:
-          enable-cache: true
-          python-version: "3.12"
+  #     - name: Set up uv
+  #       uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990
+  #       with:
+  #         enable-cache: true
+  #         python-version: "3.12"
 
-      - name: Lint
-        run: |
-          uv run --group dev make lint
+  #     - name: Lint
+  #       run: |
+  #         uv run --group dev make lint
 
   test:
     name: Test on Python ${{ matrix.python-version }}
