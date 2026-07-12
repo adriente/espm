@@ -1,14 +1,17 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=64", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["espm*"]
 
+[tool.setuptools_scm]
+write_to = "espm/_version.py"
+
 [project]
 name = "espm"
-version = "1.1.4"
+dynamic = ["version"]
 description = "Electron SPectro-Microscopy Python Library"
 requires-python = ">=3.10"
 readme = "README.rst"
