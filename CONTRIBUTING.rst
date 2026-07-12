@@ -17,8 +17,7 @@ development with the following::
     $ pip install -e .[dev]
 
 You can improve or add functionality in the ``espm`` folder, along with
-corresponding unit tests in ``espm/tests/test_*.py`` (with reasonable
-coverage).
+corresponding unit tests in ``tests/test_*.py`` (with reasonable coverage). 
 If you have a nice example to demonstrate the use of the introduced
 functionality, please consider adding a notebook in ``doc/introduction/notebooks``.
 In general, this can be done as a relative symbolic link to a notebook in the
@@ -35,8 +34,8 @@ documentation with the following ::
 To iterate faster, you can partially run the test suite, at various degrees of
 granularity, as follows::
 
-   $ pytest espm.test.test_utils.py
-   $ pytest espm.test.test_estimators.py
+   $ pytest tests/test_utils.py
+   $ pytest tests/test_estimators.py
 
 Making a release
 ----------------
@@ -45,8 +44,7 @@ Making a release
 #. Log to `readthedoc <https://readthedocs.org/projects/espm>`, 
    launch a build on latest and check that it can compile 
    the latest version of the documentation.
-#. Update the version number and release date in ``setup.py``,
-   ``espm/__init__.py`` and ``CHANGELOG.rst``.
+#. Update the release notes and release date in ``CHANGELOG.rst``.
 #. Commit the changes with ``git commit -am "Bump to version 0.2.0"``.
 #. Create a git tag with ``git tag -a v0.2.0 -m "espm v0.2.0"``.
 #. Push the tag to GitHub with ``git push --tag``. The tag should now
@@ -72,22 +70,20 @@ Repository organization
   LICENSE.txt         Project license
   *.rst               Important documentation
   Makefile            Targets for make
-  setup.py            Meta information about package (published on PyPI)
+  pyproject.toml      Meta information about package, dependencies and tools (Ruff, pytest)
   .gitignore          Files ignored by the git revision control system
-  .travis.yml         Defines testing on Travis continuous integration
 
-  espm/              Contains the modules (the actual toolbox implementation)
+  espm/               Contains the modules (the actual toolbox implementation)
    __init.py__        Load modules at package import
    *.py               One file per module
-  espm/tables/       Contains data tables for the EDXS and EDSS models
+  espm/tables/        Contains data tables for the EDXS and EDSS models
    __init.py__        Load modules at package import
    *.json             data_files for the package  
    *.txt              data_files for the package  
 
-  espm/tests/        Contains the test suites (will be distributed to end user)
-   __init.py__        Load modules at package import
+  tests/              Contains the test suites (not distributed to end user)
    test_*.py          One test suite per module
-   test_docstrings.py Test the examples in the docstrings (reference doc)
+   test_docstring.py  Test the examples in the docstrings (reference doc)
 
   doc/                Package documentation
    conf.py            Sphinx configuration
