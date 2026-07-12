@@ -56,20 +56,14 @@ espm = "espm"
 [project.license]
 file = "Licence.txt"
 
-[project.optional-dependencies]
-hyperspy_ui = ["hyperspy_gui_ipywidgets>=2.0", "hyperspy_gui_traitsui>2.0"]
-
 [project.urls]
 "Homepage" = "https://espm.readthedocs.io/en/latest/"
 "Bug Reports" = "https://github.com/adriente/espm/issues"
 "Source" = "https://github.com/adriente/espm"
 
-[dependency-groups]
-dev = [
-    "ruff>=0.15.20",
-    "twine",
-    "build",
-]
+[project.optional-dependencies]
+hyperspy_ui = ["hyperspy_gui_ipywidgets>=2.0", "hyperspy_gui_traitsui>2.0"]
+dev = ["ruff>=0.15.20", "twine", "build"]
 test = ["pytest>=9.1.1"]
 doc = [
     "ipykernel",

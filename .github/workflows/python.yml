@@ -39,4 +39,4 @@ jobs:
 
       - name: Run tests
         run: |
-          uv run --group dev --group test make test
+          uv run --extra dev --extra test make test

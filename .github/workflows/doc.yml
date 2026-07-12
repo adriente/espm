@@ -27,4 +27,4 @@ jobs:
 
       - name: Build documentation
         run: |
-          uv run --group doc make doc
+          uv run --extra doc make doc
