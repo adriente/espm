@@ -10,7 +10,7 @@ help:
 	@echo "release  package and upload to PyPI"
 
 clean:
-	git clean -Xdf
+	rm -rf build/ dist/ *.egg-info/ .pytest_cache/ .ruff_cache/ doc/_build/
 	jupyter nbconvert --inplace --ClearOutputPreprocessor.enabled=True $(NB)
 
 lint:
@@ -32,8 +32,7 @@ doc:
 	sphinx-build -b linkcheck -d doc/_build/doctrees doc doc/_build/linkcheck
 
 dist: clean
-	python setup.py sdist
-	python setup.py bdist_wheel --universal
+	python -m build
 	ls -lh dist/*
 	twine check dist/*
 

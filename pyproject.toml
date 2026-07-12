@@ -65,7 +65,11 @@ hyperspy_ui = ["hyperspy_gui_ipywidgets>=2.0", "hyperspy_gui_traitsui>2.0"]
 "Source" = "https://github.com/adriente/espm"
 
 [dependency-groups]
-dev = ["ruff>=0.15.20"]
+dev = [
+    "ruff>=0.15.20",
+    "twine",
+    "build",
+]
 test = ["pytest>=9.1.1"]
 doc = [
     "ipykernel",
