@@ -85,6 +85,7 @@ extend-select = ["I"]
 "__init__.py" = ["F401", "F403"]
 
 [tool.pytest]
+testpaths = ["tests"]
 filterwarnings = [
     "error",
     "ignore::UserWarning",

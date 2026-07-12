@@ -22,7 +22,7 @@ export MPLBACKEND = agg
 export DISPLAY = :99
 
 test:
-	pytest espm
+	pytest
 
 clean-doc:
 	rm -rf doc/_build
