@@ -69,6 +69,8 @@ class EDSespm(EDSTEMSpectrum):
         self.model_ = None
         self.custom_init_ = None
         self.ranges = None
+        self.avg_spect = None
+        self.energy_axis = None
         self._set_default_analysis_params()
 
     ##############
@@ -1646,6 +1648,134 @@ class EDSespm(EDSTEMSpectrum):
         els_names = [num_to_symbol(el) for el in els]
         return els_names
 
+    ####################
+    # Auto Calibration #
+    ####################
+
+    def fit_single_peak(self, E_theoretical, sigma_expected, window):
+        if self.energy_axis is None:
+            self.energy_axis = self.axes_manager.signal_axes[0].axis
+
+        energy_axis = self.energy_axis
+        mask = (energy_axis >= E_theoretical - window) & (
+            energy_axis <= E_theoretical + window
+        )
+        xdata = energy_axis[mask]
+
+        if self.avg_spect is None:
+            self.avg_spect = self.mean(axis=(0, 1)).data
+
+        ydata = self.avg_spect[mask]
+
+        idx_max = np.argmax(ydata)
+        x0_guess = xdata[idx_max]
+        A_guess = np.max(ydata) - np.min(ydata)
+        sigma_guess = sigma_expected
+        C_guess = np.min(ydata)
+
+        p0 = [A_guess, x0_guess, sigma_guess, C_guess, 0.0]
+        bounds = (
+            [0.0, E_theoretical - window, 0.9 * sigma_expected, 0.0, -1.0],
+            [np.inf, E_theoretical + window, 1.1 * sigma_expected, np.inf, 1.0],
+        )
+
+        popt, _ = curve_fit(
+            gaussian,
+            xdata,
+            ydata,
+            p0,
+            bounds=bounds,
+        )
+        return popt
+
+    def fit_table(self, window_mult=2.5, filter_cs=0.0):
+        model = self.model
+        table = model.db_dict
+
+        calibrated_peaks = {}
+
+        @symbol_to_number_list
+        def convert_to_numbers(elements):
+            return elements
+
+        elements = convert_to_numbers(elements=self.metadata.Sample.elements)
+
+        for elt in elements:
+            elt = str(elt)
+            lines = table[elt]
+
+            max_cs = max([line["cs"] for _, line in lines.items()])
+
+            calibrated_peaks[elt] = {}
+
+            for line_name, line_data in lines.items():
+                e = line_data["energy"]
+                cs = line_data["cs"]
+
+                if filter_cs and cs < filter_cs * max_cs:
+                    continue
+
+                width_expected = model.width_slope * e + model.width_intercept
+                sigma_expected = width_expected / 2.3548
+                window_half_width = window_mult * sigma_expected
+
+                A, x0, sigma, C, m = self.fit_single_peak(
+                    e, sigma_expected, window_half_width
+                )
+
+                calibrated_peaks[elt][line_name] = {
+                    "energy": x0,
+                    "cs": cs,
+                    "theoretical": e,
+                    "sigma": sigma,
+                    "amplitude": A,
+                    "background_base": C,
+                    "background_slope": m,
+                }
+
+        return calibrated_peaks
+
+    def poly_fit(self, degree=2, weighted=False, **kwargs):
+        calibrated = self.fit_table(**kwargs)
+
+        x = []
+        y = []
+        sigma = []
+
+        for elt in calibrated:
+            for _, line in calibrated[elt].items():
+                x.append(line["theoretical"])
+                y.append(line["energy"])
+                sigma.append(line["sigma"])
+
+        average_spectrum = self.avg_spect
+        energy_axis = self.energy_axis
+
+        w = (
+            None
+            if not weighted
+            else [average_spectrum[np.searchsorted(energy_axis, xx)] for xx in x]
+        )
+
+        y_poly = np.polyfit(x, y, degree, w=w)
+        sigma_poly = np.polyfit(x, sigma, degree, w=w)
+
+        return (
+            {
+                k: {
+                    name: {
+                        **line,
+                        "energy": np.polyval(y_poly, line["theoretical"]),
+                        "sigma": np.polyval(sigma_poly, line["theoretical"]),
+                    }
+                    for name, line in v.items()
+                }
+                for k, v in calibrated.items()
+            },
+            y_poly,
+            sigma_poly,
+        )
+
 
 #######################
 # Auxiliary functions #
@@ -1705,3 +1835,7 @@ def build_G(model, g_params):
 
 def Gauss(x, a, x0, sigma):
     return a * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
+
+
+def gaussian(x, A, x0, sigma, C, m):
+    return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + C + m * (x - x0)
