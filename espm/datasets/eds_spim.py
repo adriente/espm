@@ -222,6 +222,9 @@ class EDSespm(EDSTEMSpectrum):
         ignored_elements: list[str] = ["Cu"],
         *,
         elements_dict: dict[str, float] = {},
+        use_calibration: bool = False,
+        use_poly: bool = True,
+        **kwargs,
     ) -> None:
         r"""
         Build the G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDSespm` object and stores it as an attribute.
@@ -233,9 +236,17 @@ class EDSespm(EDSTEMSpectrum):
                 - "bremsstrahlung" : the G matrix is a callable with both characteristic X-rays and a bremsstrahlung model.
                 - "no_brstlg" : the G matrix is a matrix with only characteristic X-rays.
                 - "identity" : the G matrix is None which is equivalent to an identity matrix for espm functions.
+        ignored_elements : list, optional
+            List of chemical elements to ignore when building the G matrix.
+        use_calibration : bool, optional
+            If True, build G using a calibrated/fitted peak table (from fit_table or poly_fit).
+        use_poly : bool, optional
+            If True and use_calibration is True, use the poly fitted table. If False, use the fitted table.
         elements_dict : dict, optional
             Dictionary containing atomic numbers and a corresponding cut-off energies. It is used to separate the characteristic X-rays of the given elements into two energies ranges and assign them each a column in the G matrix instead of having one column per element.
             For example elements_dict = {"26",3.0} will separate the characteristic X-rays of the element Fe into two energies ranges and assign them each a column in the G matrix. This is useful to circumvent issues with the absorption.
+        **kwargs : dict
+            Additional arguments to pass to fit_table or poly_fit (e.g., window_mult, filter_cs).
         Returns
         -------
         None
@@ -243,11 +254,21 @@ class EDSespm(EDSTEMSpectrum):
         self._check_metadata_G()
         self.problem_type = problem_type
         self.separated_lines = elements_dict
+
+        if use_calibration:
+            if use_poly:
+                table = self.poly_fit(**kwargs)[0]
+            else:
+                table = self.fit_table(**kwargs)
+        else:
+            table = None
+
         g_pars = {
             "g_type": problem_type,
             "ignored_elements": ignored_elements,
             "elements": self.metadata.Sample.elements,
             "elements_dict": elements_dict,
+            "table": table,
         }
 
         self.model.generate_g_matr(**g_pars)
