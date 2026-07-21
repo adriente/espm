@@ -194,6 +194,7 @@ class EDXS(PhysicalModel):
         elements=[],
         elements_dict={},
         table=None,
+        energy_poly=None,
         **kwargs,
     ):
         r"""
@@ -260,10 +261,7 @@ class EDXS(PhysicalModel):
             valid_elts = self.__check_elts_in_G(elements)
             valid_ignored = self.__check_elts_in_G(conv_ignored_elts)
 
-        if g_type == "bremsstrahlung":
-            self.bkgd_in_G = True
-        else:
-            self.bkgd_in_G = False
+        self.bkgd_in_G = g_type == "bremsstrahlung"
 
         # None is a default value for the G matrix and thus G will be considered to be the identity matrix in most of espm functions.
         if len(valid_elts) == 0:
@@ -285,7 +283,11 @@ class EDXS(PhysicalModel):
             if self.bkgd_in_G:
                 approx_elts = {key: 1.0 / len(valid_elts) for key in valid_elts}
                 brstlg_spectrum = G_bremsstrahlung(
-                    self.x, self.E0, self.params_dict, elements_dict=approx_elts
+                    self.x,
+                    self.E0,
+                    self.params_dict,
+                    elements_dict=approx_elts,
+                    energy_poly=energy_poly,
                 )
                 if np.max(brstlg_spectrum) > 0.0:
                     self.G = np.concatenate((self.G, brstlg_spectrum), axis=1)

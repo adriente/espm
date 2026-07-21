@@ -257,11 +257,13 @@ class EDSespm(EDSTEMSpectrum):
 
         if use_calibration:
             if use_poly:
-                table = self.poly_fit(**kwargs)[0]
+                table, energy_poly, sigma_poly = self.poly_fit(**kwargs)
             else:
                 table = self.fit_table(**kwargs)
+                energy_poly = None
         else:
             table = None
+            energy_poly = None
 
         g_pars = {
             "g_type": problem_type,
@@ -269,6 +271,7 @@ class EDSespm(EDSTEMSpectrum):
             "elements": self.metadata.Sample.elements,
             "elements_dict": elements_dict,
             "table": table,
+            "energy_poly": energy_poly,
         }
 
         self.model.generate_g_matr(**g_pars)
@@ -1778,7 +1781,7 @@ class EDSespm(EDSTEMSpectrum):
             else [average_spectrum[np.searchsorted(energy_axis, xx)] for xx in x]
         )
 
-        y_poly = np.polyfit(x, y, degree, w=w)
+        energy_poly = np.polyfit(x, y, degree, w=w)
         sigma_poly = np.polyfit(x, sigma, degree, w=w)
 
         return (
@@ -1786,14 +1789,14 @@ class EDSespm(EDSTEMSpectrum):
                 k: {
                     name: {
                         **line,
-                        "energy": np.polyval(y_poly, line["theoretical"]),
+                        "energy": np.polyval(energy_poly, line["theoretical"]),
                         "sigma": np.polyval(sigma_poly, line["theoretical"]),
                     }
                     for name, line in v.items()
                 }
                 for k, v in calibrated.items()
             },
-            y_poly,
+            energy_poly,
             sigma_poly,
         )
 
