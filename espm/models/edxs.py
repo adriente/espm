@@ -228,8 +228,9 @@ class EDXS(PhysicalModel):
             :dict: The keys are chemical elements (atomic number) and the values are cut-off energies. This argument is used to split some of the columns of G into 2 columns. The first column corresponds to characteristic X-rays before the cut-off and second one corresponds to characteristic X-rays before the cut-off. This feature is implemented to enable more accurate absorption correction.
         elements :
             :list: List of modeled chemical elements. The list can be populated either with atomic numbers or chemical symbols, e.g. "Fe" or 26.
-        table :
-            :dict: Optional dictionary containing calibrated/fitted peaks. If provided, the G matrix will be built using the calibrated/fitted energies and sigmas.
+        use_calibration: bool, optional
+            Whether to use automatic calibration to build G.
+            Defaults to `False`.
 
         Returns
         -------

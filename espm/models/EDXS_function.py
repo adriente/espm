@@ -269,6 +269,8 @@ def G_bremsstrahlung(x, E0, params_dict, *, elements_dict={}, energy_poly=None):
         :dict: Dictionnary containing the absorption and detection parameters.
     elements_dict :
         :dict: Composition of the studied sample. It is required for absorption calculation.
+    energy_poly:
+        :np.array 1D: The coefficients of the polynomial calibration of energy axis obtained from `EDSespm::auto_calibration`.
 
     Returns
     -------

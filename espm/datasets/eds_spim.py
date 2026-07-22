@@ -269,11 +269,12 @@ class EDSespm(EDSTEMSpectrum):
             List of chemical elements to ignore when building the G matrix.
         use_calibration : bool, optional
             If True, build G using a calibrated/fitted peak table (from fit_table or poly_fit).
-        use_poly : bool, optional
-            If True and use_calibration is True, use the poly fitted table. If False, use the fitted table.
         elements_dict : dict, optional
             Dictionary containing atomic numbers and a corresponding cut-off energies. It is used to separate the characteristic X-rays of the given elements into two energies ranges and assign them each a column in the G matrix instead of having one column per element.
             For example elements_dict = {"26",3.0} will separate the characteristic X-rays of the element Fe into two energies ranges and assign them each a column in the G matrix. This is useful to circumvent issues with the absorption.
+        use_calibration: bool, optional
+            Whether to use automatic calibration to build G.
+            Defaults to `False`.
         **kwargs : dict
             Additional arguments to pass to fit_table or poly_fit (e.g., window_mult, filter_cs).
         Returns
