@@ -527,19 +527,13 @@ def quant_spectrum(s1, skip_elements=[]):
     ]
 
     s.build_G()
-    est = espm.estimators.SmoothNMF(n_components=1, G=s.G(), verbose=0)
+    est = espm.estimators.SmoothNMF(n_components=1, G=s.G, verbose=0)
     with io.capture_output() as captured:
         est.fit_transform(X=s1.data[:, np.newaxis], H=np.array([1.0])[:, np.newaxis])
     s.learning_results.decomposition_algorithm = est
-    with io.capture_output() as captured:
-        s.print_concentration_report(selected_elts=selected_elements)
-    # print(captured)
-    return dict(
-        [
-            [i.split(":")[0][:-1], float(i.split(":")[1])]
-            for i in captured.stdout.splitlines()[2:]
-        ]
-    ), s
+    conv_elts, W, _ = s.concentration_report(selected_elts=selected_elements)
+    quant_dict = {el: float(W[i, 0]) for i, el in enumerate(conv_elts)}
+    return quant_dict, s
 
 
 def cluster_analysis_concentration_report(s, cluster_source=None, print_std=False):
