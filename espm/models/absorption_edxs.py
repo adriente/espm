@@ -7,12 +7,20 @@ The :mod:`espm.models.absorption_edxs` module implements the functions to calcul
 """
 
 from pathlib import Path
+from functools import lru_cache
 
 import numpy as np
 from scipy.interpolate import interp1d
 
 from espm.conf import DB_PATH, HSPY_MAC
 from espm.utils import approx_density, atomic_to_weight_dict, number_to_symbol_dict
+
+
+@lru_cache(maxsize=128)
+def _get_mac_interp_func(key):
+    x_db = HSPY_MAC[key]["energies (keV)"]
+    y_db = HSPY_MAC[key]["mass_absorption_coefficient (cm2/g)"]
+    return interp1d(x_db, y_db, kind="cubic")
 
 
 @number_to_symbol_dict
@@ -45,9 +53,7 @@ def absorption_coefficient(x, atomic_fraction=False, *, elements_dict={"Si": 1.0
     sum_elts = sum(elements_dict.values())
 
     for key in elements_dict.keys():
-        x_db = HSPY_MAC[key]["energies (keV)"]
-        y_db = HSPY_MAC[key]["mass_absorption_coefficient (cm2/g)"]
-        interp_func = interp1d(x_db, y_db, kind="cubic")
+        interp_func = _get_mac_interp_func(key)
         mu += elements_dict[key] * interp_func(x) / sum_elts
 
     if len(elements_dict.keys()) == 0:
@@ -149,6 +155,13 @@ def absorption_mass_thickness(
     return (1 - np.exp(-chi)) / chi
 
 
+@lru_cache(maxsize=32)
+def _get_det_efficiency_interp_func(filename, kind):
+    array = np.loadtxt(DB_PATH / Path(filename))
+    x_curve, y_curve = array[:, 0], array[:, 1]
+    return interp1d(x_curve, y_curve, kind=kind)
+
+
 def det_efficiency_from_curve(x, filename, kind="cubic"):
     r"""
     Interpolate a detection efficiency curve that is stored in ~/espm/tables.
@@ -167,9 +180,7 @@ def det_efficiency_from_curve(x, filename, kind="cubic"):
     Detection efficiency
         :np.array 1D: Interpolated detection efficiency.
     """
-    array = np.loadtxt(DB_PATH / Path(filename))
-    x_curve, y_curve = array[:, 0], array[:, 1]
-    interp_func = interp1d(x_curve, y_curve, kind=kind)
+    interp_func = _get_det_efficiency_interp_func(filename, kind)
     return interp_func(x)
 
 
