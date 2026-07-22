@@ -61,11 +61,14 @@ class EDXS(PhysicalModel):
         # Tranfer the ranges from eds_espm to the physical model
         self.ranges = None
 
-    def __add_elts_G(self, reference_elt={}, *, elements=[], table=None):
+        self.calibrated_db_dict = None
+        self.energy_calibration_poly = None
+
+    def __add_elts_G(self, reference_elt={}, *, elements=[], use_calibration=False):
         for elt in elements:
             lines = []
-            if table is not None:
-                for _, line in table[str(elt)].items():
+            if use_calibration:
+                for _, line in self.calibrated_db_dict[str(elt)].items():
                     energy = line["energy"]
                     theoretical_energy = line.get("theoretical", energy)
                     sigma = line["sigma"]
@@ -132,11 +135,11 @@ class EDXS(PhysicalModel):
                 )
                 raise ValueError("Empty G column")
 
-    def _add_ignored_elts(self, elements=[], table=None):
+    def _add_ignored_elts(self, elements=[], use_calibration=False):
         for elt in elements:
             lines = []
-            if table is not None:
-                for _, line in table[str(elt)].items():
+            if use_calibration:
+                for _, line in self.calibrated_db_dict[str(elt)].items():
                     energy = line["energy"]
                     theoretical_energy = line.get("theoretical", energy)
                     sigma = line["sigma"]
@@ -193,8 +196,7 @@ class EDXS(PhysicalModel):
         *,
         elements=[],
         elements_dict={},
-        table=None,
-        energy_poly=None,
+        use_calibration=False,
         **kwargs,
     ):
         r"""
@@ -248,14 +250,12 @@ class EDXS(PhysicalModel):
 
         conv_ignored_elts = convert_elts(elements=ignored_elements)
 
-        if table is not None:
+        if use_calibration:
             valid_elts = [
-                elt for elt in elements if str(elt) in table or int(elt) in table
+                elt for elt in elements if str(elt) in self.calibrated_db_dict
             ]
             valid_ignored = [
-                elt
-                for elt in conv_ignored_elts
-                if str(elt) in table or int(elt) in table
+                elt for elt in conv_ignored_elts if str(elt) in self.calibrated_db_dict
             ]
         else:
             valid_elts = self.__check_elts_in_G(elements)
@@ -275,9 +275,13 @@ class EDXS(PhysicalModel):
             self.G = np.zeros((self.x.shape[0], 0))
             # For each element we unpack all shells and then unpack all lines of each shell.
             self.__add_elts_G(
-                reference_elt=elements_dict, elements=valid_elts, table=table
+                reference_elt=elements_dict,
+                elements=valid_elts,
+                use_calibration=use_calibration,
             )
-            self._add_ignored_elts(elements=valid_ignored, table=table)
+            self._add_ignored_elts(
+                elements=valid_ignored, use_calibration=use_calibration
+            )
 
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
@@ -287,7 +291,9 @@ class EDXS(PhysicalModel):
                     self.E0,
                     self.params_dict,
                     elements_dict=approx_elts,
-                    energy_poly=energy_poly,
+                    energy_poly=self.energy_calibration_poly
+                    if use_calibration
+                    else None,
                 )
                 if np.max(brstlg_spectrum) > 0.0:
                     self.G = np.concatenate((self.G, brstlg_spectrum), axis=1)

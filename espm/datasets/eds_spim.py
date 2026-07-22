@@ -69,8 +69,10 @@ class EDSespm(EDSTEMSpectrum):
         self.model_ = None
         self.custom_init_ = None
         self.ranges = None
-        self.avg_spect = None
-        self.energy_axis = None
+        self.average_spectrum_ = None
+        self.energy_axis_ = None
+        self.elements_ = None
+
         self._set_default_analysis_params()
 
     ##############
@@ -216,6 +218,34 @@ class EDSespm(EDSTEMSpectrum):
             self.model_ = EDXS(**mod_pars, custom_init=self.custom_init_)
         return self.model_
 
+    @property
+    def energy_axis(self):
+        if self.energy_axis_ is None:
+            self.energy_axis_ = self.axes_manager.signal_axes[0].axis
+        return self.energy_axis_
+
+    @property
+    def average_spectrum(self):
+        if self.average_spectrum_ is None:
+            nav_axes = self.axes_manager.navigation_axes
+            if len(nav_axes) > 0:
+                self.average_spectrum_ = self.mean(axis=nav_axes).data
+            else:
+                self.average_spectrum_ = self.data
+        return self.average_spectrum_
+
+    @property
+    def elements(self):
+        if self.elements_ is None:
+
+            @symbol_to_number_list
+            def convert_to_numbers(elements):
+                return elements
+
+            elements = convert_to_numbers(elements=self.metadata.Sample.elements)
+            self.elements_ = [str(el) for el in elements]
+        return self.elements_
+
     def build_G(
         self,
         problem_type: str = "bremsstrahlung",
@@ -223,7 +253,6 @@ class EDSespm(EDSTEMSpectrum):
         *,
         elements_dict: dict[str, float] = {},
         use_calibration: bool = False,
-        use_poly: bool = True,
         **kwargs,
     ) -> None:
         r"""
@@ -256,22 +285,14 @@ class EDSespm(EDSTEMSpectrum):
         self.separated_lines = elements_dict
 
         if use_calibration:
-            if use_poly:
-                table, energy_poly, sigma_poly = self.poly_fit(**kwargs)
-            else:
-                table = self.fit_table(**kwargs)
-                energy_poly = None
-        else:
-            table = None
-            energy_poly = None
+            self.auto_calibrate(**kwargs)
 
         g_pars = {
             "g_type": problem_type,
             "ignored_elements": ignored_elements,
             "elements": self.metadata.Sample.elements,
             "elements_dict": elements_dict,
-            "table": table,
-            "energy_poly": energy_poly,
+            "use_calibration": use_calibration,
         }
 
         self.model.generate_g_matr(**g_pars)
@@ -624,7 +645,7 @@ class EDSespm(EDSTEMSpectrum):
             "Estimated mass-thickness : {} g.cm^-2".format(curr_mt)
         )
 
-        axis = self.axes_manager.signal_axes[0].axis
+        axis = self.energy_axis
         self._plot.signal_plot.ax.plot(
             axis, estimator.G_ @ estimator.W_ @ estimator.H_, "b-", label="Full model"
         )
@@ -770,7 +791,7 @@ class EDSespm(EDSTEMSpectrum):
     def _plot_background(self, model):
         # The full range from self.compute_background misses both ends
         # The axis needs to be trimmed accordingly
-        axis = self.axes_manager.signal_axes[0].axis[1:-1]
+        axis = self.energy_axis[1:-1]
         self._plot.signal_plot.ax.plot(axis, model)
 
     def _generate_ranges(self, num):
@@ -951,7 +972,7 @@ class EDSespm(EDSTEMSpectrum):
             if indices:
                 component = sum([G[:, idx] @ W[idx, :] @ H for idx in indices])
                 spectrum_1D._plot.signal_plot.ax.plot(
-                    self.axes_manager.signal_axes[0].axis,
+                    self.energy_axis,
                     component,
                     label=f"{conv_elts_dict[elt]}",
                     linestyle=line_styles[_ % len(line_styles)],
@@ -1676,20 +1697,13 @@ class EDSespm(EDSTEMSpectrum):
     # Auto Calibration #
     ####################
 
-    def fit_single_peak(self, E_theoretical, sigma_expected, window):
-        if self.energy_axis is None:
-            self.energy_axis = self.axes_manager.signal_axes[0].axis
-
+    def fit_single_peak(self, theoretical_energy, sigma_expected, window):
         energy_axis = self.energy_axis
-        mask = (energy_axis >= E_theoretical - window) & (
-            energy_axis <= E_theoretical + window
+        mask = (energy_axis >= theoretical_energy - window) & (
+            energy_axis <= theoretical_energy + window
         )
         xdata = energy_axis[mask]
-
-        if self.avg_spect is None:
-            self.avg_spect = self.mean(axis=(0, 1)).data
-
-        ydata = self.avg_spect[mask]
+        ydata = self.average_spectrum[mask]
 
         idx_max = np.argmax(ydata)
         x0_guess = xdata[idx_max]
@@ -1699,8 +1713,8 @@ class EDSespm(EDSTEMSpectrum):
 
         p0 = [A_guess, x0_guess, sigma_guess, C_guess, 0.0]
         bounds = (
-            [0.0, E_theoretical - window, 0.9 * sigma_expected, 0.0, -1.0],
-            [np.inf, E_theoretical + window, 1.1 * sigma_expected, np.inf, 1.0],
+            [0.0, theoretical_energy - window, 0.9 * sigma_expected, 0.0, -1.0],
+            [np.inf, theoretical_energy + window, 1.1 * sigma_expected, np.inf, 1.0],
         )
 
         try:
@@ -1714,28 +1728,29 @@ class EDSespm(EDSTEMSpectrum):
         except Exception:
             return None
 
-        A, x0, _, _, _ = popt
+        # A, x0, _, _, _ = popt
+        # if A <= 1e-9 or abs(x0 - E_theoretical) >= 0.98 * window:
+        #     return None
+
         return popt
 
-    def fit_table(self, window_mult=2.5, filter_cs=0.0):
+    def fit_table(
+        self,
+        window_mult=2.5,
+        filter_cs=0.0,
+        # min_snr=0.0,
+    ):
         model = self.model
         table = model.db_dict
 
-        calibrated_peaks = {}
+        calibrated_table = {}
 
-        @symbol_to_number_list
-        def convert_to_numbers(elements):
-            return elements
-
-        elements = convert_to_numbers(elements=self.metadata.Sample.elements)
-
-        for elt in elements:
-            elt = str(elt)
+        for elt in self.elements:
             lines = table[elt]
 
             max_cs = max([line["cs"] for _, line in lines.items()])
 
-            calibrated_peaks[elt] = {}
+            calibrated_table[elt] = {}
 
             for line_name, line_data in lines.items():
                 e = line_data["energy"]
@@ -1754,19 +1769,28 @@ class EDSespm(EDSTEMSpectrum):
 
                 A, x0, sigma, C, m = fit
 
-                calibrated_peaks[elt][line_name] = {
+                # if C > 0 and (A / C) < min_snr:
+                #     continue
+
+                calibrated_table[elt][line_name] = {
                     "energy": x0,
                     "cs": cs,
                     "theoretical": e,
                     "sigma": sigma,
                     "amplitude": A,
-                    "background_base": C,
-                    "background_slope": m,
+                    "bg_base": C,
+                    "bg_slope": m,
                 }
 
-        return calibrated_peaks
+        return calibrated_table
 
-    def poly_fit(self, degree=2, weighted=False, **kwargs):
+    def auto_calibrate(
+        self,
+        degree=2,
+        weighted=True,
+        # robust=False,
+        **kwargs,
+    ):
         calibrated = self.fit_table(**kwargs)
 
         x = []
@@ -1779,43 +1803,72 @@ class EDSespm(EDSTEMSpectrum):
                 y.append(line["energy"])
                 sigma.append(line["sigma"])
 
-        average_spectrum = self.avg_spect
-        energy_axis = self.energy_axis
+        # if len(x) == 0:
+        #     raise ValueError(
+        #         "No valid peaks were found/fitted for polynomial calibration."
+        #     )
 
         w = (
             None
             if not weighted
-            else [average_spectrum[np.searchsorted(energy_axis, xx)] for xx in x]
+            else [
+                self.average_spectrum[np.searchsorted(self.energy_axis, xx)] for xx in x
+            ]
         )
+
+        # if robust and len(x) > degree + 1:
+        #     x_arr = np.array(x)
+        #     y_arr = np.array(y)
+        #     inliers = np.ones(len(x), dtype=bool)
+
+        #     for _ in range(3):
+        #         if np.sum(inliers) <= degree + 1:
+        #             break
+        #         w_in = None if w is None else np.array(w)[inliers]
+        #         poly_cand = np.polyfit(x_arr[inliers], y_arr[inliers], degree, w=w_in)
+        #         res = np.abs(y_arr - np.polyval(poly_cand, x_arr))
+        #         std_res = np.std(res[inliers])
+        #         if std_res < 1e-6:
+        #             break
+        #         new_inliers = res < 2.5 * std_res
+        #         if np.array_equal(new_inliers, inliers):
+        #             break
+        #         inliers = new_inliers
+
+        #     x_fit = x_arr[inliers]
+        #     y_fit = y_arr[inliers]
+        #     w_fit = None if w is None else np.array(w)[inliers]
+        #     energy_poly = np.polyfit(x_fit, y_fit, degree, w=w_fit)
+        #     sigma_poly = np.polyfit(x_fit, np.array(sigma)[inliers], degree, w=w_fit)
+        # else:
+        #     energy_poly = np.polyfit(x, y, degree, w=w)
+        #     sigma_poly = np.polyfit(x, sigma, degree, w=w)
 
         energy_poly = np.polyfit(x, y, degree, w=w)
         sigma_poly = np.polyfit(x, sigma, degree, w=w)
-
-        @symbol_to_number_list
-        def convert_to_numbers(elements):
-            return elements
-
-        elements = convert_to_numbers(elements=self.metadata.Sample.elements)
-
-        table = self.model.db_dict
 
         calibrated_db = {
             k: {
                 name: {
                     "energy": np.polyval(energy_poly, line["energy"]),
                     "cs": line["cs"],
-                    # "sigma": np.polyval(sigma_poly, line["energy"]),
-                    # "theoretical": line["energy"],
+                    "sigma": np.polyval(sigma_poly, line["energy"]),
+                    "theoretical": line["energy"],
                 }
                 for name, line in v.items()
             }
-            for k, v in table.items()
-            if int(k) in elements
+            for k, v in self.model.db_dict.items()
+            if k in self.elements
         }
 
         self.model.calibrated_db_dict = calibrated_db
+        self.model.energy_calibration_poly = energy_poly
 
-        return (calibrated_db, energy_poly, sigma_poly)
+        return (
+            calibrated_db,
+            energy_poly,
+            # sigma_poly,
+        )
 
 
 #######################
