@@ -142,11 +142,6 @@ def dicotomy(a, b, func, maxit, tol, safe=False):
 
     This algorithm works for number or numpy array of any size.
     """
-    # Copy arrays to prevent mutating arguments in-place
-    if isinstance(a, np.ndarray):
-        a = a.copy()
-    if isinstance(b, np.ndarray):
-        b = b.copy()
 
     func_max = func(a)
     func_min = func(b)
@@ -161,31 +156,20 @@ def dicotomy(a, b, func, maxit, tol, safe=False):
     it = 0
     new = (a + b) / 2
     func_new = func(new)
-
-    if isinstance(func_max, np.ndarray):
-        func_a = func_max.copy()
-    else:
-        func_a = func_max
-
+    # print("A : {}, B: {}, new : {}, fA : {}, fB : {}, fnew : {}".format(np.min(np.abs(a)),np.min(np.abs(b)),np.min(np.abs(new)),np.min(np.abs(func(a))),np.min(np.abs(func(b))),np.min(np.abs(func(new)))))
+    # print("A : {}, B: {}, new : {}, fA : {}, fB : {}, fnew : {}".format(np.max(a),np.max(b),np.max(new),np.max(func(a)),np.max(func(b)),np.max(func(new))))
     while np.max(np.abs(func_new)) > tol:
         it = it + 1
+        func_a = func(a)
+        # func_b = func(b)
 
-        # if f(a)*f(new) <= 0 then f(new) <= 0 --> store in b, else store in a
+        # if f(a)*f(new) <0 then f(new) < 0 --> store in b
         minus_bool = func_a * func_new <= 0
 
-        if isinstance(new, np.ndarray):
-            b = np.where(minus_bool, new, b)
-            a = np.where(minus_bool, a, new)
-            if isinstance(func_a, np.ndarray):
-                func_a = np.where(minus_bool, func_a, func_new)
-            else:
-                func_a = func_new if not minus_bool else func_a
-        else:
-            if minus_bool:
-                b = new
-            else:
-                a = new
-                func_a = func_new
+        # if f(a)*f(new) > 0 then f(new) > 0 --> store in a
+        # plus_bool = func_a * func_new > 0
+        b = np.where(minus_bool, new, b)
+        a = np.where(minus_bool, a, new)
 
         new = (a + b) / 2
         func_new = func(new)
