@@ -261,13 +261,11 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         # Initialize the algorithm #
         ############################
 
-        if self.hspy_comp:
-            self.X_ = validate_data(self, X.T, dtype=[np.float64, np.float32])
+        self.X_ = validate_data(
+            self, X.T if self.hspy_comp else X, dtype=[np.float64, np.float32]
+        )
 
-        else:
-            self.X_ = validate_data(self, X, dtype=[np.float64, np.float32])
-
-        if self.hspy_comp == False:
+        if not self.hspy_comp:
             try:
                 import inspect
 

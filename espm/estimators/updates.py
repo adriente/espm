@@ -52,10 +52,8 @@ def multiplicative_step_w(
             else:
                 sigmaR = np.sum(X)
             num = sigmaR * W
-            gradg = (
-                -G.T @ (X / GWH) @ H.T
-                + np.sum(G, axis=0, keepdims=True).T
-                @ np.sum(H, axis=1, keepdims=True).T
+            gradg = -G.T @ (X / GWH) @ H.T + np.outer(
+                np.sum(G, axis=0), np.sum(H, axis=1)
             )
             denum = gradg * W + sigmaR
 
@@ -69,9 +67,7 @@ def multiplicative_step_w(
 
             mult1 = G.T @ op1
             num = W * (mult1 @ H.T)
-            denum = (
-                np.sum(G, axis=0, keepdims=True).T @ np.sum(H, axis=1, keepdims=True).T
-            )
+            denum = np.outer(np.sum(G, axis=0), np.sum(H, axis=1))
             if simplex_W:
                 if physics_model != None:
                     indices = physics_model.NMF_simplex()
@@ -302,7 +298,7 @@ def multiplicative_step_wq(
 
     term1 = G.T @ (XQ / (GW + log_shift))
 
-    term2 = np.sum(G, axis=0, keepdims=True).T @ np.sum(H, axis=1, keepdims=True).T
+    term2 = np.outer(np.sum(G, axis=0), np.sum(H, axis=1))
     if simplex_W:
         if physics_model != None:
             indices = physics_model.NMF_simplex()
