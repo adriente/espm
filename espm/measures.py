@@ -506,11 +506,7 @@ def KLdiv_loss(X, W, H, log_shift=log_shift, average=False):
         2.921251732961556
     """
 
-    W = np.maximum(W, log_shift)
-    H = np.maximum(H, log_shift)
-    X = np.maximum(X, log_shift)
-
-    Y = W @ H
+    Y = np.maximum(W @ H, log_shift)
     if average:
         x_lin = np.mean(Y)
         x_log = np.mean(X * np.log(Y))
