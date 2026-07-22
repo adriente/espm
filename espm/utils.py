@@ -116,19 +116,9 @@ def bin_spim(data, n, m):
     # return a matrix of shape (n,m,k)
     bs = data.shape[0] // n, data.shape[1] // m  # blocksize averaged over
     k = data.shape[2]
-    return np.reshape(
-        np.array(
-            [
-                np.sum(
-                    data[k1 * bs[0] : (k1 + 1) * bs[0], k2 * bs[1] : (k2 + 1) * bs[1]],
-                    axis=(0, 1),
-                )
-                for k1 in range(n)
-                for k2 in range(m)
-            ]
-        ),
-        (n, m, k),
-    )
+
+    cropped = data[: n * bs[0], : m * bs[1]]
+    return cropped.reshape(n, bs[0], m, bs[1], k).sum(axis=(1, 3))
 
 
 def number_to_symbol_dict(func):

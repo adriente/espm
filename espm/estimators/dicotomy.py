@@ -30,23 +30,9 @@ def dichotomy_simplex(
         denum_max = np.inf
     # Ideally we want to do this, but we have to exclude the case where num==0.
     # a = np.max(num/2 - denum, axis=0)
-    if denum.shape[1] > 1:
-        a = []
-        for n, d in zip(num.T, denum.T):
-            m = n > 0
-            # The divided by 2 is just a factor to help a bit.
-            a.append(np.max(n[m] / 2 - d[m]))
-        a = np.array(a)
-    else:
-        # This else is just to preserve the size and make it work in any case...
-        # There might be a possiblity to write this more elegantly
-        d = denum[:, 0]
-
-        def max_masked(n):
-            m = n > 0
-            return np.max(n[m] / 2 - d[m])
-
-        a = np.apply_along_axis(max_masked, 0, num)
+    val = num / 2 - denum
+    val[num <= 0] = -np.inf
+    a = np.max(val, axis=0)
 
     # r = np.sum(num/denum, axis=0)
     # b = np.zeros(r.shape)

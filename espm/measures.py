@@ -642,6 +642,6 @@ def squared_distance(x, y=None):
     xx = (x * x).sum(axis=1)
     yy = (y * y).sum(axis=1)
     xy = np.dot(x, y.T)
-    d = abs(np.kron(np.ones((ry, 1)), xx).T + np.kron(np.ones((rx, 1)), yy) - 2 * xy)
+    d = np.abs(xx[:, np.newaxis] + yy[np.newaxis, :] - 2 * xy)
 
     return d / cx
