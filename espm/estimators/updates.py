@@ -76,11 +76,12 @@ def multiplicative_step_w(
                         denum[indices, :],
                         log_shift=log_shift,
                         tol=dicotomy_tol,
+                        safe=safe,
                     )
                     denum[indices, :] = denum[indices, :] + nu
                 else:
                     nu = dichotomy_simplex(
-                        num, denum, log_shift=log_shift, tol=dicotomy_tol
+                        num, denum, log_shift=log_shift, tol=dicotomy_tol, safe=safe
                     )
                     denum = denum + nu
 
@@ -173,7 +174,7 @@ def multiplicative_step_h(
             denum = denum + lambda_L * sigmaL * maxH + lambda_L * HL
     num = H * num
     if simplex_H:
-        nu = dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol)
+        nu = dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol, safe=safe)
     else:
         nu = 0
     if safe:
@@ -307,10 +308,11 @@ def multiplicative_step_wq(
                 term2[indices, :],
                 log_shift=log_shift,
                 tol=dicotomy_tol,
+                safe=safe,
             )
             term2[indices, :] = term2[indices, :] + nu
         else:
-            nu = dichotomy_simplex(term1, term2, log_shift=log_shift, tol=dicotomy_tol)
+            nu = dichotomy_simplex(term1, term2, log_shift=log_shift, tol=dicotomy_tol, safe=safe)
             term2 = term2 + nu
     return W / term2 * term1
 
@@ -353,13 +355,13 @@ def multiplicative_step_hq(
         a = lambda_L * sigmaL
         if simplex_H:
             nu = dichotomy_simplex_acc(
-                a, b, minus_c, log_shift=log_shift, tol=dicotomy_tol
+                a, b, minus_c, log_shift=log_shift, tol=dicotomy_tol, safe=safe
             )
             b = b + nu
         new_H = (-b + np.sqrt(b**2 + 4 * a * minus_c)) / (2 * a)
     else:  # We recover the classic case: multiplicative_step_a
         if simplex_H:
-            nu = dichotomy_simplex(minus_c, b, log_shift=log_shift, tol=dicotomy_tol)
+            nu = dichotomy_simplex(minus_c, b, log_shift=log_shift, tol=dicotomy_tol, safe=safe)
             b = b + nu
         new_H = minus_c / b
 
@@ -503,7 +505,7 @@ def proj_grad_step_h(
     # Dichotomy
     if simplex_H:
         nu = dichotomy_simplex_projected_gradient(
-            new_H, log_shift=log_shift, tol=dicotomy_tol
+            new_H, log_shift=log_shift, tol=dicotomy_tol, safe=safe
         )
     else:
         nu = 0
