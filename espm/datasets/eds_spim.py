@@ -1693,9 +1693,9 @@ class EDSespm(EDSTEMSpectrum):
 
         idx_max = np.argmax(ydata)
         x0_guess = xdata[idx_max]
-        A_guess = np.max(ydata) - np.min(ydata)
+        A_guess = max(float(np.max(ydata) - np.min(ydata)), 1e-6)
         sigma_guess = sigma_expected
-        C_guess = np.min(ydata)
+        C_guess = float(np.min(ydata))
 
         p0 = [A_guess, x0_guess, sigma_guess, C_guess, 0.0]
         bounds = (
@@ -1703,13 +1703,18 @@ class EDSespm(EDSTEMSpectrum):
             [np.inf, E_theoretical + window, 1.1 * sigma_expected, np.inf, 1.0],
         )
 
-        popt, _ = curve_fit(
-            gaussian,
-            xdata,
-            ydata,
-            p0,
-            bounds=bounds,
-        )
+        try:
+            popt, _ = curve_fit(
+                gaussian_with_bg,
+                xdata,
+                ydata,
+                p0,
+                bounds=bounds,
+            )
+        except Exception:
+            return None
+
+        A, x0, _, _, _ = popt
         return popt
 
     def fit_table(self, window_mult=2.5, filter_cs=0.0):
@@ -1736,16 +1741,18 @@ class EDSespm(EDSTEMSpectrum):
                 e = line_data["energy"]
                 cs = line_data["cs"]
 
-                if filter_cs and cs < filter_cs * max_cs:
+                if cs < filter_cs * max_cs:
                     continue
 
                 width_expected = model.width_slope * e + model.width_intercept
                 sigma_expected = width_expected / 2.3548
                 window_half_width = window_mult * sigma_expected
 
-                A, x0, sigma, C, m = self.fit_single_peak(
-                    e, sigma_expected, window_half_width
-                )
+                fit = self.fit_single_peak(e, sigma_expected, window_half_width)
+                if fit is None:
+                    continue
+
+                A, x0, sigma, C, m = fit
 
                 calibrated_peaks[elt][line_name] = {
                     "energy": x0,
@@ -1784,21 +1791,31 @@ class EDSespm(EDSTEMSpectrum):
         energy_poly = np.polyfit(x, y, degree, w=w)
         sigma_poly = np.polyfit(x, sigma, degree, w=w)
 
-        return (
-            {
-                k: {
-                    name: {
-                        **line,
-                        "energy": np.polyval(energy_poly, line["theoretical"]),
-                        "sigma": np.polyval(sigma_poly, line["theoretical"]),
-                    }
-                    for name, line in v.items()
+        @symbol_to_number_list
+        def convert_to_numbers(elements):
+            return elements
+
+        elements = convert_to_numbers(elements=self.metadata.Sample.elements)
+
+        table = self.model.db_dict
+
+        calibrated_db = {
+            k: {
+                name: {
+                    "energy": np.polyval(energy_poly, line["energy"]),
+                    "cs": line["cs"],
+                    # "sigma": np.polyval(sigma_poly, line["energy"]),
+                    # "theoretical": line["energy"],
                 }
-                for k, v in calibrated.items()
-            },
-            energy_poly,
-            sigma_poly,
-        )
+                for name, line in v.items()
+            }
+            for k, v in table.items()
+            if int(k) in elements
+        }
+
+        self.model.calibrated_db_dict = calibrated_db
+
+        return (calibrated_db, energy_poly, sigma_poly)
 
 
 #######################
@@ -1861,5 +1878,5 @@ def Gauss(x, a, x0, sigma):
     return a * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
 
 
-def gaussian(x, A, x0, sigma, C, m):
+def gaussian_with_bg(x, A, x0, sigma, C, m):
     return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + C + m * (x - x0)
