@@ -48,7 +48,13 @@ def dichotomy_simplex(
 
 
 def dichotomy_simplex_acc(
-    a, b, minus_c, log_shift=log_shift, tol=dicotomy_tol, maxit=maxit_dichotomy, safe=False
+    a,
+    b,
+    minus_c,
+    log_shift=log_shift,
+    tol=dicotomy_tol,
+    maxit=maxit_dichotomy,
+    safe=False,
 ):
     """
     Function to solve the dicotomy for the function:
@@ -146,16 +152,16 @@ def dicotomy(a, b, func, maxit, tol, safe=False):
     func_min = func(b)
 
     if safe:
-        assert np.sum(func_min >= 0) == 0
-        assert np.sum(func_max <= 0) == 0
-        assert np.sum(np.isnan(func_max)) == 0
-        assert np.sum(np.isnan(func_min)) == 0
+        assert not np.any(func_min >= 0)
+        assert not np.any(func_max <= 0)
+        assert not np.any(np.isnan(func_max))
+        assert not np.any(np.isnan(func_min))
 
     # Dichotomy algorithm to solve the equation
     it = 0
     new = (a + b) / 2
     func_new = func(new)
-    
+
     if isinstance(func_max, np.ndarray):
         func_a = func_max.copy()
     else:
@@ -163,20 +169,17 @@ def dicotomy(a, b, func, maxit, tol, safe=False):
 
     while np.max(np.abs(func_new)) > tol:
         it = it + 1
-        
-        # if f(a)*f(new) <0 then f(new) < 0 --> store in b
+
+        # if f(a)*f(new) <= 0 then f(new) <= 0 --> store in b, else store in a
         minus_bool = func_a * func_new <= 0
 
-        # if f(a)*f(new) > 0 then f(new) > 0 --> store in a
-        plus_bool = np.logical_not(minus_bool)
-
         if isinstance(new, np.ndarray):
-            b[minus_bool] = new[minus_bool]
-            a[plus_bool] = new[plus_bool]
+            b = np.where(minus_bool, new, b)
+            a = np.where(minus_bool, a, new)
             if isinstance(func_a, np.ndarray):
-                func_a[plus_bool] = func_new[plus_bool]
+                func_a = np.where(minus_bool, func_a, func_new)
             else:
-                func_a = func_new if plus_bool else func_a
+                func_a = func_new if not minus_bool else func_a
         else:
             if minus_bool:
                 b = new
