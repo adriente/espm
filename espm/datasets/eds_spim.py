@@ -1700,8 +1700,13 @@ class EDSespm(EDSTEMSpectrum):
 
     def fit_single_peak(self, theoretical_energy, sigma_expected, window):
         energy_axis = self.energy_axis
-        mask = (energy_axis >= theoretical_energy - window) & (
-            energy_axis <= theoretical_energy + window
+        min_energy = max(theoretical_energy - window, energy_axis.min())
+        max_energy = min(theoretical_energy + window, energy_axis.max())
+        if min_energy>=energy_axis.max() or max_energy<=energy_axis.min():
+            return None
+    
+        mask = (energy_axis >= min_energy) & (
+            energy_axis <= max_energy
         )
         xdata = energy_axis[mask]
         ydata = self.average_spectrum[mask]
