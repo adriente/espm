@@ -1,5 +1,7 @@
 r"""Utils for the ESPM package"""
 
+import contextlib
+import io
 import json
 from functools import wraps
 
@@ -10,7 +12,6 @@ import numpy as np
 import seaborn
 import skimage as ski
 from exspy.material import atomic_to_weight, density_of_mixture
-from IPython.utils import io
 from scipy.optimize import nnls
 from scipy.sparse import block_diag, lil_matrix
 from sklearn.linear_model import LinearRegression as LR
@@ -528,7 +529,7 @@ def quant_spectrum(s1, skip_elements=[]):
 
     s.build_G()
     est = espm.estimators.SmoothNMF(n_components=1, G=s.G, verbose=0)
-    with io.capture_output() as captured:
+    with contextlib.redirect_stdout(io.StringIO()):
         est.fit_transform(X=s1.data[:, np.newaxis], H=np.array([1.0])[:, np.newaxis])
     s.learning_results.decomposition_algorithm = est
     conv_elts, W, _ = s.concentration_report(selected_elts=selected_elements)
