@@ -37,6 +37,8 @@ from espm.utils import (
     get_explained_intensity_W,
     num_to_symbol,
     number_to_symbol_list,
+    quant_spectrum,
+    symbol_to_number_dict,
     symbol_to_number_list,
 )
 
@@ -284,9 +286,6 @@ class EDSespm(EDSTEMSpectrum):
         self._check_metadata_G()
         self.problem_type = problem_type
         self.separated_lines = elements_dict
-
-        if use_calibration:
-            self.auto_calibrate(**kwargs)
 
         g_pars = {
             "g_type": problem_type,
@@ -1698,29 +1697,29 @@ class EDSespm(EDSTEMSpectrum):
     # Auto Calibration #
     ####################
 
-    def fit_single_peak(self, theoretical_energy, sigma_expected, window):
+    def fit_single_peak(self, theoretical_energy, window):
         energy_axis = self.energy_axis
-        min_energy = max(theoretical_energy - window, energy_axis.min())
-        max_energy = min(theoretical_energy + window, energy_axis.max())
-        if min_energy>=energy_axis.max() or max_energy<=energy_axis.min():
-            return None
-    
-        mask = (energy_axis >= min_energy) & (
-            energy_axis <= max_energy
+
+        mask = (energy_axis >= theoretical_energy - window) & (
+            energy_axis <= theoretical_energy + window
         )
+        if not np.any(mask):
+            return None
+
         xdata = energy_axis[mask]
         ydata = self.average_spectrum[mask]
 
-        idx_max = np.argmax(ydata)
-        x0_guess = xdata[idx_max]
-        A_guess = max(float(np.max(ydata) - np.min(ydata)), 1e-6)
-        sigma_guess = sigma_expected
-        C_guess = float(np.min(ydata))
+        x0_guess = xdata[np.argmax(ydata)]
+        A_guess = max(np.max(ydata) - np.min(ydata), 1e-6)
+        sigma_guess = (
+            self.model.width_slope * theoretical_energy + self.model.width_intercept
+        ) / 2.3548
+        C_guess = np.min(ydata)
 
-        p0 = [A_guess, x0_guess, sigma_guess, C_guess, 0.0]
+        p0 = (A_guess, x0_guess, sigma_guess, C_guess)
         bounds = (
-            [0.0, theoretical_energy - window, 0.9 * sigma_expected, 0.0, -1.0],
-            [np.inf, theoretical_energy + window, 1.1 * sigma_expected, np.inf, 1.0],
+            (0.0, theoretical_energy - window, 0.9 * sigma_guess, 0.0),
+            (np.inf, theoretical_energy + window, 1.1 * sigma_guess, np.inf),
         )
 
         try:
@@ -1729,6 +1728,8 @@ class EDSespm(EDSTEMSpectrum):
                 xdata,
                 ydata,
                 p0,
+                # sigma=np.sqrt(np.maximum(ydata, 1.0)),
+                # absolute_sigma=True,
                 bounds=bounds,
             )
         except Exception:
@@ -1742,16 +1743,31 @@ class EDSespm(EDSTEMSpectrum):
 
     def fit_table(
         self,
-        window_mult=2.5,
-        filter_cs=0.0,
+        window,
+        filter_cs,
+        filter_conc,
         # min_snr=0.0,
     ):
-        model = self.model
-        table = model.db_dict
+        table = self.model.db_dict
 
         calibrated_table = {}
 
+        concentrations, _ = quant_spectrum(
+            self.mean(axis=nav_axes)
+            if len(nav_axes := self.axes_manager.navigation_axes) > 0
+            else self
+        )
+
+        @symbol_to_number_dict
+        def symbol_to_number(elements_dict):
+            return {str(k): v for k, v in elements_dict.items()}
+
+        concentrations = symbol_to_number(elements_dict=concentrations)
+
         for elt in self.elements:
+            if concentrations[elt] < filter_conc:
+                continue
+
             lines = table[elt]
 
             max_cs = max([line["cs"] for _, line in lines.items()])
@@ -1765,15 +1781,11 @@ class EDSespm(EDSTEMSpectrum):
                 if cs < filter_cs * max_cs:
                     continue
 
-                width_expected = model.width_slope * e + model.width_intercept
-                sigma_expected = width_expected / 2.3548
-                window_half_width = window_mult * sigma_expected
-
-                fit = self.fit_single_peak(e, sigma_expected, window_half_width)
+                fit = self.fit_single_peak(e, window)
                 if fit is None:
                     continue
 
-                A, x0, sigma, C, m = fit
+                A, x0, sigma, C = fit
 
                 # if C > 0 and (A / C) < min_snr:
                 #     continue
@@ -1784,8 +1796,7 @@ class EDSespm(EDSTEMSpectrum):
                     "theoretical": e,
                     "sigma": sigma,
                     "amplitude": A,
-                    "bg_base": C,
-                    "bg_slope": m,
+                    "bg": C,
                 }
 
         return calibrated_table
@@ -1794,10 +1805,12 @@ class EDSespm(EDSTEMSpectrum):
         self,
         degree=2,
         weighted=True,
+        window=0.1,
+        filter_cs=0.0,
+        filter_conc=0.0,
         # robust=False,
-        **kwargs,
     ):
-        calibrated = self.fit_table(**kwargs)
+        calibrated = self.fit_table(window, filter_cs, filter_conc)
 
         x = []
         y = []
@@ -1814,13 +1827,28 @@ class EDSespm(EDSTEMSpectrum):
         #         "No valid peaks were found/fitted for polynomial calibration."
         #     )
 
+        x = np.asarray(x)
+        y = np.asarray(y)
+        sigma = np.asarray(sigma)
+
         w = (
             None
             if not weighted
-            else [
-                self.average_spectrum[np.searchsorted(self.energy_axis, xx)] for xx in x
-            ]
+            else self.average_spectrum[np.searchsorted(self.energy_axis, x)]
         )
+
+        affine = np.polyfit(y, x, 1, w=w)
+
+        a, b = affine
+
+        axis = self.axes_manager[-1]
+        axis.scale *= a
+        axis.offset = a * axis.offset + b
+        self.energy_axis_ = None
+        self.average_spectrum_ = None
+        self.model_ = None
+
+        y = np.polyval(affine, y)
 
         # if robust and len(x) > degree + 1:
         #     x_arr = np.array(x)
@@ -1856,6 +1884,11 @@ class EDSespm(EDSTEMSpectrum):
         calibrated_db = {
             k: {
                 name: {
+                    **(
+                        calibrated[k][name]
+                        if k in calibrated and name in calibrated[k]
+                        else {}
+                    ),
                     "energy": np.polyval(energy_poly, line["energy"]),
                     "cs": line["cs"],
                     "sigma": np.polyval(sigma_poly, line["energy"]),
@@ -1937,5 +1970,5 @@ def Gauss(x, a, x0, sigma):
     return a * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
 
 
-def gaussian_with_bg(x, A, x0, sigma, C, m):
-    return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + C + m * (x - x0)
+def gaussian_with_bg(x, A, x0, sigma, C):
+    return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + C  # + m * (x - x0)

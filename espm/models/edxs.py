@@ -94,28 +94,30 @@ class EDXS(PhysicalModel):
                 peaks = np.zeros(shape)
 
             for energy, theoretical_energy, sigma, cs in lines:
-                if np.min(self.x) < theoretical_energy < np.max(self.x):
-                    if type(self.params_dict["Det"]) == str:
-                        D = det_efficiency_from_curve(
-                            theoretical_energy, self.params_dict["Det"]
-                        )
-                    else:
-                        D = det_efficiency(theoretical_energy, self.params_dict["Det"])
+                if not (np.min(self.x) < theoretical_energy < np.max(self.x)):
+                    continue
 
-                    A = absorption_correction(
-                        theoretical_energy,
-                        **self.params_dict["Abs"],
-                        elements_dict={elt: 1.0},
+                if type(self.params_dict["Det"]) == str:
+                    D = det_efficiency_from_curve(
+                        theoretical_energy, self.params_dict["Det"]
                     )
+                else:
+                    D = det_efficiency(theoretical_energy, self.params_dict["Det"])
 
-                    delta = cs * gaussian(self.x, energy, sigma)[np.newaxis].T * D * A
-                    if elt in reference_elt:
-                        if theoretical_energy < reference_elt[elt]:
-                            peaks_low += delta
-                        else:
-                            peaks_high += delta
+                A = absorption_correction(
+                    theoretical_energy,
+                    **self.params_dict["Abs"],
+                    elements_dict={elt: 1.0},
+                )
+
+                delta = cs * gaussian(self.x, energy, sigma)[np.newaxis].T * D * A
+                if elt in reference_elt:
+                    if theoretical_energy < reference_elt[elt]:
+                        peaks_low += delta
                     else:
-                        peaks += delta
+                        peaks_high += delta
+                else:
+                    peaks += delta
 
             if elt in reference_elt:
                 peaks = np.hstack((peaks_low, peaks_high))
@@ -158,21 +160,24 @@ class EDXS(PhysicalModel):
 
             peaks_list = []
             for energy, theoretical_energy, sigma, cs in lines:
-                if np.min(self.x) < theoretical_energy < np.max(self.x):
-                    if type(self.params_dict["Det"]) == str:
-                        D = det_efficiency_from_curve(
-                            theoretical_energy, self.params_dict["Det"]
-                        )
-                    else:
-                        D = det_efficiency(theoretical_energy, self.params_dict["Det"])
+                if not (np.min(self.x) < theoretical_energy < np.max(self.x)):
+                    continue
 
-                    A = absorption_correction(
-                        theoretical_energy,
-                        **self.params_dict["Abs"],
-                        elements_dict={elt: 1.0},
+                if type(self.params_dict["Det"]) == str:
+                    D = det_efficiency_from_curve(
+                        theoretical_energy, self.params_dict["Det"]
                     )
+                else:
+                    D = det_efficiency(theoretical_energy, self.params_dict["Det"])
 
-                    peaks_list.append((cs * gaussian(self.x, energy, sigma)) * D * A)
+                A = absorption_correction(
+                    theoretical_energy,
+                    **self.params_dict["Abs"],
+                    elements_dict={elt: 1.0},
+                )
+
+                peaks_list.append((cs * gaussian(self.x, energy, sigma)) * D * A)
+
             if len(peaks_list) > 0:
                 peaks = np.array(peaks_list).T
                 if np.all((np.max(peaks, axis=0)) > 0.0):
