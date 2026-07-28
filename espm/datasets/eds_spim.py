@@ -1008,34 +1008,29 @@ class EDSespm(EDSTEMSpectrum):
         elts = self.model.get_elements(False)
         elts_indices = self.model.NMF_simplex()
 
+        conv_elts = convert_elts(elements=elts)
+
         if selected_elts:
-            conv_elts = convert_elts(elements=elts)
-            conv_elts_dict = {conv_elts[i]: num for i, num in enumerate(elts_indices)}
-            new_elts_indices = []
-            for elt in selected_elts:
-                if elt in conv_elts_dict.keys():
-                    new_elts_indices.append(conv_elts_dict[elt])
+            conv_elts_dict = dict(zip(conv_elts, elts_indices))
+            indices = [
+                conv_elts_dict[elt] for elt in selected_elts if elt in conv_elts_dict
+            ]
+            returned_elts = [elt for elt in selected_elts if elt in conv_elts_dict]
 
-            W = W[new_elts_indices, :] * 100 / W[new_elts_indices, :].sum(axis=0)
-            if fit_error:
-                errors = percentages[new_elts_indices, :]
-                errors[errors > 10000] = np.inf
-            else:
-                errors = np.zeros_like(W)
-
-            return selected_elts, W, errors
-
+            W = W[indices, :] * 100 / W[indices, :].sum(axis=0)
         else:
-            conv_elts = convert_elts(elements=elts)
+            indices = elts_indices
+            returned_elts = conv_elts
 
-            W = W[elts_indices, :] * 100  # /W[indices,:].sum(axis = 0)
-            if fit_error:
-                errors = percentages[elts_indices, :]
-                errors[errors > 10000] = np.inf
-            else:
-                errors = np.zeros_like(W)
+            W = W[indices, :] * 100
 
-            return conv_elts, W, errors
+        if fit_error:
+            errors = percentages[indices, :]
+            errors[errors > 10000] = np.inf
+        else:
+            errors = np.zeros_like(W)
+
+        return returned_elts, W, errors
 
     def estimate_best_binning(self, inspect=False):
         r"""
