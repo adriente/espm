@@ -252,10 +252,9 @@ class EDSespm(EDSTEMSpectrum):
         self,
         problem_type: str = "bremsstrahlung",
         ignored_elements: list[str] = ["Cu"],
+        use_calibration: bool = False,
         *,
         elements_dict: dict[str, float] = {},
-        use_calibration: bool = False,
-        **kwargs,
     ) -> None:
         r"""
         Build the G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDSespm` object and stores it as an attribute.
@@ -270,20 +269,21 @@ class EDSespm(EDSTEMSpectrum):
         ignored_elements : list, optional
             List of chemical elements to ignore when building the G matrix.
         use_calibration : bool, optional
-            If True, build G using a calibrated/fitted peak table (from fit_table or poly_fit).
+            If True, build G using the polynomially calibrated table from `auto_calibrate`.
         elements_dict : dict, optional
             Dictionary containing atomic numbers and a corresponding cut-off energies. It is used to separate the characteristic X-rays of the given elements into two energies ranges and assign them each a column in the G matrix instead of having one column per element.
             For example elements_dict = {"26",3.0} will separate the characteristic X-rays of the element Fe into two energies ranges and assign them each a column in the G matrix. This is useful to circumvent issues with the absorption.
-        use_calibration: bool, optional
-            Whether to use automatic calibration to build G.
-            Defaults to `False`.
-        **kwargs : dict
-            Additional arguments to pass to fit_table or poly_fit (e.g., window_mult, filter_cs).
         Returns
         -------
         None
         """
         self._check_metadata_G()
+
+        if use_calibration:
+            assert self.model.calibrated_db_dict is not None, (
+                "Auto calibration has not been performed. Please use `auto_calibrate` before running `build_G` with `use_calibration=True`."
+            )
+
         self.problem_type = problem_type
         self.separated_lines = elements_dict
 
@@ -1692,12 +1692,10 @@ class EDSespm(EDSTEMSpectrum):
     # Auto Calibration #
     ####################
 
-    def fit_single_peak(self, theoretical_energy, window):
+    def fit_single_peak(self, window, energy):
         energy_axis = self.energy_axis
 
-        mask = (energy_axis >= theoretical_energy - window) & (
-            energy_axis <= theoretical_energy + window
-        )
+        mask = (energy_axis >= energy - window) & (energy_axis <= energy + window)
         if not np.any(mask):
             return None
 
@@ -1707,14 +1705,14 @@ class EDSespm(EDSTEMSpectrum):
         x0_guess = xdata[np.argmax(ydata)]
         A_guess = max(np.max(ydata) - np.min(ydata), 1e-6)
         sigma_guess = (
-            self.model.width_slope * theoretical_energy + self.model.width_intercept
+            self.model.width_slope * energy + self.model.width_intercept
         ) / 2.3548
         C_guess = np.min(ydata)
 
         p0 = (A_guess, x0_guess, sigma_guess, C_guess)
         bounds = (
-            (0.0, theoretical_energy - window, 0.9 * sigma_guess, 0.0),
-            (np.inf, theoretical_energy + window, 1.1 * sigma_guess, np.inf),
+            (0.0, energy - window, 0.9 * sigma_guess, 0.0),
+            (np.inf, energy + window, 1.1 * sigma_guess, np.inf),
         )
 
         try:
@@ -1730,19 +1728,9 @@ class EDSespm(EDSTEMSpectrum):
         except Exception:
             return None
 
-        # A, x0, _, _, _ = popt
-        # if A <= 1e-9 or abs(x0 - E_theoretical) >= 0.98 * window:
-        #     return None
-
         return popt
 
-    def fit_table(
-        self,
-        window,
-        filter_cs,
-        filter_conc,
-        # min_snr=0.0,
-    ):
+    def fit_table(self, window, filter_cs, filter_conc):
         table = self.model.db_dict
 
         calibrated_table = {}
@@ -1759,80 +1747,116 @@ class EDSespm(EDSTEMSpectrum):
 
         concentrations = symbol_to_number(elements_dict=concentrations)
 
-        for elt in self.elements:
-            if concentrations[elt] < filter_conc:
+        for element in self.elements:
+            if (
+                element not in concentrations
+                or (conc := concentrations[element]) < filter_conc
+            ):
                 continue
 
-            lines = table[elt]
+            lines = table[element]
 
-            max_cs = max([line["cs"] for _, line in lines.items()])
+            max_cs = max([line["cs"] for line in lines.values()])
 
-            calibrated_table[elt] = {}
+            calibrated_table[element] = {}
 
             for line_name, line_data in lines.items():
-                e = line_data["energy"]
+                energy = line_data["energy"]
                 cs = line_data["cs"]
 
                 if cs < filter_cs * max_cs:
                     continue
 
-                fit = self.fit_single_peak(e, window)
+                fit = self.fit_single_peak(window, energy)
                 if fit is None:
                     continue
 
                 A, x0, sigma, C = fit
 
-                # if C > 0 and (A / C) < min_snr:
-                #     continue
-
-                calibrated_table[elt][line_name] = {
+                calibrated_table[element][line_name] = {
                     "energy": x0,
                     "cs": cs,
-                    "theoretical": e,
+                    "theoretical": energy,
                     "sigma": sigma,
                     "amplitude": A,
                     "bg": C,
+                    "conc": conc,
+                    "relative_cs": cs / max_cs,
                 }
 
         return calibrated_table
 
     def auto_calibrate(
         self,
+        window,
         degree=2,
-        weighted=True,
-        window=0.1,
         filter_cs=0.0,
         filter_conc=0.0,
-        # robust=False,
+        weighted=lambda conc, cs: conc * cs,
     ):
+        r"""
+        Automatically calibrate the dataset energy scale linearly, and further (non-)linearly correct the table.
+
+        This method performs the following steps:
+        1. Fits Gaussian peaks to available X-ray emission lines on the average spectrum of the dataset.
+        2. Applies an initial affine (degree 1) linear correction directly to the dataset's energy axis.
+        3. Fits a higher-degree polynomial correction mapping theoretical peak energies to empirical line positions.
+        4. Updates `self.model` for downstream matrix generation.
+
+        `build_G` by default only uses the linear correction done in step 2. In order to benefit from further corrections,
+        `use_calibration=True` as to be passed to `build_G`
+
+        Parameters
+        ----------
+        window : float
+            Half-width of the energy window (in keV) around each theoretical peak position used for Gaussian fitting.
+            This is the only user input necessary.
+        degree : int, optional
+            Degree of the polynomial fit for non-linear energy calibration refinement applied to the table, not
+            the energy axis (default is 2).
+        filter_cs : float, optional
+            Relative cross-section filter threshold in [0.0, 1.0]. Lines with cross-sections smaller than
+            `filter_cs * max_cs` for a given element are excluded from calibration (default is 0.0, i.e. no filtering).
+        filter_conc : float, optional
+            Elemental concentration filter threshold. Elements with estimated concentration below
+            `filter_conc` by percentage are excluded from calibration (default is 0.0, i.e. no filtering).
+        weighted : callable or None, optional
+            Weighting function `f(conc, cs)` taking elemental concentration and relative cross-section
+            to compute line weights for polynomial fitting (default is `lambda conc, cs: conc * cs`).
+            If set to `None` or `False`, unweighted fitting is performed.
+
+        Returns
+        -------
+        calibrated_db : dict
+            Dictionary mapping element symbols to their calibrated emission lines and fitted energy parameters.
+        energy_poly : np.ndarray
+            1D array of polynomial coefficients mapping theoretical energies to calibrated line positions.
+        sigma_poly : np.ndarray
+            1D array of polynomial coefficients mapping theoretical energies to calibrated width of bell curves.
+        """
+
         calibrated = self.fit_table(window, filter_cs, filter_conc)
 
-        x = []
-        y = []
+        theoretical = []
+        empirical = []
         sigma = []
+        weight = []
 
-        for elt in calibrated:
-            for _, line in calibrated[elt].items():
-                x.append(line["theoretical"])
-                y.append(line["energy"])
+        for lines in calibrated.values():
+            for line in lines.values():
+                theoretical.append(line["theoretical"])
+                empirical.append(line["energy"])
                 sigma.append(line["sigma"])
+                if weighted:
+                    weight.append(weighted(line["conc"], line["relative_cs"]))
 
-        # if len(x) == 0:
-        #     raise ValueError(
-        #         "No valid peaks were found/fitted for polynomial calibration."
-        #     )
-
-        x = np.asarray(x)
-        y = np.asarray(y)
+        theoretical = np.asarray(theoretical)
+        empirical = np.asarray(empirical)
         sigma = np.asarray(sigma)
 
-        w = (
-            None
-            if not weighted
-            else self.average_spectrum[np.searchsorted(self.energy_axis, x)]
-        )
+        w = weight if weighted else None
 
-        affine = np.polyfit(y, x, 1, w=w)
+        affine = np.polyfit(empirical, theoretical, 1, w=w)
 
         a, b = affine
 
@@ -1843,66 +1867,35 @@ class EDSespm(EDSTEMSpectrum):
         self.average_spectrum_ = None
         self.model_ = None
 
-        y = np.polyval(affine, y)
+        empirical = np.polyval(affine, empirical)
 
-        # if robust and len(x) > degree + 1:
-        #     x_arr = np.array(x)
-        #     y_arr = np.array(y)
-        #     inliers = np.ones(len(x), dtype=bool)
-
-        #     for _ in range(3):
-        #         if np.sum(inliers) <= degree + 1:
-        #             break
-        #         w_in = None if w is None else np.array(w)[inliers]
-        #         poly_cand = np.polyfit(x_arr[inliers], y_arr[inliers], degree, w=w_in)
-        #         res = np.abs(y_arr - np.polyval(poly_cand, x_arr))
-        #         std_res = np.std(res[inliers])
-        #         if std_res < 1e-6:
-        #             break
-        #         new_inliers = res < 2.5 * std_res
-        #         if np.array_equal(new_inliers, inliers):
-        #             break
-        #         inliers = new_inliers
-
-        #     x_fit = x_arr[inliers]
-        #     y_fit = y_arr[inliers]
-        #     w_fit = None if w is None else np.array(w)[inliers]
-        #     energy_poly = np.polyfit(x_fit, y_fit, degree, w=w_fit)
-        #     sigma_poly = np.polyfit(x_fit, np.array(sigma)[inliers], degree, w=w_fit)
-        # else:
-        #     energy_poly = np.polyfit(x, y, degree, w=w)
-        #     sigma_poly = np.polyfit(x, sigma, degree, w=w)
-
-        energy_poly = np.polyfit(x, y, degree, w=w)
-        sigma_poly = np.polyfit(x, sigma, degree, w=w)
+        energy_poly = np.polyfit(theoretical, empirical, degree, w=w)
+        sigma_poly = np.polyfit(theoretical, sigma, degree, w=w)
 
         calibrated_db = {
-            k: {
-                name: {
+            element: {
+                line: {
                     **(
-                        calibrated[k][name]
-                        if k in calibrated and name in calibrated[k]
+                        calibrated[element][line]
+                        if element in calibrated and line in calibrated[element]
                         else {}
                     ),
-                    "energy": np.polyval(energy_poly, line["energy"]),
-                    "cs": line["cs"],
-                    "sigma": np.polyval(sigma_poly, line["energy"]),
-                    "theoretical": line["energy"],
+                    "energy": np.polyval(energy_poly, data["energy"]),
+                    "cs": data["cs"],
+                    # "sigma": np.polyval(sigma_poly, data["energy"]),
+                    "theoretical": data["energy"],
                 }
-                for name, line in v.items()
+                for line, data in v.items()
             }
-            for k, v in self.model.db_dict.items()
-            if k in self.elements
+            for element, v in self.model.db_dict.items()
+            if element in self.elements
         }
 
         self.model.calibrated_db_dict = calibrated_db
         self.model.energy_calibration_poly = energy_poly
+        self.model.sigma_calibration_poly = sigma_poly
 
-        return (
-            calibrated_db,
-            energy_poly,
-            # sigma_poly,
-        )
+        return (calibrated_db, energy_poly, sigma_poly)
 
 
 #######################

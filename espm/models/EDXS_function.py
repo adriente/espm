@@ -256,7 +256,7 @@ def continuum_xrays(
     return B * A * D
 
 
-def G_bremsstrahlung(x, E0, params_dict, *, elements_dict={}, energy_poly=None):
+def G_bremsstrahlung(x, E0, params_dict, *, elements_dict={}):
     r"""
     Computes the two-parts continuum X-rays for the G matrix. The two parts of the bremsstrahlung are constructed separately so that its parameters can fitted to data.
     Absorption and detection are multiplied to each part.
@@ -269,19 +269,12 @@ def G_bremsstrahlung(x, E0, params_dict, *, elements_dict={}, energy_poly=None):
         :dict: Dictionnary containing the absorption and detection parameters.
     elements_dict :
         :dict: Composition of the studied sample. It is required for absorption calculation.
-    energy_poly:
-        :np.array 1D: The coefficients of the polynomial calibration of energy axis obtained from `EDSespm::auto_calibration`.
 
     Returns
     -------
     continuum_xrays :
         :np.array 2D: Two parts continuum X-rays model with shape (energy scale size, 2).
     """
-    if energy_poly is not None:
-        x_theo_grid = np.linspace(np.min(x) - 1.0, np.max(x) + 1.0, 1000)
-        x_calib_grid = np.polyval(energy_poly, x_theo_grid)
-        x = np.clip(np.interp(x, x_calib_grid, x_theo_grid), np.min(x), None)
-
     A = absorption_correction(x, **params_dict["Abs"], elements_dict=elements_dict)
 
     if type(params_dict["Det"]) == str:
