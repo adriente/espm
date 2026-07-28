@@ -79,7 +79,7 @@ class EDXS(PhysicalModel):
                     energy,
                     np.polyval(self.sigma_calibration_poly, energy)
                     if use_calibration
-                    else self.width_slope * energy + self.width_intercept / 2.3548,
+                    else (self.width_slope * energy + self.width_intercept) / 2.3548,
                     c,
                 )
                 for energy, c in zip(energies, cs)
@@ -145,7 +145,7 @@ class EDXS(PhysicalModel):
                     energy,
                     np.polyval(self.sigma_calibration_poly, energy)
                     if use_calibration
-                    else self.width_slope * energy + self.width_intercept / 2.3548,
+                    else (self.width_slope * energy + self.width_intercept) / 2.3548,
                     c,
                 )
                 for energy, c in zip(energies, cs)
@@ -182,12 +182,12 @@ class EDXS(PhysicalModel):
     @symbol_to_number_dict
     def generate_g_matr(
         self,
-        use_calibration,
         g_type="bremsstrahlung",
         ignored_elements=["Cu"],
         *,
         elements=[],
         elements_dict={},
+        use_calibration=False,
         **kwargs,
     ):
         r"""
