@@ -28,8 +28,7 @@ If you want to develop, please use the option::
 
     $ git clone https://github.com/adriente/espm.git
     $ cd espm
-    $ pip install cython
-    $ pip install -e .[dev] 
+    $ pip install -e .[dev]
 
 If you get issues regarding pandoc when using `make doc`, you can install it using::
 
@@ -73,23 +72,23 @@ CITING
 If you use this library, please cite on of the following papers::
 
     @article{teurtrie2023espm,
-    title={espm: A Python library for the simulation of STEM-EDXS datasets},
-    author={Teurtrie, Adrien and Perraudin, Nathana{\"e}l and Holvoet, Thomas and Chen, Hui and Alexander, Duncan TL and Obozinski, Guillaume and H{\'e}bert, C{\'e}cile},
-    journal={Ultramicroscopy},
-    pages={113719},
-    year={2023},
-    publisher={Elsevier}
+        title={espm: A Python library for the simulation of STEM-EDXS datasets},
+        author={Teurtrie, Adrien and Perraudin, Nathana{\"e}l and Holvoet, Thomas and Chen, Hui and Alexander, Duncan TL and Obozinski, Guillaume and H{\'e}bert, C{\'e}cile},
+        journal={Ultramicroscopy},
+        pages={113719},
+        year={2023},
+        publisher={Elsevier}
     }
 
     @article{Teurtrie_2024,
-    doi = {10.1088/2632-2153/ad9192},
-    year = {2024},
-    month = {nov},
-    publisher = {IOP Publishing},
-    volume = {5},
-    number = {4},
-    pages = {045050},
-    author = {Teurtrie, Adrien and Perraudin, Nathanaël and Holvoet, Thomas and Chen, Hui and Alexander, Duncan T L and Obozinski, Guillaume and Hébert, Cécile},
-    title = {From STEM-EDXS data to phase separation and quantification using physics-guided NMF},
-    journal = {Machine Learning: Science and Technology}
+        doi = {10.1088/2632-2153/ad9192},
+        year = {2024},
+        month = {nov},
+        publisher = {IOP Publishing},
+        volume = {5},
+        number = {4},
+        pages = {045050},
+        author = {Teurtrie, Adrien and Perraudin, Nathanaël and Holvoet, Thomas and Chen, Hui and Alexander, Duncan T L and Obozinski, Guillaume and Hébert, Cécile},
+        title = {From STEM-EDXS data to phase separation and quantification using physics-guided NMF},
+        journal = {Machine Learning: Science and Technology}
     }

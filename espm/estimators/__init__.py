@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 r"""NMF Estimators.
 
 The :mod:`espm.estimators` module implements different NMF algorithms.

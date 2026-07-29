@@ -350,10 +350,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 self.n_iter_ += 1
 
                 rel_W = np.max(
-                    np.abs((self.W_ - old_W)) / (self.W_ + self.tol * np.mean(self.W_))
+                    np.abs(self.W_ - old_W) / (self.W_ + self.tol * np.mean(self.W_))
                 )
                 rel_H = np.max(
-                    np.abs((self.H_ - old_H)) / (self.H_ + self.tol * np.mean(self.H_))
+                    np.abs(self.H_ - old_H) / (self.H_ + self.tol * np.mean(self.H_))
                 )
 
                 # store some information for assessing the convergence
@@ -395,16 +395,12 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     # Otherwise it goes to the data fitting step
                     if max(rel_H, rel_W) < self.tol:
                         print(
-                            "exits because of relative change rel_A {} and rel_P {} < tol ".format(
-                                rel_H, rel_W
-                            )
+                            f"exits because of relative change rel_A {rel_H} and rel_P {rel_W} < tol "
                         )
                         break
                     elif abs((eval_before - eval_after) / eval_init) < self.tol:
                         print(
-                            "exits because of relative change < tol: {}".format(
-                                (eval_before - eval_after) / eval_init
-                            )
+                            f"exits because of relative change < tol: {(eval_before - eval_after) / eval_init}"
                         )
                         break
 
@@ -414,9 +410,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
                     elif (eval_before - eval_after) < 0:
                         print(
-                            "exit because of negative decrease {}: {}, {}".format(
-                                (eval_before - eval_after), eval_before, eval_after
-                            )
+                            f"exit because of negative decrease {eval_before - eval_after}: {eval_before}, {eval_after}"
                         )
                         break
 
@@ -425,7 +419,6 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     print(
                         f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:3e},  {self.n_iter_ / (time.time() - algo_start + log_shift):0.3f} it/s",
                     )
-                    pass
                 # Update G might increase the loss so we reevaluate the loss to avoid artificial negative decrease
                 # We do this update every 3 iterations, but it is arbitrary.
                 if self.physics_model_ != None and self.n_iter_ % 3 == 0:

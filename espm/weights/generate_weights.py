@@ -353,7 +353,5 @@ def generate_weights(weight_type, shape_2d, n_phases=3, seed=0, **params):
         return chemical_map_weights(**params)
     else:
         raise ValueError(
-            "Wrong weight_type: {}. Accepted types : random, laplacian, sphere, gaussian_ripple, wedge, toy_problem, chemical_map".format(
-                weight_type
-            )
+            f"Wrong weight_type: {weight_type}. Accepted types : random, laplacian, sphere, gaussian_ripple, wedge, toy_problem, chemical_map"
         )

@@ -350,7 +350,7 @@ def modify_table_lines(
     if mdata["lines"]:
         for elt in elements:
             for key in table[str(elt)].keys():
-                if re.match(r"^{}".format(line), key):
+                if re.match(rf"^{line}", key):
                     table[str(elt)][key]["cs"] *= coeff
                     if "modifications" in mdata:
                         mdata["modifications"][str(elt) + "_" + key] = coeff

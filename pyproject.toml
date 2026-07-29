@@ -1,14 +1,17 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=64", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["espm*"]
 
+[tool.setuptools_scm]
+write_to = "espm/_version.py"
+
 [project]
 name = "espm"
-version = "1.1.4"
+dynamic = ["version"]
 description = "Electron SPectro-Microscopy Python Library"
 requires-python = ">=3.10"
 readme = "README.rst"
@@ -63,8 +66,9 @@ file = "Licence.txt"
 
 [project.optional-dependencies]
 hyperspy_ui = ["hyperspy_gui_ipywidgets>=2.0", "hyperspy_gui_traitsui>2.0"]
-dev = ["ruff>=0.15.20", "twine", "build"]
+dev_tools = ["build>=1.5.0", "ruff>=0.16.0", "twine>=7.0.0"]
 test = ["pytest>=9.1.1"]
+dev = ["espm[dev_tools]", "espm[test]", "espm[hyperspy_ui]"]
 doc = [
     "ipykernel",
     "nbsphinx>=0.9.8",
