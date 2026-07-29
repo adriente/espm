@@ -10,11 +10,11 @@ help:
 	@echo "release  package and upload to PyPI"
 
 clean:
-	git clean -Xdf
+	rm -rf build/ dist/ *.egg-info/ .pytest_cache/ .ruff_cache/ doc/_build/
 	jupyter nbconvert --inplace --ClearOutputPreprocessor.enabled=True $(NB)
 
 lint:
-	flake8 --doctests --exclude=doc
+	ruff check
 
 # Matplotlib doesn't print to screen. Also faster.
 export MPLBACKEND = agg
@@ -22,7 +22,7 @@ export MPLBACKEND = agg
 export DISPLAY = :99
 
 test:
-	pytest espm
+	pytest
 
 clean-doc:
 	rm -rf doc/_build
@@ -32,8 +32,7 @@ doc:
 	sphinx-build -b linkcheck -d doc/_build/doctrees doc doc/_build/linkcheck
 
 dist: clean
-	python setup.py sdist
-	python setup.py bdist_wheel --universal
+	python -m build
 	ls -lh dist/*
 	twine check dist/*
 

@@ -1,24 +1,25 @@
-import numpy as np
-from espm.conf import log_shift, dicotomy_tol, sigmaL
-from espm.utils import create_laplacian_matrix
-from espm.estimators import SmoothNMF
-from espm.models import ToyModel
 from copy import deepcopy
-from espm.weights import generate_weights as gw
-from espm.datasets.base import generate_spim_sample
-from espm.estimators.updates import initialize_algorithms
-from tqdm import tqdm
-from time import time, process_time
+from time import time
 
+import numpy as np
+from tqdm import tqdm
+
+from espm.conf import dicotomy_tol, log_shift, sigmaL
+from espm.datasets.base import generate_spim_sample
+from espm.estimators import SmoothNMF
+from espm.estimators.updates import initialize_algorithms
+from espm.models import ToyModel
+from espm.utils import create_laplacian_matrix
+from espm.weights import generate_weights as gw
 
 # global parameters
 global_param = dict()
 global_param["l2"] = False
-global_param["verbose"]= 0
+global_param["verbose"] = 0
 global_param["tol"] = 0
 global_param["dicotomy_tol"] = dicotomy_tol
 global_param["debug"] = False
-global_param["log_shift"] = log_shift 
+global_param["log_shift"] = log_shift
 global_param["eval_print"] = 10
 global_param["hspy_comp"] = False
 global_param["no_stop_criterion"] = True
@@ -31,33 +32,42 @@ c = 10
 n_poisson = 200
 lambda_L = 1000
 
-def create_toy_problem(l = 25, k = 3, shape_2d = [10, 10], c = 10, n_poisson=200, seed=0, simplex_H=True):
+
+def create_toy_problem(
+    l=25, k=3, shape_2d=[10, 10], c=10, n_poisson=200, seed=0, simplex_H=True
+):
     p = np.prod(shape_2d)
     assert len(shape_2d) == 2
     np.random.seed(seed)
-    H = np.random.rand(k,p)
+    H = np.random.rand(k, p)
     if simplex_H:
-        H = H/np.sum(H, axis=0, keepdims=True)
-    
+        H = H / np.sum(H, axis=0, keepdims=True)
+
     # G = np.random.rand(l,c)
     # W = np.random.rand(c,k)
     # D = G @ W
 
     # Let us ignore G
-    D = np.random.rand(l,k)
+    D = np.random.rand(l, k)
     G = None
 
     X = D @ H
 
-    Xdot = 1/n_poisson * np.random.poisson(n_poisson * X)
+    Xdot = 1 / n_poisson * np.random.poisson(n_poisson * X)
 
     return G, D, H, X, Xdot
 
-def get_toy_sample(l = 25, k = 3, shape_2d = [10, 10], c = 10, n_poisson=200, seed=0):
+
+def get_toy_sample(l=25, k=3, shape_2d=[10, 10], c=10, n_poisson=200, seed=0):
     model_params = {"L": l, "C": c, "K": k, "seed": seed}
     # densities = np.random.uniform(0.1, 2.0, 3)
     densities = np.ones([k])
-    misc_params = {"N": n_poisson, "seed": seed, 'densities' : densities, "model": "ToyModel"}
+    misc_params = {
+        "N": n_poisson,
+        "seed": seed,
+        "densities": densities,
+        "model": "ToyModel",
+    }
 
     toy_model = ToyModel(**model_params)
     toy_model.generate_phases()
@@ -69,18 +79,25 @@ def get_toy_sample(l = 25, k = 3, shape_2d = [10, 10], c = 10, n_poisson=200, se
     # weights[:,:,0] = 1 - np.sum(weights[:,:,1:], axis=-1)
 
     # Option 2
-    weights = gw.generate_weights("laplacian", shape_2d=shape_2d, n_phases=k+1, seed=seed)
-    weights = weights[:,:,1:]
+    weights = gw.generate_weights(
+        "laplacian", shape_2d=shape_2d, n_phases=k + 1, seed=seed
+    )
+    weights = weights[:, :, 1:]
     weights = weights / np.sum(weights, axis=-1, keepdims=True)
 
-    sample = generate_spim_sample(phases, weights, model_params,misc_params, seed = seed)
+    sample = generate_spim_sample(phases, weights, model_params, misc_params, seed=seed)
     return sample
 
-def create_laplacian_problem(l = 25, k = 3, shape_2d = [10, 10], c = 10, n_poisson=200, seed=0):
-    sample = get_toy_sample(l=l, k =k, shape_2d = shape_2d, c=c, n_poisson=n_poisson, seed=seed)
+
+def create_laplacian_problem(l=25, k=3, shape_2d=[10, 10], c=10, n_poisson=200, seed=0):
+    sample = get_toy_sample(
+        l=l, k=k, shape_2d=shape_2d, c=c, n_poisson=n_poisson, seed=seed
+    )
+
     def to_vec(X):
         n = X.shape[2]
-        return X.transpose(2,0,1).reshape(n, -1)
+        return X.transpose(2, 0, 1).reshape(n, -1)
+
     D = sample["GW"].T
     G = sample["G"]
     H = to_vec(sample["H"])
@@ -96,7 +113,18 @@ def one_experiment(X, experiment_param, algo_param, global_param):
     simplex_H_init = True
     start_time = time()
     if simplex_H_init:
-        _, W0, H0 = initialize_algorithms(X, est.G, None, None, n_components=est.n_components, init=est.init, random_state=est.random_state, simplex_H=True, simplex_W=False, logshift=log_shift)
+        _, W0, H0 = initialize_algorithms(
+            X,
+            est.G,
+            None,
+            None,
+            n_components=est.n_components,
+            init=est.init,
+            random_state=est.random_state,
+            simplex_H=True,
+            simplex_W=False,
+            logshift=log_shift,
+        )
         W = est.fit_transform(X, W=W0, H=H0)
     else:
         W = est.fit_transform(X)
@@ -109,14 +137,16 @@ def one_experiment(X, experiment_param, algo_param, global_param):
     return loss, final_loss, W.copy(), H.copy(), gamma, end_time - start_time
 
 
-
-
-def run_experiment_set(laplacian, noise, simplex_H, seed = 0, max_iter=1000, l = 25):
+def run_experiment_set(laplacian, noise, simplex_H, seed=0, max_iter=1000, l=25):
 
     if laplacian:
-        G, D, H, X, Xdot = create_laplacian_problem(l=l, k =k, shape_2d = shape_2d, c=c, n_poisson=n_poisson, seed=seed)
+        G, D, H, X, Xdot = create_laplacian_problem(
+            l=l, k=k, shape_2d=shape_2d, c=c, n_poisson=n_poisson, seed=seed
+        )
     else:
-        G, D, H, X, Xdot = create_toy_problem(l=l, k =k, shape_2d = shape_2d, c=c, n_poisson=n_poisson, seed=seed)
+        G, D, H, X, Xdot = create_toy_problem(
+            l=l, k=k, shape_2d=shape_2d, c=c, n_poisson=n_poisson, seed=seed
+        )
 
     if noise:
         Y = X
@@ -131,7 +161,7 @@ def run_experiment_set(laplacian, noise, simplex_H, seed = 0, max_iter=1000, l =
     experiment_param = dict()
     experiment_param["simplex_H"] = simplex_H
     experiment_param["simplex_W"] = False
-    experiment_param["lambda_L"] = lambda_L 
+    experiment_param["lambda_L"] = lambda_L
     experiment_param["mu"] = 0
     experiment_param["epsilon_reg"] = 1
     experiment_param["normalize"] = False
@@ -157,10 +187,10 @@ def run_experiment_set(laplacian, noise, simplex_H, seed = 0, max_iter=1000, l =
     else:
         algos = ["log_surrogate", "l2_surrogate", "bmd", "projected_gradient"]
         # algos = [ "bmd"]
-    
+
     for algo in algos:
         for linesearch in [False, True]:
-        # for linesearch in [False]:
+            # for linesearch in [False]:
             # for sL in [sigmaL/4, sigmaL/2, sigmaL]:
             for sL in [sigmaL]:
                 # algo parameters
@@ -169,12 +199,14 @@ def run_experiment_set(laplacian, noise, simplex_H, seed = 0, max_iter=1000, l =
                 algo_param["algo"] = algo
                 # algo_param["gamma"] = sL
                 if algo == "projected_gradient":
-                    algo_param["gamma"] = [10000*sL, 10000*sL]
+                    algo_param["gamma"] = [10000 * sL, 10000 * sL]
                 else:
                     algo_param["gamma"] = sL
                 params.append(deepcopy([experiment_param, algo_param, global_param]))
 
-                loss, final_loss, W, H, gamma, delta_t = one_experiment(Y, experiment_param, algo_param, global_param)
+                loss, final_loss, W, H, gamma, delta_t = one_experiment(
+                    Y, experiment_param, algo_param, global_param
+                )
                 times.append(delta_t)
                 losses.append(loss)
                 final_losses.append(final_loss)
@@ -188,14 +220,31 @@ def run_experiment_set(laplacian, noise, simplex_H, seed = 0, max_iter=1000, l =
     times = np.array(times)
     i = np.argmin(final_losses)
     experiment_param_m = deepcopy(experiment_param)
-    experiment_param_m["max_iter"] = experiment_param_m["max_iter"]*3
-    loss, l_infty, W, H, _, _ = one_experiment(Y, experiment_param_m, params[i][1], global_param)       
-    np.testing.assert_array_equal(loss[:len(losses[i])], losses[i])
+    experiment_param_m["max_iter"] = experiment_param_m["max_iter"] * 3
+    loss, l_infty, W, H, _, _ = one_experiment(
+        Y, experiment_param_m, params[i][1], global_param
+    )
+    np.testing.assert_array_equal(loss[: len(losses[i])], losses[i])
     # plt.plot(loss)
     # plt.plot(losses[i])
     # plt.yscale("log")
-    return losses, final_losses, Ws, Hs, params, captions, gammas, l_infty, W, H, true_D, true_H, X, Xdot, times
-
+    return (
+        losses,
+        final_losses,
+        Ws,
+        Hs,
+        params,
+        captions,
+        gammas,
+        l_infty,
+        W,
+        H,
+        true_D,
+        true_H,
+        X,
+        Xdot,
+        times,
+    )
 
 
 def test_create_toy_problem():
@@ -203,19 +252,27 @@ def test_create_toy_problem():
     shape_2d = (25, 25)
     l = 25
     c = 10
-    n_poisson=200
+    n_poisson = 200
 
     for seed in range(3):
-        G, D, H, Xtrue, X = create_toy_problem(shape_2d=shape_2d, k=k, l=l, c=c, n_poisson=n_poisson, seed=seed)
-        G2, D2, H2, Xtrue2, X2 = create_toy_problem(shape_2d=shape_2d, k=k, l=l, c=c, n_poisson=n_poisson, seed=seed)
+        G, D, H, Xtrue, X = create_toy_problem(
+            shape_2d=shape_2d, k=k, l=l, c=c, n_poisson=n_poisson, seed=seed
+        )
+        G2, D2, H2, Xtrue2, X2 = create_toy_problem(
+            shape_2d=shape_2d, k=k, l=l, c=c, n_poisson=n_poisson, seed=seed
+        )
         np.testing.assert_array_equal(G, G2)
         np.testing.assert_array_equal(D, D2)
         np.testing.assert_array_equal(H, H2)
         np.testing.assert_array_equal(Xtrue, Xtrue2)
         np.testing.assert_array_equal(X, X2)
 
-        G3, D3, H3, Xtrue3, X3 = create_laplacian_problem(shape_2d=shape_2d, k=k, l=l, c=c, n_poisson=n_poisson, seed=seed)
-        G4, D4, H4, Xtrue4, X4 = create_laplacian_problem(shape_2d=shape_2d, k=k, l=l, c=c, n_poisson=n_poisson, seed=seed)   
+        G3, D3, H3, Xtrue3, X3 = create_laplacian_problem(
+            shape_2d=shape_2d, k=k, l=l, c=c, n_poisson=n_poisson, seed=seed
+        )
+        G4, D4, H4, Xtrue4, X4 = create_laplacian_problem(
+            shape_2d=shape_2d, k=k, l=l, c=c, n_poisson=n_poisson, seed=seed
+        )
         np.testing.assert_array_equal(G3, G4)
         np.testing.assert_array_equal(D3, D4)
         np.testing.assert_array_equal(H3, H4)
@@ -226,9 +283,9 @@ def test_create_toy_problem():
         assert D.shape == D3.shape == (l, k)
         assert H.shape == H3.shape == (k, np.prod(shape_2d))
         assert Xtrue.shape == Xtrue3.shape == (l, np.prod(shape_2d))
-    
-if __name__ == "__main__":
 
+
+if __name__ == "__main__":
     # import argparse
 
     # # get parameter from command line
@@ -244,7 +301,6 @@ if __name__ == "__main__":
     # simplex_H = args.simplex_H
     # repetitions = args.repetitions
 
-
     test_create_toy_problem()
     # Time test
     simplex_H = True
@@ -256,7 +312,25 @@ if __name__ == "__main__":
                 l_infty_l = []
                 times_l = []
                 for seed in tqdm(range(repetitions), total=repetitions):
-                    losses, final_losses, Ws, Hs, params, captions, gammas, l_infty, W, H, true_D, true_H, X, Xdot, times = run_experiment_set(laplacian, noise, simplex_H, seed=seed, max_iter=100, l=l)
+                    (
+                        losses,
+                        final_losses,
+                        Ws,
+                        Hs,
+                        params,
+                        captions,
+                        gammas,
+                        l_infty,
+                        W,
+                        H,
+                        true_D,
+                        true_H,
+                        X,
+                        Xdot,
+                        times,
+                    ) = run_experiment_set(
+                        laplacian, noise, simplex_H, seed=seed, max_iter=100, l=l
+                    )
                     losses_l.append(np.array(losses))
                     l_infty_l.append(l_infty)
                     times_l.append(times)
@@ -267,8 +341,21 @@ if __name__ == "__main__":
 
                 # Save the results
                 filename = f"losses_{laplacian}_{noise}_{simplex_H}_{l}.npz"
-                np.savez(filename, losses=losses, l_infty=l_infty, params=params, captions=captions, true_D=true_D, true_H=true_H, X=X, Xdot=Xdot, H=H, W=W, gammas=gammas, times=times)
-
+                np.savez(
+                    filename,
+                    losses=losses,
+                    l_infty=l_infty,
+                    params=params,
+                    captions=captions,
+                    true_D=true_D,
+                    true_H=true_H,
+                    X=X,
+                    Xdot=Xdot,
+                    H=H,
+                    W=W,
+                    gammas=gammas,
+                    times=times,
+                )
 
     # Convergence test
     simplex_H = True
@@ -279,7 +366,25 @@ if __name__ == "__main__":
             l_infty_l = []
             times_l = []
             for seed in tqdm(range(repetitions), total=repetitions):
-                losses, final_losses, Ws, Hs, params, captions, gammas, l_infty, W, H, true_D, true_H, X, Xdot, times = run_experiment_set(laplacian, noise, simplex_H, seed=seed, max_iter=1000, l=25)
+                (
+                    losses,
+                    final_losses,
+                    Ws,
+                    Hs,
+                    params,
+                    captions,
+                    gammas,
+                    l_infty,
+                    W,
+                    H,
+                    true_D,
+                    true_H,
+                    X,
+                    Xdot,
+                    times,
+                ) = run_experiment_set(
+                    laplacian, noise, simplex_H, seed=seed, max_iter=1000, l=25
+                )
                 losses_l.append(np.array(losses))
                 l_infty_l.append(l_infty)
                 times_l.append(times)
@@ -290,5 +395,18 @@ if __name__ == "__main__":
 
             # Save the results
             filename = f"losses_{laplacian}_{noise}_{simplex_H}.npz"
-            np.savez(filename, losses=losses, l_infty=l_infty, params=params, captions=captions, true_D=true_D, true_H=true_H, X=X, Xdot=Xdot, H=H, W=W, gammas=gammas, times=times)
-
+            np.savez(
+                filename,
+                losses=losses,
+                l_infty=l_infty,
+                params=params,
+                captions=captions,
+                true_D=true_D,
+                true_H=true_H,
+                X=X,
+                Xdot=Xdot,
+                H=H,
+                W=W,
+                gammas=gammas,
+                times=times,
+            )

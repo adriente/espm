@@ -1,7 +1,9 @@
 from pathlib import Path
+
 import exspy._misc.eds.ffast_mac as macs
+
 # from exspy.misc.eds import ffast_mac as macs
-HSPY_MAC = macs.ffast_mac # Tabulated absorption coefficient in Hyperspy
+HSPY_MAC = macs.ffast_mac  # Tabulated absorption coefficient in Hyperspy
 
 # Path of the base
 BASE_PATH = Path(__file__).parent
@@ -23,33 +25,32 @@ DATASETS_PATH = BASE_PATH.parent / Path("generated_datasets")
 DATASETS_PATH.mkdir(exist_ok=True, parents=True)
 
 
-
 DEFAULT_MISC_PARAMS = {
-    "data_folder" : "default_synth_data",
-    "shape_2d" : (80,80),
-    "N" : 100,
-    "densities" : [2.33,19.3],
-    "model" : "EDXS",
-    "seed" : 0
+    "data_folder": "default_synth_data",
+    "shape_2d": (80, 80),
+    "N": 100,
+    "densities": [2.33, 19.3],
+    "model": "EDXS",
+    "seed": 0,
 }
 
 DEFAULT_EDXS_PARAMS = {
-    "e_offset" : 0.200,
-    "e_size" : 1980,
-    "e_scale" : 0.01,
-    "width_slope" : 0.01,
-    "width_intercept" : 0.065,
-    "db_name" : "200keV_xrays.json",
-    "E0" : 200,
-    "params_dict" : {
-        "Det" : DEFAULT_SDD_EFF,
-        "Abs" : {
-            "thickness" : 100.0e-7,
-            "toa" : 22,
-            "density" : None,
-            "atomic_fraction" : False
-            }
-    }
+    "e_offset": 0.200,
+    "e_size": 1980,
+    "e_scale": 0.01,
+    "width_slope": 0.01,
+    "width_intercept": 0.065,
+    "db_name": "200keV_xrays.json",
+    "E0": 200,
+    "params_dict": {
+        "Det": DEFAULT_SDD_EFF,
+        "Abs": {
+            "thickness": 100.0e-7,
+            "toa": 22,
+            "density": None,
+            "atomic_fraction": False,
+        },
+    },
 }
 
 log_shift = 1e-14

@@ -1,14 +1,17 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=64", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["espm*"]
 
+[tool.setuptools_scm]
+write_to = "espm/_version.py"
+
 [project]
 name = "espm"
-version = "1.1.4"
+dynamic = ["version"]
 description = "Electron SPectro-Microscopy Python Library"
 requires-python = ">=3.10"
 readme = "README.rst"
@@ -27,24 +30,24 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "Intended Audience :: End Users/Desktop",
-    "Intended Audience :: Developers", 
+    "Intended Audience :: Developers",
     "Natural Language :: English",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: MacOS :: MacOS X",
-    "Operating System :: POSIX :: Linux", 
-    "Programming Language :: C",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Mathematics",
-    "Topic :: Scientific/Engineering"
+    "Topic :: Scientific/Engineering",
 ]
 dependencies = [
     "exspy>=0.3.2",
     "hyperspy>=2.4.0",
     "intervaltree>=3.2.1",
-    "numba>=0.66.0",
+    "ipython>=8.39.0",
+    "numpy>=2.2.6",
     "scikit-image>=0.25.2",
     "scikit-learn>=1.7.2",
     "seaborn>=0.13.2",
@@ -56,18 +59,21 @@ espm = "espm"
 [project.license]
 file = "Licence.txt"
 
+[project.urls]
+"Homepage" = "https://espm.readthedocs.io/en/latest/"
+"Bug Reports" = "https://github.com/adriente/espm/issues"
+"Source" = "https://github.com/adriente/espm"
+
 [project.optional-dependencies]
-dev = [
-    "cython>=3.2.8",
-    "flake8>=7.3.0",
-    "jupyterlab>=4.6.1",
-    "memory-profiler>=0.61.0",
+hyperspy_ui = ["hyperspy_gui_ipywidgets>=2.0", "hyperspy_gui_traitsui>2.0"]
+dev_tools = ["build>=1.5.0", "ruff>=0.16.0", "twine>=7.0.0"]
+test = ["pytest>=9.1.1"]
+dev = ["espm[dev_tools]", "espm[test]", "espm[hyperspy_ui]"]
+doc = [
+    "ipykernel",
     "nbsphinx>=0.9.8",
     "numpydoc>=1.10.0",
     "pandoc>=2.4",
-    "pdoc>=16.0.0",
-    "pyqt5>=5.15.0",
-    "pytest>=9.1.1",
     "sphinx>=8.1.3",
     "sphinx-copybutton>=0.5.2",
     "sphinx-gallery>=0.21.0",
@@ -75,12 +81,17 @@ dev = [
     "sphinxcontrib-bibtex>=2.7.0",
 ]
 
-hyperspy_ui = [
-    "hyperspy_gui_ipywidgets>=2.0",
-    "hyperspy_gui_traitsui>2.0"
-]
+[tool.ruff.lint]
+ignore = ["E711", "E712", "E741"]
+extend-select = ["I"]
 
-[project.urls]
-"Homepage" = "https://espm.readthedocs.io/en/latest/"
-"Bug Reports" = "https://github.com/adriente/espm/issues"
-"Source" = "https://github.com/adriente/espm"
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]
+
+[tool.pytest]
+testpaths = ["tests"]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    'ignore:function ham\(\) is deprecated:DeprecationWarning',
+]
