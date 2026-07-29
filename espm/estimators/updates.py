@@ -429,7 +429,6 @@ def gradH(
     return grad
 
 
-#
 def proj_grad_step_w(
     X,
     G,

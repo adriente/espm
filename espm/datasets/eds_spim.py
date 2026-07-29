@@ -636,13 +636,13 @@ class EDSespm(EDSTEMSpectrum):
             _ += 1
 
             print(
-                "The current estimated mass-thickness is {} g.cm^-2".format(curr_mt),
+                f"The current estimated mass-thickness is {curr_mt} g.cm^-2",
                 flush=True,
             )
 
         self.plot(True)
         self._plot.signal_plot.ax.set_title(
-            "Estimated mass-thickness : {} g.cm^-2".format(curr_mt)
+            f"Estimated mass-thickness : {curr_mt} g.cm^-2"
         )
 
         axis = self.energy_axis
@@ -1311,15 +1311,12 @@ class EDSespm(EDSTEMSpectrum):
             self.quantification_signal._plot.navigator_plot.ax.set_xticks(
                 list(range(len(elts))), elts
             )
-            return
 
         self.quantification_signal.axes_manager[0].events.index_changed.connect(
             label_elements, []
         )
 
         hs.plot.plot_images(qs)
-
-        return
 
     @_check_decomposition
     def plot_comp_model(self, comp_index: int):
@@ -1358,7 +1355,7 @@ class EDSespm(EDSTEMSpectrum):
             plt.fill_between(x, G_idx[:, i], alpha=0.4, color=color)
         plt.legend()
         ax = plt.gca()
-        plt.title("Model of component {}".format(str(idx)))
+        plt.title(f"Model of component {idx!s}")
 
         return plt.gcf()
 
@@ -1421,8 +1418,6 @@ class EDSespm(EDSTEMSpectrum):
             linestyle=["-"] + ["--" for i in positions_contribs],
             color=["k"] + list(mpl.colors.TABLEAU_COLORS.values()) * 10,
         )
-
-        return
 
     @_check_decomposition
     def plot_data_model_ROI(self):
@@ -1511,8 +1506,6 @@ class EDSespm(EDSTEMSpectrum):
         roi.events.changed.connect(update_plot)
         update_plot()
         plt.show()
-
-        return
 
     @_check_decomposition
     def elemental_profile(self, **kwargs):
@@ -1629,7 +1622,6 @@ class EDSespm(EDSTEMSpectrum):
         with self.axes_manager.events.any_axis_changed.suppress():
             self.axes_manager[-1].scale = new_scale
         self.axes_manager[-1].offset = new_offset
-        return
 
     def fit_plot_gauss(self, roi_signal, a, roi, i):
 

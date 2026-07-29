@@ -245,9 +245,7 @@ class EDXS(PhysicalModel):
         self.bkgd_in_G = g_type == "bremsstrahlung"
 
         # None is a default value for the G matrix and thus G will be considered to be the identity matrix in most of espm functions.
-        if len(valid_elts) == 0:
-            self.G = None
-        elif g_type == "identity":
+        if len(valid_elts) == 0 or g_type == "identity":
             self.G = None
         # model based on elements_list
         elif self.bkgd_in_G or (g_type == "no_brstlg"):
@@ -540,9 +538,7 @@ class EDXS(PhysicalModel):
         ind_list = []
         # We skip the low energy lines
         for i, elt in enumerate(self.model_elts):
-            if re.match(r"[0-9]*(_lo)", elt):
-                pass
-            elif re.match(r"[0-9]*(_ign)[0-9]*", elt):
+            if re.match(r"[0-9]*(_lo)", elt) or re.match(r"[0-9]*(_ign)[0-9]*", elt):
                 pass
             else:
                 ind_list.append(i)

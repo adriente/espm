@@ -354,9 +354,7 @@ def check_keys(params, d_params, upperkeys="", toprint=True, replace=True):
         if key not in keys:
             if toprint:
                 print(
-                    "Warning! Optional argument: {}['{}'] specified by user but not used".format(
-                        upperkeys, key
-                    )
+                    f"Warning! Optional argument: {upperkeys}['{key}'] specified by user but not used"
                 )
         else:
             if isdict(params[key]):
@@ -369,7 +367,7 @@ def check_keys(params, d_params, upperkeys="", toprint=True, replace=True):
                         check_keys(
                             params[key],
                             d_params[key],
-                            upperkeys=upperkeys + "['{}']".format(key),
+                            upperkeys=upperkeys + f"['{key}']",
                             toprint=toprint,
                             replace=replace,
                         )
@@ -582,7 +580,7 @@ def cluster_analysis_concentration_report(s, cluster_source=None, print_std=Fals
     ds = np.round(ds, 2)
     els = s.quantification_signal.metadata.Sample.elements
 
-    print("", end="\t")
+    print(end="\t")
     print(*["c" + str(i + 1) for i in range(qs.shape[1])], sep="\t")
     for el, q, d in zip(els, qs, ds):
         print(el, end="\t")
@@ -658,7 +656,7 @@ def quant_profile_linear_fit(pf, **linfit_kwargs):
         x = p.axes_manager[0].axis
         el = p.metadata.General.name
         plt.plot(x, p.data, label="Profile data " + el)
-        ax.set_xlabel(r"profile ({})".format(p.axes_manager[0].units))
+        ax.set_xlabel(rf"profile ({p.axes_manager[0].units})")
         ax.set_ylabel("Atomic %")
         ax.set_title(el + " profile")
 
@@ -671,9 +669,7 @@ def quant_profile_linear_fit(pf, **linfit_kwargs):
         plt.plot(
             x,
             yfit,
-            label=r"Fit : {}$\frac{{at \%}}{{{}}}$ x+{} at%".format(
-                a[0], p.axes_manager[0].units, b[0]
-            ),
+            label=rf"Fit : {a[0]}$\frac{{at \%}}{{{p.axes_manager[0].units}}}$ x+{b[0]} at%",
         )
 
         plt.legend()
@@ -685,7 +681,7 @@ def radial_profile(data, center="middle"):
     if center == "middle":
         center = np.array(data.shape) / 2
 
-    y, x = np.indices((data.shape))
+    y, x = np.indices(data.shape)
     r = np.sqrt((x - center[0]) ** 2 + (y - center[1]) ** 2)
     r = r.astype("int")
 
