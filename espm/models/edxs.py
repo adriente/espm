@@ -145,9 +145,7 @@ class EDXS(PhysicalModel):
                     self.model_elts.append(str(elt))
             else:
                 print(
-                    "The energy split of the element : {} leads to empty G columns. Please remove split or change its energy.".format(
-                        elt
-                    )
+                    f"The energy split of the element : {elt} leads to empty G columns. Please remove split or change its energy."
                 )
                 raise ValueError("Empty G column")
 
@@ -183,9 +181,7 @@ class EDXS(PhysicalModel):
                     self.model_elts.append(str(elt) + "_ign" + str(i))
             else:
                 print(
-                    "The energy split of the element : {} leads to empty G columns. Please remove split or change its energy.".format(
-                        elt
-                    )
+                    f"The energy split of the element : {elt} leads to empty G columns. Please remove split or change its energy."
                 )
                 raise ValueError("Empty G column")
 
@@ -258,10 +254,7 @@ class EDXS(PhysicalModel):
             self.bkgd_in_G = False
 
         # None is a default value for the G matrix and thus G will be considered to be the identity matrix in most of espm functions.
-        if len(valid_elts) == 0:
-            self.G = None
-
-        elif g_type == "identity":
+        if len(valid_elts) == 0 or g_type == "identity":
             self.G = None
         # model based on elements_list
         elif (g_type == "bremsstrahlung") or (g_type == "no_brstlg"):
@@ -316,11 +309,7 @@ class EDXS(PhysicalModel):
                     found = 1
                     break
             if not found:
-                print(
-                    "No peak is present in the energy range for element : {}".format(
-                        elt
-                    )
-                )
+                print(f"No peak is present in the energy range for element : {elt}")
         return valid_elts
 
     def generate_phases(self, phases_parameters):
@@ -547,9 +536,7 @@ class EDXS(PhysicalModel):
         ind_list = []
         # We skip the low energy lines
         for i, elt in enumerate(self.model_elts):
-            if re.match(r"[0-9]*(_lo)", elt):
-                pass
-            elif re.match(r"[0-9]*(_ign)[0-9]*", elt):
+            if re.match(r"[0-9]*(_lo)", elt) or re.match(r"[0-9]*(_ign)[0-9]*", elt):
                 pass
             else:
                 ind_list.append(i)

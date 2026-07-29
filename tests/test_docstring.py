@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Test suite for the docstrings of the espm package.
 """

@@ -7,14 +7,14 @@ The :mod:`espm.weights.abundance` module implements the class :class:`Abundance`
 
 import hyperspy.api as hs
 import numpy as np
-import scipy.ndimage as ndimage
+from scipy import ndimage
 from scipy.interpolate import RectBivariateSpline
 from skimage.filters import median, threshold_otsu
 
 from espm.models.EDXS_function import gaussian
 
 
-class Abundance(object):
+class Abundance:
     def __init__(self, shape_2d, n_phases):
         self.shape_2d = shape_2d
         self.n_phases = n_phases

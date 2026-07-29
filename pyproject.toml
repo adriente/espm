@@ -66,7 +66,7 @@ file = "Licence.txt"
 
 [project.optional-dependencies]
 hyperspy_ui = ["hyperspy_gui_ipywidgets>=2.0", "hyperspy_gui_traitsui>2.0"]
-dev_tools = ["ruff>=0.15.20", "twine", "build"]
+dev_tools = ["build>=1.5.0", "ruff>=0.16.0", "twine>=7.0.0"]
 test = ["pytest>=9.1.1"]
 dev = ["espm[dev_tools]", "espm[test]", "espm[hyperspy_ui]"]
 doc = [

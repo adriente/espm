@@ -9,11 +9,10 @@ The ToyModel can be used for testing data analysis algorithms.
 import json
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 
-import espm.conf as conf
+from espm import conf
 
 
 class Model(ABC):
@@ -71,7 +70,7 @@ class ToyModel(Model):
     """
 
     def __init__(
-        self, L: int = 200, C: int = 15, K: int = 3, seed: Optional[int] = None
+        self, L: int = 200, C: int = 15, K: int = 3, seed: int | None = None
     ) -> None:
         super().__init__()
         self.L = L

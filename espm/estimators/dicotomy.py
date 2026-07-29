@@ -181,9 +181,7 @@ def dicotomy(a, b, func, maxit, tol):
         func_new = func(new)
         if it >= maxit:
             print(
-                "Dicotomy stopped for maximum number of iterations with an error of : {}".format(
-                    np.max(np.abs(func_new))
-                )
+                f"Dicotomy stopped for maximum number of iterations with an error of : {np.max(np.abs(func_new))}"
             )
             break
 
