@@ -123,9 +123,9 @@ def dicotomy(a, b, func, maxit, tol, safe=False):
     Parameters
     ----------
 
-    a : float or numpy array
+    a : numpy array
         Lower bound of the interval such that func(a) > 0
-    b : float or numpy array
+    b : numpy array
         Upper bound of the interval such that func(b) < 0
     func : function
         Function to solve
@@ -158,11 +158,10 @@ def dicotomy(a, b, func, maxit, tol, safe=False):
     func_new = func(new)
     # print("A : {}, B: {}, new : {}, fA : {}, fB : {}, fnew : {}".format(np.min(np.abs(a)),np.min(np.abs(b)),np.min(np.abs(new)),np.min(np.abs(func(a))),np.min(np.abs(func(b))),np.min(np.abs(func(new)))))
     # print("A : {}, B: {}, new : {}, fA : {}, fB : {}, fnew : {}".format(np.max(a),np.max(b),np.max(new),np.max(func(a)),np.max(func(b)),np.max(func(new))))
+    func_a = func_max
+
     while np.max(np.abs(func_new)) > tol:
         it = it + 1
-        func_a = func(a)
-        # func_b = func(b)
-
         # if f(a)*f(new) <0 then f(new) < 0 --> store in b
         minus_bool = func_a * func_new <= 0
 
@@ -170,6 +169,7 @@ def dicotomy(a, b, func, maxit, tol, safe=False):
         # plus_bool = func_a * func_new > 0
         b = np.where(minus_bool, new, b)
         a = np.where(minus_bool, a, new)
+        func_a = np.where(minus_bool, func_a, func_new)
 
         new = (a + b) / 2
         func_new = func(new)
