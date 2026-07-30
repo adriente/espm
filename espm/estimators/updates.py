@@ -65,8 +65,7 @@ def multiplicative_step_w(
                 GWH = np.maximum(GWH, log_shift)
                 op1 = X / GWH
 
-            mult1 = G.T @ op1
-            num = W * (mult1 @ H.T)
+            num = W * (G.T @ (op1 @ H.T))
             denum = np.outer(np.sum(G, axis=0), np.sum(H, axis=1))
             if simplex_W:
                 if physics_model is not None:
