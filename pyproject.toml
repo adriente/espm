@@ -46,7 +46,6 @@ dependencies = [
     "exspy>=0.3.2",
     "hyperspy>=2.4.0",
     "intervaltree>=3.2.1",
-    "ipython>=8.39.0",
     "numpy>=2.2.6",
     "scikit-image>=0.25.2",
     "scikit-learn>=1.7.2",

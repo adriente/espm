@@ -26,20 +26,24 @@ from exspy.utils.eds import take_off_angle
 from hyperspy.roi import BaseROI, RectangularROI
 from hyperspy.signal_tools import Signal1DRangeSelector
 from hyperspy.ui_registry import get_gui
+from matplotlib.collections import LineCollection
 from prettytable import PrettyTable
 from scipy.optimize import curve_fit
 from tqdm import tqdm
 
-from espm.conf import NUMBER_PERIODIC_TABLE
+from espm.conf import NUMBER_PERIODIC_TABLE, SYMBOLS_PERIODIC_TABLE
 from espm.estimators import NMFEstimator, SmoothNMF
 from espm.models import EDXS
 from espm.utils import (
     get_explained_intensity_W,
     num_to_symbol,
     number_to_symbol_list,
+    quant_spectrum,
+    symbol_to_number_dict,
     symbol_to_number_list,
 )
 
+# TODO: use cache after merging optimisation
 NPT = json.load(open(NUMBER_PERIODIC_TABLE))
 
 
@@ -69,6 +73,10 @@ class EDSespm(EDSTEMSpectrum):
         self.model_ = None
         self.custom_init_ = None
         self.ranges = None
+        self.average_spectrum_ = None
+        self.energy_axis_ = None
+        self.elements_ = None
+
         self._set_default_analysis_params()
 
     ##############
@@ -214,10 +222,39 @@ class EDSespm(EDSTEMSpectrum):
             self.model_ = EDXS(**mod_pars, custom_init=self.custom_init_)
         return self.model_
 
+    @property
+    def energy_axis(self):
+        if self.energy_axis_ is None:
+            self.energy_axis_ = self.axes_manager.signal_axes[0].axis
+        return self.energy_axis_
+
+    @property
+    def average_spectrum(self):
+        if self.average_spectrum_ is None:
+            nav_axes = self.axes_manager.navigation_axes
+            if len(nav_axes) > 0:
+                self.average_spectrum_ = self.mean(axis=nav_axes).data
+            else:
+                self.average_spectrum_ = self.data
+        return self.average_spectrum_
+
+    @property
+    def elements(self):
+        if self.elements_ is None:
+
+            @symbol_to_number_list
+            def convert_to_numbers(elements):
+                return elements
+
+            elements = convert_to_numbers(elements=self.metadata.Sample.elements)
+            self.elements_ = [str(el) for el in elements]
+        return self.elements_
+
     def build_G(
         self,
         problem_type: str = "bremsstrahlung",
         ignored_elements: list[str] = ["Cu"],
+        use_calibration: bool = False,
         *,
         elements_dict: dict[str, float] = {},
     ) -> None:
@@ -231,6 +268,10 @@ class EDSespm(EDSTEMSpectrum):
                 - "bremsstrahlung" : the G matrix is a callable with both characteristic X-rays and a bremsstrahlung model.
                 - "no_brstlg" : the G matrix is a matrix with only characteristic X-rays.
                 - "identity" : the G matrix is None which is equivalent to an identity matrix for espm functions.
+        ignored_elements : list, optional
+            List of chemical elements to ignore when building the G matrix.
+        use_calibration : bool, optional
+            If True, build G using the polynomially calibrated table from `auto_calibrate`.
         elements_dict : dict, optional
             Dictionary containing atomic numbers and a corresponding cut-off energies. It is used to separate the characteristic X-rays of the given elements into two energies ranges and assign them each a column in the G matrix instead of having one column per element.
             For example elements_dict = {"26",3.0} will separate the characteristic X-rays of the element Fe into two energies ranges and assign them each a column in the G matrix. This is useful to circumvent issues with the absorption.
@@ -239,13 +280,21 @@ class EDSespm(EDSTEMSpectrum):
         None
         """
         self._check_metadata_G()
+
+        if use_calibration:
+            assert self.model.calibrated_db_dict is not None, (
+                "Auto calibration has not been performed. Please use `auto_calibrate` before running `build_G` with `use_calibration=True`."
+            )
+
         self.problem_type = problem_type
         self.separated_lines = elements_dict
+
         g_pars = {
             "g_type": problem_type,
             "ignored_elements": ignored_elements,
             "elements": self.metadata.Sample.elements,
             "elements_dict": elements_dict,
+            "use_calibration": use_calibration,
         }
 
         self.model.generate_g_matr(**g_pars)
@@ -598,7 +647,7 @@ class EDSespm(EDSTEMSpectrum):
             f"Estimated mass-thickness : {curr_mt} g.cm^-2"
         )
 
-        axis = self.axes_manager.signal_axes[0].axis
+        axis = self.energy_axis
         self._plot.signal_plot.ax.plot(
             axis, estimator.G_ @ estimator.W_ @ estimator.H_, "b-", label="Full model"
         )
@@ -744,7 +793,7 @@ class EDSespm(EDSTEMSpectrum):
     def _plot_background(self, model):
         # The full range from self.compute_background misses both ends
         # The axis needs to be trimmed accordingly
-        axis = self.axes_manager.signal_axes[0].axis[1:-1]
+        axis = self.energy_axis[1:-1]
         self._plot.signal_plot.ax.plot(axis, model)
 
     def _generate_ranges(self, num):
@@ -925,7 +974,7 @@ class EDSespm(EDSTEMSpectrum):
             if indices:
                 component = sum([G[:, idx] @ W[idx, :] @ H for idx in indices])
                 spectrum_1D._plot.signal_plot.ax.plot(
-                    self.axes_manager.signal_axes[0].axis,
+                    self.energy_axis,
                     component,
                     label=f"{conv_elts_dict[elt]}",
                     linestyle=line_styles[_ % len(line_styles)],
@@ -961,34 +1010,29 @@ class EDSespm(EDSTEMSpectrum):
         elts = self.model.get_elements(False)
         elts_indices = self.model.NMF_simplex()
 
+        conv_elts = convert_elts(elements=elts)
+
         if selected_elts:
-            conv_elts = convert_elts(elements=elts)
-            conv_elts_dict = {conv_elts[i]: num for i, num in enumerate(elts_indices)}
-            new_elts_indices = []
-            for elt in selected_elts:
-                if elt in conv_elts_dict:
-                    new_elts_indices.append(conv_elts_dict[elt])
+            conv_elts_dict = dict(zip(conv_elts, elts_indices))
+            indices = [
+                conv_elts_dict[elt] for elt in selected_elts if elt in conv_elts_dict
+            ]
+            returned_elts = [elt for elt in selected_elts if elt in conv_elts_dict]
 
-            W = W[new_elts_indices, :] * 100 / W[new_elts_indices, :].sum(axis=0)
-            if fit_error:
-                errors = percentages[new_elts_indices, :]
-                errors[errors > 10000] = np.inf
-            else:
-                errors = np.zeros_like(W)
-
-            return selected_elts, W, errors
-
+            W = W[indices, :] * 100 / W[indices, :].sum(axis=0)
         else:
-            conv_elts = convert_elts(elements=elts)
+            indices = elts_indices
+            returned_elts = conv_elts
 
-            W = W[elts_indices, :] * 100  # /W[indices,:].sum(axis = 0)
-            if fit_error:
-                errors = percentages[elts_indices, :]
-                errors[errors > 10000] = np.inf
-            else:
-                errors = np.zeros_like(W)
+            W = W[indices, :] * 100
 
-            return conv_elts, W, errors
+        if fit_error:
+            errors = percentages[indices, :]
+            errors[errors > 10000] = np.inf
+        else:
+            errors = np.zeros_like(W)
+
+        return returned_elts, W, errors
 
     def estimate_best_binning(self, inspect=False):
         r"""
@@ -1638,6 +1682,387 @@ class EDSespm(EDSTEMSpectrum):
         els_names = [num_to_symbol(el) for el in els]
         return els_names
 
+    ####################
+    # Auto Calibration #
+    ####################
+
+    def fit_single_peak(self, window, energy):
+        energy_axis = self.energy_axis
+
+        mask = (energy_axis >= energy - window) & (energy_axis <= energy + window)
+        if not np.any(mask):
+            return None
+
+        xdata = energy_axis[mask]
+        ydata = self.average_spectrum[mask]
+
+        x0_guess = xdata[np.argmax(ydata)]
+        A_guess = max(np.max(ydata) - np.min(ydata), 1e-6)
+        sigma_guess = (
+            self.model.width_slope * energy + self.model.width_intercept
+        ) / 2.3548
+        C_guess = np.min(ydata)
+
+        p0 = (A_guess, x0_guess, sigma_guess, C_guess)
+        bounds = (
+            (0.0, energy - window, 0.9 * sigma_guess, 0.0),
+            (np.inf, energy + window, 1.1 * sigma_guess, np.inf),
+        )
+
+        try:
+            popt, _ = curve_fit(
+                gaussian_with_bg,
+                xdata,
+                ydata,
+                p0,
+                # sigma=np.sqrt(np.maximum(ydata, 1.0)),
+                # absolute_sigma=True,
+                bounds=bounds,
+            )
+        except Exception:
+            return None
+
+        return popt
+
+    def fit_table(self, window, filter_cs, filter_conc):
+        table = self.model.db_dict
+
+        calibrated_table = {}
+
+        concentrations, _ = quant_spectrum(
+            self.mean(axis=nav_axes)
+            if len(nav_axes := self.axes_manager.navigation_axes) > 0
+            else self
+        )
+
+        @symbol_to_number_dict
+        def symbol_to_number(elements_dict):
+            return {str(k): v for k, v in elements_dict.items()}
+
+        concentrations = symbol_to_number(elements_dict=concentrations)
+
+        for element in self.elements:
+            if (
+                element not in concentrations
+                or (conc := concentrations[element]) < filter_conc
+            ):
+                continue
+
+            lines = table[element]
+
+            max_cs = max([line["cs"] for line in lines.values()])
+
+            calibrated_table[element] = {}
+
+            for line_name, line_data in lines.items():
+                energy = line_data["energy"]
+                cs = line_data["cs"]
+
+                if cs < filter_cs * max_cs:
+                    continue
+
+                fit = self.fit_single_peak(window, energy)
+                if fit is None:
+                    continue
+
+                A, x0, sigma, C = fit
+
+                calibrated_table[element][line_name] = {
+                    "energy": x0,
+                    "cs": cs,
+                    "theoretical": energy,
+                    "sigma": sigma,
+                    "amplitude": A,
+                    "bg": C,
+                    "conc": conc,
+                    "relative_cs": cs / max_cs,
+                }
+
+        return calibrated_table
+
+    def auto_calibrate(
+        self,
+        window,
+        degree=2,
+        filter_cs=0.0,
+        filter_conc=0.0,
+        weighted=lambda conc, cs: conc * cs,
+    ):
+        r"""
+        Automatically calibrate the dataset energy scale linearly, and further (non-)linearly correct the table.
+
+        This method performs the following steps:
+        1. Fits Gaussian peaks to available X-ray emission lines on the average spectrum of the dataset.
+        2. Applies an initial affine (degree 1) linear correction directly to the dataset's energy axis.
+        3. Fits a higher-degree polynomial correction mapping theoretical peak energies to empirical line positions.
+        4. Updates `self.model` for downstream matrix generation.
+
+        `build_G` by default only uses the linear correction done in step 2. In order to benefit from further corrections,
+        `use_calibration=True` as to be passed to `build_G`
+
+        Parameters
+        ----------
+        window : float
+            Half-width of the energy window (in keV) around each theoretical peak position used for Gaussian fitting.
+            This is the only user input necessary.
+        degree : int, optional
+            Degree of the polynomial fit for non-linear energy calibration refinement applied to the table, not
+            the energy axis (default is 2).
+        filter_cs : float, optional
+            Relative cross-section filter threshold in [0.0, 1.0]. Lines with cross-sections smaller than
+            `filter_cs * max_cs` for a given element are excluded from calibration (default is 0.0, i.e. no filtering).
+        filter_conc : float, optional
+            Elemental concentration filter threshold. Elements with estimated concentration below
+            `filter_conc` by percentage are excluded from calibration (default is 0.0, i.e. no filtering).
+        weighted : callable or None, optional
+            Weighting function `f(conc, cs)` taking elemental concentration and relative cross-section
+            to compute line weights for polynomial fitting (default is `lambda conc, cs: conc * cs`).
+            If set to `None` or `False`, unweighted fitting is performed.
+
+        Returns
+        -------
+        calibrated_db : dict
+            Dictionary mapping element symbols to their calibrated emission lines and fitted energy parameters.
+        energy_poly : np.ndarray
+            1D array of polynomial coefficients mapping theoretical energies to calibrated line positions.
+        sigma_poly : np.ndarray
+            1D array of polynomial coefficients mapping theoretical energies to calibrated width of bell curves.
+        """
+
+        calibrated = self.fit_table(window, filter_cs, filter_conc)
+
+        theoretical = []
+        empirical = []
+        sigma = []
+        weight = []
+
+        for lines in calibrated.values():
+            for line in lines.values():
+                theoretical.append(line["theoretical"])
+                empirical.append(line["energy"])
+                sigma.append(line["sigma"])
+                if weighted:
+                    weight.append(weighted(line["conc"], line["relative_cs"]))
+
+        theoretical = np.asarray(theoretical)
+        empirical = np.asarray(empirical)
+        sigma = np.asarray(sigma)
+
+        w = weight if weighted else None
+
+        affine = np.polyfit(empirical, theoretical, 1, w=w)
+
+        a, b = affine
+
+        axis = self.axes_manager[-1]
+        axis.scale *= a
+        axis.offset = a * axis.offset + b
+        self.energy_axis_ = None
+        self.average_spectrum_ = None
+        self.model_ = None
+
+        empirical = np.polyval(affine, empirical)
+
+        energy_poly = np.polyfit(theoretical, empirical, degree, w=w)
+        sigma_poly = np.polyfit(theoretical, sigma, degree, w=w)
+
+        calibrated_db = {
+            element: {
+                line: {
+                    **(
+                        calibrated[element][line]
+                        if element in calibrated and line in calibrated[element]
+                        else {}
+                    ),
+                    "energy": np.polyval(energy_poly, data["energy"]),
+                    "cs": data["cs"],
+                    # "sigma": np.polyval(sigma_poly, data["energy"]),
+                    "theoretical": data["energy"],
+                }
+                for line, data in v.items()
+            }
+            for element, v in self.model.db_dict.items()
+            if element in self.elements
+        }
+
+        self.model.calibrated_db_dict = calibrated_db
+        self.model.energy_calibration_poly = energy_poly
+        self.model.sigma_calibration_poly = sigma_poly
+
+        return (calibrated_db, energy_poly, sigma_poly)
+
+    def plot_table(
+        self,
+        table=None,
+        elements=None,
+        linestyle="--",
+        bell=False,
+        legend=True,
+        ax=None,
+    ):
+        """Plot X-ray emission line energies and optional line profiles for elements.
+
+        This method plots vertical lines corresponding to theoretical or calibrated X-ray
+        emission line energies for a specified list of elements. Optionally, fitted Gaussian
+        bell curves can be displayed for each line if Gaussian parameters (amplitude, sigma, background)
+        are present in the provided emission database `table`. Interactive hover tooltips display the
+        element symbol, line name, and energy value upon mouse movement over the plotted lines.
+
+        Parameters
+        ----------
+        table : dict or None, optional
+            Dictionary mapping atomic numbers (as strings, e.g. "29") to emission line data dictionaries
+            (containing `"energy"`, and optionally `"amplitude"`, `"sigma"`, `"bg"`).
+            If `None`, defaults to `self.model.db_dict`.
+        elements : list of str or None, optional
+            List of element symbols (e.g. `["Cu", "Fe"]`) for which to plot lines.
+            If `None`, defaults to `self.metadata.Sample.elements`.
+        linestyle : str, optional
+            Line style for the vertical emission line markers (default is `"--"`).
+        bell : bool, optional
+            If `True`, plots Gaussian bell curves around emission line energies using Gaussian line
+            shape parameters stored in `table` (default is `False`).
+        legend : bool, optional
+            If `True`, displays a legend mapping element symbols to line colors (default is `True`).
+        ax : matplotlib.axes.Axes or None, optional
+            Matplotlib Axes instance on which to render the plot. If `None`, a new figure and axes are
+            created, the average spectrum of the dataset is plotted in black, and axis labels are set
+            (default is `None`).
+
+        Returns
+        -------
+        ax : matplotlib.axes.Axes
+            The Matplotlib Axes object containing the plotted X-ray emission lines and spectrum.
+        """
+        ax_was_none = ax is None
+
+        if table is None:
+            table = self.model.db_dict
+        if elements is None:
+            elements = self.metadata.Sample.elements
+        if ax_was_none:
+            fig, ax = plt.subplots()
+
+        xs = []
+        colours = []
+
+        legend_entries = {}
+
+        bell_segments = []
+        bell_colours = []
+
+        hover_data = []
+
+        cmap = plt.get_cmap("tab10")
+        # TODO: use cache when optimisation is merged
+        with open(SYMBOLS_PERIODIC_TABLE, "r") as f:
+            SPT = json.load(f)["table"]
+
+        for i, elt in enumerate(elements):
+            if (anum := str(SPT[elt]["number"])) not in table:
+                continue
+            lines = table[anum]
+
+            colour = cmap(i)
+            legend_entries[elt] = colour
+
+            for name, data in lines.items():
+                energy = data["energy"]
+
+                xs.append(energy)
+                colours.append(colour)
+
+                hover_data.append(
+                    {"x": energy, "name": f"{elt} {name}", "color": colour}
+                )
+
+                if bell and "amplitude" in data:
+                    sigma = data["sigma"]
+                    A = data["amplitude"]
+                    C = data["bg"]
+                    # m = data["background_slope"]
+
+                    mask = (self.energy_axis > energy - 3 * sigma) & (
+                        self.energy_axis < energy + 3 * sigma
+                    )
+                    x_axis = self.energy_axis[mask]
+
+                    y_gauss = gaussian_with_bg(x_axis, A, energy, sigma, C)
+
+                    points = np.column_stack([x_axis, y_gauss])
+                    bell_segments.append(points)
+                    bell_colours.append(colour)
+
+        vline_collection = ax.vlines(
+            x=xs,
+            ymin=0,
+            ymax=1,
+            colors=colours,
+            linestyles=linestyle,
+            linewidths=1,
+            pickradius=5,
+            transform=ax.get_xaxis_transform(),
+        )
+
+        if bell:
+            bell_collection = LineCollection(
+                bell_segments, colors=bell_colours, linewidths=1.5
+            )
+            ax.add_collection(bell_collection)
+
+        if legend:
+            for elt, col in legend_entries.items():
+                ax.plot([], [], color=col, label=elt, lw=1)
+            ax.legend()
+
+        if ax_was_none:
+            ax.plot(
+                self.energy_axis,
+                self.average_spectrum,
+                linewidth=2,
+                color="k",
+                label="Dataset",
+            )
+
+        annot = ax.annotate(
+            "",
+            xy=(0, 0),
+            xytext=(10, 10),
+            textcoords="offset points",
+            bbox={"boxstyle": "round", "fc": "w", "alpha": 0.9, "ec": "gray"},
+        )
+        annot.set_visible(False)
+
+        def on_hover(event):
+            if event.inaxes == ax:
+                contained, info = vline_collection.contains(event)
+
+                if contained:
+                    line_idx = info["ind"][0]
+                    item = hover_data[line_idx]
+
+                    annot.xy = (item["x"], event.ydata)
+                    annot.set_text(f"{item['name']}: {item['x']:.3f}")
+                    annot.get_bbox_patch().set_edgecolor(item["color"])
+
+                    if not annot.get_visible():
+                        annot.set_visible(True)
+                        fig.canvas.draw_idle()
+                    return
+
+            if annot.get_visible():
+                annot.set_visible(False)
+                fig.canvas.draw_idle()
+
+        fig = ax.figure
+        fig.canvas.mpl_connect("motion_notify_event", on_hover)
+
+        if ax_was_none:
+            ax.set_xlabel("Energy (keV)")
+            ax.set_ylabel("Intensity")
+
+        return ax
+
 
 #######################
 # Auxiliary functions #
@@ -1697,3 +2122,7 @@ def build_G(model, g_params):
 
 def Gauss(x, a, x0, sigma):
     return a * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
+
+
+def gaussian_with_bg(x, A, x0, sigma, C):
+    return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + C  # + m * (x - x0)
