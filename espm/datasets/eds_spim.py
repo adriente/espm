@@ -26,11 +26,12 @@ from exspy.utils.eds import take_off_angle
 from hyperspy.roi import BaseROI, RectangularROI
 from hyperspy.signal_tools import Signal1DRangeSelector
 from hyperspy.ui_registry import get_gui
+from matplotlib.collections import LineCollection
 from prettytable import PrettyTable
 from scipy.optimize import curve_fit
 from tqdm import tqdm
 
-from espm.conf import NUMBER_PERIODIC_TABLE
+from espm.conf import NUMBER_PERIODIC_TABLE, SYMBOLS_PERIODIC_TABLE
 from espm.estimators import NMFEstimator, SmoothNMF
 from espm.models import EDXS
 from espm.utils import (
@@ -42,6 +43,7 @@ from espm.utils import (
     symbol_to_number_list,
 )
 
+# TODO: use cache after merging optimisation
 NPT = json.load(open(NUMBER_PERIODIC_TABLE))
 
 
@@ -1888,6 +1890,178 @@ class EDSespm(EDSTEMSpectrum):
         self.model.sigma_calibration_poly = sigma_poly
 
         return (calibrated_db, energy_poly, sigma_poly)
+
+    def plot_table(
+        self,
+        table=None,
+        elements=None,
+        linestyle="--",
+        bell=False,
+        legend=True,
+        ax=None,
+    ):
+        """Plot X-ray emission line energies and optional line profiles for elements.
+
+        This method plots vertical lines corresponding to theoretical or calibrated X-ray
+        emission line energies for a specified list of elements. Optionally, fitted Gaussian
+        bell curves can be displayed for each line if Gaussian parameters (amplitude, sigma, background)
+        are present in the provided emission database `table`. Interactive hover tooltips display the
+        element symbol, line name, and energy value upon mouse movement over the plotted lines.
+
+        Parameters
+        ----------
+        table : dict or None, optional
+            Dictionary mapping atomic numbers (as strings, e.g. "29") to emission line data dictionaries
+            (containing `"energy"`, and optionally `"amplitude"`, `"sigma"`, `"bg"`).
+            If `None`, defaults to `self.model.db_dict`.
+        elements : list of str or None, optional
+            List of element symbols (e.g. `["Cu", "Fe"]`) for which to plot lines.
+            If `None`, defaults to `self.metadata.Sample.elements`.
+        linestyle : str, optional
+            Line style for the vertical emission line markers (default is `"--"`).
+        bell : bool, optional
+            If `True`, plots Gaussian bell curves around emission line energies using Gaussian line
+            shape parameters stored in `table` (default is `False`).
+        legend : bool, optional
+            If `True`, displays a legend mapping element symbols to line colors (default is `True`).
+        ax : matplotlib.axes.Axes or None, optional
+            Matplotlib Axes instance on which to render the plot. If `None`, a new figure and axes are
+            created, the average spectrum of the dataset is plotted in black, and axis labels are set
+            (default is `None`).
+
+        Returns
+        -------
+        ax : matplotlib.axes.Axes
+            The Matplotlib Axes object containing the plotted X-ray emission lines and spectrum.
+        """
+        ax_was_none = ax is None
+
+        if table is None:
+            table = self.model.db_dict
+        if elements is None:
+            elements = self.metadata.Sample.elements
+        if ax_was_none:
+            fig, ax = plt.subplots()
+
+        xs = []
+        colours = []
+
+        legend_entries = {}
+
+        bell_segments = []
+        bell_colours = []
+
+        hover_data = []
+
+        cmap = plt.get_cmap("tab10")
+        # TODO: use cache when optimisation is merged
+        with open(SYMBOLS_PERIODIC_TABLE, "r") as f:
+            SPT = json.load(f)["table"]
+
+        for i, elt in enumerate(elements):
+            if (anum := str(SPT[elt]["number"])) not in table:
+                continue
+            lines = table[anum]
+
+            colour = cmap(i)
+            legend_entries[elt] = colour
+
+            for name, data in lines.items():
+                energy = data["energy"]
+
+                xs.append(energy)
+                colours.append(colour)
+
+                hover_data.append(
+                    {"x": energy, "name": f"{elt} {name}", "color": colour}
+                )
+
+                if bell and "amplitude" in data:
+                    sigma = data["sigma"]
+                    A = data["amplitude"]
+                    C = data["bg"]
+                    # m = data["background_slope"]
+
+                    mask = (self.energy_axis > energy - 3 * sigma) & (
+                        self.energy_axis < energy + 3 * sigma
+                    )
+                    x_axis = self.energy_axis[mask]
+
+                    y_gauss = gaussian_with_bg(x_axis, A, energy, sigma, C)
+
+                    points = np.column_stack([x_axis, y_gauss])
+                    bell_segments.append(points)
+                    bell_colours.append(colour)
+
+        vline_collection = ax.vlines(
+            x=xs,
+            ymin=0,
+            ymax=1,
+            colors=colours,
+            linestyles=linestyle,
+            linewidths=1,
+            pickradius=5,
+            transform=ax.get_xaxis_transform(),
+        )
+
+        if bell:
+            bell_collection = LineCollection(
+                bell_segments, colors=bell_colours, linewidths=1.5
+            )
+            ax.add_collection(bell_collection)
+
+        if legend:
+            for elt, col in legend_entries.items():
+                ax.plot([], [], color=col, label=elt, lw=1)
+            ax.legend()
+
+        if ax_was_none:
+            ax.plot(
+                self.energy_axis,
+                self.average_spectrum,
+                linewidth=2,
+                color="k",
+                label="Dataset",
+            )
+
+        annot = ax.annotate(
+            "",
+            xy=(0, 0),
+            xytext=(10, 10),
+            textcoords="offset points",
+            bbox={"boxstyle": "round", "fc": "w", "alpha": 0.9, "ec": "gray"},
+        )
+        annot.set_visible(False)
+
+        def on_hover(event):
+            if event.inaxes == ax:
+                contained, info = vline_collection.contains(event)
+
+                if contained:
+                    line_idx = info["ind"][0]
+                    item = hover_data[line_idx]
+
+                    annot.xy = (item["x"], event.ydata)
+                    annot.set_text(f"{item['name']}: {item['x']:.3f}")
+                    annot.get_bbox_patch().set_edgecolor(item["color"])
+
+                    if not annot.get_visible():
+                        annot.set_visible(True)
+                        fig.canvas.draw_idle()
+                    return
+
+            if annot.get_visible():
+                annot.set_visible(False)
+                fig.canvas.draw_idle()
+
+        fig = ax.figure
+        fig.canvas.mpl_connect("motion_notify_event", on_hover)
+
+        if ax_was_none:
+            ax.set_xlabel("Energy (keV)")
+            ax.set_ylabel("Intensity")
+
+        return ax
 
 
 #######################
