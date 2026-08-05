@@ -1,5 +1,7 @@
 r"""Utils for the ESPM package"""
 
+import contextlib
+import io
 import json
 from functools import wraps
 
@@ -10,7 +12,6 @@ import numpy as np
 import seaborn
 import skimage as ski
 from exspy.material import atomic_to_weight, density_of_mixture
-from IPython.utils import io
 from scipy.optimize import nnls
 from scipy.sparse import block_diag, lil_matrix
 from sklearn.linear_model import LinearRegression as LR
@@ -125,7 +126,7 @@ _NPT_CACHE = None
 _SPT_CACHE = None
 
 
-def _get_npt():
+def get_npt():
     global _NPT_CACHE
     if _NPT_CACHE is None:
         with open(NUMBER_PERIODIC_TABLE, "r") as f:
@@ -133,7 +134,7 @@ def _get_npt():
     return _NPT_CACHE
 
 
-def _get_spt():
+def get_spt():
     global _SPT_CACHE
     if _SPT_CACHE is None:
         with open(SYMBOLS_PERIODIC_TABLE, "r") as f:
@@ -152,7 +153,7 @@ def number_to_symbol_dict(func):
     def inner(*args, **kwargs):
         elts_dict = kwargs["elements_dict"]
         new_dict = {}
-        NPT = _get_npt()
+        NPT = get_npt()
 
         for key in elts_dict.keys():
             if is_symbol(key):
@@ -183,7 +184,7 @@ def symbol_to_number_dict(func):
     def inner(*args, **kwargs):
         elts_dict = kwargs["elements_dict"]
         new_dict = {}
-        SPT = _get_spt()
+        SPT = get_spt()
         for key in elts_dict.keys():
             if is_number(key):
                 new_dict[int(key)] = elts_dict[key]
@@ -213,7 +214,7 @@ def symbol_to_number_list(func):
     def inner(*args, **kwargs):
         elts_list = kwargs["elements"]
         new_list = []
-        SPT = _get_spt()
+        SPT = get_spt()
         for key in elts_list:
             if is_number(key):
                 new_list.append(int(key))
@@ -241,7 +242,7 @@ def number_to_symbol_list(func):
     def inner(*args, **kwargs):
         elts_list = kwargs["elements"]
         new_list = []
-        NPT = _get_npt()
+        NPT = get_npt()
         for key in elts_list:
             if is_number(key):
                 new_list.append(NPT[str(key)]["symbol"])
@@ -531,19 +532,13 @@ def quant_spectrum(s1, skip_elements=[]):
     ]
 
     s.build_G()
-    est = espm.estimators.SmoothNMF(n_components=1, G=s.G(), verbose=0)
-    with io.capture_output() as captured:
+    est = espm.estimators.SmoothNMF(n_components=1, G=s.G, verbose=0)
+    with contextlib.redirect_stdout(io.StringIO()):
         est.fit_transform(X=s1.data[:, np.newaxis], H=np.array([1.0])[:, np.newaxis])
     s.learning_results.decomposition_algorithm = est
-    with io.capture_output() as captured:
-        s.print_concentration_report(selected_elts=selected_elements)
-    # print(captured)
-    return dict(
-        [
-            [i.split(":")[0][:-1], float(i.split(":")[1])]
-            for i in captured.stdout.splitlines()[2:]
-        ]
-    ), s
+    conv_elts, W, _ = s.concentration_report(selected_elts=selected_elements)
+    quant_dict = {el: float(W[i, 0]) for i, el in enumerate(conv_elts)}
+    return quant_dict, s
 
 
 def cluster_analysis_concentration_report(s, cluster_source=None, print_std=False):
