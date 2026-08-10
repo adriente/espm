@@ -242,6 +242,8 @@ class EDXS(PhysicalModel):
         valid_elts = self.__check_elts_in_G(elements, use_calibration)
         valid_ignored = self.__check_elts_in_G(conv_ignored_elts, use_calibration)
 
+        valid_elts = [e for e in valid_elts if e not in valid_ignored]
+
         self.bkgd_in_G = g_type == "bremsstrahlung"
 
         # None is a default value for the G matrix and thus G will be considered to be the identity matrix in most of espm functions.
