@@ -325,185 +325,194 @@ class SmoothNMF(NMFEstimator):
 
         if self.n_iter_ == 0:
             if self.gamma is None:
-                if self.algo in ["l2_surrogate", "log_surrogate", "bmd"]:
-                    self.gamma_ = sigmaL
-                else:
-                    gamma_W = estimate_Lipschitz_bound_w(
-                        self.log_shift, self.X_, self.G_, k=self.n_components
-                    )
-                    gamma_H = estimate_Lipschitz_bound_h(
-                        self.log_shift,
-                        self.X_,
-                        self.G_,
-                        k=self.n_components,
-                        lambda_L=self.lambda_L,
-                        mu=self.mu,
-                        epsilon_reg=self.epsilon_reg,
-                    )
-                    self.gamma_ = [gamma_H, gamma_W]
+                match self.algo:
+                    case "l2_surrogate" | "log_surrogate" | "bmd":
+                        self.gamma_ = sigmaL
+                    case _:
+                        gamma_W = estimate_Lipschitz_bound_w(
+                            self.log_shift, self.X_, self.G_, k=self.n_components
+                        )
+                        gamma_H = estimate_Lipschitz_bound_h(
+                            self.log_shift,
+                            self.X_,
+                            self.G_,
+                            k=self.n_components,
+                            lambda_L=self.lambda_L,
+                            mu=self.mu,
+                            epsilon_reg=self.epsilon_reg,
+                        )
+                        self.gamma_ = [gamma_H, gamma_W]
             else:
                 self.gamma_ = deepcopy(self.gamma)
 
         # 1. Update for H
         if self.linesearch:
             Hold = H.copy()
-        if self.algo == "l2_surrogate":
-            H = multiplicative_step_hq(
-                self.X_,
-                self.G_,
-                W,
-                H,
-                simplex_H=self.simplex_H,
-                log_shift=self.log_shift,
-                safe=self.debug,
-                dicotomy_tol=self.dicotomy_tol,
-                lambda_L=self.lambda_L,
-                L=self.L_,
-                sigmaL=self.gamma_,
-                fixed_H=self.fixed_H,
-            )
-        elif self.algo == "log_surrogate":
-            H = multiplicative_step_h(
-                self.X_,
-                self.G_,
-                W,
-                H,
-                simplex_H=self.simplex_H,
-                mu=self.mu,
-                log_shift=self.log_shift,
-                epsilon_reg=self.epsilon_reg,
-                safe=self.debug,
-                dicotomy_tol=self.dicotomy_tol,
-                lambda_L=self.lambda_L,
-                L=self.L_,
-                l2=self.l2,
-                fixed_H=self.fixed_H,
-                sigmaL=self.gamma_,
-            )
-        elif self.algo == "projected_gradient":
-            H = proj_grad_step_h(
-                self.X_,
-                self.G_,
-                W,
-                H,
-                simplex_H=self.simplex_H,
-                mu=self.mu,
-                log_shift=self.log_shift,
-                epsilon_reg=self.epsilon_reg,
-                safe=self.debug,
-                dicotomy_tol=self.dicotomy_tol,
-                lambda_L=self.lambda_L,
-                L=self.L_,
-                l2=self.l2,
-                fixed_H=self.fixed_H,
-                gamma=self.gamma_[0],
-            )
-        elif self.algo == "bmd":
-            H = multiplicative_step_h(
-                self.X_,
-                self.G_,
-                W,
-                H,
-                simplex_H=self.simplex_H,
-                mu=self.mu,
-                log_shift=self.log_shift,
-                epsilon_reg=self.epsilon_reg,
-                safe=self.debug,
-                dicotomy_tol=self.dicotomy_tol,
-                lambda_L=self.lambda_L,
-                L=self.L_,
-                l2=self.l2,
-                fixed_H=self.fixed_H,
-                sigmaL=self.gamma_,
-                use_bregman=True,
-            )
-        else:
-            raise ValueError("Unknown algorithm")
-
-        if self.linesearch:
-            if self.algo in ["l2_surrogate", "log_surrogate", "bmd"]:
-                d = diff_surrogate(
-                    Hold, H, L=self.L_, sigmaL=self.gamma_, algo=self.algo
-                )
-                if d > 0:
-                    self.gamma_ = self.gamma_ / 1.05
-                else:
-                    self.gamma_ = self.gamma_ * 1.5
-            else:
-                gradf_xt = gradH(
+        match self.algo:
+            case "l2_surrogate":
+                H = multiplicative_step_hq(
                     self.X_,
                     self.G_,
                     W,
-                    Hold,
-                    mu=self.mu,
-                    lambda_L=self.lambda_L,
-                    L=self.L_,
-                    epsilon_reg=self.epsilon_reg,
+                    H,
+                    simplex_H=self.simplex_H,
                     log_shift=self.log_shift,
                     safe=self.debug,
+                    dicotomy_tol=self.dicotomy_tol,
+                    lambda_L=self.lambda_L,
+                    L=self.L_,
+                    sigmaL=self.gamma_,
+                    fixed_H=self.fixed_H,
                 )
-                f_xt = self.loss(W, Hold, X=self.X_, average=False)
-                f_x = self.loss(W, H, X=self.X_, average=False)
-                g_xxt = quadratic_surrogate(H, Hold, f_xt, gradf_xt, self.gamma_[0])
-                d = g_xxt - f_x
-                if d > 0:
-                    self.gamma_[0] = self.gamma_[0] / 1.05
-                else:
-                    self.gamma_[0] = self.gamma_[0] * 1.5
+            case "log_surrogate":
+                H = multiplicative_step_h(
+                    self.X_,
+                    self.G_,
+                    W,
+                    H,
+                    simplex_H=self.simplex_H,
+                    mu=self.mu,
+                    log_shift=self.log_shift,
+                    epsilon_reg=self.epsilon_reg,
+                    safe=self.debug,
+                    dicotomy_tol=self.dicotomy_tol,
+                    lambda_L=self.lambda_L,
+                    L=self.L_,
+                    l2=self.l2,
+                    fixed_H=self.fixed_H,
+                    sigmaL=self.gamma_,
+                )
+            case "projected_gradient":
+                H = proj_grad_step_h(
+                    self.X_,
+                    self.G_,
+                    W,
+                    H,
+                    simplex_H=self.simplex_H,
+                    mu=self.mu,
+                    log_shift=self.log_shift,
+                    epsilon_reg=self.epsilon_reg,
+                    safe=self.debug,
+                    dicotomy_tol=self.dicotomy_tol,
+                    lambda_L=self.lambda_L,
+                    L=self.L_,
+                    l2=self.l2,
+                    fixed_H=self.fixed_H,
+                    gamma=self.gamma_[0],
+                )
+            case "bmd":
+                H = multiplicative_step_h(
+                    self.X_,
+                    self.G_,
+                    W,
+                    H,
+                    simplex_H=self.simplex_H,
+                    mu=self.mu,
+                    log_shift=self.log_shift,
+                    epsilon_reg=self.epsilon_reg,
+                    safe=self.debug,
+                    dicotomy_tol=self.dicotomy_tol,
+                    lambda_L=self.lambda_L,
+                    L=self.L_,
+                    l2=self.l2,
+                    fixed_H=self.fixed_H,
+                    sigmaL=self.gamma_,
+                    use_bregman=True,
+                )
+            case _:
+                raise ValueError("Unknown algorithm")
+
+        if self.linesearch:
+            match self.algo:
+                case "l2_surrogate" | "log_surrogate" | "bmd":
+                    d = diff_surrogate(
+                        Hold, H, L=self.L_, sigmaL=self.gamma_, algo=self.algo
+                    )
+                    if d > 0:
+                        self.gamma_ = self.gamma_ / 1.05
+                    else:
+                        self.gamma_ = self.gamma_ * 1.5
+                case _:
+                    gradf_xt = gradH(
+                        self.X_,
+                        self.G_,
+                        W,
+                        Hold,
+                        mu=self.mu,
+                        lambda_L=self.lambda_L,
+                        L=self.L_,
+                        epsilon_reg=self.epsilon_reg,
+                        log_shift=self.log_shift,
+                        safe=self.debug,
+                    )
+                    f_xt = self.loss(W, Hold, X=self.X_, average=False)
+                    f_x = self.loss(W, H, X=self.X_, average=False)
+                    g_xxt = quadratic_surrogate(H, Hold, f_xt, gradf_xt, self.gamma_[0])
+                    d = g_xxt - f_x
+                    if d > 0:
+                        self.gamma_[0] = self.gamma_[0] / 1.05
+                    else:
+                        self.gamma_[0] = self.gamma_[0] * 1.5
 
         # 2. Update for W
-        if self.algo in ["l2_surrogate", "log_surrogate"]:
-            W = multiplicative_step_w(
-                self.X_,
-                self.G_,
-                W,
-                H,
-                log_shift=self.log_shift,
-                safe=self.debug,
-                l2=self.l2,
-                simplex_W=self.simplex_W,
-                fixed_W=self.fixed_W,
-                physics_model=self.physics_model_,
-            )
-        elif self.algo == "bmd":
-            W = multiplicative_step_w(
-                self.X_,
-                self.G_,
-                W,
-                H,
-                log_shift=self.log_shift,
-                safe=self.debug,
-                l2=self.l2,
-                simplex_W=self.simplex_W,
-                fixed_W=self.fixed_W,
-                use_bregman=True,
-                physics_model=self.physics_model_,
-            )
-        else:
-            if self.linesearch:
-                Wold = W.copy()
-            W = proj_grad_step_w(
-                self.X_,
-                self.G_,
-                W,
-                H,
-                log_shift=self.log_shift,
-                safe=self.debug,
-                gamma=self.gamma_[1],
-                simplex_W=self.simplex_W,
-            )
-            if self.linesearch:
-                gradf_xt = gradW(
-                    self.X_, self.G_, Wold, H, log_shift=self.log_shift, safe=self.debug
+        match self.algo:
+            case "l2_surrogate" | "log_surrogate":
+                W = multiplicative_step_w(
+                    self.X_,
+                    self.G_,
+                    W,
+                    H,
+                    log_shift=self.log_shift,
+                    safe=self.debug,
+                    l2=self.l2,
+                    simplex_W=self.simplex_W,
+                    fixed_W=self.fixed_W,
+                    physics_model=self.physics_model_,
                 )
-                f_xt = self.loss(Wold, H, X=self.X_, average=False)
-                f_x = self.loss(W, H, X=self.X_, average=False)
-                g_xxt = quadratic_surrogate(W, Wold, f_xt, gradf_xt, self.gamma_[1])
-                d = g_xxt - f_x
-                if d > 0:
-                    self.gamma_[1] = self.gamma_[1] / 1.05
-                else:
-                    self.gamma_[1] = self.gamma_[1] * 1.5
+            case "bmd":
+                W = multiplicative_step_w(
+                    self.X_,
+                    self.G_,
+                    W,
+                    H,
+                    log_shift=self.log_shift,
+                    safe=self.debug,
+                    l2=self.l2,
+                    simplex_W=self.simplex_W,
+                    fixed_W=self.fixed_W,
+                    use_bregman=True,
+                    physics_model=self.physics_model_,
+                )
+            case _:
+                if self.linesearch:
+                    Wold = W.copy()
+                W = proj_grad_step_w(
+                    self.X_,
+                    self.G_,
+                    W,
+                    H,
+                    log_shift=self.log_shift,
+                    safe=self.debug,
+                    gamma=self.gamma_[1],
+                    simplex_W=self.simplex_W,
+                )
+                if self.linesearch:
+                    gradf_xt = gradW(
+                        self.X_,
+                        self.G_,
+                        Wold,
+                        H,
+                        log_shift=self.log_shift,
+                        safe=self.debug,
+                    )
+                    f_xt = self.loss(Wold, H, X=self.X_, average=False)
+                    f_x = self.loss(W, H, X=self.X_, average=False)
+                    g_xxt = quadratic_surrogate(W, Wold, f_xt, gradf_xt, self.gamma_[1])
+                    d = g_xxt - f_x
+                    if d > 0:
+                        self.gamma_[1] = self.gamma_[1] / 1.05
+                    else:
+                        self.gamma_[1] = self.gamma_[1] * 1.5
 
         # KL_surr = KL_loss_surrogate(self.X_, W, H, Hold, eps=0)
         # log_surr = log_surrogate(H, Hold, mu=self.mu, epsilon=self.epsilon_reg)

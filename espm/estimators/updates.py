@@ -27,9 +27,9 @@ def multiplicative_step_w(
     """
     if safe:
         # Allow for very small negative values!
-        assert np.sum(H < -log_shift / 2) == 0
-        assert np.sum(W < -log_shift / 2) == 0
-        assert np.sum(G < -log_shift / 2) == 0
+        assert not np.any(H < -log_shift / 2)
+        assert not np.any(W < -log_shift / 2)
+        assert not np.any(G < -log_shift / 2)
 
         H = np.maximum(H, log_shift)
         W = np.maximum(W, log_shift)
@@ -37,7 +37,7 @@ def multiplicative_step_w(
     if l2:
         GG = G.T @ G
         HH = H @ H.T
-        GGWHH = GG @ W @ HH
+        GGWHH = (GG @ W) @ HH
 
         GXH = G.T @ (X @ H.T)
 
@@ -47,15 +47,13 @@ def multiplicative_step_w(
         GWH = GW @ H
         if use_bregman:
             # check if G is the identity matrix
-            if np.allclose(G, np.eye(G.shape[0])):
+            if G.shape[0] == G.shape[1] and np.array_equal(G, np.eye(G.shape[0])):
                 sigmaR = np.sum(X, axis=1, keepdims=True)
             else:
                 sigmaR = np.sum(X)
             num = sigmaR * W
-            gradg = (
-                -G.T @ (X / GWH) @ H.T
-                + np.sum(G, axis=0, keepdims=True).T
-                @ np.sum(H, axis=1, keepdims=True).T
+            gradg = -G.T @ ((X / GWH) @ H.T) + np.outer(
+                np.sum(G, axis=0), np.sum(H, axis=1)
             )
             denum = gradg * W + sigmaR
 
@@ -67,24 +65,22 @@ def multiplicative_step_w(
                 GWH = np.maximum(GWH, log_shift)
                 op1 = X / GWH
 
-            mult1 = G.T @ op1
-            num = W * (mult1 @ H.T)
-            denum = (
-                np.sum(G, axis=0, keepdims=True).T @ np.sum(H, axis=1, keepdims=True).T
-            )
+            num = W * (G.T @ (op1 @ H.T))
+            denum = np.outer(np.sum(G, axis=0), np.sum(H, axis=1))
             if simplex_W:
-                if physics_model != None:
+                if physics_model is not None:
                     indices = physics_model.NMF_simplex()
                     nu = dichotomy_simplex(
                         num[indices, :],
                         denum[indices, :],
                         log_shift=log_shift,
                         tol=dicotomy_tol,
+                        safe=safe,
                     )
                     denum[indices, :] = denum[indices, :] + nu
                 else:
                     nu = dichotomy_simplex(
-                        num, denum, log_shift=log_shift, tol=dicotomy_tol
+                        num, denum, log_shift=log_shift, tol=dicotomy_tol, safe=safe
                     )
                     denum = denum + nu
 
@@ -126,7 +122,7 @@ def multiplicative_step_h(
     as a vector to regularize the different phase of A differently.
     To calculate the regularized step, we make a linear approximation of the log.
     """
-    if not (lambda_L == 0):
+    if lambda_L != 0:
         if L is None:
             raise ValueError("Please provide the laplacian")
         HL = H @ L
@@ -134,9 +130,9 @@ def multiplicative_step_h(
     if safe:
         # Allow for very small negative values!
         # TODO: update this
-        assert np.sum(H < -log_shift / 2) == 0
-        assert np.sum(W < -log_shift / 2) == 0
-        assert np.sum(G < -log_shift / 2) == 0
+        assert not np.any(H < -log_shift / 2)
+        assert not np.any(W < -log_shift / 2)
+        assert not np.any(G < -log_shift / 2)
         H = np.maximum(H, log_shift)
         W = np.maximum(W, log_shift)
 
@@ -147,7 +143,7 @@ def multiplicative_step_h(
         if np.isscalar(mu):
             assert mu == 0
         else:
-            assert (mu == 0).all()
+            assert not np.any(mu != 0)
         WGGW = GW.T @ GW
         WGX = GW.T @ X
         num = WGX
@@ -171,18 +167,20 @@ def multiplicative_step_h(
             if len(np.shape(mu)) == 1:
                 mu = np.expand_dims(mu, axis=1)
             denum = denum + mu / (H + epsilon_reg)
-        if not (lambda_L == 0):
+        if lambda_L != 0:
             maxH = np.max(H, axis=1, keepdims=True)
             num = num + lambda_L * sigmaL * maxH
             denum = denum + lambda_L * sigmaL * maxH + lambda_L * HL
     num = H * num
     if simplex_H:
-        nu = dichotomy_simplex(num, denum, log_shift=log_shift, tol=dicotomy_tol)
+        nu = dichotomy_simplex(
+            num, denum, log_shift=log_shift, tol=dicotomy_tol, safe=safe
+        )
     else:
         nu = 0
     if safe:
-        assert np.sum(denum < 0) == 0
-        assert np.sum(num < 0) == 0
+        assert not np.any(denum < 0)
+        assert not np.any(num < 0)
 
     # Add the shift...
     new_H = np.maximum(num / (denum + nu), log_shift)
@@ -210,7 +208,7 @@ def initialize_algorithms(
     if G is None:
         skip_second = True
         # G = sparse.diags(np.ones(X.shape[0]).astype(X.dtype))
-        G = np.diag(np.ones(X.shape[0]).astype(X.dtype))
+        G = np.eye(X.shape[0], dtype=X.dtype)
 
     # elif callable(G) :
     #     assert not(model_params is None), "You need to input model_parameters"
@@ -239,7 +237,7 @@ def initialize_algorithms(
         if skip_second:
             W = D
         else:
-            if physics_model != None:
+            if physics_model is not None:
                 # [np.where(G[:,:-2].sum(axis=1)<(np.max(G[:,:-2].sum(axis=1))*0.001))[0],:]
                 # Divide in two parts the initial fitting, otherwise the bremsstrahlung (which has a low intensity) tends to be poorly learned
                 # First fit the caracteristic Xrays, then subtract that contribution to obtain a rough estimate of the bremsstralung parameters
@@ -274,10 +272,9 @@ def initialize_algorithms(
 
 def update_q(D, H, log_shift=log_shift):
     """Perform a Q step."""
-    Htmp = np.expand_dims(H.T, axis=0)
-    Dtmp = np.expand_dims(D, axis=1)
-    Ntmp = np.expand_dims(D @ H, axis=2)
-    return Htmp * (Dtmp / (Ntmp + log_shift))
+    return H.T[np.newaxis, :, :] * (
+        D[:, np.newaxis, :] / ((D @ H + log_shift)[:, :, np.newaxis])
+    )
 
 
 def multiplicative_step_wq(
@@ -291,30 +288,31 @@ def multiplicative_step_wq(
 
     if safe:
         # Allow for very small negative values!
-        assert np.sum(H < -log_shift / 2) == 0
-        assert np.sum(W < -log_shift / 2) == 0
-        assert np.sum(G < -log_shift / 2) == 0
+        assert not np.any(H < -log_shift / 2)
+        assert not np.any(W < -log_shift / 2)
+        assert not np.any(G < -log_shift / 2)
 
     GW = G @ W
-    Q = update_q(GW, H, log_shift=log_shift)
-
-    XQ = np.sum(np.expand_dims(X, axis=2) * Q, axis=1)
+    XQ = GW * ((X / (GW @ H + log_shift)) @ H.T)
 
     term1 = G.T @ (XQ / (GW + log_shift))
 
-    term2 = np.sum(G, axis=0, keepdims=True).T @ np.sum(H, axis=1, keepdims=True).T
+    term2 = np.outer(np.sum(G, axis=0), np.sum(H, axis=1))
     if simplex_W:
-        if physics_model != None:
+        if physics_model is not None:
             indices = physics_model.NMF_simplex()
             nu = dichotomy_simplex(
                 term1[indices, :],
                 term2[indices, :],
                 log_shift=log_shift,
                 tol=dicotomy_tol,
+                safe=safe,
             )
             term2[indices, :] = term2[indices, :] + nu
         else:
-            nu = dichotomy_simplex(term1, term2, log_shift=log_shift, tol=dicotomy_tol)
+            nu = dichotomy_simplex(
+                term1, term2, log_shift=log_shift, tol=dicotomy_tol, safe=safe
+            )
             term2 = term2 + nu
     return W / term2 * term1
 
@@ -336,15 +334,15 @@ def multiplicative_step_hq(
     """
     Multiplicative step in H.
     """
-    if not lambda_L == 0:
+    if lambda_L != 0:
         if L is None:
             raise ValueError("Please provide the laplacian")
 
     if safe:
         # Allow for very small negative values!
-        assert np.sum(H < -log_shift / 2) == 0
-        assert np.sum(W < -log_shift / 2) == 0
-        assert np.sum(G < -log_shift / 2) == 0
+        assert not np.any(H < -log_shift / 2)
+        assert not np.any(W < -log_shift / 2)
+        assert not np.any(G < -log_shift / 2)
 
     GW = G @ W  # Also called D
     GWH = GW @ H
@@ -352,18 +350,20 @@ def multiplicative_step_hq(
     minus_c = H * (GW.T @ (X / (GWH + log_shift)))
 
     b = np.sum(GW, axis=0, keepdims=True).T
-    if not lambda_L == 0:
+    if lambda_L != 0:
         b = b + lambda_L * H @ L - lambda_L * sigmaL * H
         a = lambda_L * sigmaL
         if simplex_H:
             nu = dichotomy_simplex_acc(
-                a, b, minus_c, log_shift=log_shift, tol=dicotomy_tol
+                a, b, minus_c, log_shift=log_shift, tol=dicotomy_tol, safe=safe
             )
             b = b + nu
         new_H = (-b + np.sqrt(b**2 + 4 * a * minus_c)) / (2 * a)
     else:  # We recover the classic case: multiplicative_step_a
         if simplex_H:
-            nu = dichotomy_simplex(minus_c, b, log_shift=log_shift, tol=dicotomy_tol)
+            nu = dichotomy_simplex(
+                minus_c, b, log_shift=log_shift, tol=dicotomy_tol, safe=safe
+            )
             b = b + nu
         new_H = minus_c / b
 
@@ -401,30 +401,28 @@ def gradH(
     safe=False,
     l2=False,
 ):
-    if not (lambda_L == 0):
+    if lambda_L != 0:
         if L is None:
             raise ValueError("Please provide the laplacian")
-        HL = H @ L
 
     if safe:
         H = np.maximum(H, log_shift)
         W = np.maximum(W, log_shift)
 
+    D = G @ W
     if l2:
-        D = G @ W
         grad = D.T @ (D @ H - X)
     else:
-        D = G @ W
         DH = D @ H
         grad = -D.T @ (X / DH) + np.sum(D, axis=0, keepdims=True).T
 
     if not (np.isscalar(mu) and mu == 0):
         if len(np.shape(mu)) == 1:
             mu = np.expand_dims(mu, axis=1)
-        grad += mu / (H + epsilon_reg)
+        grad = grad + mu / (H + epsilon_reg)
 
-    if not (lambda_L == 0):
-        grad += (lambda_L * L @ H.T).T
+    if lambda_L != 0:
+        grad = grad + (lambda_L * L @ H.T).T
 
     return grad
 
@@ -506,7 +504,7 @@ def proj_grad_step_h(
     # Dichotomy
     if simplex_H:
         nu = dichotomy_simplex_projected_gradient(
-            new_H, log_shift=log_shift, tol=dicotomy_tol
+            new_H, log_shift=log_shift, tol=dicotomy_tol, safe=safe
         )
     else:
         nu = 0

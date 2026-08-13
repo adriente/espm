@@ -117,19 +117,29 @@ def bin_spim(data, n, m):
     # return a matrix of shape (n,m,k)
     bs = data.shape[0] // n, data.shape[1] // m  # blocksize averaged over
     k = data.shape[2]
-    return np.reshape(
-        np.array(
-            [
-                np.sum(
-                    data[k1 * bs[0] : (k1 + 1) * bs[0], k2 * bs[1] : (k2 + 1) * bs[1]],
-                    axis=(0, 1),
-                )
-                for k1 in range(n)
-                for k2 in range(m)
-            ]
-        ),
-        (n, m, k),
-    )
+
+    cropped = data[: n * bs[0], : m * bs[1]]
+    return cropped.reshape(n, bs[0], m, bs[1], k).sum(axis=(1, 3))
+
+
+_NPT_CACHE = None
+_SPT_CACHE = None
+
+
+def get_npt():
+    global _NPT_CACHE
+    if _NPT_CACHE is None:
+        with open(NUMBER_PERIODIC_TABLE, "r") as f:
+            _NPT_CACHE = json.load(f)["table"]
+    return _NPT_CACHE
+
+
+def get_spt():
+    global _SPT_CACHE
+    if _SPT_CACHE is None:
+        with open(SYMBOLS_PERIODIC_TABLE, "r") as f:
+            _SPT_CACHE = json.load(f)["table"]
+    return _SPT_CACHE
 
 
 def number_to_symbol_dict(func):
@@ -143,8 +153,7 @@ def number_to_symbol_dict(func):
     def inner(*args, **kwargs):
         elts_dict = kwargs["elements_dict"]
         new_dict = {}
-        with open(NUMBER_PERIODIC_TABLE, "r") as f:
-            NPT = json.load(f)["table"]
+        NPT = get_npt()
 
         for key in elts_dict.keys():
             if is_symbol(key):
@@ -175,8 +184,7 @@ def symbol_to_number_dict(func):
     def inner(*args, **kwargs):
         elts_dict = kwargs["elements_dict"]
         new_dict = {}
-        with open(SYMBOLS_PERIODIC_TABLE, "r") as f:
-            SPT = json.load(f)["table"]
+        SPT = get_spt()
         for key in elts_dict.keys():
             if is_number(key):
                 new_dict[int(key)] = elts_dict[key]
@@ -206,8 +214,7 @@ def symbol_to_number_list(func):
     def inner(*args, **kwargs):
         elts_list = kwargs["elements"]
         new_list = []
-        with open(SYMBOLS_PERIODIC_TABLE, "r") as f:
-            SPT = json.load(f)["table"]
+        SPT = get_spt()
         for key in elts_list:
             if is_number(key):
                 new_list.append(int(key))
@@ -235,8 +242,7 @@ def number_to_symbol_list(func):
     def inner(*args, **kwargs):
         elts_list = kwargs["elements"]
         new_list = []
-        with open(NUMBER_PERIODIC_TABLE, "r") as f:
-            NPT = json.load(f)["table"]
+        NPT = get_npt()
         for key in elts_list:
             if is_number(key):
                 new_list.append(NPT[str(key)]["symbol"])

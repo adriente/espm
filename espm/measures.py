@@ -506,11 +506,7 @@ def KLdiv_loss(X, W, H, log_shift=log_shift, average=False):
         2.921251732961556
     """
 
-    W = np.maximum(W, log_shift)
-    H = np.maximum(H, log_shift)
-    X = np.maximum(X, log_shift)
-
-    Y = W @ H
+    Y = np.maximum(W @ H, log_shift)
     if average:
         x_lin = np.mean(Y)
         x_log = np.mean(X * np.log(Y))
@@ -642,6 +638,6 @@ def squared_distance(x, y=None):
     xx = (x * x).sum(axis=1)
     yy = (y * y).sum(axis=1)
     xy = np.dot(x, y.T)
-    d = abs(np.kron(np.ones((ry, 1)), xx).T + np.kron(np.ones((rx, 1)), yy) - 2 * xy)
+    d = np.abs(xx[:, np.newaxis] + yy[np.newaxis, :] - 2 * xy)
 
     return d / cx

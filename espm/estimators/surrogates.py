@@ -42,13 +42,14 @@ def smooth_l2_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
 
     """
     HtTL = Ht @ L
-    t1 = np.sum(HtTL * Ht)
+    t1 = np.vdot(HtTL, Ht)
     if H is None:
         t2 = t1
         t3 = 0
     else:
-        t2 = np.sum(HtTL * H)
-        t3 = np.sum((Ht - H) ** 2)
+        t2 = np.vdot(HtTL, H)
+        diff = Ht - H
+        t3 = np.vdot(diff, diff)
     return lambda_L / 2 * (2 * t2 - t1 + sigmaL * t3)
 
 
@@ -101,7 +102,7 @@ def smooth_dgkl_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
 
     """
     HtTL = Ht @ L
-    t1 = np.sum(HtTL * Ht)
+    t1 = np.vdot(HtTL, Ht)
 
     def dgkl(p, q):
         return p * np.log(p / q) - p + q
@@ -110,7 +111,7 @@ def smooth_dgkl_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
         t2 = t1
         t3 = 0
     else:
-        t2 = np.sum(HtTL * H)
+        t2 = np.vdot(HtTL, H)
         maxH = np.max(H, axis=1)
         t3 = np.sum(maxH * np.sum(dgkl(Ht, H), axis=1))
     return lambda_L / 2 * (2 * t2 - t1 + sigmaL * t3)
@@ -170,4 +171,5 @@ def quadratic_surrogate(x, xt, f_xt, gradf_xt, sigma):
     :returns: the answer
 
     """
-    return f_xt + np.sum((x - xt) * gradf_xt) + sigma * np.sum((x - xt) ** 2)
+    diff = x - xt
+    return f_xt + np.vdot(diff, gradf_xt) + sigma * np.vdot(diff, diff)

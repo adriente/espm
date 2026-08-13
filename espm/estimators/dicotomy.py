@@ -4,7 +4,7 @@ from espm.conf import dicotomy_tol, log_shift, maxit_dichotomy
 
 
 def dichotomy_simplex(
-    num, denum, log_shift=log_shift, tol=dicotomy_tol, maxit=maxit_dichotomy
+    num, denum, log_shift=log_shift, tol=dicotomy_tol, maxit=maxit_dichotomy, safe=False
 ):
     """
     Function to solve the num/(x+denum) -1 = 0 equation. Here, x is the Lagragian multiplier which is used to apply the simplex constraint.
@@ -18,9 +18,10 @@ def dichotomy_simplex(
 
     # do some test
 
-    assert (num >= 0).all()
-    assert (denum >= 0).all()
-    assert (np.sum(num, axis=0) > 0).all()
+    if safe:
+        assert (num >= 0).all()
+        assert (denum >= 0).all()
+        assert (np.sum(num, axis=0) > 0).all()
     if log_shift > 0:
         # Check that a solution is possible
         if denum.shape[0] * log_shift >= 1:
@@ -30,23 +31,9 @@ def dichotomy_simplex(
         denum_max = np.inf
     # Ideally we want to do this, but we have to exclude the case where num==0.
     # a = np.max(num/2 - denum, axis=0)
-    if denum.shape[1] > 1:
-        a = []
-        for n, d in zip(num.T, denum.T):
-            m = n > 0
-            # The divided by 2 is just a factor to help a bit.
-            a.append(np.max(n[m] / 2 - d[m]))
-        a = np.array(a)
-    else:
-        # This else is just to preserve the size and make it work in any case...
-        # There might be a possiblity to write this more elegantly
-        d = denum[:, 0]
-
-        def max_masked(n):
-            m = n > 0
-            return np.max(n[m] / 2 - d[m])
-
-        a = np.apply_along_axis(max_masked, 0, num)
+    val = num / 2 - denum
+    val[num <= 0] = -np.inf
+    a = np.max(val, axis=0)
 
     # r = np.sum(num/denum, axis=0)
     # b = np.zeros(r.shape)
@@ -57,11 +44,17 @@ def dichotomy_simplex(
         new_x = x + denum
         return np.sum(np.maximum(num / new_x, log_shift), axis=0) - 1
 
-    return dicotomy(a, b, func, maxit, tol)
+    return dicotomy(a, b, func, maxit, tol, safe=safe)
 
 
 def dichotomy_simplex_acc(
-    a, b, minus_c, log_shift=log_shift, tol=dicotomy_tol, maxit=maxit_dichotomy
+    a,
+    b,
+    minus_c,
+    log_shift=log_shift,
+    tol=dicotomy_tol,
+    maxit=maxit_dichotomy,
+    safe=False,
 ):
     """
     Function to solve the dicotomy for the function:
@@ -71,8 +64,9 @@ def dichotomy_simplex_acc(
     The second part applies the dichotomy algorithm to solve the equation.
     """
     # do some test
-    assert a >= 0
-    assert (minus_c >= 0).all()
+    if safe:
+        assert a >= 0
+        assert (minus_c >= 0).all()
 
     if log_shift > 0:
         # Check that a solution is possible
@@ -91,11 +85,11 @@ def dichotomy_simplex_acc(
             axis=0,
         )
 
-    return dicotomy(nu_max, nu_min, func, maxit, tol)
+    return dicotomy(nu_max, nu_min, func, maxit, tol, safe=safe)
 
 
 def dichotomy_simplex_projected_gradient(
-    a, log_shift=log_shift, tol=dicotomy_tol, maxit=maxit_dichotomy
+    a, log_shift=log_shift, tol=dicotomy_tol, maxit=maxit_dichotomy, safe=False
 ):
     r"""
     Function to solve the dicotomy for the function:
@@ -119,19 +113,19 @@ def dichotomy_simplex_projected_gradient(
     def func(x):
         return np.sum(np.maximum(a + x, log_shift), axis=0) - 1
 
-    return dicotomy(nu_max, nu_min, func, maxit, tol)
+    return dicotomy(nu_max, nu_min, func, maxit, tol, safe=safe)
 
 
-def dicotomy(a, b, func, maxit, tol):
+def dicotomy(a, b, func, maxit, tol, safe=False):
     """
     Dicotomy algorithm searching for func(x)=0.
 
     Parameters
     ----------
 
-    a : float or numpy array
+    a : numpy array
         Lower bound of the interval such that func(a) > 0
-    b : float or numpy array
+    b : numpy array
         Upper bound of the interval such that func(b) < 0
     func : function
         Function to solve
@@ -152,10 +146,11 @@ def dicotomy(a, b, func, maxit, tol):
     func_max = func(a)
     func_min = func(b)
 
-    assert np.sum(func_min >= 0) == 0
-    assert np.sum(func_max <= 0) == 0
-    assert np.sum(np.isnan(func_max)) == 0
-    assert np.sum(np.isnan(func_min)) == 0
+    if safe:
+        assert not np.any(func_min >= 0)
+        assert not np.any(func_max <= 0)
+        assert not np.any(np.isnan(func_max))
+        assert not np.any(np.isnan(func_min))
 
     # Dichotomy algorithm to solve the equation
     it = 0
@@ -163,20 +158,19 @@ def dicotomy(a, b, func, maxit, tol):
     func_new = func(new)
     # print("A : {}, B: {}, new : {}, fA : {}, fB : {}, fnew : {}".format(np.min(np.abs(a)),np.min(np.abs(b)),np.min(np.abs(new)),np.min(np.abs(func(a))),np.min(np.abs(func(b))),np.min(np.abs(func(new)))))
     # print("A : {}, B: {}, new : {}, fA : {}, fB : {}, fnew : {}".format(np.max(a),np.max(b),np.max(new),np.max(func(a)),np.max(func(b)),np.max(func(new))))
+    func_a = func_max
+
     while np.max(np.abs(func_new)) > tol:
         it = it + 1
-        func_a = func(a)
-        # func_b = func(b)
-
         # if f(a)*f(new) <0 then f(new) < 0 --> store in b
         minus_bool = func_a * func_new <= 0
 
         # if f(a)*f(new) > 0 then f(new) > 0 --> store in a
         # plus_bool = func_a * func_new > 0
-        plus_bool = np.logical_not(minus_bool)
+        b = np.where(minus_bool, new, b)
+        a = np.where(minus_bool, a, new)
+        func_a = np.where(minus_bool, func_a, func_new)
 
-        b[minus_bool] = new[minus_bool]
-        a[plus_bool] = new[plus_bool]
         new = (a + b) / 2
         func_new = func(new)
         if it >= maxit:
