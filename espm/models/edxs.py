@@ -77,9 +77,7 @@ class EDXS(PhysicalModel):
             lines = [
                 (
                     energy,
-                    np.polyval(self.sigma_calibration_poly, energy)
-                    if use_calibration
-                    else (self.width_slope * energy + self.width_intercept) / 2.3548,
+                    (self.width_slope * energy + self.width_intercept) / 2.3548,
                     c,
                 )
                 for energy, c in zip(energies, cs)
@@ -143,9 +141,7 @@ class EDXS(PhysicalModel):
             lines = [
                 (
                     energy,
-                    np.polyval(self.sigma_calibration_poly, energy)
-                    if use_calibration
-                    else (self.width_slope * energy + self.width_intercept) / 2.3548,
+                    (self.width_slope * energy + self.width_intercept) / 2.3548,
                     c,
                 )
                 for energy, c in zip(energies, cs)
