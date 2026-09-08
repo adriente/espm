@@ -263,14 +263,12 @@ class SmoothNMF(NMFEstimator):
                 print("The regularization parameter lambda_L is set to 1")
                 self.lambda_L = 1
 
-        if not (self.algo == "l2_surrogate"):
-            if self.l2:
-                print(
-                    "The l2 parameter must be False when using the algorithm "
-                    + self.algo
-                )
-                print("The l2 parameter is set to False")
-                self.l2 = False
+        if self.algo != "l2_surrogate" and self.l2:
+            print(
+                "The l2 parameter must be False when using the algorithm " + self.algo
+            )
+            print("The l2 parameter is set to False")
+            self.l2 = False
 
     def fit_transform(self, X, y=None, W=None, H=None):
         """Fit the model to the data X and returns the transformed data.

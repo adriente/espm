@@ -80,7 +80,7 @@ def unique_elts(dict_list):
     """
     full_elts_list = []
     for dict in dict_list:
-        for elt in dict["elements_dict"].keys():
+        for elt in dict["elements_dict"]:
             full_elts_list.append(elt)
     return list(set(full_elts_list))
 

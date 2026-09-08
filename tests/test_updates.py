@@ -845,7 +845,7 @@ def test_proj_step_h():
     L = create_laplacian_matrix(*shape_2d)
 
     for _ in range(10):
-        G, W, H, Xtrue, X = create_toy_problem(
+        G, W, H, _Xtrue, X = create_toy_problem(
             p=shape_2d[0] * shape_2d[1], k=k, n_poisson=n_poisson
         )
 
@@ -953,7 +953,7 @@ def test_proj_step_w():
 
         k = 5
         n_poisson = 200
-        G, W, H, Xtrue, X = create_toy_problem(
+        G, W, H, _Xtrue, X = create_toy_problem(
             p=shape_2d[0] * shape_2d[1], k=k, n_poisson=n_poisson
         )
 

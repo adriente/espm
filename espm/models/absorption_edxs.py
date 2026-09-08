@@ -44,7 +44,7 @@ def absorption_coefficient(x, atomic_fraction=False, *, elements_dict={"Si": 1.0
 
     sum_elts = sum(elements_dict.values())
 
-    for key in elements_dict.keys():
+    for key in elements_dict:
         x_db = HSPY_MAC[key]["energies (keV)"]
         y_db = HSPY_MAC[key]["mass_absorption_coefficient (cm2/g)"]
         interp_func = interp1d(x_db, y_db, kind="cubic")

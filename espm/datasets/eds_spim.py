@@ -310,13 +310,13 @@ class EDSespm(EDSTEMSpectrum):
 
     def set_analysis_parameters(
         self,
-        thickness: float = None,
-        density: float = None,
-        detector_type: str | dict = None,
-        width_slope: float = None,
-        width_intercept: float = None,
-        geom_eff: float = None,
-        xray_db: str = None,
+        thickness: float | None = None,
+        density: float | None = None,
+        detector_type: str | dict | None = None,
+        width_slope: float | None = None,
+        width_intercept: float | None = None,
+        geom_eff: float | None = None,
+        xray_db: str | None = None,
     ) -> None:
         r"""
         Set the relevant parameters for the analysis in the metadata of the :class:`EDSespm` object.
@@ -784,7 +784,7 @@ class EDSespm(EDSTEMSpectrum):
         # It is not super efficient but I think it is not an issue. The model can't be easily continued, it is not a function.
         axis = self.axes_manager.signal_axes[0]
         full_range = [[axis.low_value, axis.high_value]]
-        full_brstlg_model, full_mask = self.model.bremsstrahlung_only_tools(
+        full_brstlg_model, _full_mask = self.model.bremsstrahlung_only_tools(
             mass_thickness=mt, elements_dict=elts_dict, ranges=full_range
         )
 
@@ -1142,7 +1142,7 @@ class EDSespm(EDSTEMSpectrum):
         return roi
 
     def generate_part_fixed_H_matrix(
-        self, rois: list[RectangularROI] = None, value: float = 1
+        self, rois: list[RectangularROI] | None = None, value: float = 1
     ) -> np.ndarray:
         r"""
         A function to generate a component of the fixed H matrix for one phase.
@@ -1342,7 +1342,7 @@ class EDSespm(EDSTEMSpectrum):
             self.learning_results.decomposition_algorithm.G_
             @ self.learning_results.decomposition_algorithm.W_
         )
-        gs, cs = self.learning_results.decomposition_algorithm.W_.shape
+        gs, _cs = self.learning_results.decomposition_algorithm.W_.shape
         G_idx = (
             self.learning_results.decomposition_algorithm.G_
             * self.learning_results.decomposition_algorithm.W_[:, idx]
@@ -1356,7 +1356,7 @@ class EDSespm(EDSTEMSpectrum):
             plt.plot(x, G_idx[:, i], color=color, label=els[i])
             plt.fill_between(x, G_idx[:, i], alpha=0.4, color=color)
         plt.legend()
-        ax = plt.gca()
+        plt.gca()
         plt.title(f"Model of component {idx!s}")
 
         return plt.gcf()
@@ -1667,7 +1667,7 @@ class EDSespm(EDSTEMSpectrum):
                 text_label,
                 color=l.get_color(),
                 fontweight="bold",
-                bbox=dict(facecolor="white", alpha=0.6, edgecolor="none"),
+                bbox={"facecolor": "white", "alpha": 0.6, "edgecolor": "none"},
                 gid=f"gauss_text_{i}",
             )
 

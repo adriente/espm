@@ -126,7 +126,7 @@ def multiplicative_step_h(
     as a vector to regularize the different phase of A differently.
     To calculate the regularized step, we make a linear approximation of the log.
     """
-    if not (lambda_L == 0):
+    if lambda_L != 0:
         if L is None:
             raise ValueError("Please provide the laplacian")
         HL = H @ L
@@ -171,7 +171,7 @@ def multiplicative_step_h(
             if len(np.shape(mu)) == 1:
                 mu = np.expand_dims(mu, axis=1)
             denum = denum + mu / (H + epsilon_reg)
-        if not (lambda_L == 0):
+        if lambda_L != 0:
             maxH = np.max(H, axis=1, keepdims=True)
             num = num + lambda_L * sigmaL * maxH
             denum = denum + lambda_L * sigmaL * maxH + lambda_L * HL
@@ -336,9 +336,8 @@ def multiplicative_step_hq(
     """
     Multiplicative step in H.
     """
-    if not lambda_L == 0:
-        if L is None:
-            raise ValueError("Please provide the laplacian")
+    if not lambda_L == 0 and L is None:
+        raise ValueError("Please provide the laplacian")
 
     if safe:
         # Allow for very small negative values!
@@ -352,7 +351,7 @@ def multiplicative_step_hq(
     minus_c = H * (GW.T @ (X / (GWH + log_shift)))
 
     b = np.sum(GW, axis=0, keepdims=True).T
-    if not lambda_L == 0:
+    if lambda_L != 0:
         b = b + lambda_L * H @ L - lambda_L * sigmaL * H
         a = lambda_L * sigmaL
         if simplex_H:
@@ -401,7 +400,7 @@ def gradH(
     safe=False,
     l2=False,
 ):
-    if not (lambda_L == 0):
+    if lambda_L != 0:
         if L is None:
             raise ValueError("Please provide the laplacian")
         HL = H @ L
@@ -423,7 +422,7 @@ def gradH(
             mu = np.expand_dims(mu, axis=1)
         grad += mu / (H + epsilon_reg)
 
-    if not (lambda_L == 0):
+    if lambda_L != 0:
         grad += (lambda_L * L @ H.T).T
 
     return grad

@@ -107,7 +107,7 @@ def gen_fixed_mat():
 
 
 def test_generate_one_sample():
-    G, W, H, D, w, X, Xdot, N = generate_one_sample()
+    G, W, H, D, _w, _X, Xdot, _N = generate_one_sample()
     np.testing.assert_allclose(G @ W, D, atol=1e-3)
     np.testing.assert_allclose(D @ H, Xdot)
     np.testing.assert_allclose(G @ W @ H, Xdot, atol=1e-1)
@@ -138,7 +138,7 @@ def test_NMF_scikit():
 
 
 def test_general():
-    G, W, H, D, w, X, Xdot, N = generate_one_sample()
+    G, W, H, D, _w, X, Xdot, _N = generate_one_sample()
 
     # Check if we can recover D from H and Xdot
     estimator = SmoothNMF(
@@ -267,7 +267,7 @@ def test_general():
 
 
 def test_fixed_mat():
-    G, W, H, D, w, X, Xdot, N = generate_one_sample()
+    G, _W, _H, _D, _w, X, _Xdot, _N = generate_one_sample()
     fW, fH = gen_fixed_mat()
     estimator = SmoothNMF(
         G=G,

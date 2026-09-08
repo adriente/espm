@@ -146,7 +146,7 @@ def number_to_symbol_dict(func):
         with open(NUMBER_PERIODIC_TABLE, "r") as f:
             NPT = json.load(f)["table"]
 
-        for key in elts_dict.keys():
+        for key in elts_dict:
             if is_symbol(key):
                 new_dict[key] = elts_dict[key]
 
@@ -177,7 +177,7 @@ def symbol_to_number_dict(func):
         new_dict = {}
         with open(SYMBOLS_PERIODIC_TABLE, "r") as f:
             SPT = json.load(f)["table"]
-        for key in elts_dict.keys():
+        for key in elts_dict:
             if is_number(key):
                 new_dict[int(key)] = elts_dict[key]
 
@@ -264,7 +264,7 @@ def atomic_to_weight_dict(*, elements_dict={}):
     else:
         list_elts = []
         list_at = []
-        for elt in elements_dict.keys():
+        for elt in elements_dict:
             list_elts.append(elt)
             list_at.append(elements_dict[elt])
         list_wt = atomic_to_weight(list_at, list_elts) / 100
@@ -290,7 +290,7 @@ def approx_density(atomic_fraction=False, *, elements_dict={}):
         if atomic_fraction:
             elements_dict = atomic_to_weight_dict(elements_dict=elements_dict)
 
-        for elt in elements_dict.keys():
+        for elt in elements_dict:
             list_elts.append(elt)
             list_wt.append(elements_dict[elt])
 
@@ -313,7 +313,7 @@ def arg_helper(params, d_params, replace=True):
         Dictionary of parameters with the default parameters added if not present.
 
     """
-    for key in d_params.keys():
+    for key in d_params:
         params[key] = params.get(key, d_params[key])
         if isdict(params[key]) and isdict(d_params[key]):
             params[key] = arg_helper(params[key], d_params[key], replace=replace)
@@ -350,7 +350,7 @@ def check_keys(params, d_params, upperkeys="", toprint=True, replace=True):
 
     """
     keys = set(d_params.keys())
-    for key in params.keys():
+    for key in params:
         if key not in keys:
             if toprint:
                 print(
@@ -362,15 +362,14 @@ def check_keys(params, d_params, upperkeys="", toprint=True, replace=True):
                 #                     print('Warning! Optional argument: {}{} is not supposed to be a dictionary'.format(upperkeys,key))
                 #                 else:
                 #                     check_keys(params[key],d_params[key],upperkeys=upperkeys+'[\'{}\']'.format(key))
-                if isdict(d_params[key]):
-                    if toprint:
-                        check_keys(
-                            params[key],
-                            d_params[key],
-                            upperkeys=upperkeys + f"['{key}']",
-                            toprint=toprint,
-                            replace=replace,
-                        )
+                if isdict(d_params[key]) and toprint:
+                    check_keys(
+                        params[key],
+                        d_params[key],
+                        upperkeys=upperkeys + f"['{key}']",
+                        toprint=toprint,
+                        replace=replace,
+                    )
             else:
                 if replace:
                     # If we prefer to keep the values of the default parameters
@@ -404,10 +403,7 @@ def is_symbol(i):
 
     """
     symb_list = symbol_list()
-    if i in symb_list:
-        return True
-    else:
-        return False
+    return i in symb_list
 
 
 def is_number(i):
@@ -431,7 +427,7 @@ def symbol_list():
     symbol_list = []
     with open(NUMBER_PERIODIC_TABLE, "r") as f:
         NPT = json.load(f)["table"]
-    for num in NPT.keys():
+    for num in NPT:
         symbol_list.append(NPT[num]["symbol"])
     return symbol_list
 

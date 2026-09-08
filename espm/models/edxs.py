@@ -382,7 +382,7 @@ class EDXS(PhysicalModel):
         Check EDXS_function for details about the bremsstrahlung model.
         """
         temp = np.zeros_like(self.x)
-        for elt in elements_dict.keys():
+        for elt in elements_dict:
             if self.lines:
                 energies, cs = read_lines_db(elt, self.db_dict)
             else:
@@ -481,9 +481,9 @@ class EDXS(PhysicalModel):
         else:
             for elt in self.get_elements(include_ignored=include_ignored):
                 if self.lines:
-                    energies, cs = read_lines_db(elt, self.db_dict)
+                    energies, _cs = read_lines_db(elt, self.db_dict)
                 else:
-                    energies, cs = read_compact_db(elt, self.db_dict)
+                    energies, _cs = read_compact_db(elt, self.db_dict)
                 for energy in energies:
                     width = self.width_slope * energy + self.width_intercept
                     span = [energy - 2 * width, energy + 2 * width]
