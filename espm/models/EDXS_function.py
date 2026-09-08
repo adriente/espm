@@ -291,6 +291,73 @@ def G_bremsstrahlung(x, E0, params_dict, *, elements_dict={}):
     return B
 
 
+def power_law_bremsstrahlung(x, k=1.0, alpha=1.0, E0=200, Z=1.0):
+    r"""
+    Thin-Foil Power-Law bremsstrahlung continuum model:
+        N(E) = k * Z * (E0 - E) / (E^alpha)
+    """
+    assert np.inf not in 1 / x, (
+        "You have 0.0 in your energy scale. Retry with a cropped energy scale"
+    )
+    return k * Z * np.maximum(E0 - x, 0.0) / np.power(x, alpha)
+
+
+def G_bremsstrahlung_power_law(
+    x, E0, params_dict, alpha_max=2.0, order=3, E_ref=None, *, elements_dict={}
+):
+    r"""
+    Computes (order + 1) basis columns for the Power-Law continuum model
+    via Taylor expansion at alpha = alpha_max around reference energy E_ref.
+
+    Expansion:
+        (E/E_ref)^delta = sum_{m=0}^order (delta^m / m!) * (ln(E/E_ref))^m
+        where delta = alpha_max - alpha >= 0 for alpha <= alpha_max.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Energy scale.
+    E0 : float
+        Incident beam energy in keV.
+    params_dict : dict
+        Absorption and detector parameters.
+    alpha_max : float
+        Upper bound exponent for the power law (default 2.0).
+    order : int
+        Polynomial order for Taylor expansion (default 3, producing order + 1 columns).
+    E_ref : float or None
+        Reference energy (if None, defaults to min(x > 0)).
+    elements_dict : dict
+        Composition dictionary for absorption correction.
+
+    Returns
+    -------
+    basis : np.ndarray 2D
+        Matrix of shape (len(x), order + 1) containing the continuum basis columns.
+    """
+    if E_ref is None:
+        valid_x = x[x > 0]
+        E_ref = float(np.min(valid_x)) if len(valid_x) > 0 else 1.0
+
+    A = absorption_correction(x, **params_dict["Abs"], elements_dict=elements_dict)
+
+    if isinstance(params_dict["Det"], str):
+        D = det_efficiency_from_curve(x, params_dict["Det"])
+    else:
+        D = det_efficiency(x, params_dict["Det"])
+
+    E_rem = np.maximum(E0 - x, 0.0)
+    base_term = A * D * (E_rem / np.power(x, alpha_max))
+    log_ratio = np.log(np.maximum(x / float(E_ref), 1.0))
+
+    cols = []
+    for m in range(order + 1):
+        col_m = base_term * np.power(log_ratio, m)
+        cols.append(col_m)
+
+    return np.column_stack(cols)
+
+
 # @number_to_symbol_list
 # def elts_dict_from_W (part_W,*,elements = []) :
 #     r"""

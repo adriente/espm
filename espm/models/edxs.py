@@ -20,6 +20,7 @@ from espm.models.absorption_edxs import (
 )
 from espm.models.EDXS_function import (
     G_bremsstrahlung,
+    G_bremsstrahlung_power_law,
     continuum_xrays,
     elts_dict_from_dict_list,
     gaussian,
@@ -64,6 +65,12 @@ class EDXS(PhysicalModel):
         self.calibrated_db_dict = None
         self.energy_calibration_poly = None
         self.sigma_calibration_poly = None
+
+        self.n_bkgd = 2
+        self.g_type = "bremsstrahlung"
+        self.alpha_max = 2.0
+        self.order = 3
+        self.E_ref = None
 
     def __add_elts_G(self, use_calibration, reference_elt={}, *, elements=[]):
         for elt in elements:
@@ -184,6 +191,9 @@ class EDXS(PhysicalModel):
         elements=[],
         elements_dict={},
         use_calibration=False,
+        alpha_max=2.0,
+        order=5,
+        E_ref=None,
         **kwargs,
     ):
         r"""
@@ -228,6 +238,10 @@ class EDXS(PhysicalModel):
 
         # Reset the internally stored elements list
         self.model_elts = []
+        self.g_type = g_type
+        self.alpha_max = alpha_max
+        self.order = order
+        self.E_ref = E_ref
 
         @symbol_to_number_list
         def convert_elts(elements=ignored_elements):
@@ -238,7 +252,15 @@ class EDXS(PhysicalModel):
         valid_elts = self.__check_elts_in_G(elements, use_calibration)
         valid_ignored = self.__check_elts_in_G(conv_ignored_elts, use_calibration)
 
-        self.bkgd_in_G = g_type == "bremsstrahlung"
+        self.bkgd_in_G = g_type in (
+            "bremsstrahlung",
+            "power_law",
+        )
+
+        if g_type == "power_law":
+            self.n_bkgd = order + 1
+        else:
+            self.n_bkgd = 2
 
         # None is a default value for the G matrix and thus G will be considered to be the identity matrix in most of espm functions.
         if len(valid_elts) == 0 or g_type == "identity":
@@ -260,8 +282,20 @@ class EDXS(PhysicalModel):
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
                 approx_elts = {key: 1.0 / len(valid_elts) for key in valid_elts}
-                brstlg_spectrum = G_bremsstrahlung(
-                    self.x, self.E0, self.params_dict, elements_dict=approx_elts
+                brstlg_spectrum = (
+                    G_bremsstrahlung_power_law(
+                        self.x,
+                        self.E0,
+                        self.params_dict,
+                        alpha_max=alpha_max,
+                        order=order,
+                        E_ref=E_ref,
+                        elements_dict=approx_elts,
+                    )
+                    if g_type == "power_law"
+                    else G_bremsstrahlung(
+                        self.x, self.E0, self.params_dict, elements_dict=approx_elts
+                    )
                 )
                 if np.max(brstlg_spectrum) > 0.0:
                     self.G = np.concatenate((self.G, brstlg_spectrum), axis=1)
@@ -274,7 +308,7 @@ class EDXS(PhysicalModel):
             norms = np.sum(self.G, axis=0, keepdims=True)
 
             if self.bkgd_in_G:
-                norms[0][:-2] = np.mean(norms[0][:-2])
+                norms[0][: -self.n_bkgd] = np.mean(norms[0][: -self.n_bkgd])
             else:
                 norms[0] = np.mean(norms[0])
 
@@ -282,7 +316,7 @@ class EDXS(PhysicalModel):
             self.G /= self.norm
         else:
             print(
-                'g_type has to be one of those : "bremsstrahlung", "no_brstlg" or "identity". G will be None, corresponding to "identity". '
+                'g_type has to be one of those : "bremsstrahlung", "power_law", "no_brstlg" or "identity". G will be None, corresponding to "identity". '
             )
 
     def __check_elts_in_G(self, elements, use_calibration):
@@ -441,8 +475,21 @@ class EDXS(PhysicalModel):
     ):
         self.params_dict["Abs"]["density"] = mass_thickness
         self.params_dict["Abs"]["thickness"] = 1.0
-        brstlg_lines = G_bremsstrahlung(
-            self.x, self.E0, self.params_dict, elements_dict=elements_dict
+        g_type = getattr(self, "g_type", "bremsstrahlung")
+        brstlg_lines = (
+            G_bremsstrahlung_power_law(
+                self.x,
+                self.E0,
+                self.params_dict,
+                alpha_max=getattr(self, "alpha_max", 2.0),
+                order=getattr(self, "order", 3),
+                E_ref=getattr(self, "E_ref", None),
+                elements_dict=elements_dict,
+            )
+            if g_type == "power_law"
+            else G_bremsstrahlung(
+                self.x, self.E0, self.params_dict, elements_dict=elements_dict
+            )
         )
         norms = np.sum(brstlg_lines, axis=0, keepdims=True)
         normed_brstlg = brstlg_lines / norms
@@ -509,17 +556,20 @@ class EDXS(PhysicalModel):
             raise ValueError(
                 "The G matrix is identity, the W matrix cannot be initialized. Please use a np.array for G in the ESpM-NMF instead of the model object"
             )
+        n_bkgd = getattr(self, "n_bkgd", 2)
         if self.bkgd_in_G and self.custom_init:
             mask = self.carac_X_span(self.ranges)
             anti_mask = np.logical_not(mask)
 
             Wbrem = (
-                np.linalg.lstsq(self.G[mask, -2:], D[mask, :], rcond=None)[0]
+                np.linalg.lstsq(self.G[mask, -n_bkgd:], D[mask, :], rcond=None)[0]
             ).clip(min=0)
             Wcarac = (
-                np.linalg.lstsq(self.G[anti_mask, :-2], D[anti_mask, :], rcond=None)[0]
+                np.linalg.lstsq(
+                    self.G[anti_mask, :-n_bkgd], D[anti_mask, :], rcond=None
+                )[0]
             ).clip(min=0)
-            # filter = np.where(np.mean(self.G[:,:-2],axis=1)<(np.max(np.mean(self.G[:,:-2],axis=1))*0.001))[0]
+            # filter = np.where(np.mean(self.G[:,:-n_bkgd],axis=1)<(np.max(np.mean(self.G[:,:-n_bkgd],axis=1))*0.001))[0]
             W = np.vstack((Wcarac, Wbrem))
         else:
             W = (np.linalg.lstsq(self.G, D, rcond=None)[0]).clip(min=0)
@@ -552,9 +602,10 @@ class EDXS(PhysicalModel):
         if not (self.bkgd_in_G):
             return self.G
         else:
+            n_bkgd = getattr(self, "n_bkgd", 2)
             new_brstlg = self.update_bremsstrahlung(W)
             new_G = self.G.copy()
-            new_G[:, -2:] = new_brstlg / self.norm[0][-2:]
+            new_G[:, -n_bkgd:] = new_brstlg / self.norm[0][-n_bkgd:]
             self.G = new_G
             return self.G
 
@@ -571,7 +622,20 @@ class EDXS(PhysicalModel):
         elements_dict = {
             key: normed_compo[i] for i, key in enumerate(self.get_elements(False))
         }
-        bremsstrahlung = G_bremsstrahlung(
-            self.x, self.E0, self.params_dict, elements_dict=elements_dict
+        g_type = getattr(self, "g_type", "bremsstrahlung")
+        bremsstrahlung = (
+            G_bremsstrahlung_power_law(
+                self.x,
+                self.E0,
+                self.params_dict,
+                alpha_max=getattr(self, "alpha_max", 2.0),
+                order=getattr(self, "order", 3),
+                E_ref=getattr(self, "E_ref", None),
+                elements_dict=elements_dict,
+            )
+            if g_type == "power_law"
+            else G_bremsstrahlung(
+                self.x, self.E0, self.params_dict, elements_dict=elements_dict
+            )
         )
         return bremsstrahlung
