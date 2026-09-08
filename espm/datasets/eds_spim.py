@@ -257,6 +257,7 @@ class EDSespm(EDSTEMSpectrum):
         use_calibration: bool = False,
         *,
         elements_dict: dict[str, float] = {},
+        **g_kwargs,
     ) -> None:
         r"""
         Build the G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDSespm` object and stores it as an attribute.
@@ -290,6 +291,7 @@ class EDSespm(EDSTEMSpectrum):
         self.separated_lines = elements_dict
 
         g_pars = {
+            **g_kwargs,
             "g_type": problem_type,
             "ignored_elements": ignored_elements,
             "elements": self.metadata.Sample.elements,
