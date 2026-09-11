@@ -291,7 +291,7 @@ def G_bremsstrahlung(x, E0, params_dict, *, elements_dict={}):
     return B
 
 
-def power_law_bremsstrahlung(x, k=1.0, alpha=1.0, E0=200, Z=1.0):
+def power_law_bremsstrahlung(x, k, alpha, E0, Z):
     r"""
     Thin-Foil Power-Law bremsstrahlung continuum model:
         N(E) = k * Z * (E0 - E) / (E^alpha)
@@ -303,15 +303,21 @@ def power_law_bremsstrahlung(x, k=1.0, alpha=1.0, E0=200, Z=1.0):
 
 
 def G_bremsstrahlung_power_law(
-    x, E0, params_dict, alpha_max=2.0, order=3, E_ref=None, *, elements_dict={}
+    x,
+    E0,
+    params_dict,
+    alpha_min,
+    alpha_max,
+    order,
+    method,
+    E_ref=None,
+    *,
+    elements_dict={},
 ):
     r"""
     Computes (order + 1) basis columns for the Power-Law continuum model
-    via Taylor expansion at alpha = alpha_max around reference energy E_ref.
-
-    Expansion:
-        (E/E_ref)^delta = sum_{m=0}^order (delta^m / m!) * (ln(E/E_ref))^m
-        where delta = alpha_max - alpha >= 0 for alpha <= alpha_max.
+    via Taylor expansion, equidistant sampling, or Chebyshev nodes sampling
+    across alpha in [alpha_min, alpha_max].
 
     Parameters
     ----------
@@ -321,12 +327,16 @@ def G_bremsstrahlung_power_law(
         Incident beam energy in keV.
     params_dict : dict
         Absorption and detector parameters.
+    alpha_min : float
+        Lower bound exponent for the power law (default 1.0).
     alpha_max : float
         Upper bound exponent for the power law (default 2.0).
     order : int
-        Polynomial order for Taylor expansion (default 3, producing order + 1 columns).
+        Polynomial order / number of additional basis columns (default 3, producing order + 1 columns).
+    method : str
+        Approximation method: 'taylor', 'equidistant', or 'chebyshev'.
     E_ref : float or None
-        Reference energy (if None, defaults to min(x > 0)).
+        Reference energy for Taylor expansion (if None, defaults to min(x > 0)).
     elements_dict : dict
         Composition dictionary for absorption correction.
 
@@ -347,15 +357,44 @@ def G_bremsstrahlung_power_law(
         D = det_efficiency(x, params_dict["Det"])
 
     E_rem = np.maximum(E0 - x, 0.0)
-    base_term = A * D * (E_rem / np.power(x, alpha_max))
-    log_ratio = np.log(np.maximum(x / float(E_ref), 1.0))
 
-    cols = []
-    for m in range(order + 1):
-        col_m = base_term * np.power(log_ratio, m)
-        cols.append(col_m)
+    match method:
+        case "equidistant":
+            if order == 0:
+                alphas = np.array([alpha_max])
+            else:
+                alphas = np.linspace(alpha_min, alpha_max, order + 1)
+            cols = []
+            for alpha_m in alphas:
+                col_m = A * D * (E_rem / np.power(x, alpha_m))
+                cols.append(col_m)
+            return np.column_stack(cols)
 
-    return np.column_stack(cols)
+        case "chebyshev":
+            if order == 0:
+                alphas = np.array([(alpha_min + alpha_max) / 2.0])
+            else:
+                k = np.arange(order + 1)
+                # Chebyshev-Gauss nodes on [-1, 1]
+                x_k = np.cos((2 * (order - k) + 1) * np.pi / (2 * (order + 1)))
+                alphas = (alpha_min + alpha_max) / 2.0 + (
+                    alpha_max - alpha_min
+                ) / 2.0 * x_k
+            cols = []
+            for alpha_k in alphas:
+                col_k = A * D * (E_rem / np.power(x, alpha_k))
+                cols.append(col_k)
+            return np.column_stack(cols)
+        case _:
+            base_term = A * D * (E_rem / np.power(x, alpha_max))
+            log_ratio = np.log(np.maximum(x / float(E_ref), 1.0))
+
+            cols = []
+            for m in range(order + 1):
+                col_m = base_term * np.power(log_ratio, m)
+                cols.append(col_m)
+
+            return np.column_stack(cols)
 
 
 # @number_to_symbol_list

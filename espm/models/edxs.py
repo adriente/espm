@@ -192,7 +192,9 @@ class EDXS(PhysicalModel):
         elements_dict={},
         use_calibration=False,
         alpha_max=2.0,
+        alpha_min=1.0,
         order=5,
+        method="taylor",
         E_ref=None,
         **kwargs,
     ):
@@ -240,7 +242,9 @@ class EDXS(PhysicalModel):
         self.model_elts = []
         self.g_type = g_type
         self.alpha_max = alpha_max
+        self.alpha_min = alpha_min
         self.order = order
+        self.method = method
         self.E_ref = E_ref
 
         @symbol_to_number_list
@@ -282,21 +286,28 @@ class EDXS(PhysicalModel):
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
                 approx_elts = {key: 1.0 / len(valid_elts) for key in valid_elts}
-                brstlg_spectrum = (
-                    G_bremsstrahlung_power_law(
-                        self.x,
-                        self.E0,
-                        self.params_dict,
-                        alpha_max=alpha_max,
-                        order=order,
-                        E_ref=E_ref,
-                        elements_dict=approx_elts,
-                    )
-                    if g_type == "power_law"
-                    else G_bremsstrahlung(
-                        self.x, self.E0, self.params_dict, elements_dict=approx_elts
-                    )
-                )
+
+                match g_type:
+                    case "power_law":
+                        brstlg_spectrum = G_bremsstrahlung_power_law(
+                            self.x,
+                            self.E0,
+                            self.params_dict,
+                            alpha_max=alpha_max,
+                            alpha_min=alpha_min,
+                            order=order,
+                            method=method,
+                            E_ref=E_ref,
+                            elements_dict=approx_elts,
+                        )
+                    case _:
+                        brstlg_spectrum = G_bremsstrahlung(
+                            self.x,
+                            self.E0,
+                            self.params_dict,
+                            elements_dict=approx_elts,
+                        )
+
                 if np.max(brstlg_spectrum) > 0.0:
                     self.G = np.concatenate((self.G, brstlg_spectrum), axis=1)
                 else:
@@ -476,21 +487,23 @@ class EDXS(PhysicalModel):
         self.params_dict["Abs"]["density"] = mass_thickness
         self.params_dict["Abs"]["thickness"] = 1.0
         g_type = getattr(self, "g_type", "bremsstrahlung")
-        brstlg_lines = (
-            G_bremsstrahlung_power_law(
-                self.x,
-                self.E0,
-                self.params_dict,
-                alpha_max=getattr(self, "alpha_max", 2.0),
-                order=getattr(self, "order", 3),
-                E_ref=getattr(self, "E_ref", None),
-                elements_dict=elements_dict,
-            )
-            if g_type == "power_law"
-            else G_bremsstrahlung(
-                self.x, self.E0, self.params_dict, elements_dict=elements_dict
-            )
-        )
+        match g_type:
+            case "power_law":
+                brstlg_lines = G_bremsstrahlung_power_law(
+                    self.x,
+                    self.E0,
+                    self.params_dict,
+                    alpha_max=self.alpha_max,
+                    alpha_min=self.alpha_min,
+                    order=self.order,
+                    method=self.method,
+                    E_ref=self.E_ref,
+                    elements_dict=elements_dict,
+                )
+            case _:
+                brstlg_lines = G_bremsstrahlung(
+                    self.x, self.E0, self.params_dict, elements_dict=elements_dict
+                )
         norms = np.sum(brstlg_lines, axis=0, keepdims=True)
         normed_brstlg = brstlg_lines / norms
         mask = self.carac_X_span(ranges)
@@ -623,19 +636,22 @@ class EDXS(PhysicalModel):
             key: normed_compo[i] for i, key in enumerate(self.get_elements(False))
         }
         g_type = getattr(self, "g_type", "bremsstrahlung")
-        bremsstrahlung = (
-            G_bremsstrahlung_power_law(
-                self.x,
-                self.E0,
-                self.params_dict,
-                alpha_max=getattr(self, "alpha_max", 2.0),
-                order=getattr(self, "order", 3),
-                E_ref=getattr(self, "E_ref", None),
-                elements_dict=elements_dict,
-            )
-            if g_type == "power_law"
-            else G_bremsstrahlung(
-                self.x, self.E0, self.params_dict, elements_dict=elements_dict
-            )
-        )
+        match g_type:
+            case "power_law":
+                bremsstrahlung = G_bremsstrahlung_power_law(
+                    self.x,
+                    self.E0,
+                    self.params_dict,
+                    alpha_max=getattr(self, "alpha_max", 2.0),
+                    alpha_min=getattr(self, "alpha_min", 1.0),
+                    order=getattr(self, "order", 3),
+                    method=getattr(self, "method", "taylor"),
+                    E_ref=getattr(self, "E_ref", None),
+                    elements_dict=elements_dict,
+                )
+            case _:
+                bremsstrahlung = G_bremsstrahlung(
+                    self.x, self.E0, self.params_dict, elements_dict=elements_dict
+                )
+
         return bremsstrahlung
