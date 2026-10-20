@@ -11,6 +11,7 @@ The :mod:`espm.models.edxs` module implements the creation of the G matrix that 
 import re
 
 import numpy as np
+from scipy.optimize import nnls
 
 from espm.models import PhysicalModel
 from espm.models.absorption_edxs import (
@@ -574,18 +575,19 @@ class EDXS(PhysicalModel):
             mask = self.carac_X_span(self.ranges)
             anti_mask = np.logical_not(mask)
 
-            Wbrem = (
-                np.linalg.lstsq(self.G[mask, -n_bkgd:], D[mask, :], rcond=None)[0]
-            ).clip(min=0)
-            Wcarac = (
-                np.linalg.lstsq(
-                    self.G[anti_mask, :-n_bkgd], D[anti_mask, :], rcond=None
-                )[0]
-            ).clip(min=0)
-            # filter = np.where(np.mean(self.G[:,:-n_bkgd],axis=1)<(np.max(np.mean(self.G[:,:-n_bkgd],axis=1))*0.001))[0]
+            Wbrem = np.zeros((n_bkgd, D.shape[1]))
+            for k in range(D.shape[1]):
+                Wbrem[:, k], _ = nnls(self.G[mask, -n_bkgd:], D[mask, k])
+
+            Wcarac = np.zeros((self.G.shape[1] - n_bkgd, D.shape[1]))
+            for k in range(D.shape[1]):
+                Wcarac[:, k], _ = nnls(self.G[anti_mask, :-n_bkgd], D[anti_mask, k])
+
             W = np.vstack((Wcarac, Wbrem))
         else:
-            W = (np.linalg.lstsq(self.G, D, rcond=None)[0]).clip(min=0)
+            W = np.zeros((self.G.shape[1], D.shape[1]))
+            for k in range(D.shape[1]):
+                W[:, k], _ = nnls(self.G, D[:, k])
 
         return W
 
