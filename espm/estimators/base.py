@@ -261,13 +261,11 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         # Initialize the algorithm #
         ############################
 
-        if self.hspy_comp:
-            self.X_ = validate_data(self, X.T, dtype=[np.float64, np.float32])
+        self.X_ = validate_data(
+            self, X.T if self.hspy_comp else X, dtype=[np.float64, np.float32]
+        )
 
-        else:
-            self.X_ = validate_data(self, X, dtype=[np.float64, np.float32])
-
-        if self.hspy_comp == False:
+        if not self.hspy_comp:
             try:
                 import inspect
 
@@ -519,11 +517,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         For debug purposes : return the evolution of losses.
         """
         if self.true_D is not None and self.true_H is not None:
-            mse_list = []
-            angles_list = []
-            for i in range(self.n_components):
-                angles_list.append(f"ang_p{i}")
-                mse_list.append(f"mse_p{i}")
+            mse_list = [f"mse_p{i}" for i in range(self.n_components)]
+            angles_list = [f"ang_p{i}" for i in range(self.n_components)]
             names = (
                 ["full_loss"]
                 + self.loss_names_
@@ -533,39 +528,33 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 + ["true_KL_loss"]
             )
 
-            dt_list = []
-            for elt in names:
-                dt_list.append((elt, "float64"))
-            dt = np.dtype(dt_list)
+            dt = np.dtype([(elt, "float64") for elt in names])
 
-            tup_list = []
-            for i in range(len(self.losses_)):
-                tup_list.append(
-                    (self.losses_[i],)
-                    + tuple(self.detailed_losses_[i])
-                    + tuple(self.rel_[i])
-                    + tuple(self.angles_[i])
-                    + tuple(self.mse_[i])
-                    + (self.true_losses_[i],)
+            tup_list = [
+                (loss, *det_loss, *rel, *ang, *m, true_loss)
+                for loss, det_loss, rel, ang, m, true_loss in zip(
+                    self.losses_,
+                    self.detailed_losses_,
+                    self.rel_,
+                    self.angles_,
+                    self.mse_,
+                    self.true_losses_,
                 )
+            ]
 
             array = np.array(tup_list, dtype=dt)
 
         # TODO : Check this part for optimization
         else:
             names = ["full_loss"] + self.loss_names_ + ["rel_W", "rel_H"]
-            dt_list = []
-            for elt in names:
-                dt_list.append((elt, "float64"))
-            dt = np.dtype(dt_list)
+            dt = np.dtype([(elt, "float64") for elt in names])
 
-            tup_list = []
-            for i in range(len(self.losses_)):
-                tup_list.append(
-                    (self.losses_[i],)
-                    + tuple(self.detailed_losses_[i])
-                    + tuple(self.rel_[i])
+            tup_list = [
+                (loss, *det_loss, *rel)
+                for loss, det_loss, rel in zip(
+                    self.losses_, self.detailed_losses_, self.rel_
                 )
+            ]
 
             array = np.array(tup_list, dtype=dt)
 
@@ -576,8 +565,8 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             new_X = X.copy()
             sum_cols = X.sum(axis=0)
             sum_rows = X.sum(axis=1)
-            new_X[:, np.where(sum_cols == 0)] = epsilon
-            new_X[np.where(sum_rows == 0), :] = epsilon
+            new_X[:, sum_cols == 0] = epsilon
+            new_X[sum_rows == 0, :] = epsilon
             return new_X
         else:
             raise ValueError("Negative values in data")

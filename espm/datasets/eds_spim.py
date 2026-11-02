@@ -10,7 +10,6 @@ The main purpose of this class is to provide an easy and clean interface between
     - set fixed W for the :class:`espm.estimators.NMFEstimator` decomposition
 """
 
-import json
 import warnings
 
 import hyperspy.api as hs
@@ -31,20 +30,18 @@ from prettytable import PrettyTable
 from scipy.optimize import curve_fit
 from tqdm import tqdm
 
-from espm.conf import NUMBER_PERIODIC_TABLE, SYMBOLS_PERIODIC_TABLE
 from espm.estimators import NMFEstimator, SmoothNMF
 from espm.models import EDXS
 from espm.utils import (
     get_explained_intensity_W,
+    get_npt,
+    get_spt,
     num_to_symbol,
     number_to_symbol_list,
     quant_spectrum,
     symbol_to_number_dict,
     symbol_to_number_list,
 )
-
-# TODO: use cache after merging optimisation
-NPT = json.load(open(NUMBER_PERIODIC_TABLE))
 
 
 def _check_decomposition(func) -> bool:
@@ -407,15 +404,12 @@ class EDSespm(EDSTEMSpectrum):
             )
         elements = self.metadata.EDS_model.elements
         if self.problem_type == "no_brstlg":
-            W = np.diag(-1 * np.ones((len(elements),)))
+            W = np.diag(np.full((len(elements),), -1.0))
         elif self.problem_type == "bremsstrahlung":
-            W1 = np.diag(-1 * np.ones((len(elements),)))
-            W2 = np.zeros((2, len(elements)))
-            W_elts = np.vstack((W1, W2))
-            W3 = np.zeros((len(elements), brstlg_comps))
-            W4 = -1 * np.ones((2, brstlg_comps))
-            W_brstlg = np.vstack((W3, W4))
-            W = np.hstack((W_elts, W_brstlg))
+            L = len(elements)
+            W = np.zeros((L + 2, L + brstlg_comps))
+            np.fill_diagonal(W[:L, :L], -1.0)
+            W[L:, L:] = -1.0
 
         return W
 
@@ -449,31 +443,26 @@ class EDSespm(EDSTEMSpectrum):
         conv_elts = convert_to_symbols(elements=elements)
 
         if self.problem_type == "no_brstlg":
-            W = -1 * np.ones((len(raw_elts), len(phases_dict.keys())))
+            W = np.full((len(raw_elts), len(phases_dict.keys())), -1.0)
         elif self.problem_type == "bremsstrahlung":
-            W = -1 * np.ones((len(raw_elts) + 2, len(phases_dict.keys())))
+            W = np.full((len(raw_elts) + 2, len(phases_dict.keys())), -1.0)
         else:
             raise ValueError(
                 "problem type should be either no_brstlg or bremsstrahlung"
             )
         for p, phase in enumerate(phases_dict):
             for key in phases_dict[phase]:
-                if key == "b0":
-                    if self.problem_type == "bremsstrahlung":
-                        W[-2, p] = phases_dict[phase][key]
-                    else:
-                        warnings.warn(
-                            "The chosen EDXS modelling does not incorporate the bremsstrahlung. Input bremsstrahlung parameters will be ignored."
-                        )
-                if key == "b1":
-                    if self.problem_type == "bremsstrahlung":
-                        W[-1, p] = phases_dict[phase][key]
-                    else:
-                        warnings.warn(
-                            "The chosen EDXS modelling does not incorporate the bremsstrahlung. Input bremsstrahlung parameters will be ignored."
-                        )
-                if key in conv_elts:
-                    W[indices[conv_elts.index(key)], p] = phases_dict[phase][key]
+                match key:
+                    case "b0" | "b1":
+                        if self.problem_type == "bremsstrahlung":
+                            idx = -2 if key == "b0" else -1
+                            W[idx, p] = phases_dict[phase][key]
+                        else:
+                            warnings.warn(
+                                "The chosen EDXS modelling does not incorporate the bremsstrahlung. Input bremsstrahlung parameters will be ignored."
+                            )
+                    case _ if key in conv_elts:
+                        W[indices[conv_elts.index(key)], p] = phases_dict[phase][key]
         return W
 
     def print_concentration_report(
@@ -591,11 +580,11 @@ class EDSespm(EDSTEMSpectrum):
         W_init = estimator.W_
         elts = list(self.model.get_elements(include_ignored=False))
         elts_indices = self.model.NMF_simplex()
-        new_elts_dict = {elts[i]: W_init[elts_indices[i]] for i in range(len(elts))}
+        new_elts_dict = dict(zip(elts, W_init[elts_indices]))
 
-        _ = 0
         curr_mt = self.metadata.Sample.thickness * self.metadata.Sample.density
-        while _ < 5:
+
+        for _ in range(5):
             # first init of the model
             brstlg_model, mask = self.model.bremsstrahlung_only_tools(
                 mass_thickness=curr_mt, elements_dict=new_elts_dict, ranges=self.ranges
@@ -607,12 +596,12 @@ class EDSespm(EDSTEMSpectrum):
             brstlg_estimator.fit(masked_X[:, np.newaxis])
             W_brstlg = np.vstack(
                 (
-                    -1
-                    * np.ones(
+                    np.full(
                         (
                             W_init.shape[0] - brstlg_estimator.W_.shape[0],
                             brstlg_estimator.W_.shape[1],
-                        )
+                        ),
+                        -1.0,
                     ),
                     brstlg_estimator.W_,
                 )
@@ -629,13 +618,9 @@ class EDSespm(EDSTEMSpectrum):
             W_init = estimator.W_
             H_init = estimator.H_
 
-            elts = list(self.model.get_elements(include_ignored=False))
-            elts_indices = self.model.NMF_simplex()
-            new_elts_dict = {elts[i]: W_init[elts_indices[i]] for i in range(len(elts))}
+            new_elts_dict = dict(zip(elts, W_init[elts_indices]))
             total_weight = self._elements_dict_to_weights(new_elts_dict)
             curr_mt = self._extract_mass_thickness(H_init.sum(), total_weight)
-
-            _ += 1
 
             print(
                 f"The current estimated mass-thickness is {curr_mt} g.cm^-2",
@@ -677,7 +662,7 @@ class EDSespm(EDSTEMSpectrum):
             Total weight of the elements in grams.
         """
         total_weight = sum(
-            quantity * NPT["table"][element]["atomic_mass"] * 1.66053906660e-24
+            quantity * get_npt()[element]["atomic_mass"] * 1.66053906660e-24
             for element, quantity in elements_dict.items()
         )
         return total_weight
@@ -736,7 +721,7 @@ class EDSespm(EDSTEMSpectrum):
             cm = self._register_ranges
             init_ranges = self._generate_ranges(num_windows)
             self.spans = []
-            for i in range(num_windows):
+            for _ in range(num_windows):
                 self.spans.append(Signal1DRangeSelector(self))
 
             for j, span in enumerate(self.spans):
@@ -766,7 +751,7 @@ class EDSespm(EDSTEMSpectrum):
 
     def _compute_bremsstrahlung(self):
         mt = self.metadata.Sample.density * self.metadata.Sample.thickness
-        elts_dict = {elt: 1.0 for elt in self.metadata.Sample.elements}
+        elts_dict = dict.fromkeys(self.metadata.Sample.elements, 1.0)
         brstlg_model, mask = self.model.bremsstrahlung_only_tools(
             mass_thickness=mt, elements_dict=elts_dict, ranges=self.ranges
         )
@@ -798,10 +783,8 @@ class EDSespm(EDSTEMSpectrum):
 
     def _generate_ranges(self, num):
         axis = self.axes_manager.signal_axes[0]
-        bounds = (axis.low_value, axis.high_value)
-        values = np.linspace(bounds[0], bounds[1], num=2 * num + 2)
-        ranges_list = [(values[2 * i - 1], values[2 * i]) for i in range(1, num + 1)]
-        return ranges_list
+        values = np.linspace(axis.low_value, axis.high_value, num=2 * num + 2)
+        return values[1:-1].reshape(num, 2).tolist()
 
     def decomposition(
         self,
@@ -996,8 +979,7 @@ class EDSespm(EDSTEMSpectrum):
             G = self.learning_results.decomposition_algorithm.G_
             H = self.learning_results.decomposition_algorithm.H_
             N = get_explained_intensity_W(G, W, H)
-            sqN = np.sqrt(N)
-            percentages = sqN / N * 100
+            percentages = 100.0 / np.sqrt(N)
 
         else:
             W = W_input
@@ -1056,44 +1038,39 @@ class EDSespm(EDSTEMSpectrum):
         L = self.axes_manager[2].size
         K = self.axes_manager[0].size * self.axes_manager[1].size
 
-        facx = np.arange(1, self.axes_manager[0].size // 2 + 1)
-        facy = np.arange(1, self.axes_manager[1].size // 2 + 1)
+        size_x = self.axes_manager[0].size
+        size_y = self.axes_manager[1].size
 
-        binx = [self.axes_manager[0].size / i for i in facx]
-        biny = [self.axes_manager[1].size / i for i in facy]
-        vars_est = np.array([])
-        biases_est = np.array([])
-        bprod = []
-        for i in zip(binx, biny):
-            bprod.append((i[0], i[1]))
+        facx = np.arange(1, size_x // 2 + 1)
+        facy = np.arange(1, size_y // 2 + 1)
 
-        for i in tqdm(bprod):
+        binx = size_x / facx
+        biny = size_y / facy
+
+        vars_est = []
+        biases_est = []
+
+        bprod = list(zip(binx, biny))
+        data = self.data
+        mean_d = np.mean(data)
+
+        for i0, i1 in tqdm(bprod):
             # Bin the measurement dataset and upsample to bring it back to its original dimensionality
-            B = i[0] * i[1]
-            binned = self.rebin(scale=(i[0], i[1], 1))
-            upsampled = binned.rebin(
-                new_shape=(
-                    self.axes_manager[0].size,
-                    self.axes_manager[1].size,
-                    self.axes_manager[2].size,
-                )
-            )
+            B = i0 * i1
+            binned = self.rebin(scale=(i0, i1, 1))
+            upsampled = binned.rebin(new_shape=(size_x, size_y, L))
             upsampled_data = upsampled.data
-            data = self.data
 
             # Estimator of variance (Lemma 4.3) - \widehat{Var} (\hat{y}_i) = \alpha ^2 y_{i}+ (1-\alpha)^2 \sum_{k \in \mathcal{K}} (w_k^2 n_{i,k})
-            vars_est = np.append(vars_est, np.mean(upsampled_data * 1 / B))
+            vars_est.append(np.mean(upsampled_data) / B)
 
             # Estimator of squared bias (Lemma 4.4) - \widehat{Bias^2}(\hat{y}_i) = (1-\alpha)^2\left((y_{n_i} - y_{i})^2 - \sum_{k\in \mathcal{K}} w_k^2y_{i,k} - y_{i} \right)
-            biases_est = np.append(
-                biases_est,
-                np.mean(
-                    (data - upsampled_data) ** 2
-                    - 1 / B * upsampled_data
-                    - (1 - 2 / B) * data
-                ),
-            )
+            mean = np.mean((data - upsampled_data) ** 2 - upsampled_data / B)
 
+            biases_est.append(mean - (1 - 2 / B) * mean_d)
+
+        vars_est = np.array(vars_est)
+        biases_est = np.array(biases_est)
         mprimes_est = vars_est * K / L + biases_est
         estimated_binning = (
             bprod[np.argmin(mprimes_est)][0],
@@ -1159,8 +1136,8 @@ class EDSespm(EDSTEMSpectrum):
         part_f_H : np.ndarray
             A fixed H matrix for one phase.
         """
-        part_f_H = (-1) * np.ones(
-            shape=(self.data.shape[0], self.data.shape[1]), dtype=float
+        part_f_H = np.full(
+            shape=(self.data.shape[0], self.data.shape[1]), fill_value=-1.0, dtype=float
         )
 
         if value < 0:
@@ -1205,13 +1182,7 @@ class EDSespm(EDSTEMSpectrum):
             A fixed H matrix for the SmoothNMF decomposition algorithm.
         """
 
-        H = (-1) * np.ones(
-            shape=(len(areas_dict), self.data.shape[0], self.data.shape[1]), dtype=float
-        )
-
-        for i, p in enumerate(areas_dict):
-            H[i, :, :] = areas_dict[p]
-
+        H = np.array(list(areas_dict.values()))
         return H.reshape((len(areas_dict), self.data.shape[0] * self.data.shape[1]))
 
     @_check_decomposition
@@ -1247,20 +1218,16 @@ class EDSespm(EDSTEMSpectrum):
         _elts_indices = self.model.NMF_simplex()
 
         skipped_elts = sym_elts(elements=skipped_elements)
-        elts = []
-        elts_indices = []
-        for i, elt in enumerate(_elts):
-            if elt in skipped_elts:
-                pass
-            else:
-                elts.append(elt)
-                elts_indices.append(_elts_indices[i])
+        elts = [elt for elt in _elts if elt not in skipped_elts]
+        elts_indices = [
+            idx for idx, elt in zip(_elts_indices, _elts) if elt not in skipped_elts
+        ]
 
         W = _W[elts_indices, :]
         WH = W @ H
         WH = WH.reshape([W.shape[0]] + list(self.data.shape[:-1]))
 
-        WH /= WH.sum(0)[np.newaxis, ...] / 100
+        WH /= WH.sum(axis=0, keepdims=True) / 100.0
 
         if self.axes_manager.navigation_dimension == 2:
             Signal = hs.signals.Signal2D
@@ -1282,7 +1249,8 @@ class EDSespm(EDSTEMSpectrum):
                     self.axes_manager[i], ["units", "scale", "name", "offset"]
                 )
             q.metadata.Signal.quantity = "Atomic %"
-            wh = Signal(WH)
+
+        wh = Signal(WH)
 
         for i in range(self.axes_manager.navigation_dimension):
             wh.axes_manager[1 + i].update_from(
@@ -1954,9 +1922,7 @@ class EDSespm(EDSTEMSpectrum):
         hover_data = []
 
         cmap = plt.get_cmap("tab10")
-        # TODO: use cache when optimisation is merged
-        with open(SYMBOLS_PERIODIC_TABLE, "r") as f:
-            SPT = json.load(f)["table"]
+        SPT = get_spt()
 
         for i, elt in enumerate(elements):
             if (anum := str(SPT[elt]["number"])) not in table:
