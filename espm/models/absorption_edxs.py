@@ -6,8 +6,8 @@ The :mod:`espm.models.absorption_edxs` module implements the functions to calcul
 
 """
 
-from pathlib import Path
 from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -52,7 +52,7 @@ def absorption_coefficient(x, atomic_fraction=False, *, elements_dict={"Si": 1.0
 
     sum_elts = sum(elements_dict.values())
 
-    for key in elements_dict.keys():
+    for key in elements_dict:
         interp_func = _get_mac_interp_func(key)
         mu += elements_dict[key] * interp_func(x) / sum_elts
 

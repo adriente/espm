@@ -10,11 +10,11 @@ from espm.conf import DB_PATH, SIEGBAHN_TO_IUPAC, SYMBOLS_PERIODIC_TABLE
 def modify_cross_sections(
     energy: int | str,
     input_type: str = "new_values",
-    lines_new_values: dict[str, float] = None,
-    lines_scaling_factors: dict[str, float] = None,
-    k_factors: dict[str, float] = None,
-    reference_line: str = None,
-    output_filename: str = None,
+    lines_new_values: dict[str, float] | None = None,
+    lines_scaling_factors: dict[str, float] | None = None,
+    k_factors: dict[str, float] | None = None,
+    reference_line: str | None = None,
+    output_filename: str | None = None,
 ) -> None:
     r"""
     Function allowing the user to modify the X-ray emission cross-sections of the input database. The function can be with three diffrent input types:
@@ -349,7 +349,7 @@ def modify_table_lines(
     """
     if mdata["lines"]:
         for elt in elements:
-            for key in table[str(elt)].keys():
+            for key in table[str(elt)]:
                 if re.match(rf"^{line}", key):
                     table[str(elt)][key]["cs"] *= coeff
                     if "modifications" in mdata:
@@ -416,13 +416,13 @@ def get_k_factor(
     cs = 0.0
     if mdata["lines"]:
         ref_en = table[str(ref_elt)][ref_line]["energy"]
-        for key in table[str(ref_elt)].keys():
+        for key in table[str(ref_elt)]:
             en = table[str(ref_elt)][key]["energy"]
             if (en < ref_en + ref_range) and (en > ref_en - ref_range):
                 ref_cs += table[str(ref_elt)][key]["cs"]
 
         elt_en = table[str(element)][line]["energy"]
-        for key in table[str(element)].keys():
+        for key in table[str(element)]:
             en = table[str(element)][key]["energy"]
             if (en < elt_en + range) and (en > elt_en - range):
                 cs += table[str(element)][key]["cs"]

@@ -13,7 +13,7 @@ from espm.utils import create_laplacian_matrix
 from espm.weights import generate_weights as gw
 
 # global parameters
-global_param = dict()
+global_param = {}
 global_param["l2"] = False
 global_param["verbose"] = 0
 global_param["tol"] = 0
@@ -144,7 +144,7 @@ def run_experiment_set(laplacian, noise, simplex_H, seed=0, max_iter=1000, l=25)
             l=l, k=k, shape_2d=shape_2d, c=c, n_poisson=n_poisson, seed=seed
         )
     else:
-        G, D, H, X, Xdot = create_toy_problem(
+        _G, D, H, X, Xdot = create_toy_problem(
             l=l, k=k, shape_2d=shape_2d, c=c, n_poisson=n_poisson, seed=seed
         )
 
@@ -158,7 +158,7 @@ def run_experiment_set(laplacian, noise, simplex_H, seed=0, max_iter=1000, l=25)
     L = create_laplacian_matrix(*shape_2d)
 
     # experiment parameters
-    experiment_param = dict()
+    experiment_param = {}
     experiment_param["simplex_H"] = simplex_H
     experiment_param["simplex_W"] = False
     experiment_param["lambda_L"] = lambda_L
@@ -194,7 +194,7 @@ def run_experiment_set(laplacian, noise, simplex_H, seed=0, max_iter=1000, l=25)
             # for sL in [sigmaL/4, sigmaL/2, sigmaL]:
             for sL in [sigmaL]:
                 # algo parameters
-                algo_param = dict()
+                algo_param = {}
                 algo_param["linesearch"] = linesearch
                 algo_param["algo"] = algo
                 # algo_param["gamma"] = sL

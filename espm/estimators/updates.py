@@ -123,6 +123,7 @@ def multiplicative_step_h(
     To calculate the regularized step, we make a linear approximation of the log.
     """
     if lambda_L != 0:
+    if lambda_L != 0:
         if L is None:
             raise ValueError("Please provide the laplacian")
         HL = H @ L
@@ -334,9 +335,8 @@ def multiplicative_step_hq(
     """
     Multiplicative step in H.
     """
-    if lambda_L != 0:
-        if L is None:
-            raise ValueError("Please provide the laplacian")
+    if lambda_L != 0 and L is None:
+        raise ValueError("Please provide the laplacian")
 
     if safe:
         # Allow for very small negative values!
