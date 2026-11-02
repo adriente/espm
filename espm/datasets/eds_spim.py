@@ -1393,11 +1393,11 @@ class EDSespm(EDSTEMSpectrum):
         ]
         contributions.append(hs.signals.Signal1D((G @ WH).T.reshape(self.data.shape)))
         els = self.metadata.EDS_model.elements
-        titles = self.get_full_el_list() + [
-            "Background 1",
-            "Background 2",
-            "Full Model",
-        ]
+        titles = (
+            self.get_full_el_list()
+            + [f"Background {i}" for i in range(1, self.model.n_bkgd + 1)]
+            + ["Full Model"]
+        )
         for i, c in enumerate(contributions):
             for a, b in zip(c.axes_manager._axes, self.axes_manager._axes):
                 a.update_from(b)
