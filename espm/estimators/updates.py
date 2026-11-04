@@ -57,14 +57,25 @@ def multiplicative_step_w(
             denum = gradg * W + sigmaR
 
         else:
-            # Split to debug timing...
-            # term1 = G.T @ (X / (GWH + eps)) @ H.T
-            op1 = X / GWH
-            if np.isnan(op1).any():
-                GWH = np.maximum(GWH, log_shift)
+            if X.nbytes > 1e8:
+                xp = get_array_module(X)
+                chunk_size = 256
+                op1_H = xp.zeros((X.shape[0], H.shape[0]), dtype=X.dtype)
+                for i in range(0, X.shape[0], chunk_size):
+                    GW_c = GW[i : i + chunk_size]
+                    GWH_c = GW_c @ H
+                    X_c = X[i : i + chunk_size]
+                    op1_H[i : i + chunk_size] = (X_c / GWH_c) @ H.T
+                num = W * (G.T @ op1_H)
+            else:
+                # Split to debug timing...
+                # term1 = G.T @ (X / (GWH + eps)) @ H.T
                 op1 = X / GWH
+                if np.isnan(op1).any():
+                    GWH = np.maximum(GWH, log_shift)
+                    op1 = X / GWH
 
-            num = W * (G.T @ (op1 @ H.T))
+                num = W * (G.T @ (op1 @ H.T))
             denum = np.outer(G.sum(axis=0), H.sum(axis=1))
             if simplex_W:
                 if physics_model is not None:
@@ -157,11 +168,21 @@ def multiplicative_step_h(
             gradg = -GW.T @ (X / GWH) + GW.sum(axis=0, keepdims=True).T
             denum = gradg + sigmaR / H
         else:
-            GWH = GW @ H
-            num = GW.T @ (X / GWH)
-            if np.isnan(num).any():
-                GWH = np.maximum(GWH, log_shift)
+            if X.nbytes > 1e8:
+                xp = get_array_module(X)
+                chunk_size = 256
+                num = xp.zeros_like(H)
+                for i in range(0, X.shape[0], chunk_size):
+                    GW_c = GW[i : i + chunk_size]
+                    GWH_c = GW_c @ H
+                    X_c = X[i : i + chunk_size]
+                    num += GW_c.T @ (X_c / GWH_c)
+            else:
+                GWH = GW @ H
                 num = GW.T @ (X / GWH)
+                if np.isnan(num).any():
+                    GWH = np.maximum(GWH, log_shift)
+                    num = GW.T @ (X / GWH)
             denum = GW.sum(axis=0, keepdims=True).T
 
         if not (np.isscalar(mu) and mu == 0):

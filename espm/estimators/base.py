@@ -222,9 +222,19 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             loss_ = 0.5 * Frobenius_loss(X, GW, H, average=False)
         else:
             if self.const_KL_ is None:
-                self.const_KL_ = (
-                    X * np.log(np.maximum(self.X_, self.log_shift))
-                ).sum() - X.sum()
+                if self.X_.nbytes > 1e8:
+                    const_kl = 0.0
+                    chunk_size = 256
+                    for i in range(0, self.X_.shape[0], chunk_size):
+                        X_c = self.X_[i : i + chunk_size]
+                        const_kl += float(
+                            (X_c * np.log(np.maximum(X_c, self.log_shift))).sum()
+                        )
+                    self.const_KL_ = const_kl - float(self.X_.sum())
+                else:
+                    self.const_KL_ = (
+                        X * np.log(np.maximum(self.X_, self.log_shift))
+                    ).sum() - X.sum()
 
             loss_ = KLdiv_loss(X, GW, H, self.log_shift, average=False) + self.const_KL_
         if average:
@@ -584,11 +594,15 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
     def remove_zeros_lines(self, X, epsilon):
         if (X >= 0).all():
-            new_X = X.copy()
             sum_cols = X.sum(axis=0)
             sum_rows = X.sum(axis=1)
-            new_X[:, sum_cols == 0] = epsilon
-            new_X[sum_rows == 0, :] = epsilon
-            return new_X
+            zero_cols = sum_cols == 0
+            zero_rows = sum_rows == 0
+            if zero_cols.any() or zero_rows.any():
+                new_X = X.copy()
+                new_X[:, zero_cols] = epsilon
+                new_X[zero_rows, :] = epsilon
+                return new_X
+            return X
         else:
             raise ValueError("Negative values in data")

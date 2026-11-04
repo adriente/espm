@@ -507,14 +507,28 @@ def KLdiv_loss(X, W, H, log_shift=log_shift, average=False):
         2.921251732961556
     """
 
-    Y = np.maximum(W @ H, log_shift)
-    if average:
-        x_lin = Y.mean()
-        x_log = (X * np.log(Y)).mean()
+    if X.nbytes > 1e8:
+        x_lin = float(W.sum(axis=0) @ H.sum(axis=1))
+        x_log = 0.0
+        chunk_size = 256
+        for i in range(0, X.shape[0], chunk_size):
+            W_c = W[i : i + chunk_size]
+            X_c = X[i : i + chunk_size]
+            Y_c = np.maximum(W_c @ H, log_shift)
+            x_log += float((X_c * np.log(Y_c)).sum())
+        if average:
+            return (x_lin - x_log) / (X.shape[0] * X.shape[1])
+        else:
+            return x_lin - x_log
     else:
-        x_lin = Y.sum()
-        x_log = (X * np.log(Y)).sum()
-    return x_lin - x_log
+        Y = np.maximum(W @ H, log_shift)
+        if average:
+            x_lin = Y.mean()
+            x_log = (X * np.log(Y)).mean()
+        else:
+            x_lin = Y.sum()
+            x_log = (X * np.log(Y)).sum()
+        return x_lin - x_log
 
 
 def KL_loss_surrogate(X, W, H, Ht, log_shift=log_shift, average=False):
