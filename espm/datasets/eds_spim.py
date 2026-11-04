@@ -255,6 +255,7 @@ class EDSespm(EDSTEMSpectrum):
         use_calibration: bool = False,
         *,
         elements_dict: dict[str, float] = {},
+        **g_kwargs,
     ) -> None:
         r"""
         Build the G matrix of the :class:`espm.models.EDXS` model corresponding to the metadata of the :class:`EDSespm` object and stores it as an attribute.
@@ -288,6 +289,7 @@ class EDSespm(EDSTEMSpectrum):
         self.separated_lines = elements_dict
 
         g_pars = {
+            **g_kwargs,
             "g_type": problem_type,
             "ignored_elements": ignored_elements,
             "elements": self.metadata.Sample.elements,
@@ -1383,11 +1385,11 @@ class EDSespm(EDSTEMSpectrum):
         ]
         contributions.append(hs.signals.Signal1D((G @ WH).T.reshape(self.data.shape)))
         els = self.metadata.EDS_model.elements
-        titles = self.get_full_el_list() + [
-            "Background 1",
-            "Background 2",
-            "Full Model",
-        ]
+        titles = (
+            self.get_full_el_list()
+            + [f"Background {i}" for i in range(1, self.model.n_bkgd + 1)]
+            + ["Full Model"]
+        )
         for i, c in enumerate(contributions):
             for a, b in zip(c.axes_manager._axes, self.axes_manager._axes):
                 a.update_from(b)

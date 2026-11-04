@@ -291,6 +291,112 @@ def G_bremsstrahlung(x, E0, params_dict, *, elements_dict={}):
     return B
 
 
+def power_law_bremsstrahlung(x, k, alpha, E0, Z):
+    r"""
+    Thin-Foil Power-Law bremsstrahlung continuum model:
+        N(E) = k * Z * (E0 - E) / (E^alpha)
+    """
+    assert np.inf not in 1 / x, (
+        "You have 0.0 in your energy scale. Retry with a cropped energy scale"
+    )
+    return k * Z * np.maximum(E0 - x, 0.0) / np.power(x, alpha)
+
+
+def G_bremsstrahlung_power_law(
+    x,
+    E0,
+    params_dict,
+    alpha_min,
+    alpha_max,
+    order,
+    method,
+    E_ref=None,
+    *,
+    elements_dict={},
+):
+    r"""
+    Computes (order + 1) basis columns for the Power-Law continuum model
+    via Taylor expansion, equidistant sampling, or Chebyshev nodes sampling
+    across alpha in [alpha_min, alpha_max].
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Energy scale.
+    E0 : float
+        Incident beam energy in keV.
+    params_dict : dict
+        Absorption and detector parameters.
+    alpha_min : float
+        Lower bound exponent for the power law (default 1.0).
+    alpha_max : float
+        Upper bound exponent for the power law (default 2.0).
+    order : int
+        Polynomial order / number of additional basis columns (default 3, producing order + 1 columns).
+    method : str
+        Approximation method: 'taylor', 'equidistant', or 'chebyshev'.
+    E_ref : float or None
+        Reference energy for Taylor expansion (if None, defaults to min(x > 0)).
+    elements_dict : dict
+        Composition dictionary for absorption correction.
+
+    Returns
+    -------
+    basis : np.ndarray 2D
+        Matrix of shape (len(x), order + 1) containing the continuum basis columns.
+    """
+    if E_ref is None:
+        valid_x = x[x > 0]
+        E_ref = float(np.min(valid_x)) if len(valid_x) > 0 else 1.0
+
+    A = absorption_correction(x, **params_dict["Abs"], elements_dict=elements_dict)
+
+    if isinstance(params_dict["Det"], str):
+        D = det_efficiency_from_curve(x, params_dict["Det"])
+    else:
+        D = det_efficiency(x, params_dict["Det"])
+
+    E_rem = np.maximum(E0 - x, 0.0)
+
+    match method:
+        case "equidistant":
+            if order == 0:
+                alphas = np.array([alpha_max])
+            else:
+                alphas = np.linspace(alpha_min, alpha_max, order + 1)
+            cols = []
+            for alpha_m in alphas:
+                col_m = A * D * (E_rem / np.power(x, alpha_m))
+                cols.append(col_m)
+            return np.column_stack(cols)
+
+        case "chebyshev":
+            if order == 0:
+                alphas = np.array([(alpha_min + alpha_max) / 2.0])
+            else:
+                k = np.arange(order + 1)
+                # Chebyshev-Gauss nodes on [-1, 1]
+                x_k = np.cos((2 * (order - k) + 1) * np.pi / (2 * (order + 1)))
+                alphas = (alpha_min + alpha_max) / 2.0 + (
+                    alpha_max - alpha_min
+                ) / 2.0 * x_k
+            cols = []
+            for alpha_k in alphas:
+                col_k = A * D * (E_rem / np.power(x, alpha_k))
+                cols.append(col_k)
+            return np.column_stack(cols)
+        case _:
+            base_term = A * D * (E_rem / np.power(x, alpha_max))
+            log_ratio = np.log(np.maximum(x / float(E_ref), 1.0))
+
+            cols = []
+            for m in range(order + 1):
+                col_m = base_term * np.power(log_ratio, m)
+                cols.append(col_m)
+
+            return np.column_stack(cols)
+
+
 # @number_to_symbol_list
 # def elts_dict_from_W (part_W,*,elements = []) :
 #     r"""
