@@ -27,9 +27,9 @@ def multiplicative_step_w(
     """
     if safe:
         # Allow for very small negative values!
-        assert not np.any(H < -log_shift / 2)
-        assert not np.any(W < -log_shift / 2)
-        assert not np.any(G < -log_shift / 2)
+        assert not (H < -log_shift / 2).any()
+        assert not (W < -log_shift / 2).any()
+        assert not (G < -log_shift / 2).any()
 
         H = np.maximum(H, log_shift)
         W = np.maximum(W, log_shift)
@@ -48,25 +48,23 @@ def multiplicative_step_w(
         if use_bregman:
             # check if G is the identity matrix
             if G.shape[0] == G.shape[1] and np.array_equal(G, np.eye(G.shape[0])):
-                sigmaR = np.sum(X, axis=1, keepdims=True)
+                sigmaR = X.sum(axis=1, keepdims=True)
             else:
-                sigmaR = np.sum(X)
+                sigmaR = X.sum()
             num = sigmaR * W
-            gradg = -G.T @ ((X / GWH) @ H.T) + np.outer(
-                np.sum(G, axis=0), np.sum(H, axis=1)
-            )
+            gradg = -G.T @ ((X / GWH) @ H.T) + np.outer(G.sum(axis=0), H.sum(axis=1))
             denum = gradg * W + sigmaR
 
         else:
             # Split to debug timing...
             # term1 = G.T @ (X / (GWH + eps)) @ H.T
             op1 = X / GWH
-            if np.any(np.isnan(op1)):
+            if np.isnan(op1).any():
                 GWH = np.maximum(GWH, log_shift)
                 op1 = X / GWH
 
             num = W * (G.T @ (op1 @ H.T))
-            denum = np.outer(np.sum(G, axis=0), np.sum(H, axis=1))
+            denum = np.outer(G.sum(axis=0), H.sum(axis=1))
             if simplex_W:
                 if physics_model is not None:
                     indices = physics_model.NMF_simplex()
@@ -130,9 +128,9 @@ def multiplicative_step_h(
     if safe:
         # Allow for very small negative values!
         # TODO: update this
-        assert not np.any(H < -log_shift / 2)
-        assert not np.any(W < -log_shift / 2)
-        assert not np.any(G < -log_shift / 2)
+        assert not (H < -log_shift / 2).any()
+        assert not (W < -log_shift / 2).any()
+        assert not (G < -log_shift / 2).any()
         H = np.maximum(H, log_shift)
         W = np.maximum(W, log_shift)
 
@@ -143,7 +141,7 @@ def multiplicative_step_h(
         if np.isscalar(mu):
             assert mu == 0
         else:
-            assert not np.any(mu != 0)
+            assert not (mu != 0).any()
         WGGW = GW.T @ GW
         WGX = GW.T @ X
         num = WGX
@@ -151,24 +149,24 @@ def multiplicative_step_h(
     else:
         if use_bregman:
             GWH = GW @ H
-            sigmaR = np.sum(X, axis=0, keepdims=True)
+            sigmaR = X.sum(axis=0, keepdims=True)
             num = sigmaR / H
-            gradg = -GW.T @ (X / GWH) + np.sum(GW, axis=0, keepdims=True).T
+            gradg = -GW.T @ (X / GWH) + GW.sum(axis=0, keepdims=True).T
             denum = gradg + sigmaR / H
         else:
             GWH = GW @ H
             num = GW.T @ (X / GWH)
-            if np.any(np.isnan(num)):
+            if np.isnan(num).any():
                 GWH = np.maximum(GWH, log_shift)
                 num = GW.T @ (X / GWH)
-            denum = np.sum(GW, axis=0, keepdims=True).T
+            denum = GW.sum(axis=0, keepdims=True).T
 
         if not (np.isscalar(mu) and mu == 0):
             if len(np.shape(mu)) == 1:
                 mu = np.expand_dims(mu, axis=1)
             denum = denum + mu / (H + epsilon_reg)
         if lambda_L != 0:
-            maxH = np.max(H, axis=1, keepdims=True)
+            maxH = H.max(axis=1, keepdims=True)
             num = num + lambda_L * sigmaL * maxH
             denum = denum + lambda_L * sigmaL * maxH + lambda_L * HL
     num = H * num
@@ -179,8 +177,8 @@ def multiplicative_step_h(
     else:
         nu = 0
     if safe:
-        assert not np.any(denum < 0)
-        assert not np.any(num < 0)
+        assert not (denum < 0).any()
+        assert not (num < 0).any()
 
     # Add the shift...
     new_H = np.maximum(num / (denum + nu), log_shift)
@@ -227,11 +225,11 @@ def initialize_algorithms(
             # D, A = u.rescaled_DA(D,A)
             if simplex_H:
                 H = np.nan_to_num(H, nan=1.0 / H.shape[0])
-                scale = np.sum(H, axis=0, keepdims=True)
+                scale = H.sum(axis=0, keepdims=True)
                 H = H / scale
 
                 # D = np.abs(np.linalg.lstsq(H.T, X.T,rcond=None)[0].T)
-                D = D * np.mean(scale)
+                D = D * scale.mean()
         else:
             D = np.abs(np.linalg.lstsq(H.T, X.T, rcond=None)[0].T)
         if skip_second:
@@ -246,7 +244,7 @@ def initialize_algorithms(
                 if simplex_W:
                     indices = physics_model.NMF_simplex()
                     W = np.nan_to_num(W, nan=1.0 / W.shape[0])
-                    scale = np.sum(W[indices, :], axis=0, keepdims=True)
+                    scale = W[indices, :].sum(axis=0, keepdims=True)
                     W[indices, :] = W[indices, :] / scale
             # P = np.abs(np.linalg.lstsq(G, D,rcond=None)[0])
             else:
@@ -254,14 +252,14 @@ def initialize_algorithms(
 
                 if simplex_W:
                     W = np.nan_to_num(W, nan=1.0 / W.shape[0])
-                    scale = np.sum(W, axis=0, keepdims=True)
+                    scale = W.sum(axis=0, keepdims=True)
                     W = W / scale
 
     elif H is None:
         D = G @ W
         H = np.abs(np.linalg.lstsq(D, X, rcond=None)[0])
         if simplex_H:
-            scale = np.sum(H, axis=0, keepdims=True)
+            scale = H.sum(axis=0, keepdims=True)
             H = H / scale
 
     W = np.maximum(W, log_shift)
@@ -339,16 +337,16 @@ def multiplicative_step_hq(
 
     if safe:
         # Allow for very small negative values!
-        assert not np.any(H < -log_shift / 2)
-        assert not np.any(W < -log_shift / 2)
-        assert not np.any(G < -log_shift / 2)
+        assert not (H < -log_shift / 2).any()
+        assert not (W < -log_shift / 2).any()
+        assert not (G < -log_shift / 2).any()
 
     GW = G @ W  # Also called D
     GWH = GW @ H
 
     minus_c = H * (GW.T @ (X / (GWH + log_shift)))
 
-    b = np.sum(GW, axis=0, keepdims=True).T
+    b = GW.sum(axis=0, keepdims=True).T
     if lambda_L != 0:
         b = b + lambda_L * H @ L - lambda_L * sigmaL * H
         a = lambda_L * sigmaL
@@ -383,7 +381,7 @@ def gradW(X, G, W, H, log_shift=log_shift, safe=False, l2=False):
     else:
         D = G @ W
         DH = D @ H
-        grad = G.T @ (-(X / DH) @ H.T + np.sum(H, axis=1, keepdims=True).T)
+        grad = G.T @ (-(X / DH) @ H.T + H.sum(axis=1, keepdims=True).T)
     return grad
 
 
@@ -413,7 +411,7 @@ def gradH(
         grad = D.T @ (D @ H - X)
     else:
         DH = D @ H
-        grad = -D.T @ (X / DH) + np.sum(D, axis=0, keepdims=True).T
+        grad = -D.T @ (X / DH) + D.sum(axis=0, keepdims=True).T
 
     if not (np.isscalar(mu) and mu == 0):
         if len(np.shape(mu)) == 1:
@@ -523,7 +521,7 @@ def estimate_Lipschitz_bound_w(log_shift, X, G, k):
     Hlim = np.ones([k, X.shape[1]]) * log_shift
     D = G @ Wlim
     DH = D @ Hlim
-    gamma = np.max((np.sum(Hlim, axis=0, keepdims=True) * X / (DH**2)) @ Hlim.T)
+    gamma = ((Hlim.sum(axis=0, keepdims=True) * X / (DH**2)) @ Hlim.T).max()
     return gamma
 
 
@@ -536,7 +534,7 @@ def estimate_Lipschitz_bound_h(log_shift, X, G, k, lambda_L=0, mu=0, epsilon_reg
     DH = D @ Hlim
 
     gamma = (
-        np.max(D.T @ (np.sum(D, axis=1, keepdims=True) * X / (DH**2)))
+        (D.T @ (D.sum(axis=1, keepdims=True) * X / (DH**2))).max()
         + 2 * lambda_L
         + mu * epsilon_reg
     )

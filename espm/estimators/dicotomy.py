@@ -21,7 +21,7 @@ def dichotomy_simplex(
     if safe:
         assert (num >= 0).all()
         assert (denum >= 0).all()
-        assert (np.sum(num, axis=0) > 0).all()
+        assert (num.sum(axis=0) > 0).all()
     if log_shift > 0:
         # Check that a solution is possible
         if denum.shape[0] * log_shift >= 1:
@@ -33,16 +33,16 @@ def dichotomy_simplex(
     # a = np.max(num/2 - denum, axis=0)
     val = num / 2 - denum
     val[num <= 0] = -np.inf
-    a = np.max(val, axis=0)
+    a = val.max(axis=0)
 
     # r = np.sum(num/denum, axis=0)
     # b = np.zeros(r.shape)
     # b[r>=1] = (len(num) * np.max(num, axis=0)/0.5 - np.min(denum, axis=0))[r>=1]
-    b = len(num) * np.max(num, axis=0) / 0.5 - np.min(denum, axis=0)
+    b = len(num) * num.max(axis=0) / 0.5 - denum.min(axis=0)
 
     def func(x):
         new_x = x + denum
-        return np.sum(np.maximum(num / new_x, log_shift), axis=0) - 1
+        return np.maximum(num / new_x, log_shift).sum(axis=0) - 1
 
     return dicotomy(a, b, func, maxit, tol, safe=safe)
 
@@ -74,16 +74,13 @@ def dichotomy_simplex_acc(
             raise ValueError("No solution exists!")
 
     n_p = len(b)
-    nu_max = n_p * np.max(b**2 / a + 2 * a + 2 * (b + minus_c), axis=0) * 1.5 + 1e-3
-    nu_min = -(2 * a + np.sum(b, axis=0)) / n_p * 1.1 - 1e-3
+    nu_max = n_p * (b**2 / a + 2 * a + 2 * (b + minus_c)).max(axis=0) * 1.5 + 1e-3
+    nu_min = -(2 * a + b.sum(axis=0)) / n_p * 1.1 - 1e-3
 
     def func(x):
-        return 2 * a - np.sum(
-            np.maximum(
-                np.sqrt((b + x) ** 2 + 4 * a * minus_c) - x - b, log_shift * 2 * a
-            ),
-            axis=0,
-        )
+        return 2 * a - np.maximum(
+            np.sqrt((b + x) ** 2 + 4 * a * minus_c) - x - b, log_shift * 2 * a
+        ).sum(axis=0)
 
     return dicotomy(nu_max, nu_min, func, maxit, tol, safe=safe)
 
@@ -107,11 +104,11 @@ def dichotomy_simplex_projected_gradient(
         if a.shape[0] * log_shift >= 1:
             raise ValueError("No solution exists!")
 
-    nu_min = -np.max(a, axis=0)
-    nu_max = 1 / a.shape[0] - np.min(a, axis=0)
+    nu_min = -a.max(axis=0)
+    nu_max = 1 / a.shape[0] - a.min(axis=0)
 
     def func(x):
-        return np.sum(np.maximum(a + x, log_shift), axis=0) - 1
+        return np.maximum(a + x, log_shift).sum(axis=0) - 1
 
     return dicotomy(nu_max, nu_min, func, maxit, tol, safe=safe)
 
@@ -147,10 +144,10 @@ def dicotomy(a, b, func, maxit, tol, safe=False):
     func_min = func(b)
 
     if safe:
-        assert not np.any(func_min >= 0)
-        assert not np.any(func_max <= 0)
-        assert not np.any(np.isnan(func_max))
-        assert not np.any(np.isnan(func_min))
+        assert not (func_min >= 0).any()
+        assert not (func_max <= 0).any()
+        assert not np.isnan(func_max).any()
+        assert not np.isnan(func_min).any()
 
     # Dichotomy algorithm to solve the equation
     it = 0
@@ -160,7 +157,7 @@ def dicotomy(a, b, func, maxit, tol, safe=False):
     # print("A : {}, B: {}, new : {}, fA : {}, fB : {}, fnew : {}".format(np.max(a),np.max(b),np.max(new),np.max(func(a)),np.max(func(b)),np.max(func(new))))
     func_a = func_max
 
-    while np.max(np.abs(func_new)) > tol:
+    while abs(func_new).max() > tol:
         it = it + 1
         # if f(a)*f(new) <0 then f(new) < 0 --> store in b
         minus_bool = func_a * func_new <= 0
@@ -175,7 +172,7 @@ def dicotomy(a, b, func, maxit, tol, safe=False):
         func_new = func(new)
         if it >= maxit:
             print(
-                f"Dicotomy stopped for maximum number of iterations with an error of : {np.max(np.abs(func_new))}"
+                f"Dicotomy stopped for maximum number of iterations with an error of : {abs(func_new).max()}"
             )
             break
 

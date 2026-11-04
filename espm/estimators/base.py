@@ -14,7 +14,7 @@ from espm.utils import create_laplacian_matrix, rescaled_DH
 
 
 def normalization_factor(X, nc):
-    m = np.mean(X)
+    m = X.mean()
     return nc / (m * X.shape[0])
 
 
@@ -217,15 +217,16 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             loss_ = 0.5 * Frobenius_loss(X, GW, H, average=False)
         else:
             if self.const_KL_ is None:
-                self.const_KL_ = np.sum(
+                self.const_KL_ = (
                     X * np.log(np.maximum(self.X_, self.log_shift))
-                ) - np.sum(X)
+                ).sum() - X.sum()
 
             loss_ = KLdiv_loss(X, GW, H, self.log_shift, average=False) + self.const_KL_
         if average:
             loss_ = loss_ / self.GWH_numel_
-        self.detailed_loss_ = [loss_]
-        return loss_
+        loss_val = float(loss_)
+        self.detailed_loss_ = [loss_val]
+        return loss_val
 
     def fit_transform(self, X, y=None, W=None, H=None):
         """
@@ -349,11 +350,11 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 eval_after = self.loss(self.W_, self.H_)
                 self.n_iter_ += 1
 
-                rel_W = np.max(
-                    np.abs(self.W_ - old_W) / (self.W_ + self.tol * np.mean(self.W_))
+                rel_W = float(
+                    (abs(self.W_ - old_W) / (self.W_ + self.tol * self.W_.mean())).max()
                 )
-                rel_H = np.max(
-                    np.abs(self.H_ - old_H) / (self.H_ + self.tol * np.mean(self.H_))
+                rel_H = float(
+                    (abs(self.H_ - old_H) / (self.H_ + self.tol * self.H_.mean())).max()
                 )
 
                 # store some information for assessing the convergence
@@ -418,6 +419,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                     # I added a log shift since check_estimator seems to run so fast that elapsed time is 0
                     print(
                         f"It {self.n_iter_} / {self.max_iter}: loss {eval_after:3e},  {self.n_iter_ / (time.time() - algo_start + log_shift):0.3f} it/s",
+                        flush=True,
                     )
                 # Update G might increase the loss so we reevaluate the loss to avoid artificial negative decrease
                 # We do this update every 3 iterations, but it is arbitrary.
@@ -440,7 +442,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             f"Stopped after {self.n_iter_} iterations in {algo_time // 60} minutes "
             f"and {np.round(algo_time) % 60} seconds."
         )
-        self.reconstruction_err_ = self.loss(self.W_, self.H_)
+        self.reconstruction_err_ = float(self.loss(self.W_, self.H_))
 
         if self.normalize:
             self.W_ = self.W_ / self.norm_factor_
@@ -561,7 +563,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         return array
 
     def remove_zeros_lines(self, X, epsilon):
-        if np.all(X >= 0):
+        if (X >= 0).all():
             new_X = X.copy()
             sum_cols = X.sum(axis=0)
             sum_rows = X.sum(axis=1)

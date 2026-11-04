@@ -527,11 +527,13 @@ class SmoothNMF(NMFEstimator):
         reg = log_reg(H, self.mu, self.epsilon_reg, average=False)
         if average:
             reg = reg / self.GWH_numel_
+        reg = float(reg)
         self.detailed_loss_.append(reg)
 
         l2 = 0.5 * self.lambda_L * trace_xtLx(self.L_, H.T, average=False)
         if average:
             l2 = l2 / self.GWH_numel_
+        l2 = float(l2)
         self.detailed_loss_.append(l2)
         if isinstance(self.gamma_, list):
             self.detailed_loss_.append(self.gamma_[0])

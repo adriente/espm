@@ -391,11 +391,12 @@ def Frobenius_loss(X, W, H, average=False):
     """
 
     DH = W @ H
+    diff2 = (DH - X) ** 2
 
     if average:
-        return np.mean((DH - X) ** 2)
+        return diff2.mean()
     else:
-        return np.sum((DH - X) ** 2)
+        return diff2.sum()
 
 
 def KLdiv(X, D, H, log_shift=log_shift, average=False):
@@ -508,11 +509,11 @@ def KLdiv_loss(X, W, H, log_shift=log_shift, average=False):
 
     Y = np.maximum(W @ H, log_shift)
     if average:
-        x_lin = np.mean(Y)
-        x_log = np.mean(X * np.log(Y))
+        x_lin = Y.mean()
+        x_log = (X * np.log(Y)).mean()
     else:
-        x_lin = np.sum(Y)
-        x_log = np.sum(X * np.log(Y))
+        x_lin = Y.sum()
+        x_log = (X * np.log(Y)).sum()
     return x_lin - x_log
 
 
@@ -556,10 +557,11 @@ def log_reg(H, mu, epsilon=1, average=False):
     """
     if not (np.isscalar(mu)):
         mu = np.expand_dims(mu, axis=1)
+    val = mu * np.log(H + epsilon)
     if average:
-        return np.mean(mu * np.log(H + epsilon))
+        return val.mean()
     else:
-        return np.sum(mu * np.log(H + epsilon))
+        return val.sum()
 
 
 def log_surrogate(H, Ht, mu, epsilon, average=False):
@@ -587,10 +589,11 @@ def trace_xtLx(L, x, average=False):
 
     :rtype: float
     """
+    val = x * (L @ x)
     if average:
-        return np.mean(x * (L @ x))
+        return val.mean()
     else:
-        return np.sum(x * (L @ x))
+        return val.sum()
 
 
 def squared_distance(x, y=None):

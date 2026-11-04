@@ -112,8 +112,8 @@ def smooth_dgkl_surrogate(Ht, L, H=None, sigmaL=sigmaL, lambda_L=1):
         t3 = 0
     else:
         t2 = np.vdot(HtTL, H)
-        maxH = np.max(H, axis=1)
-        t3 = np.sum(maxH * np.sum(dgkl(Ht, H), axis=1))
+        maxH = H.max(axis=1)
+        t3 = (maxH * dgkl(Ht, H).sum(axis=1)).sum()
     return lambda_L / 2 * (2 * t2 - t1 + sigmaL * t3)
 
 

@@ -566,10 +566,11 @@ class EDXS(PhysicalModel):
             raise AttributeError("The bremsstrahlung is not comprised in the model.")
 
         indices = self.NMF_simplex()
-        mean_compo = np.mean(W[indices, :], axis=1)
-        normed_compo = mean_compo / np.sum(mean_compo)
+        mean_compo = W[indices, :].mean(axis=1)
+        normed_compo = mean_compo / mean_compo.sum()
         elements_dict = {
-            key: normed_compo[i] for i, key in enumerate(self.get_elements(False))
+            key: float(normed_compo[i])
+            for i, key in enumerate(self.get_elements(False))
         }
         bremsstrahlung = G_bremsstrahlung(
             self.x, self.E0, self.params_dict, elements_dict=elements_dict
