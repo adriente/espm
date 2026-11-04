@@ -60,12 +60,20 @@ def multiplicative_step_w(
             if X.nbytes > 1e8:
                 xp = get_array_module(X)
                 chunk_size = 256
-                op1_H = xp.zeros((X.shape[0], H.shape[0]), dtype=X.dtype)
+                op1_H = xp.empty((X.shape[0], H.shape[0]), dtype=X.dtype)
+                buf = xp.empty(
+                    (min(chunk_size, X.shape[0]), H.shape[1]), dtype=X.dtype
+                )
                 for i in range(0, X.shape[0], chunk_size):
-                    GW_c = GW[i : i + chunk_size]
-                    GWH_c = GW_c @ H
-                    X_c = X[i : i + chunk_size]
-                    op1_H[i : i + chunk_size] = (X_c / GWH_c) @ H.T
+                    actual = min(chunk_size, X.shape[0] - i)
+                    buf_c = buf[:actual]
+                    np.matmul(GW[i : i + actual], H, out=buf_c)
+                    np.divide(X[i : i + actual], buf_c, out=buf_c)
+                    if np.isnan(buf_c).any():
+                        np.matmul(GW[i : i + actual], H, out=buf_c)
+                        np.maximum(buf_c, log_shift, out=buf_c)
+                        np.divide(X[i : i + actual], buf_c, out=buf_c)
+                    np.matmul(buf_c, H.T, out=op1_H[i : i + actual])
                 num = W * (G.T @ op1_H)
             else:
                 # Split to debug timing...
@@ -171,12 +179,26 @@ def multiplicative_step_h(
             if X.nbytes > 1e8:
                 xp = get_array_module(X)
                 chunk_size = 256
-                num = xp.zeros_like(H)
+                num = xp.empty_like(H)
+                buf = xp.empty(
+                    (min(chunk_size, X.shape[0]), H.shape[1]), dtype=X.dtype
+                )
+                buf_k = xp.empty_like(H)
                 for i in range(0, X.shape[0], chunk_size):
-                    GW_c = GW[i : i + chunk_size]
-                    GWH_c = GW_c @ H
-                    X_c = X[i : i + chunk_size]
-                    num += GW_c.T @ (X_c / GWH_c)
+                    actual = min(chunk_size, X.shape[0] - i)
+                    buf_c = buf[:actual]
+                    GW_c = GW[i : i + actual]
+                    np.matmul(GW_c, H, out=buf_c)
+                    np.divide(X[i : i + actual], buf_c, out=buf_c)
+                    if np.isnan(buf_c).any():
+                        np.matmul(GW_c, H, out=buf_c)
+                        np.maximum(buf_c, log_shift, out=buf_c)
+                        np.divide(X[i : i + actual], buf_c, out=buf_c)
+                    if i == 0:
+                        np.matmul(GW_c.T, buf_c, out=num)
+                    else:
+                        np.matmul(GW_c.T, buf_c, out=buf_k)
+                        num += buf_k
             else:
                 GWH = GW @ H
                 num = GW.T @ (X / GWH)

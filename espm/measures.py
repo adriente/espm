@@ -11,6 +11,7 @@ import numpy as np
 from sklearn.metrics import r2_score
 
 from espm.conf import log_shift
+from espm.utils import get_array_module
 
 
 def spectral_angle(v1, v2):
@@ -508,14 +509,19 @@ def KLdiv_loss(X, W, H, log_shift=log_shift, average=False):
     """
 
     if X.nbytes > 1e8:
+        xp = get_array_module(X)
         x_lin = float(W.sum(axis=0) @ H.sum(axis=1))
         x_log = 0.0
         chunk_size = 256
+        buf = xp.empty((min(chunk_size, X.shape[0]), H.shape[1]), dtype=X.dtype)
         for i in range(0, X.shape[0], chunk_size):
-            W_c = W[i : i + chunk_size]
-            X_c = X[i : i + chunk_size]
-            Y_c = np.maximum(W_c @ H, log_shift)
-            x_log += float((X_c * np.log(Y_c)).sum())
+            actual = min(chunk_size, X.shape[0] - i)
+            buf_c = buf[:actual]
+            np.matmul(W[i : i + actual], H, out=buf_c)
+            np.maximum(buf_c, log_shift, out=buf_c)
+            np.log(buf_c, out=buf_c)
+            buf_c *= X[i : i + actual]
+            x_log += float(buf_c.sum())
         if average:
             return (x_lin - x_log) / (X.shape[0] * X.shape[1])
         else:

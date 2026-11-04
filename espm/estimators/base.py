@@ -223,13 +223,21 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         else:
             if self.const_KL_ is None:
                 if self.X_.nbytes > 1e8:
-                    const_kl = 0.0
+                    xp = get_array_module(self.X_)
                     chunk_size = 256
+                    buf = xp.empty(
+                        (min(chunk_size, self.X_.shape[0]), self.X_.shape[1]),
+                        dtype=self.X_.dtype,
+                    )
+                    const_kl = 0.0
                     for i in range(0, self.X_.shape[0], chunk_size):
-                        X_c = self.X_[i : i + chunk_size]
-                        const_kl += float(
-                            (X_c * np.log(np.maximum(X_c, self.log_shift))).sum()
-                        )
+                        actual = min(chunk_size, self.X_.shape[0] - i)
+                        buf_c = buf[:actual]
+                        X_c = self.X_[i : i + actual]
+                        np.maximum(X_c, self.log_shift, out=buf_c)
+                        np.log(buf_c, out=buf_c)
+                        buf_c *= X_c
+                        const_kl += float(buf_c.sum())
                     self.const_KL_ = const_kl - float(self.X_.sum())
                 else:
                     self.const_KL_ = (
@@ -368,22 +376,28 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         #############
         # Main loop #
         #############
+        old_W = self.W_.copy()
+        old_H = self.H_.copy()
         try:
             while True:
                 # Take one step in W, H
-                old_W, old_H = self.W_.copy(), self.H_.copy()
+                np.copyto(old_W, self.W_)
+                np.copyto(old_H, self.H_)
 
                 self.W_, self.H_ = self._iteration(self.W_, self.H_)
 
                 eval_after = self.loss(self.W_, self.H_)
                 self.n_iter_ += 1
 
-                rel_W = float(
-                    (abs(self.W_ - old_W) / (self.W_ + self.tol * self.W_.mean())).max()
-                )
-                rel_H = float(
-                    (abs(self.H_ - old_H) / (self.H_ + self.tol * self.H_.mean())).max()
-                )
+                old_W -= self.W_
+                np.abs(old_W, out=old_W)
+                old_W /= (self.W_ + (self.tol * float(self.W_.mean())))
+                rel_W = float(old_W.max())
+
+                old_H -= self.H_
+                np.abs(old_H, out=old_H)
+                old_H /= (self.H_ + (self.tol * float(self.H_.mean())))
+                rel_H = float(old_H.max())
 
                 # store some information for assessing the convergence
                 # for debugging purposes
