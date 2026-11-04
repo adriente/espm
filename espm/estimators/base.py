@@ -153,6 +153,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         no_stop_criterion=False,
         simplex_H=False,
         simplex_W=True,
+        copy=True,
     ):
         self.n_components = n_components
         self.init = init
@@ -175,6 +176,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.no_stop_criterion = no_stop_criterion
         self.simplex_H = simplex_H
         self.simplex_W = simplex_W
+        self.copy = copy
 
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
@@ -291,9 +293,11 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         ).__module__.startswith("cupy"):
             if X_trans.dtype not in [np.float64, np.float32]:
                 X_trans = X_trans.astype(np.float32)
-            self.X_ = X_trans
+            self.X_ = X_trans.copy() if self.copy else X_trans
         else:
-            self.X_ = validate_data(self, X_trans, dtype=[np.float64, np.float32])
+            self.X_ = validate_data(
+                self, X_trans, dtype=[np.float64, np.float32], copy=self.copy
+            )
 
         if not self.hspy_comp:
             try:
@@ -317,7 +321,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         if self.normalize:
             # We normalize the data so that the strength of the regularization is somewhat the same for all datasets
             self.norm_factor_ = normalization_factor(self.X_, self.n_components)
-            self.X_ = self.norm_factor_ * self.X_
+            self.X_ *= self.norm_factor_
 
         if isinstance(self.G, PhysicalModel):
             self.physics_model_ = self.G
@@ -339,18 +343,21 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             physics_model=self.physics_model_,
         )
 
-        if self.shape_2d is not None:
-            self.L_ = create_laplacian_matrix(*self.shape_2d)
-        else:
-            self.L_ = lil_matrix((self.X_.shape[1], self.X_.shape[1]), dtype=np.float32)
-            self.L_.setdiag([1] * self.X_.shape[1])
+        if getattr(self, "lambda_L", 0) != 0:
+            if self.shape_2d is not None:
+                self.L_ = create_laplacian_matrix(*self.shape_2d)
+            else:
+                self.L_ = lil_matrix((self.X_.shape[1], self.X_.shape[1]), dtype=np.float32)
+                self.L_.setdiag([1] * self.X_.shape[1])
 
-        if hasattr(self.X_, "__cuda_array_interface__") or type(
-            self.X_
-        ).__module__.startswith("cupy"):
-            self.L_ = cp_sparse.csr_matrix(self.L_.tocsr())
+            if hasattr(self.X_, "__cuda_array_interface__") or type(
+                self.X_
+            ).__module__.startswith("cupy"):
+                self.L_ = cp_sparse.csr_matrix(self.L_.tocsr())
+            else:
+                self.L_ = self.L_.tocsr()
         else:
-            self.L_ = self.L_.tocsr()
+            self.L_ = None
 
         algo_start = time.time()
         eval_before = np.inf
@@ -468,7 +475,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 if self.physics_model_ != None and self.n_iter_ % 3 == 0:
                     xp = get_array_module(self.X_)
                     W_cpu = to_numpy(self.W_)
-                    self.G_ = xp.asarray(self.physics_model_.NMF_update(W_cpu))
+                    self.G_ = xp.asarray(self.physics_model_.NMF_update(W_cpu), dtype=self.X_.dtype)
                     eval_before = self.loss(self.W_, self.H_)
                 else:
                     eval_before = eval_after
@@ -489,7 +496,7 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         self.reconstruction_err_ = float(self.loss(self.W_, self.H_))
 
         if self.normalize:
-            self.W_ = self.W_ / self.norm_factor_
+            self.W_ /= self.norm_factor_
 
         GW = self.G_ @ self.W_
         self.n_components_ = self.H_.shape[0]
@@ -607,16 +614,17 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         return array
 
     def remove_zeros_lines(self, X, epsilon):
-        if (X >= 0).all():
-            sum_cols = X.sum(axis=0)
-            sum_rows = X.sum(axis=1)
-            zero_cols = sum_cols == 0
-            zero_rows = sum_rows == 0
-            if zero_cols.any() or zero_rows.any():
-                new_X = X.copy()
-                new_X[:, zero_cols] = epsilon
-                new_X[zero_rows, :] = epsilon
-                return new_X
-            return X
-        else:
+        if X.min() < 0:
             raise ValueError("Negative values in data")
+        xp = get_array_module(X)
+        sum_cols = X.sum(axis=0)
+        sum_rows = X.sum(axis=1)
+        zero_cols = sum_cols == 0
+        zero_rows = sum_rows == 0
+        if zero_cols.any():
+            col_idx = xp.flatnonzero(zero_cols)
+            X[:, col_idx] = epsilon
+        if zero_rows.any():
+            row_idx = xp.flatnonzero(zero_rows)
+            X[row_idx, :] = epsilon
+        return X

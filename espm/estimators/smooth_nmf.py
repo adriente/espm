@@ -126,6 +126,7 @@ class SmoothNMF(NMFEstimator):
         no_stop_criterion=False,
         simplex_H=False,
         simplex_W=True,
+        copy=True,
     ):
 
         super().__init__(
@@ -150,6 +151,7 @@ class SmoothNMF(NMFEstimator):
             no_stop_criterion=no_stop_criterion,
             simplex_H=simplex_H,
             simplex_W=simplex_W,
+            copy=copy,
         )
         self.lambda_L = lambda_L
         self.linesearch = linesearch
@@ -216,6 +218,10 @@ class SmoothNMF(NMFEstimator):
             print("The n_components parameter must be an int")
             print("The n_components parameter is set to 2")
             self.n_components = 2
+        if not isinstance(self.copy, bool):
+            print("The copy parameter must be a boolean")
+            print("The copy parameter is set to True")
+            self.copy = True
         # Value checking of the parameters
         if self.algo not in [
             "l2_surrogate",
@@ -524,16 +530,22 @@ class SmoothNMF(NMFEstimator):
         """Compute the loss function."""
         lkl = super().loss(W, H, average=average, X=X)
 
-        reg = log_reg(H, self.mu, self.epsilon_reg, average=False)
-        if average:
-            reg = reg / self.GWH_numel_
-        reg = float(reg)
+        if not (np.isscalar(self.mu) and self.mu == 0):
+            reg = log_reg(H, self.mu, self.epsilon_reg, average=False)
+            if average:
+                reg = reg / self.GWH_numel_
+            reg = float(reg)
+        else:
+            reg = 0.0
         self.detailed_loss_.append(reg)
 
-        l2 = 0.5 * self.lambda_L * trace_xtLx(self.L_, H.T, average=False)
-        if average:
-            l2 = l2 / self.GWH_numel_
-        l2 = float(l2)
+        if self.lambda_L != 0 and self.L_ is not None:
+            l2 = 0.5 * self.lambda_L * trace_xtLx(self.L_, H.T, average=False)
+            if average:
+                l2 = l2 / self.GWH_numel_
+            l2 = float(l2)
+        else:
+            l2 = 0.0
         self.detailed_loss_.append(l2)
         if isinstance(self.gamma_, list):
             self.detailed_loss_.append(self.gamma_[0])
