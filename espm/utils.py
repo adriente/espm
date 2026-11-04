@@ -19,6 +19,13 @@ from sklearn.linear_model import LinearRegression as LR
 import espm
 from espm.conf import NUMBER_PERIODIC_TABLE, SYMBOLS_PERIODIC_TABLE
 
+try:
+    import cupy as cp
+
+    CUPY = True
+except ImportError:
+    CUPY = False
+
 _qtg_widgets = []
 _plt_figures = []
 
@@ -99,10 +106,13 @@ def rescaled_DH(D, H):
 
     """
     _, p = H.shape
-    o = np.ones((p,))
+    xp = get_array_module(H)
+    o = xp.ones((p,))
     s = np.linalg.lstsq(H.T, o, rcond=None)[0]
     if (s <= 0).any():
-        s = np.maximum(nnls(H.T, o)[0], 1e-10)
+        H_cpu = to_numpy(H)
+        o_cpu = to_numpy(o)
+        s = xp.asarray(np.maximum(nnls(H_cpu.T, o_cpu)[0], 1e-10))
     D_rescale = D @ np.diag(1 / s)
     H_rescale = np.diag(s) @ H
     return D_rescale, H_rescale
@@ -739,3 +749,11 @@ def erode_masks(masks, erosion_radius=1, footprint=np.ones((3, 3)), extra_safe=F
         out = m
 
     return out
+
+
+def get_array_module(array):
+    return np if not CUPY else cp.get_array_module(array)
+
+
+def to_numpy(array):
+    return array.get() if hasattr(array, "__cuda_array_interface__") else array

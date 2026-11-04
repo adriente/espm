@@ -10,7 +10,12 @@ from espm.conf import log_shift
 from espm.estimators.updates import initialize_algorithms
 from espm.measures import Frobenius_loss, KLdiv_loss, find_min_angle, find_min_MSE
 from espm.models.base import PhysicalModel
-from espm.utils import create_laplacian_matrix, rescaled_DH
+from espm.utils import create_laplacian_matrix, get_array_module, rescaled_DH, to_numpy
+
+try:
+    import cupyx.scipy.sparse as cp_sparse
+except ImportError:
+    cp_sparse = None
 
 
 def normalization_factor(X, nc):
@@ -262,9 +267,15 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         # Initialize the algorithm #
         ############################
 
-        self.X_ = validate_data(
-            self, X.T if self.hspy_comp else X, dtype=[np.float64, np.float32]
-        )
+        X_trans = X.T if self.hspy_comp else X
+        if hasattr(X_trans, "__cuda_array_interface__") or type(
+            X_trans
+        ).__module__.startswith("cupy"):
+            if X_trans.dtype not in [np.float64, np.float32]:
+                X_trans = X_trans.astype(np.float32)
+            self.X_ = X_trans
+        else:
+            self.X_ = validate_data(self, X_trans, dtype=[np.float64, np.float32])
 
         if not self.hspy_comp:
             try:
@@ -315,6 +326,13 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
         else:
             self.L_ = lil_matrix((self.X_.shape[1], self.X_.shape[1]), dtype=np.float32)
             self.L_.setdiag([1] * self.X_.shape[1])
+
+        if hasattr(self.X_, "__cuda_array_interface__") or type(
+            self.X_
+        ).__module__.startswith("cupy"):
+            self.L_ = cp_sparse.csr_matrix(self.L_.tocsr())
+        else:
+            self.L_ = self.L_.tocsr()
 
         algo_start = time.time()
         eval_before = np.inf
@@ -424,7 +442,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 # Update G might increase the loss so we reevaluate the loss to avoid artificial negative decrease
                 # We do this update every 3 iterations, but it is arbitrary.
                 if self.physics_model_ != None and self.n_iter_ % 3 == 0:
-                    self.G_ = self.physics_model_.NMF_update(self.W_)
+                    xp = get_array_module(self.X_)
+                    W_cpu = to_numpy(self.W_)
+                    self.G_ = xp.asarray(self.physics_model_.NMF_update(W_cpu))
                     eval_before = self.loss(self.W_, self.H_)
                 else:
                     eval_before = eval_after

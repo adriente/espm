@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 
 from espm import conf
+from espm.utils import get_array_module
 
 
 class Model(ABC):
@@ -243,7 +244,9 @@ class PhysicalModel(Model):
         W :
             :np.array 2D: The initialized matrix W of shape (n_G, n_components)
         """
-        W = np.abs(np.linalg.lstsq(self.G, D, rcond=None)[0])
+        xp = get_array_module(D)
+        G = xp.asarray(self.G)
+        W = np.abs(np.linalg.lstsq(G, D, rcond=None)[0])
         return W
 
     @abstractmethod

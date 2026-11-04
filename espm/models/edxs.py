@@ -26,7 +26,12 @@ from espm.models.EDXS_function import (
     read_compact_db,
     read_lines_db,
 )
-from espm.utils import symbol_to_number_dict, symbol_to_number_list
+from espm.utils import (
+    get_array_module,
+    symbol_to_number_dict,
+    symbol_to_number_list,
+    to_numpy,
+)
 
 # Class to model the EDXS spectra. This is a temporary version since there are some design issues.
 
@@ -509,20 +514,23 @@ class EDXS(PhysicalModel):
             raise ValueError(
                 "The G matrix is identity, the W matrix cannot be initialized. Please use a np.array for G in the ESpM-NMF instead of the model object"
             )
+        xp = get_array_module(D)
+        G = xp.asarray(self.G)
+
         if self.bkgd_in_G and self.custom_init:
             mask = self.carac_X_span(self.ranges)
             anti_mask = np.logical_not(mask)
 
-            Wbrem = (
-                np.linalg.lstsq(self.G[mask, -2:], D[mask, :], rcond=None)[0]
-            ).clip(min=0)
+            Wbrem = (np.linalg.lstsq(G[mask, -2:], D[mask, :], rcond=None)[0]).clip(
+                min=0
+            )
             Wcarac = (
-                np.linalg.lstsq(self.G[anti_mask, :-2], D[anti_mask, :], rcond=None)[0]
+                np.linalg.lstsq(G[anti_mask, :-2], D[anti_mask, :], rcond=None)[0]
             ).clip(min=0)
             # filter = np.where(np.mean(self.G[:,:-2],axis=1)<(np.max(np.mean(self.G[:,:-2],axis=1))*0.001))[0]
             W = np.vstack((Wcarac, Wbrem))
         else:
-            W = (np.linalg.lstsq(self.G, D, rcond=None)[0]).clip(min=0)
+            W = (np.linalg.lstsq(G, D, rcond=None)[0]).clip(min=0)
 
         return W
 
@@ -565,6 +573,7 @@ class EDXS(PhysicalModel):
         if not (self.bkgd_in_G):
             raise AttributeError("The bremsstrahlung is not comprised in the model.")
 
+        W = to_numpy(W)
         indices = self.NMF_simplex()
         mean_compo = W[indices, :].mean(axis=1)
         normed_compo = mean_compo / mean_compo.sum()

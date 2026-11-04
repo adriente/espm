@@ -7,6 +7,7 @@ from espm.estimators.dicotomy import (
     dichotomy_simplex_acc,
     dichotomy_simplex_projected_gradient,
 )
+from espm.utils import get_array_module, to_numpy
 
 
 def multiplicative_step_w(
@@ -88,6 +89,8 @@ def multiplicative_step_w(
 
     # TODO: exclude the fixed values in the update process. It is not straightforward
     if fixed_W is not None:
+        xp = get_array_module(new_W)
+        fixed_W = xp.asarray(fixed_W)
         new_W[fixed_W >= 0] = fixed_W[fixed_W >= 0]
 
     return new_W
@@ -184,6 +187,8 @@ def multiplicative_step_h(
     new_H = np.maximum(num / (denum + nu), log_shift)
 
     if fixed_H is not None:
+        xp = get_array_module(new_H)
+        fixed_H = xp.asarray(fixed_H)
         new_H[fixed_H >= 0] = fixed_H[fixed_H >= 0]
     return new_H
 
@@ -202,11 +207,12 @@ def initialize_algorithms(
     physics_model=None,
 ):
     # Handle initialization
+    xp = get_array_module(X)
 
     if G is None:
         skip_second = True
         # G = sparse.diags(np.ones(X.shape[0]).astype(X.dtype))
-        G = np.eye(X.shape[0], dtype=X.dtype)
+        G = xp.eye(X.shape[0], dtype=X.dtype)
 
     # elif callable(G) :
     #     assert not(model_params is None), "You need to input model_parameters"
@@ -216,12 +222,16 @@ def initialize_algorithms(
 
     else:
         skip_second = False
+        G = xp.asarray(G)
 
     if W is None:
         if H is None:
+            X_cpu = to_numpy(X)
             D, H = initialize_nmf(
-                X, n_components=n_components, init=init, random_state=random_state
+                X_cpu, n_components=n_components, init=init, random_state=random_state
             )
+            D = xp.asarray(D)
+            H = xp.asarray(H)
             # D, A = u.rescaled_DA(D,A)
             if simplex_H:
                 H = np.nan_to_num(H, nan=1.0 / H.shape[0])
@@ -231,6 +241,7 @@ def initialize_algorithms(
                 # D = np.abs(np.linalg.lstsq(H.T, X.T,rcond=None)[0].T)
                 D = D * scale.mean()
         else:
+            H = xp.asarray(H)
             D = np.abs(np.linalg.lstsq(H.T, X.T, rcond=None)[0].T)
         if skip_second:
             W = D
@@ -239,7 +250,7 @@ def initialize_algorithms(
                 # [np.where(G[:,:-2].sum(axis=1)<(np.max(G[:,:-2].sum(axis=1))*0.001))[0],:]
                 # Divide in two parts the initial fitting, otherwise the bremsstrahlung (which has a low intensity) tends to be poorly learned
                 # First fit the caracteristic Xrays, then subtract that contribution to obtain a rough estimate of the bremsstralung parameters
-                W = physics_model.NMF_initialize_W(D)
+                W = xp.asarray(physics_model.NMF_initialize_W(D))
                 # Wbrem = (np.linalg.lstsq(G[:,-2:],D - G[:,:-2]@Wcarac,rcond = None)[0]).clip(min = 0)
                 if simplex_W:
                     indices = physics_model.NMF_simplex()
@@ -256,11 +267,15 @@ def initialize_algorithms(
                     W = W / scale
 
     elif H is None:
+        W = xp.asarray(W)
         D = G @ W
         H = np.abs(np.linalg.lstsq(D, X, rcond=None)[0])
         if simplex_H:
             scale = H.sum(axis=0, keepdims=True)
             H = H / scale
+    else:
+        W = xp.asarray(W)
+        H = xp.asarray(H)
 
     W = np.maximum(W, log_shift)
     H = np.maximum(H, log_shift)
@@ -368,6 +383,8 @@ def multiplicative_step_hq(
     new_H = np.maximum(new_H, log_shift)
 
     if fixed_H is not None:
+        xp = get_array_module(new_H)
+        fixed_H = xp.asarray(fixed_H)
         new_H[fixed_H >= 0] = fixed_H[fixed_H >= 0]
     return new_H
 
@@ -515,21 +532,27 @@ def proj_grad_step_h(
 
 
 def estimate_Lipschitz_bound_w(log_shift, X, G, k):
+    xp = get_array_module(X)
     if G is None:
-        G = np.eye(X.shape[0])
-    Wlim = np.ones([G.shape[1], k]) * log_shift
-    Hlim = np.ones([k, X.shape[1]]) * log_shift
+        G = xp.eye(X.shape[0])
+    else:
+        G = xp.asarray(G)
+    Wlim = xp.ones([G.shape[1], k]) * log_shift
+    Hlim = xp.ones([k, X.shape[1]]) * log_shift
     D = G @ Wlim
     DH = D @ Hlim
     gamma = ((Hlim.sum(axis=0, keepdims=True) * X / (DH**2)) @ Hlim.T).max()
-    return gamma
+    return float(gamma)
 
 
 def estimate_Lipschitz_bound_h(log_shift, X, G, k, lambda_L=0, mu=0, epsilon_reg=1):
+    xp = get_array_module(X)
     if G is None:
-        G = np.eye(X.shape[0])
-    Wlim = np.ones([G.shape[1], k]) * log_shift
-    Hlim = np.ones([k, X.shape[1]]) * log_shift
+        G = xp.eye(X.shape[0])
+    else:
+        G = xp.asarray(G)
+    Wlim = xp.ones([G.shape[1], k]) * log_shift
+    Hlim = xp.ones([k, X.shape[1]]) * log_shift
     D = G @ Wlim
     DH = D @ Hlim
 
@@ -538,5 +561,4 @@ def estimate_Lipschitz_bound_h(log_shift, X, G, k, lambda_L=0, mu=0, epsilon_reg
         + 2 * lambda_L
         + mu * epsilon_reg
     )
-
-    return gamma
+    return float(gamma)

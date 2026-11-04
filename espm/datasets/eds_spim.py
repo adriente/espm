@@ -41,6 +41,7 @@ from espm.utils import (
     quant_spectrum,
     symbol_to_number_dict,
     symbol_to_number_list,
+    to_numpy,
 )
 
 
@@ -900,13 +901,30 @@ class EDSespm(EDSTEMSpectrum):
            Interface Anal 36(3) (2004): 203-212.
         """
         model_ = self.model_
-        super().decomposition(
-            normalize_poissonian_noise=normalize_poissonian_noise,
-            navigation_mask=navigation_mask,
-            *args,
-            **kwargs,
+
+        # Bypass hyperspy cupy check
+
+        algorithm = kwargs.get("algorithm", args[0] if len(args) > 0 else "SVD")
+        is_espm_algo = isinstance(algorithm, NMFEstimator) or (
+            isinstance(algorithm, type) and issubclass(algorithm, NMFEstimator)
         )
-        self.model_ = model_
+
+        import hyperspy.misc.utils
+
+        orig_is_cupy_array = hyperspy.misc.utils.is_cupy_array
+        if is_espm_algo:
+            hyperspy.misc.utils.is_cupy_array = lambda x: False
+        try:
+            super().decomposition(
+                normalize_poissonian_noise=normalize_poissonian_noise,
+                navigation_mask=navigation_mask,
+                *args,
+                **kwargs,
+            )
+        finally:
+            if is_espm_algo:
+                hyperspy.misc.utils.is_cupy_array = orig_is_cupy_array
+            self.model_ = model_
 
     @_check_decomposition
     def plot_1D_results(
@@ -928,6 +946,9 @@ class EDSespm(EDSTEMSpectrum):
         W = self.learning_results.decomposition_algorithm.W_
         G = self.learning_results.decomposition_algorithm.G_
         H = self.learning_results.decomposition_algorithm.H_.mean(axis=1)
+        W = to_numpy(W)
+        G = to_numpy(G)
+        H = to_numpy(H)
 
         @symbol_to_number_list
         def convert_elts(elements=[]):
@@ -978,6 +999,9 @@ class EDSespm(EDSTEMSpectrum):
             W = self.learning_results.decomposition_algorithm.W_
             G = self.learning_results.decomposition_algorithm.G_
             H = self.learning_results.decomposition_algorithm.H_
+            W = to_numpy(W)
+            G = to_numpy(G)
+            H = to_numpy(H)
             N = get_explained_intensity_W(G, W, H)
             percentages = 100.0 / np.sqrt(N)
 
