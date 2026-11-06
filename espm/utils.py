@@ -18,13 +18,7 @@ from sklearn.linear_model import LinearRegression as LR
 
 import espm
 from espm.conf import NUMBER_PERIODIC_TABLE, SYMBOLS_PERIODIC_TABLE
-
-try:
-    import cupy as cp
-
-    CUPY = True
-except ImportError:
-    CUPY = False
+from espm.cupy import get_array_module, to_numpy
 
 _qtg_widgets = []
 _plt_figures = []
@@ -749,11 +743,3 @@ def erode_masks(masks, erosion_radius=1, footprint=np.ones((3, 3)), extra_safe=F
         out = m
 
     return out
-
-
-def get_array_module(array):
-    return np if not CUPY else cp.get_array_module(array)
-
-
-def to_numpy(array):
-    return array.get() if hasattr(array, "__cuda_array_interface__") else array
