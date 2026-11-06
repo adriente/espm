@@ -2,12 +2,12 @@ import numpy as np
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf
 
 from espm.conf import dicotomy_tol, log_shift, sigmaL
+from espm.cupy import fused_div_clip, fused_update, get_array_module, to_numpy
 from espm.estimators.dicotomy import (
     dichotomy_simplex,
     dichotomy_simplex_acc,
     dichotomy_simplex_projected_gradient,
 )
-from espm.utils import get_array_module, to_numpy
 
 
 def multiplicative_step_w(
@@ -42,7 +42,7 @@ def multiplicative_step_w(
 
         GXH = G.T @ (X @ H.T)
 
-        new_W = W / GGWHH * GXH
+        new_W = np.maximum(W / GGWHH * GXH, log_shift)
     else:
         GW = G @ W
         if use_bregman:
@@ -61,29 +61,19 @@ def multiplicative_step_w(
                 xp = get_array_module(X)
                 chunk_size = 256
                 op1_H = xp.empty((X.shape[0], H.shape[0]), dtype=X.dtype)
-                buf = xp.empty(
-                    (min(chunk_size, X.shape[0]), H.shape[1]), dtype=X.dtype
-                )
+                buf = xp.empty((min(chunk_size, X.shape[0]), H.shape[1]), dtype=X.dtype)
                 for i in range(0, X.shape[0], chunk_size):
                     actual = min(chunk_size, X.shape[0] - i)
                     buf_c = buf[:actual]
                     np.matmul(GW[i : i + actual], H, out=buf_c)
-                    np.divide(X[i : i + actual], buf_c, out=buf_c)
-                    if np.isnan(buf_c).any():
-                        np.matmul(GW[i : i + actual], H, out=buf_c)
-                        np.maximum(buf_c, log_shift, out=buf_c)
-                        np.divide(X[i : i + actual], buf_c, out=buf_c)
+                    fused_div_clip(X[i : i + actual], buf_c, log_shift, out=buf_c)
                     np.matmul(buf_c, H.T, out=op1_H[i : i + actual])
                 num = W * (G.T @ op1_H)
             else:
                 # Split to debug timing...
                 # term1 = G.T @ (X / (GWH + eps)) @ H.T
                 GWH = GW @ H
-                op1 = X / GWH
-                if np.isnan(op1).any():
-                    GWH = np.maximum(GWH, log_shift)
-                    op1 = X / GWH
-
+                op1 = fused_div_clip(X, GWH, log_shift)
                 num = W * (G.T @ (op1 @ H.T))
             denum = np.outer(G.sum(axis=0), H.sum(axis=1))
             if simplex_W:
@@ -103,9 +93,7 @@ def multiplicative_step_w(
                     )
                     denum = denum + nu
 
-        new_W = num / denum
-
-    new_W = np.maximum(new_W, log_shift)
+            new_W = fused_update(num, denum, log_shift)
 
     # TODO: exclude the fixed values in the update process. It is not straightforward
     if fixed_W is not None:
@@ -181,20 +169,14 @@ def multiplicative_step_h(
                 xp = get_array_module(X)
                 chunk_size = 256
                 num = xp.empty_like(H)
-                buf = xp.empty(
-                    (min(chunk_size, X.shape[0]), H.shape[1]), dtype=X.dtype
-                )
+                buf = xp.empty((min(chunk_size, X.shape[0]), H.shape[1]), dtype=X.dtype)
                 buf_k = xp.empty_like(H)
                 for i in range(0, X.shape[0], chunk_size):
                     actual = min(chunk_size, X.shape[0] - i)
                     buf_c = buf[:actual]
                     GW_c = GW[i : i + actual]
                     np.matmul(GW_c, H, out=buf_c)
-                    np.divide(X[i : i + actual], buf_c, out=buf_c)
-                    if np.isnan(buf_c).any():
-                        np.matmul(GW_c, H, out=buf_c)
-                        np.maximum(buf_c, log_shift, out=buf_c)
-                        np.divide(X[i : i + actual], buf_c, out=buf_c)
+                    fused_div_clip(X[i : i + actual], buf_c, log_shift, out=buf_c)
                     if i == 0:
                         np.matmul(GW_c.T, buf_c, out=num)
                     else:
@@ -202,10 +184,8 @@ def multiplicative_step_h(
                         num += buf_k
             else:
                 GWH = GW @ H
-                num = GW.T @ (X / GWH)
-                if np.isnan(num).any():
-                    GWH = np.maximum(GWH, log_shift)
-                    num = GW.T @ (X / GWH)
+                op1 = fused_div_clip(X, GWH, log_shift)
+                num = GW.T @ op1
             denum = GW.sum(axis=0, keepdims=True).T
 
         if not (np.isscalar(mu) and mu == 0):
@@ -228,7 +208,7 @@ def multiplicative_step_h(
         assert not (num < 0).any()
 
     # Add the shift...
-    new_H = np.maximum(num / (denum + nu), log_shift)
+    new_H = fused_update(num, denum + nu, log_shift)
 
     if fixed_H is not None:
         xp = get_array_module(new_H)
@@ -303,7 +283,9 @@ def initialize_algorithms(
                     W[indices, :] = W[indices, :] / scale
             # P = np.abs(np.linalg.lstsq(G, D,rcond=None)[0])
             else:
-                W = xp.asarray(np.abs(np.linalg.lstsq(G, D, rcond=None)[0]), dtype=X.dtype)
+                W = xp.asarray(
+                    np.abs(np.linalg.lstsq(G, D, rcond=None)[0]), dtype=X.dtype
+                )
 
                 if simplex_W:
                     W = np.nan_to_num(W, nan=1.0 / W.shape[0])

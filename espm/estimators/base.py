@@ -7,10 +7,11 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted, validate_data
 
 from espm.conf import log_shift
+from espm.cupy import fused_log_clip, get_array_module, to_numpy
 from espm.estimators.updates import initialize_algorithms
 from espm.measures import Frobenius_loss, KLdiv_loss, find_min_angle, find_min_MSE
 from espm.models.base import PhysicalModel
-from espm.utils import create_laplacian_matrix, get_array_module, rescaled_DH, to_numpy
+from espm.utils import create_laplacian_matrix, rescaled_DH
 
 try:
     import cupyx.scipy.sparse as cp_sparse
@@ -236,11 +237,10 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                         actual = min(chunk_size, self.X_.shape[0] - i)
                         buf_c = buf[:actual]
                         X_c = self.X_[i : i + actual]
-                        np.maximum(X_c, self.log_shift, out=buf_c)
-                        np.log(buf_c, out=buf_c)
+                        fused_log_clip(X_c, self.log_shift, out=buf_c)
                         buf_c *= X_c
-                        const_kl += float(buf_c.sum())
-                    self.const_KL_ = const_kl - float(self.X_.sum())
+                        const_kl = const_kl + buf_c.sum()
+                    self.const_KL_ = float(const_kl) - float(self.X_.sum())
                 else:
                     self.const_KL_ = (
                         X * np.log(np.maximum(self.X_, self.log_shift))
@@ -347,7 +347,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             if self.shape_2d is not None:
                 self.L_ = create_laplacian_matrix(*self.shape_2d)
             else:
-                self.L_ = lil_matrix((self.X_.shape[1], self.X_.shape[1]), dtype=np.float32)
+                self.L_ = lil_matrix(
+                    (self.X_.shape[1], self.X_.shape[1]), dtype=np.float32
+                )
                 self.L_.setdiag([1] * self.X_.shape[1])
 
             if hasattr(self.X_, "__cuda_array_interface__") or type(
@@ -398,12 +400,12 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
 
                 old_W -= self.W_
                 np.abs(old_W, out=old_W)
-                old_W /= (self.W_ + (self.tol * float(self.W_.mean())))
+                old_W /= self.W_ + (self.tol * float(self.W_.mean()))
                 rel_W = float(old_W.max())
 
                 old_H -= self.H_
                 np.abs(old_H, out=old_H)
-                old_H /= (self.H_ + (self.tol * float(self.H_.mean())))
+                old_H /= self.H_ + (self.tol * float(self.H_.mean()))
                 rel_H = float(old_H.max())
 
                 # store some information for assessing the convergence
@@ -475,7 +477,9 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
                 if self.physics_model_ != None and self.n_iter_ % 3 == 0:
                     xp = get_array_module(self.X_)
                     W_cpu = to_numpy(self.W_)
-                    self.G_ = xp.asarray(self.physics_model_.NMF_update(W_cpu), dtype=self.X_.dtype)
+                    self.G_ = xp.asarray(
+                        self.physics_model_.NMF_update(W_cpu), dtype=self.X_.dtype
+                    )
                     eval_before = self.loss(self.W_, self.H_)
                 else:
                     eval_before = eval_after
