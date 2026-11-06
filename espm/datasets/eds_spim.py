@@ -1876,7 +1876,6 @@ class EDSespm(EDSTEMSpectrum):
                 for line, data in v.items()
             }
             for element, v in self.model.db_dict.items()
-            if element in self.elements
         }
 
         self.model.calibrated_db_dict = calibrated_db

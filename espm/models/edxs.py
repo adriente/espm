@@ -202,6 +202,7 @@ class EDXS(PhysicalModel):
         order=5,
         method="taylor",
         E_ref=None,
+        approx_elts=None,
         **kwargs,
     ):
         r"""
@@ -291,7 +292,8 @@ class EDXS(PhysicalModel):
 
             # Appends a pure continuum spectrum is needed
             if self.bkgd_in_G:
-                approx_elts = {key: 1.0 / len(valid_elts) for key in valid_elts}
+                if approx_elts is None:
+                    approx_elts = {key: 1.0 / len(valid_elts) for key in valid_elts}
 
                 match g_type:
                     case "power_law":
