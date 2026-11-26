@@ -632,3 +632,61 @@ class NMFEstimator(ABC, TransformerMixin, BaseEstimator):
             row_idx = xp.flatnonzero(zero_rows)
             X[row_idx, :] = epsilon
         return X
+
+    def uncertainties(
+        self,
+        method: str = "crb",
+        *,
+        simplex_indices=None,
+        treat_boundary_zeros: bool = True,
+        boundary_tol: float | None = None,
+        rate_floor: float = 1e-12,
+        rcond: float = 1e-10,
+        chunk_size: int = 2048,
+        max_dense_H: int = 2500,
+        compute_pixel_marginals: bool = True,
+    ):
+        """Compute constrained Poisson CRB or sandwich uncertainties for the fitted model.
+
+        Parameters
+        ----------
+        method : {"crb", "sandwich"}, default="crb"
+            Uncertainty estimator type. ``"crb"`` uses the constrained Poisson
+            Cramér–Rao bound; ``"sandwich"`` additionally incorporates regularization
+            Hessians when present (e.g., ``lambda_L``, ``mu`` in ``SmoothNMF``).
+        simplex_indices : iterable of int, optional
+            Override for rows of ``W_`` participating in ``simplex_W``.
+        treat_boundary_zeros : bool, default=True
+            Treat entries pinned at ``log_shift`` as active boundary constraints.
+        boundary_tol : float, optional
+            Explicit threshold for active zero detection.
+        rate_floor : float, default=1e-12
+            Minimum expected Poisson count floor when inverting ``G_ @ W_ @ H_``.
+        rcond : float, default=1e-10
+            Relative eigenvalue threshold for pseudoinversion and gauge detection.
+        chunk_size : int, default=2048
+            Pixel batch size for vectorized computations.
+        max_dense_H : int, default=2500
+            Maximum coupled ``H`` DOFs for dense per-pixel sandwich inversion.
+        compute_pixel_marginals : bool, default=True
+            Whether to immediately populate pixel-wise ``std_H`` and ``std_M``.
+
+        Returns
+        -------
+        ESPMUncertaintyResult
+            Parameter covariances and composition/quantification error propagators.
+        """
+        from espm.uncertainty import uncertainty_from_estimator
+
+        return uncertainty_from_estimator(
+            self,
+            method=method,
+            simplex_indices=simplex_indices,
+            treat_boundary_zeros=treat_boundary_zeros,
+            boundary_tol=boundary_tol,
+            rate_floor=rate_floor,
+            rcond=rcond,
+            chunk_size=chunk_size,
+            max_dense_H=max_dense_H,
+            compute_pixel_marginals=compute_pixel_marginals,
+        )

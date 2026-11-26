@@ -32,6 +32,7 @@ from tqdm import tqdm
 
 from espm.estimators import NMFEstimator, SmoothNMF
 from espm.models import EDXS
+from espm.uncertainty import ESPMUncertaintyResult, ROIUncertaintyResult
 from espm.utils import (
     get_explained_intensity_W,
     get_npt,
@@ -474,6 +475,9 @@ class EDSespm(EDSTEMSpectrum):
         W_input: np.ndarray = None,
         fit_error: bool = True,
         disclaimer: bool = True,
+        error_type: str = "crb",
+        relative_error: bool = False,
+        treat_boundary_zeros: bool = True,
     ) -> None:
         r"""
         Print a report of the chemical concentrations from a fitted W.
@@ -492,6 +496,20 @@ class EDSespm(EDSTEMSpectrum):
         disclaimer : bool, optional
             If True, a disclaimer will be printed at the end of the report.
 
+        error_type : {"crb", "sandwich", "legacy"}, default="crb"
+            Method used to compute statistical uncertainties. ``"crb"`` computes the
+            exact constrained Poisson Cramér–Rao bound; ``"sandwich"`` additionally
+            accounts for ``SmoothNMF`` regularization; ``"legacy"`` reproduces the naive
+            ``100 / sqrt(N)`` heuristic.
+
+        relative_error : bool, default=False
+            If True (or when ``error_type="legacy"``), report relative standard errors
+            in percent instead of absolute standard errors in atomic %.
+
+        treat_boundary_zeros : bool, default=True
+            If True, entries pinned at the estimator positivity floor are treated as
+            active boundary constraints.
+
         Returns
         -------
         None
@@ -501,15 +519,23 @@ class EDSespm(EDSTEMSpectrum):
         - This function is only available if the learning results contain a decomposition algorithm that has been fitted.
         """
         conv_elts, W, errors = self.concentration_report(
-            selected_elts=selected_elts, W_input=W_input, fit_error=fit_error
+            selected_elts=selected_elts,
+            W_input=W_input,
+            fit_error=fit_error,
+            error_type=error_type,
+            relative_error=relative_error,
+            treat_boundary_zeros=treat_boundary_zeros,
         )
+
+        is_rel = relative_error or error_type in ("legacy", "poisson_naive")
+        err_suffix = " rel std (%)" if is_rel else " std (at.%)"
 
         table = PrettyTable()
         field_list = ["Elements"]
         for i in range(W.shape[1]):
             field_list.append("p" + str(i) + " (at.%)")
             if fit_error:
-                field_list.append("p" + str(i) + " std (%)")
+                field_list.append("p" + str(i) + err_suffix)
         table.field_names = field_list
         for i, j in enumerate(conv_elts):
             row = [j]
@@ -526,9 +552,14 @@ class EDSespm(EDSTEMSpectrum):
 
         print(table)
         if disclaimer and fit_error:
-            print(
-                "\nDisclaimer : The presented errors correspond to the statistical error on the fitted intensity of the peaks according to a Poisson law.\nIn other words it corresponds to the precision of the measurment.\nThe accuracy of the measurment strongly depends on other factors such as absorption, cross-sections, etc...\nPlease consider these parameters when interpreting the results."
-            )
+            if error_type in ("legacy", "poisson_naive"):
+                print(
+                    "\nDisclaimer : The presented errors correspond to the statistical error on the fitted intensity of the peaks according to a Poisson law.\nIn other words it corresponds to the precision of the measurment.\nThe accuracy of the measurment strongly depends on other factors such as absorption, cross-sections, etc...\nPlease consider these parameters when interpreting the results."
+                )
+            else:
+                print(
+                    "\nDisclaimer : The presented errors correspond to the constrained Poisson Cramér–Rao bound (or sandwich variance) on the elemental atomic fractions.\nIn other words it corresponds to the statistical precision under the fitted spectral model.\nThe accuracy of the measurement strongly depends on other factors such as absorption, cross-sections, etc...\nPlease consider these parameters when interpreting the results."
+                )
 
     ############################
     # Bremsstrahlung functions #
@@ -990,57 +1021,164 @@ class EDSespm(EDSTEMSpectrum):
 
         spectrum_1D._plot.signal_plot.ax.legend()
 
-    def concentration_report(self, selected_elts=[], W_input=None, fit_error=True):
+    @_check_decomposition
+    def get_uncertainty(
+        self,
+        *,
+        error_type: str = "crb",
+        treat_boundary_zeros: bool = True,
+        compute_pixel_marginals: bool = True,
+    ) -> ESPMUncertaintyResult:
+        """Compute constrained Poisson CRB or sandwich uncertainties for the decomposition.
+
+        Parameters
+        ----------
+        error_type : {"crb", "sandwich"}, default="crb"
+            Uncertainty estimator type.
+        treat_boundary_zeros : bool, default=True
+            Treat entries pinned at the estimator positivity floor as active zero
+            constraints.
+        compute_pixel_marginals : bool, default=True
+            If ``True``, immediately compute pixel-wise ``std_H`` and ``std_M``.
+
+        Returns
+        -------
+        ESPMUncertaintyResult
+            Parameter covariances and propagation helpers.
+        """
+        est = self.learning_results.decomposition_algorithm
+        simplex_indices = self.model.NMF_simplex() if est.simplex_W else None
+        return est.uncertainties(
+            method=error_type,
+            simplex_indices=simplex_indices,
+            treat_boundary_zeros=treat_boundary_zeros,
+            compute_pixel_marginals=compute_pixel_marginals,
+        )
+
+    def _resolve_element_indices(
+        self,
+        *,
+        selected_elts: list[str] = [],
+        skipped_elements: list[str] = [],
+    ) -> tuple[list[str], list[int], list[str]]:
+        """Map requested/skipped elements to model ``W`` row indices and symbols."""
+
+        @number_to_symbol_list
+        def sym_elts(elements=[]):
+            return elements
+
+        _elts = sym_elts(elements=self.model.get_elements(False))
+        _elts_indices = self.model.NMF_simplex()
+
+        if selected_elts:
+            conv_elts_dict = dict(zip(_elts, _elts_indices))
+            sel_syms = sym_elts(elements=selected_elts)
+            indices = [conv_elts_dict[elt] for elt in sel_syms if elt in conv_elts_dict]
+            returned_elts = [elt for elt in sel_syms if elt in conv_elts_dict]
+            skipped_syms = [elt for elt in _elts if elt not in returned_elts]
+        elif skipped_elements:
+            skipped_syms = sym_elts(elements=skipped_elements)
+            returned_elts = [elt for elt in _elts if elt not in skipped_syms]
+            indices = [
+                idx for idx, elt in zip(_elts_indices, _elts) if elt not in skipped_syms
+            ]
+        else:
+            returned_elts = _elts
+            indices = _elts_indices
+            skipped_syms = []
+
+        return returned_elts, indices, skipped_syms
+
+    def concentration_report(
+        self,
+        selected_elts=[],
+        W_input=None,
+        fit_error=True,
+        error_type: str = "crb",
+        relative_error: bool = False,
+        treat_boundary_zeros: bool = True,
+    ):
+        """Return elemental concentrations (at.%) and statistical uncertainties per phase.
+
+        Parameters
+        ----------
+        selected_elts : list, optional
+            Subset of element symbols to report (renormalized over the selection).
+        W_input : np.ndarray, optional
+            Optional user-supplied ``W`` matrix (disables uncertainty calculation).
+        fit_error : bool, default=True
+            If ``False``, returns an array of zeros for ``errors``.
+        error_type : {"crb", "sandwich", "legacy"}, default="crb"
+            Statistical uncertainty method.
+        relative_error : bool, default=False
+            If ``True``, report relative standard error ``100 * std / value`` (%).
+            Ignored for ``error_type="legacy"`` which is always relative (%).
+        treat_boundary_zeros : bool, default=True
+            Treat entries at the lower positivity floor as active zero constraints.
+
+        Returns
+        -------
+        returned_elts : list of str
+            Reported element symbols.
+        W_pct : np.ndarray of shape (n_elts, n_components)
+            Component atomic concentrations in at.%.
+        errors : np.ndarray of shape (n_elts, n_components)
+            1-sigma uncertainties in at.% (or relative % when ``relative_error=True``).
+        """
+        returned_elts, indices, _ = self._resolve_element_indices(
+            selected_elts=selected_elts
+        )
+
         if W_input is None:
             assert isinstance(
                 self.learning_results.decomposition_algorithm, NMFEstimator
             ), (
                 "No espm learning results available, please run a decomposition with an espm algorithm first"
             )
+            est = self.learning_results.decomposition_algorithm
+            W_raw = to_numpy(est.W_)
+            G_raw = to_numpy(est.G_)
+            H_raw = to_numpy(est.H_)
 
-            W = self.learning_results.decomposition_algorithm.W_
-            G = self.learning_results.decomposition_algorithm.G_
-            H = self.learning_results.decomposition_algorithm.H_
-            W = to_numpy(W)
-            G = to_numpy(G)
-            H = to_numpy(H)
-            N = get_explained_intensity_W(G, W, H)
-            percentages = 100.0 / np.sqrt(N)
+            W_sub = W_raw[indices, :]
+            col_sums = W_sub.sum(axis=0, keepdims=True)
+            W_pct = np.divide(
+                W_sub * 100.0,
+                col_sums,
+                out=np.zeros_like(W_sub, dtype=np.float64),
+                where=col_sums > 0,
+            )
 
+            if not fit_error:
+                errors = np.zeros_like(W_pct)
+            elif error_type in ("legacy", "poisson_naive"):
+                N = get_explained_intensity_W(G_raw, W_raw, H_raw)
+                percentages = 100.0 / np.sqrt(N)
+                errors = percentages[indices, :].copy()
+                errors[errors > 10000] = np.inf
+            else:
+                unc = self.get_uncertainty(
+                    error_type=error_type,
+                    treat_boundary_zeros=treat_boundary_zeros,
+                    compute_pixel_marginals=False,
+                )
+                W_pct, std_pct = unc.component_composition(indices=indices, scale=100.0)
+                if relative_error:
+                    with np.errstate(divide="ignore", invalid="ignore"):
+                        errors = np.where(W_pct > 0, 100.0 * std_pct / W_pct, np.inf)
+                    errors[errors > 10000] = np.inf
+                else:
+                    errors = std_pct
         else:
-            W = W_input
-            fit_error = False
+            W_raw = to_numpy(W_input)
+            if selected_elts:
+                col_sums = W_raw[indices, :].sum(axis=0, keepdims=True)
+                W_pct = W_raw[indices, :] * 100.0 / col_sums
+            else:
+                W_pct = W_raw[indices, :] * 100.0
+            errors = np.zeros_like(W_pct)
 
-        @number_to_symbol_list
-        def convert_elts(elements=[]):
-            return elements
-
-        elts = self.model.get_elements(False)
-        elts_indices = self.model.NMF_simplex()
-
-        conv_elts = convert_elts(elements=elts)
-
-        if selected_elts:
-            conv_elts_dict = dict(zip(conv_elts, elts_indices))
-            indices = [
-                conv_elts_dict[elt] for elt in selected_elts if elt in conv_elts_dict
-            ]
-            returned_elts = [elt for elt in selected_elts if elt in conv_elts_dict]
-
-            W = W[indices, :] * 100 / W[indices, :].sum(axis=0)
-        else:
-            indices = elts_indices
-            returned_elts = conv_elts
-
-            W = W[indices, :] * 100
-
-        if fit_error:
-            errors = percentages[indices, :]
-            errors[errors > 10000] = np.inf
-        else:
-            errors = np.zeros_like(W)
-
-        return returned_elts, W, errors
+        return returned_elts, W_pct, errors
 
     def estimate_best_binning(self, inspect=False):
         r"""
@@ -1211,17 +1349,94 @@ class EDSespm(EDSTEMSpectrum):
         H = np.array(list(areas_dict.values()))
         return H.reshape((len(areas_dict), self.data.shape[0] * self.data.shape[1]))
 
+    def _build_element_signals(
+        self,
+        data: np.ndarray,
+        elts: list[str],
+        skipped_elts: list[str],
+        *,
+        title_suffix: str,
+        quantity: str,
+    ):
+        """Construct HyperSpy elemental map list, stacked signal, and 1D view."""
+        nav_dim = self.axes_manager.navigation_dimension
+        if nav_dim == 2:
+            Signal = hs.signals.Signal2D
+        elif nav_dim == 1:
+            Signal = hs.signals.Signal1D
+        else:
+            Signal = hs.signals.BaseSignal
+
+        sig_list = [
+            Signal(
+                data[i],
+                metadata={"General": {"name": el, "title": f"{el} {title_suffix}"}},
+                colorbar_label="A",
+            )
+            for i, el in enumerate(elts)
+        ]
+
+        for q in sig_list:
+            for i in range(nav_dim):
+                q.axes_manager[i].update_from(
+                    self.axes_manager[i], ["units", "scale", "name", "offset"]
+                )
+            q.metadata.Signal.quantity = quantity
+
+        stacked = Signal(data)
+        for i in range(nav_dim):
+            stacked.axes_manager[1 + i].update_from(
+                self.axes_manager[i], ["units", "scale", "name", "offset"]
+            )
+        for k, m in self.metadata.deepcopy():
+            stacked.metadata.set_item(k, m)
+        stacked.metadata.set_item("Sample.elements", elts)
+        stacked.metadata.set_item("Signal.quantity", quantity)
+        stacked.axes_manager[0].name = "Elements"
+        if stacked.metadata.has_item("Sample.xray_lines"):
+            stacked.metadata.set_item(
+                "Sample.xray_lines",
+                [
+                    line
+                    for line in stacked.metadata.Sample.xray_lines
+                    if line.split("_")[0] not in skipped_elts
+                ],
+            )
+        stacked_1d = stacked.as_signal1D(0)
+        return sig_list, stacked, stacked_1d
+
     @_check_decomposition
-    def elemental_mapping(self, *, skipped_elements: list = []) -> None:
+    def elemental_mapping(
+        self,
+        *,
+        skipped_elements: list = [],
+        compute_errors: bool = True,
+        error_type: str = "crb",
+        treat_boundary_zeros: bool = True,
+        plot: bool = True,
+    ) -> None:
         r"""
         Performs pixel-wise elemental quantification using the results of an espm decomposition.
-        Results are stored in self.quantification_signal and self.quantification_list.
-        Sets self.quantification_list, self.quantification_signal, self.quantification_signal_1d.
+        Sets ``self.quantification_list``, ``self.quantification_signal``,
+        ``self.quantification_signal_1d`` and, when ``compute_errors=True``, the
+        corresponding pixel-wise 1-sigma uncertainty signals
+        ``self.quantification_errors_list``, ``self.quantification_errors_signal``,
+        and ``self.quantification_errors_signal_1d``.
 
         Parameters
         ----------
-        elements : list
+        skipped_elements : list, optional
             List of elements that will not be quantified, therefore renormalizing the remaining ones.
+        compute_errors : bool, default=True
+            If ``True``, compute pixel-wise constrained Poisson CRB (or sandwich)
+            uncertainties in atomic %.
+        error_type : {"crb", "sandwich"}, default="crb"
+            Statistical uncertainty estimator used when ``compute_errors=True``.
+        treat_boundary_zeros : bool, default=True
+            Treat entries at the estimator positivity floor as active zero constraints.
+        plot : bool, default=True
+            If ``True``, display the elemental maps with ``hs.plot.plot_images``.
+
         Returns
         -------
         None
@@ -1229,78 +1444,54 @@ class EDSespm(EDSTEMSpectrum):
 
         est = self.learning_results.decomposition_algorithm
 
-        _W = est.W_
-        H = est.H_
+        _W = to_numpy(est.W_)
+        H = to_numpy(est.H_)
 
-        @number_to_symbol_list
-        def sym_elts(elements=[]):
-            return elements
-
-        @symbol_to_number_list
-        def num_elts(elements=[]):
-            return elements
-
-        _elts = sym_elts(elements=self.model.get_elements(False))
-        _elts_indices = self.model.NMF_simplex()
-
-        skipped_elts = sym_elts(elements=skipped_elements)
-        elts = [elt for elt in _elts if elt not in skipped_elts]
-        elts_indices = [
-            idx for idx, elt in zip(_elts_indices, _elts) if elt not in skipped_elts
-        ]
+        elts, elts_indices, skipped_syms = self._resolve_element_indices(
+            skipped_elements=skipped_elements
+        )
+        nav_shape = tuple(self.data.shape[:-1])
 
         W = _W[elts_indices, :]
-        WH = W @ H
-        WH = WH.reshape([W.shape[0]] + list(self.data.shape[:-1]))
+        WH = (W @ H).reshape([W.shape[0]] + list(nav_shape))
+        denom = WH.sum(axis=0, keepdims=True)
+        WH = np.divide(
+            WH * 100.0,
+            denom,
+            out=np.zeros_like(WH, dtype=np.float64),
+            where=denom > 0,
+        )
 
-        WH /= WH.sum(axis=0, keepdims=True) / 100.0
-
-        if self.axes_manager.navigation_dimension == 2:
-            Signal = hs.signals.Signal2D
-        elif self.axes_manager.navigation_dimension == 1:
-            Signal = hs.signals.Signal1D
-
-        qs = [
-            Signal(
-                WH[i],
-                metadata={"General": {"name": el, "title": el + " Quantification"}},
-                colorbar_label="A",
-            )
-            for i, el in enumerate(elts)
-        ]
-
-        for q in qs:
-            for i in range(self.axes_manager.navigation_dimension):
-                q.axes_manager[i].update_from(
-                    self.axes_manager[i], ["units", "scale", "name", "offset"]
-                )
-            q.metadata.Signal.quantity = "Atomic %"
-
-        wh = Signal(WH)
-
-        for i in range(self.axes_manager.navigation_dimension):
-            wh.axes_manager[1 + i].update_from(
-                self.axes_manager[i], ["units", "scale", "name", "offset"]
-            )
-
+        qs, wh, wh_1d = self._build_element_signals(
+            WH,
+            elts,
+            skipped_syms,
+            title_suffix="Quantification",
+            quantity="Atomic %",
+        )
         self.quantification_list = qs
         self.quantification_signal = wh
+        self.quantification_signal_1d = wh_1d
 
-        for k, m in self.metadata:
-            self.quantification_signal.metadata.set_item(k, m)
-        self.quantification_signal.metadata.set_item("Sample.elements", elts)
-        self.quantification_signal.metadata.set_item("Signal.quantity", "Atomic %")
-        self.quantification_signal.axes_manager[0].name = "Elements"
-        if self.quantification_signal.metadata.has_item("Sample.xray_lines"):
-            self.quantification_signal.metadata.set_item(
-                "Sample.xray_lines",
-                [
-                    i
-                    for i in self.quantification_signal.metadata.Sample.xray_lines
-                    if i.split("_")[0] not in skipped_elts
-                ],
+        if compute_errors:
+            unc = self.get_uncertainty(
+                error_type=error_type,
+                treat_boundary_zeros=treat_boundary_zeros,
+                compute_pixel_marginals=False,
             )
-        self.quantification_signal_1d = self.quantification_signal.as_signal1D(0)
+            _, std_Q = unc.pixel_quantification(
+                indices=elts_indices, scale=100.0, nav_shape=nav_shape
+            )
+            err_list, err_sig, err_sig_1d = self._build_element_signals(
+                std_Q,
+                elts,
+                skipped_syms,
+                title_suffix="Quantification Std",
+                quantity="Atomic % (1-sigma)",
+            )
+            self.quantification_errors_list = err_list
+            self.quantification_errors_signal = err_sig
+            self.quantification_errors_signal_1d = err_sig_1d
 
         # hack to label elements. Horrible, I know.
         def label_elements():
@@ -1312,7 +1503,61 @@ class EDSespm(EDSTEMSpectrum):
             label_elements, []
         )
 
-        hs.plot.plot_images(qs)
+        if plot:
+            hs.plot.plot_images(qs)
+
+    @_check_decomposition
+    def roi_uncertainty(
+        self,
+        *,
+        mask: np.ndarray | None = None,
+        selected_elts: list[str] = [],
+        skipped_elements: list[str] = [],
+        error_type: str = "crb",
+        treat_boundary_zeros: bool = True,
+        return_result: bool = False,
+    ) -> (
+        tuple[list[str], np.ndarray, np.ndarray]
+        | tuple[list[str], ROIUncertaintyResult]
+    ):
+        """Compute ROI-averaged elemental quantification (at.%) and exact 1-sigma error.
+
+        Includes ``W``--``W``, intra-pixel ``H``--``H``, ``W``--``H``, and cross-pixel
+        ``H_r``--``H_{r'}`` covariances induced by shared spectral components.
+
+        Parameters
+        ----------
+        mask : np.ndarray of bool, optional
+            Boolean mask over the navigation axes (defaults to all pixels when ``None``).
+        selected_elts : list of str, optional
+            Subset of elements to normalize over.
+        skipped_elements : list of str, optional
+            Elements excluded from normalization (ignored if ``selected_elts`` is non-empty).
+        error_type : {"crb", "sandwich"}, default="crb"
+            Statistical uncertainty estimator.
+        treat_boundary_zeros : bool, default=True
+            Treat entries at the lower positivity floor as active zero constraints.
+        return_result : bool, default=False
+            If ``True``, return ``(elts, ROIUncertaintyResult)`` instead of
+            ``(elts, composition_at_pct, std_at_pct)``.
+
+        Returns
+        -------
+        tuple
+            ``(elts, composition, std)`` in atomic %, or ``(elts, ROIUncertaintyResult)``.
+        """
+        elts, indices, _ = self._resolve_element_indices(
+            selected_elts=selected_elts, skipped_elements=skipped_elements
+        )
+        unc = self.get_uncertainty(
+            error_type=error_type,
+            treat_boundary_zeros=treat_boundary_zeros,
+            compute_pixel_marginals=False,
+        )
+        roi_res = unc.roi_quantification(mask=mask, indices=indices, scale=100.0)
+        if return_result:
+            return elts, roi_res
+        return elts, roi_res.composition, roi_res.std_composition
 
     @_check_decomposition
     def plot_comp_model(self, comp_index: int):

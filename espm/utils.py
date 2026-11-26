@@ -502,7 +502,7 @@ def num_to_symbol(num):
             return num
 
 
-def quant_spectrum(s1, skip_elements=[]):
+def quant_spectrum(s1, skip_elements=[], return_errors=False, error_type="crb"):
     r"""
     Performs quantification in atomic % for a single spectrum. Elements from the metadata of another spectrum can be passed.
     The quantification is done using SmoothNMF with one component so as to only do the fitting.
@@ -511,12 +511,22 @@ def quant_spectrum(s1, skip_elements=[]):
     ----------
     s1 : hs.signals.Signal1D
         Spectrum to be quantified. Elements to be quantified should be defined in the metadata.
+    skip_elements : list, optional
+        Elements excluded from quantification (remaining elements are renormalized).
+    return_errors : bool, default=False
+        If True, also return a dictionary of 1-sigma atomic % uncertainties computed
+        via constrained Poisson CRB / sandwich propagation.
+    error_type : {"crb", "sandwich", "legacy"}, default="crb"
+        Uncertainty method when ``return_errors=True``.
 
 
     Returns
     -------
     quantification : dict
         A dictionary containing the atomic % of each element.
+
+    errors : dict, optional
+        Returned only when ``return_errors=True``; maps element symbols to 1-sigma uncertainties.
 
     s1 : hs.signals.EDS_espm
         The spectrum after doing espm quantification. The object contains all espm related information.
@@ -536,8 +546,15 @@ def quant_spectrum(s1, skip_elements=[]):
     with contextlib.redirect_stdout(io.StringIO()):
         est.fit_transform(X=s1.data[:, np.newaxis], H=np.array([1.0])[:, np.newaxis])
     s.learning_results.decomposition_algorithm = est
-    conv_elts, W, _ = s.concentration_report(selected_elts=selected_elements)
+    conv_elts, W, errors = s.concentration_report(
+        selected_elts=selected_elements,
+        fit_error=return_errors,
+        error_type=error_type,
+    )
     quant_dict = {el: float(W[i, 0]) for i, el in enumerate(conv_elts)}
+    if return_errors:
+        err_dict = {el: float(errors[i, 0]) for i, el in enumerate(conv_elts)}
+        return quant_dict, err_dict, s
     return quant_dict, s
 
 

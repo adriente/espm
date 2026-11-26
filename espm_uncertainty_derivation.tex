@@ -1,0 +1,712 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=2.05cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{booktabs,array,multirow}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable,skins}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    citecolor=blue!60!black,
+    urlcolor=blue!60!black,
+    pdftitle={Analytical Uncertainty Quantification for espm via Constrained Poisson Fisher Information},
+    pdfauthor={Analytical Derivation for espm}
+}
+
+% Theorem environments
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Notation macros
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathcal{E}}
+\newcommand{\B}{\mathcal{B}}
+\newcommand{\cS}{\mathcal{S}}
+\newcommand{\cC}{\mathcal{C}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\cI}{\mathcal{I}}
+\newcommand{\cH}{\mathcal{H}}
+\newcommand{\cA}{\mathcal{A}}
+\newcommand{\vecop}{\operatorname{vec}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\range}{\operatorname{range}}
+\newcommand{\cov}{\operatorname{cov}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\kron}{\otimes}
+\newcommand{\pinv}{^{+}}
+
+\title{\textbf{Analytical Uncertainty Quantification for \texttt{espm} via Constrained Poisson Cram\'er--Rao Bounds and Gauge-Invariant Error Propagation}}
+\author{Technical Derivation Adapting Jannis et al.\ (2025) to Physics-Guided NMF in \texttt{espm}}
+\date{November 26, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We establish a rigorous, end-to-end analytical framework for uncertainty quantification in the \texttt{espm} (Electron Spectro-Microscopy) Python package by generalizing the constrained Poisson Cram\'er--Rao lower bound (CRB) and implicit-function error-propagation formalism of Jannis et al.\ (\emph{Ultramicroscopy} 269, 2025, 114084) from single-spectrum linear models to the bilinear physics-guided non-negative matrix factorization (NMF) model $X \approx GWH$. After proving analytically why the bordered KKT covariance formula in Jannis et al.\ reduces to the constrained inverse Fisher information matrix—and extending this identity via Moore--Penrose pseudoinverses to rank-deficient, underdetermined problems—we derive exact closed-form block expressions for the joint Fisher information matrix $\cI(W,H)$. Because the pixel-wise block $\cI_{HH}$ is strictly block-diagonal across pixels, an exact Schur-complement reduction reduces the computational complexity from $\mathcal{O}((mK + Kp)^3)$ to $\mathcal{O}(p K^3 + m^2 K^2 p)$, making exact joint covariance evaluation tractable for large 2D spectrum images.
+
+We rigorously characterize the $K^2$-dimensional bilinear gauge nullspace $(W,H) \mapsto (WA, A^{-1}H)$ (and its $K(K-1)$-dimensional residual under the \texttt{simplex\_W} constraint) and distinguish between gauge-invariant quantities—whose CRBs remain strictly finite, unique, and independent of gauge-fixing choices even when $W$ and $H$ are individually underdetermined—and non-invariant component parameters. Using the multivariate delta method, we derive closed-form analytical covariances for: (i) the individual coefficients of $W$ and $H$ (across identifiable, gauge-projected, conditional, and Laplacian/log-regularized \texttt{SmoothNMF} regimes), (ii) the pixel-wise elemental quantification $Q_{l,r} = (WH)_{l,r} / \sum_{l'\in\E} (WH)_{l',r}$, (iii) the component composition $C_{l,k} = W_{l,k} / \sum_{l'\in\E} W_{l',k}$, and (iv) per-element uncertainties including split lines, bremsstrahlung parameters, and ROI-integrated elemental abundances $\bar{Q}_l(\Omega)$. All matrix identities and asymptotic variances are verified numerically and validated against Poisson Monte Carlo simulations using \texttt{espm}'s \texttt{EDXS} and \texttt{SmoothNMF} implementations, demonstrating where \texttt{espm}'s current $100/\sqrt{N_{l,k}}$ heuristic substantially misestimates true uncertainties.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%==============================================================================
+\section{Notation and Problem Formulation in \texttt{espm}}
+%==============================================================================
+
+\subsection{Data, Physical Dictionary, and Factorization Model}
+In \texttt{espm} (\texttt{NMFEstimator}, \texttt{SmoothNMF}, \texttt{EDXS}, and \texttt{EDSespm}), a spectrum image with $n_x \times n_y = p$ spatial pixels and $n$ energy channels is unfolded into a non-negative count matrix $X \in \R_{\ge 0}^{n \times p}$. Let $i \in \{1,\dots,n\}$ index energy channels and $r \in \{1,\dots,p\}$ index pixels. The generative expected-intensity matrix $Y \in \R_{> 0}^{n \times p}$ is modeled bilinearly in $(W,H)$ through a fixed (or periodically updated) physical dictionary $G \in \R_{\ge 0}^{n \times m}$:
+\begin{equation}
+\label{eq:espm_model}
+Y_{i,r}(W,H) = (G W H)_{i,r} = \sum_{l=1}^{m} \sum_{k=1}^{K} G_{i,l}\, W_{l,k}\, H_{k,r},
+\end{equation}
+where:
+\begin{itemize}[leftmargin=1.5em]
+    \item $W \in \R_{\ge 0}^{m \times K}$ contains the phase spectral weights, with row index $l \in \{1,\dots,m\}$ and component (phase) index $k \in \{1,\dots,K\}$ ($K = \texttt{n\_components}$).
+    \item $H \in \R_{\ge 0}^{K \times p}$ contains the spatial phase abundance maps, with pixel $r$'s column vector denoted $h_{\cdot,r} \in \R_{\ge 0}^K$.
+    \item $G \in \R_{\ge 0}^{n \times m}$ is the physical model matrix. In \texttt{EDXS.generate\_g\_matr}, its $m$ columns partition as $\{1,\dots,m\} = \E_{\text{full}} \sqcup \B$: characteristic X-ray profiles for modeled elements (plus optional low/high split lines \texttt{\_lo}/\texttt{\_hi} and ignored elements \texttt{\_ign}) and $n_{\text{bkgd}}$ bremsstrahlung/power-law background columns $\B$ ($n_{\text{bkgd}}=2$ for \texttt{"bremsstrahlung"}, \texttt{order+1} for \texttt{"power\_law"}, or $0$ for \texttt{"no\_brstlg"}). We denote by $\cS = \texttt{NMF\_simplex()} \subseteq \E_{\text{full}}$ the row indices subject to the simplex constraint, and by $\E \subseteq \E_{\text{full}}$ the elemental rows selected for quantification.
+    \item Let $D \coloneqq G W \in \R_{\ge 0}^{n \times K}$ denote the component spectra matrix, and $M \coloneqq W H \in \R_{\ge 0}^{m \times p}$ the pixel-wise physical weight matrix.
+\end{itemize}
+
+\begin{assumption}[Poisson Statistical Model]
+\label{assump:poisson}
+Each measured spectrum bin count $X_{i,r}$ is an independent Poisson random variable with expectation $Y_{i,r} = (GWH)_{i,r} > 0$:
+\begin{equation}
+X_{i,r} \sim \operatorname{Poisson}\!\big(Y_{i,r}(W,H)\big), \qquad \operatorname{Var}(X_{i,r}) = Y_{i,r}, \qquad \Cov(X_{i,r}, X_{i',r'}) = Y_{i,r}\delta_{i,i'}\delta_{r,r'}.
+\end{equation}
+\end{assumption}
+
+\begin{remark}[Data Normalization and \texttt{l2} Loss in \texttt{espm}]
+When \texttt{NMFEstimator(..., normalize=True)} is enabled, \texttt{espm} rescales $X_{\text{norm}} = \alpha X$ with $\alpha = \texttt{norm\_factor\_} = K / (\bar{X} n)$, fits $(W_{\text{norm}}, H)$, and outputs $W = W_{\text{norm}}/\alpha$ (so $G W H = \alpha^{-1} G W_{\text{norm}} H \approx X$). Because $D_{\text{GKL}}(\alpha X \| \alpha Y) = \alpha D_{\text{GKL}}(X \| Y)$, the point estimates are unaffected in the unregularized case, whereas Poisson variances \emph{do not} scale linearly with $\alpha$. All Fisher information matrices in this work must therefore be evaluated on the \emph{raw, unnormalized} count scale $X$ and $Y = GWH$ (or equivalently, if computed from $X_{\text{norm}}$, rescaled by $\alpha^{-1}$). For \texttt{l2=True} (Frobenius loss), the fidelity corresponds to homoscedastic Gaussian noise $\sigma^2 I$ rather than Poisson noise; replacing $\Omega_{i,r} = Y_{i,r}^{-1}$ by $\sigma^{-2}$ adapts all formulas below immediately.
+\end{remark}
+
+\subsection{Objective Function and Constraints in \texttt{SmoothNMF}}
+Up to a data-only constant $C_{\text{KL}}(X) = \sum_{i,r}(X_{i,r}\ln X_{i,r} - X_{i,r})$, the negative Poisson log-likelihood equals the generalized Kullback--Leibler divergence minimized by \texttt{espm}:
+\begin{equation}
+\label{eq:d_gkl}
+D_{\text{GKL}}(X \| Y) = \sum_{i=1}^n \sum_{r=1}^p \left( X_{i,r} \ln \frac{X_{i,r}}{Y_{i,r}} - X_{i,r} + Y_{i,r} \right) = \sum_{i=1}^n \sum_{r=1}^p \big( Y_{i,r} - X_{i,r}\ln Y_{i,r} \big) + C_{\text{KL}}(X).
+\end{equation}
+In \texttt{SmoothNMF}, the full optimization problem is
+\begin{equation}
+\label{eq:smoothnmf_obj}
+\min_{W \ge \epsilon,\, H \ge \epsilon} \; D_{\text{GKL}}(X \| GWH) + R(W,H) \qquad \text{subject to } C\theta = d,
+\end{equation}
+where $\epsilon = \texttt{log\_shift}$ (default $10^{-14}$), $\theta = \begin{pmatrix} w \\ h \end{pmatrix} \in \R^N$ with $w = \vecop(W) \in \R^{mK}$, $h = \vecop(H) \in \R^{Kp}$ (column-major vectorization, so $w_{l + (k-1)m} = W_{l,k}$ and $h_{k + (r-1)K} = H_{k,r}$), $N = mK + Kp$, and the regularizer is\footnote{Note that \texttt{SmoothNMF.loss} implements $\frac{1}{2}\lambda_L \operatorname{tr}(H \Delta H^T)$ (factor $1/2$), consistent with \texttt{gradH} returning $\lambda_L H \Delta$ since $\Delta = \Delta^T$.}
+\begin{equation}
+\label{eq:regularizer}
+R(W,H) = \frac{\lambda_L}{2} \tr(H \Delta H^T) + \mu \sum_{k=1}^K \sum_{r=1}^p \ln(H_{k,r} + \epsilon_{\text{reg}}),
+\end{equation}
+with symmetric spatial graph Laplacian $\Delta \in \R^{p \times p}$ (\texttt{create\_laplacian\_matrix}). The linear equality constraints $C\theta = d$ ($C \in \R^{c \times N}$, full row rank $c$) encode the active equality constraints of \texttt{espm}:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{\texttt{simplex\_W=True} (default)}: $\sum_{l \in \cS} W_{l,k} = 1$ for $k = 1,\dots,K$ ($c = K$ constraints). Note: when $G$ is passed as a \texttt{PhysicalModel} (e.g., \texttt{EDXS}), $\cS = \texttt{NMF\_simplex}()$; when $G$ is passed as a raw \texttt{ndarray}, \texttt{updates.py} applies the simplex across all $m$ rows ($\cS = \{1,\dots,m\}$).
+    \item \textbf{\texttt{simplex\_H=True}}: $\sum_{k=1}^K H_{k,r} = 1$ for $r = 1,\dots,p$ ($c = p$ constraints; mutually exclusive with \texttt{simplex\_W}).
+    \item \textbf{\texttt{fixed\_W}, \texttt{fixed\_H}, and active non-negativity boundaries}: Any entry fixed via \texttt{fixed\_W} (e.g., \texttt{carto\_fixed\_W}, \texttt{set\_fixed\_W}) or \texttt{fixed\_H}, as well as any parameter lying on the active non-negativity boundary $W_{l,k} = \epsilon \approx 0$ or $H_{k,r} = \epsilon \approx 0$, contributes a coordinate equality constraint $e_j^T \delta\theta = 0$.
+\end{enumerate}
+
+%==============================================================================
+\section{Adapting Jannis et al.\ (2025) to \texttt{espm}}
+%==============================================================================
+
+\subsection{Generalization of the Constrained Poisson CRB and Box I}
+In Appendix D and Box I of Jannis et al.\ (2025), the measurements $g_i \sim \operatorname{Poisson}(f_i(p))$ depend on $p \in \R^N$ subject to a single linear equality constraint $\sum_{j \in \cC} w_j p_j = 0$. To apply their result to \texttt{espm}:
+\begin{itemize}[leftmargin=1.5em]
+    \item Replace the 1D energy index $i$ by the 2D spectrogram multi-index $(i,r) \in \{1,\dots,n\} \times \{1,\dots,p\}$, the data vector $g$ by $x = \vecop(X) \in \R^{np}$, and the model vector $f(p)$ by $y(\theta) = \vecop(GWH) \in \R^{np}$.
+    \item Replace the single scalar constraint $w^T p = 0$ by the $c$-dimensional affine constraint $C\theta = d$ (where perturbations satisfy $C\,\delta\theta = 0$).
+    \item Allow an optional smooth regularizer $R(\theta)$ as in Eq.~\eqref{eq:regularizer}.
+\end{itemize}
+
+Form the Lagrangian with multiplier vector $\lambda \in \R^c$:
+\begin{equation}
+\label{eq:lagrangian}
+\cL(\theta; \lambda) = \sum_{i,r} \big( Y_{i,r}(\theta) - X_{i,r} \ln Y_{i,r}(\theta) \big) + R(\theta) + \lambda^T (C\theta - d).
+\end{equation}
+Collecting $q = (\theta^T, \lambda^T)^T \in \R^{N+c}$, first-order optimality (KKT stationarity) gives the $(N+c)$-equation system $F(q; x) = 0$:
+\begin{align}
+F_1(\theta,\lambda; x) &\coloneqq \nabla_\theta \cL = \sum_{i,r} \left( 1 - \frac{X_{i,r}}{Y_{i,r}} \right) \nabla_\theta Y_{i,r} + \nabla_\theta R(\theta) + C^T \lambda = 0, \label{eq:F1}\\
+F_2(\theta,\lambda; x) &\coloneqq \nabla_\lambda \cL = C\theta - d = 0. \label{eq:F2}
+\end{align}
+
+Following Barlow (1991) and Eqs.~(35)--(36) of Jannis et al.\ (2025), let $q^*(x)$ solve $F(q^*(x); x) = 0$ locally around a noiseless stationary point $q_0$ satisfying $F(q_0; x_0) = 0$ with $x_0 = \mathbb{E}[x] = \vecop(Y(\theta_{\text{true}}))$. By the implicit function theorem, differentiating $F(q^*(x); x) = 0$ yields\footnote{Note a minor typographical omission of the leading minus sign in Eq.~(36) of Jannis et al.\ (2025), which writes $\partial q/\partial g = (\partial F/\partial q)^{-1}(\partial F/\partial g)$; the minus sign cancels quadratically in Eq.~(35) and does not affect their covariance expressions.}
+\begin{equation}
+\label{eq:ift}
+\frac{\partial q}{\partial x} = -\left(\frac{\partial F}{\partial q}\right)^{-1} \frac{\partial F}{\partial x}, \qquad
+\cov_q \approx \left. \left(\frac{\partial F}{\partial q}\right)^{-1} \left(\frac{\partial F}{\partial x} \diag(y_{\text{true}}) \frac{\partial F}{\partial x}^T\right) \left(\frac{\partial F}{\partial q}\right)^{-T} \right|_{x = y_{\text{true}}}.
+\end{equation}
+
+Let $J(\theta) \coloneqq \frac{\partial y(\theta)}{\partial \theta} \in \R^{np \times N}$ be the model Jacobian. Differentiating Eqs.~\eqref{eq:F1}--\eqref{eq:F2} with respect to $\theta$, $\lambda$, and $x$ gives:
+\begin{align}
+\frac{\partial F_1}{\partial \theta} &= J(\theta)^T \diag\!\left(\frac{x}{y(\theta)^2}\right) J(\theta) + \sum_{i,r} \left( 1 - \frac{X_{i,r}}{Y_{i,r}(\theta)} \right) \nabla^2_\theta Y_{i,r}(\theta) + \nabla^2_\theta R(\theta), \label{eq:dF1_dtheta}\\
+\frac{\partial F_1}{\partial \lambda} &= C^T, \qquad \frac{\partial F_2}{\partial \theta} = C, \qquad \frac{\partial F_2}{\partial \lambda} = 0, \\
+\frac{\partial F_1}{\partial x_{i,r}} &= -\frac{1}{Y_{i,r}(\theta)} \nabla_\theta Y_{i,r}(\theta), \qquad \frac{\partial F_2}{\partial x} = 0. \label{eq:dF1_dx}
+\end{align}
+
+\begin{tcolorbox}[colback=blue!3!white,colframe=blue!50!black,title={Key Simplification in the Unregularized Case ($R = 0$)}]
+When $R \equiv 0$, the noiseless MLE sits at $\theta_0 = \theta_{\text{true}}$ with $x_0 = y(\theta_{\text{true}})$. Consequently, $1 - X_{i,r}/Y_{i,r} = 0$ everywhere, so the second-derivative term $\sum_{i,r} (1 - X_{i,r}/Y_{i,r}) \nabla^2_\theta Y_{i,r}$ in Eq.~\eqref{eq:dF1_dtheta} \textbf{vanishes identically}, despite $Y = GWH$ being bilinear (nonlinear) in $(W,H)$! Thus:
+\begin{equation}
+\left.\frac{\partial F_1}{\partial \theta}\right|_{x=y} = J^T \diag(y)^{-1} J = \sum_{i,r} \frac{1}{Y_{i,r}} (\nabla_\theta Y_{i,r})(\nabla_\theta Y_{i,r})^T \eqqcolon \cI(\theta),
+\end{equation}
+which is the exact Poisson Fisher Information Matrix (FIM), and $\frac{\partial F}{\partial x}\diag(y)\frac{\partial F}{\partial x}^T = \diag(\cI(\theta),\, 0_{c\times c})$, directly yielding the multi-constraint generalization of Box I (Eq.~(43) of Jannis et al.):
+\begin{equation}
+\label{eq:box1_gen}
+\cov_q = K^{-1} \begin{pmatrix} \cI & 0 \\ 0 & 0 \end{pmatrix} K^{-T}, \qquad K \coloneqq \begin{pmatrix} \cI & C^T \\ C & 0 \end{pmatrix}.
+\end{equation}
+\end{tcolorbox}
+
+\subsection{Analytical Proof of the Box I Reduction and Extension to Singular KKT Systems}
+In Appendix D of Jannis et al.\ (2025), the authors note numerically that the upper-left $N\times N$ block of Eq.~\eqref{eq:box1_gen} coincides with the upper-left $N\times N$ block of $K^{-1}$ (their Eq.~(9)). Here we prove this analytically and extend it to singular (underdetermined) KKT matrices using the Moore--Penrose pseudoinverse, which is essential for \texttt{espm} when $K \ge 2$ components exhibit gauge ambiguities.
+
+\begin{theorem}[Exact Reduction and Pseudoinverse Generalization of Box I]
+\label{thm:box1_pinv}
+Let $\cI \in \R^{N \times N}$ be symmetric positive semidefinite ($\cI \succeq 0$), let $C \in \R^{c \times N}$ have full row rank $c$, and let $U \in \R^{N \times (N-c)}$ be an orthonormal basis for $\ker(C)$ ($CU = 0$, $U^T U = I_{N-c}$). Let $K = \begin{pmatrix} \cI & C^T \\ C & 0 \end{pmatrix}$, and denote by $K\pinv$ its Moore--Penrose pseudoinverse. Then:
+\begin{enumerate}[leftmargin=1.5em]
+    \item The upper-left $N \times N$ block of $K\pinv$ equals the nullspace-projected pseudoinverse CRB:
+    \begin{equation}
+    \label{eq:pinv_identity}
+    \big(K\pinv\big)_{1:N,\, 1:N} = U \big( U^T \cI U \big)\pinv U^T \eqqcolon \Sigma_\theta\pinv.
+    \end{equation}
+    \item The upper-left $N \times N$ block of the generalized Box I sandwich product equals the exact same matrix:
+    \begin{equation}
+    \label{eq:box1_pinv_identity}
+    \left( K\pinv \begin{pmatrix} \cI & 0 \\ 0 & 0 \end{pmatrix} (K\pinv)^T \right)_{1:N,\, 1:N} = \Sigma_\theta\pinv \cI \Sigma_\theta\pinv = U \big( U^T \cI U \big)\pinv U^T = \Sigma_\theta\pinv.
+    \end{equation}
+    \item When $\ker(\cI) \cap \ker(C) = \{0\}$, $U^T \cI U$ and $K$ are invertible, and Eqs.~\eqref{eq:pinv_identity}--\eqref{eq:box1_pinv_identity} reduce to the classical constrained CRB $\Sigma_\theta = U(U^T \cI U)^{-1} U^T = (K^{-1})_{1:N,\,1:N}$ of Eq.~(9) in Jannis et al.\ (2025).
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+Choose an orthonormal matrix $Q = [U,\, V] \in \R^{N \times N}$ where $\operatorname{col}(V) = \ker(C)^\perp = \range(C^T)$, so $CU = 0$ and $R \coloneqq CV \in \R^{c \times c}$ is invertible. Applying the orthogonal congruence $\tilde{K} = \diag(Q^T, I_c)\, K \, \diag(Q, I_c)$ preserves the Moore--Penrose pseudoinverse, $\tilde{K}\pinv = \diag(Q^T, I_c)\, K\pinv \, \diag(Q, I_c)$, and yields
+\[
+\tilde{K} = \begin{pmatrix}
+\cI_{UU} & \cI_{UV} & 0 \\
+\cI_{VU} & \cI_{VV} & R^T \\
+0 & R & 0
+\end{pmatrix}, \qquad \cI_{UU} \coloneqq U^T \cI U,\; \cI_{UV} \coloneqq U^T \cI V.
+\]
+Let $(z_U^T, z_V^T, z_\lambda^T)^T \in \ker(\tilde{K})$. The third block row gives $R z_V = 0 \implies z_V = 0$. The first block row then gives $\cI_{UU} z_U = 0$. Because $\cI \succeq 0$, $z_U^T (U^T \cI U) z_U = \|\cI^{1/2} U z_U\|_2^2 = 0 \implies \cI U z_U = 0$, hence $\cI_{VU} z_U = V^T \cI U z_U = 0$. The second block row then yields $R^T z_\lambda = 0 \implies z_\lambda = 0$. Therefore,
+\[
+\ker(\tilde{K}) = \ker(\cI_{UU}) \times \{0\} \times \{0\}.
+\]
+Now let $b = (b_1^T, 0^T)^T$ with arbitrary $b_1 \in \R^N$, and write $b_U = U^T b_1 = b_{U,\parallel} + b_{U,\perp}$ with $b_{U,\parallel} \in \range(\cI_{UU})$ and $b_{U,\perp} \in \ker(\cI_{UU})$. Since $(b_{U,\perp}^T, 0^T, 0^T)^T \in \ker(\tilde{K})$ and $\tilde{K}\pinv$ annihilates $\ker(\tilde{K}) = \range(\tilde{K})^\perp$, we have $\tilde{K}\pinv (b_U^T, b_V^T, 0^T)^T = \tilde{K}\pinv (b_{U,\parallel}^T, b_V^T, 0^T)^T$. Solving $\tilde{K}(x_U^T, x_V^T, y^T)^T = (b_{U,\parallel}^T, b_V^T, 0^T)^T$ with $(x_U, x_V, y) \perp \ker(\tilde{K})$ gives $x_V = 0$ (from $R x_V = 0$), $\cI_{UU} x_U = b_{U,\parallel}$ with $x_U \perp \ker(\cI_{UU})$, so $x_U = \cI_{UU}\pinv b_{U,\parallel} = \cI_{UU}\pinv U^T b_1$, and $y = R^{-T}(b_V - \cI_{VU} x_U)$. Mapping back via $x = U x_U + V x_V = U \cI_{UU}\pinv U^T b_1$ proves Eq.~\eqref{eq:pinv_identity}.
+
+For Eq.~\eqref{eq:box1_pinv_identity}, notice that the first $N$ rows of $K\pinv \begin{pmatrix} \cI & 0 \\ 0 & 0 \end{pmatrix} (K\pinv)^T$ only access the upper-left $N \times N$ block of $K\pinv$, giving
+\[
+\Sigma_\theta\pinv \cI \Sigma_\theta\pinv = U \cI_{UU}\pinv (U^T \cI U) \cI_{UU}\pinv U^T = U \cI_{UU}\pinv \cI_{UU} \cI_{UU}\pinv U^T = U \cI_{UU}\pinv U^T = \Sigma_\theta\pinv,
+\]
+by the fundamental Moore--Penrose identity $A\pinv A A\pinv = A\pinv$. When $\ker(\cI) \cap \ker(C) = \{0\}$, $\cI_{UU} \succ 0$ is invertible, proving (3).
+\end{proof}
+
+\subsection{Extension to Regularized \texttt{SmoothNMF} (\texorpdfstring{$R \neq 0$}{R != 0})}
+When $\lambda_L > 0$ or $\mu \neq 0$, the regularized estimator $\hat{\theta}_{\text{reg}}$ converges (away from non-modeled boundaries) to the noiseless regularized fixed point $\theta^*_{\text{reg}}$ solving $F(\theta^*_{\text{reg}}, \lambda^*_{\text{reg}}; y_{\text{true}}) = 0$, where $y_{\text{true}} = \vecop(G W_{\text{true}} H_{\text{true}})$ and $Y^* = G W^*_{\text{reg}} H^*_{\text{reg}}$. Because regularization introduces bias ($Y^* \neq Y_{\text{true}}$), Eq.~\eqref{eq:dF1_dtheta} retains the residual curvature and gives the exact asymptotic \emph{sandwich covariance} around $\theta^*_{\text{reg}}$:
+\begin{theorem}[Sandwich Covariance for Regularized \texttt{SmoothNMF}]
+\label{thm:sandwich}
+Define the effective Hessian of the regularized objective at $\theta^*_{\text{reg}}$:
+\begin{equation}
+\label{eq:hessian_reg}
+\cH_{\text{reg}} = \cH_{\text{KL}} + \cH_R, \qquad \cH_R = \begin{pmatrix} 0 & 0 \\ 0 & \lambda_L (\Delta \kron I_K) - \mu \diag\!\big((h^*_{k,r} + \epsilon_{\text{reg}})^{-2}\big) \end{pmatrix},
+\end{equation}
+where $\cH_{\text{KL}} = J(\theta^*)^T \diag\!\big(y_{\text{true}} / (y^*)^2\big) J(\theta^*) + \cH_{\text{cross}}$ with cross-block $(\cH_{\text{cross}})_{(l,k),(k',r)} = \delta_{k,k'} \big[G^T (1 - Y_{\text{true}} / Y^*)\big]_{l,r}$. Let $\cI_{\text{noise}} = J(\theta^*)^T \diag\!\big(y_{\text{true}} / (y^*)^2\big) J(\theta^*)$. Provided $U^T \cH_{\text{reg}} U$ is positive definite (or using its pseudoinverse along unidentifiable modes), the asymptotic covariance of $\hat{\theta}_{\text{reg}}$ is
+\begin{equation}
+\label{eq:cov_sandwich}
+\cov(\hat{\theta}_{\text{reg}}) = \Sigma_{\text{reg}}\, \cI_{\text{noise}} \, \Sigma_{\text{reg}}^T, \qquad \Sigma_{\text{reg}} = U \big(U^T \cH_{\text{reg}} U\big)^{-1} U^T.
+\end{equation}
+In the unbiased limit ($\lambda_L = \mu = 0$), $Y^* = Y_{\text{true}}$, $\cH_{\text{cross}} = 0$, $\cH_{\text{reg}} = \cI_{\text{noise}} = \cI$, and Eq.~\eqref{eq:cov_sandwich} reduces identically to Theorem~\ref{thm:box1_pinv}.
+\end{theorem}
+
+\begin{remark}[Convexity vs.\ Concavity of Regularizers]
+Notice from Eq.~\eqref{eq:hessian_reg} that the Laplacian term $\lambda_L (\Delta \kron I_K) \succeq 0$ is convex and acts to \emph{increase} curvature (reducing variance at the cost of spatial smoothing bias), whereas the log sparsity penalty $\mu \sum \ln(H_{k,r} + \epsilon_{\text{reg}})$ has \emph{negative} second derivative $-\mu(H_{k,r}+\epsilon_{\text{reg}})^{-2} < 0$. Consequently, $\mu$ must remain small enough relative to $\cH_{\text{KL}} + \lambda_L(\Delta \kron I_K)$ on $\ker(C)$ for the local minimum to remain strictly second-order stable ($U^T \cH_{\text{reg}} U \succ 0$).
+\end{remark}
+
+%==============================================================================
+\section{Analytical Fisher Information and Uncertainty of \texorpdfstring{$W$}{W} and \texorpdfstring{$H$}{H}}
+%==============================================================================
+
+\subsection{Exact Block Structure of the Fisher Information Matrix}
+Using the Kronecker identity $\vecop(A B C) = (C^T \kron A)\vecop(B)$ on $\delta Y = G(\delta W)H + (GW)(\delta H)$, the Jacobian $J = [J_W,\; J_H] \in \R^{np \times (mK + Kp)}$ is
+\begin{equation}
+\label{eq:jacobian}
+J_W = H^T \kron G \in \R^{np \times mK}, \qquad J_H = I_p \kron D \in \R^{np \times Kp}, \qquad D \coloneqq GW \in \R^{n \times K}.
+\end{equation}
+Define the inverse-count weight matrix $\Omega \in \R_{>0}^{n \times p}$ by $\Omega_{i,r} \coloneqq Y_{i,r}^{-1}$. Partitioning $\cI = J^T \diag(\vecop(\Omega)) J$ according to $\theta = (w^T, h^T)^T$,
+\begin{equation}
+\label{eq:fim_blocks}
+\cI(W,H) = \begin{pmatrix} \cI_{WW} & \cI_{WH} \\ \cI_{HW} & \cI_{HH} \end{pmatrix}, \qquad \cI_{HW} = \cI_{WH}^T,
+\end{equation}
+direct expansion gives remarkably compact, pixel-decoupled block formulas:
+
+\begin{proposition}[Closed-Form Blocks of $\cI(W,H)$]
+\label{prop:fim_blocks}
+With $D = GW$ and $\Omega_{i,r} = Y_{i,r}^{-1}$:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Spectral weight block $\cI_{WW} \in \R^{mK \times mK}$:} Partitioned into $K \times K$ blocks of size $m \times m$ indexed by component pairs $(k, k')$:
+    \begin{equation}
+    \label{eq:I_WW}
+    (\cI_{WW})_{k,k'} = G^T \diag\!\left( \sum_{r=1}^p \Omega_{\cdot, r} H_{k,r} H_{k',r} \right) G \in \R^{m \times m}.
+    \end{equation}
+    \item \textbf{Spatial abundance block $\cI_{HH} \in \R^{Kp \times Kp}$:} Strictly block-diagonal over pixels $r = 1,\dots,p$, with $K \times K$ diagonal blocks:
+    \begin{equation}
+    \label{eq:I_HH}
+    \cI_{HH} = \bigoplus_{r=1}^{p} \cI_{HH}^{(r)}, \qquad \cI_{HH}^{(r)} = D^T \diag(\Omega_{\cdot, r}) D \in \R^{K \times K}.
+    \end{equation}
+    \item \textbf{Cross-coupling block $\cI_{WH} \in \R^{mK \times Kp}$:} Its $r$-th column block $\cI_{WH}^{(r)} \in \R^{mK \times K}$ (coupling $w$ to pixel $r$'s abundances $h_{\cdot, r}$) is the rank-factorized Kronecker product
+    \begin{equation}
+    \label{eq:I_WH}
+    \cI_{WH} = \big[\, \cI_{WH}^{(1)},\; \dots,\; \cI_{WH}^{(p)} \,\big], \qquad \cI_{WH}^{(r)} = h_{\cdot, r} \kron B^{(r)}, \qquad B^{(r)} \coloneqq G^T \diag(\Omega_{\cdot, r}) D \in \R^{m \times K}.
+    \end{equation}
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+For Eq.~\eqref{eq:I_WW}, the $((l,k),(l',k'))$ entry of $J_W^T \diag(\vecop(\Omega)) J_W$ is $\sum_{i,r} \Omega_{i,r} (G_{i,l} H_{k,r})(G_{i,l'} H_{k',r}) = \sum_i G_{i,l} \big(\sum_r \Omega_{i,r} H_{k,r} H_{k',r}\big) G_{i,l'}$. For Eq.~\eqref{eq:I_HH}, $(J_H)_{(i,s),(k,r)} = D_{i,k} \delta_{s,r}$, so cross-pixel terms vanish for $r \neq r'$, leaving $\delta_{r,r'} \sum_i \Omega_{i,r} D_{i,k} D_{i,k'}$. For Eq.~\eqref{eq:I_WH}, $(J_W^T \diag(\vecop(\Omega)) J_H)_{(l,k),(k',r)} = \sum_i \Omega_{i,r} G_{i,l} H_{k,r} D_{i,k'} = H_{k,r} B^{(r)}_{l,k'}$, which is $(h_{\cdot,r} \kron B^{(r)})_{(l,k), k'}$.
+\end{proof}
+
+\subsection{The \texorpdfstring{$WH = (WA)(A^{-1}H)$}{WH = (WA)(A\^{}-1 H)} Gauge Nullspace and Identifiability Regimes}
+Because $Y = GWH = G(WA)(A^{-1}H)$ for any invertible $A \in \mathrm{GL}_K(\R)$, the likelihood is invariant along a $K^2$-dimensional gauge manifold. Linearizing $A = I_K + E$ ($E \in \R^{K \times K}$) gives first-order perturbations
+\begin{equation}
+\label{eq:gauge_tangent}
+\delta W = W E, \qquad \delta H = -E H \qquad \Longrightarrow \qquad \delta(WH) = W E H - W E H = 0 \implies \delta Y = 0.
+\end{equation}
+Let $\cN_{\text{gauge}} \coloneqq \{ (\vecop(WE)^T, -\vecop(EH)^T)^T : E \in \R^{K \times K} \} \subset \R^N$.
+
+\begin{proposition}[Nullspace of $\cI(W,H)$ and Effect of \texttt{espm} Constraints]
+\label{prop:nullspace}
+Assume $\rank(G) = m$, $\rank(W) = K$, $\rank(H) = K$, and $Y_{i,r} > 0$ everywhere. Then:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Unconstrained nullspace:} $\ker(\cI) = \cN_{\text{gauge}}$, with $\dim \ker(\cI) = K^2$.
+    \item \textbf{Under \texttt{simplex\_W} ($\sum_{l\in\cS} W_{l,k} = 1$, $k=1,\dots,K$):} Perturbations in $\cN_{\text{gauge}} \cap \ker(C)$ satisfy $\sum_{l\in\cS} (WE)_{l,k} = \sum_{j=1}^K \big(\sum_{l\in\cS} W_{l,j}\big) E_{jk} = \sum_{j=1}^K E_{jk} = 0$ for all $k$, i.e., $\one_K^T E = 0$. Thus \texttt{simplex\_W} fixes the $K$ diagonal scale freedoms ($E = \diag(d)$ is forced to $0$), leaving a \textbf{$K(K-1)$-dimensional mixing nullspace}:
+    \begin{equation}
+    \dim\big(\ker(\cI) \cap \ker(C_{\text{simplex\_W}})\big) = K(K-1).
+    \end{equation}
+    In particular, for $K=1$, $\ker(\cI) \cap \ker(C_{\text{simplex\_W}}) = \{0\}$ and $(W,H)$ are locally identifiable.
+    \item \textbf{Under \texttt{simplex\_H} ($\sum_{k=1}^K H_{k,r} = 1$, $r=1,\dots,p$):} Perturbations in $\cN_{\text{gauge}} \cap \ker(C)$ satisfy $-\one_K^T E H = 0$. Since $\rank(H)=K$, this again forces $\one_K^T E = 0$, leaving the same $K(K-1)$-dimensional nullspace (while the remaining $p-K$ constraints genuinely restrict $\range(H^T)$ so that $\one_p \in \range(M^T)$).
+    \item \textbf{Full identifiability for $K \ge 2$:} $\ker(\cI) \cap \ker(C) = \{0\}$ holds iff no nonzero $E \in \R^{K \times K}$ keeps $(WE, -EH)$ inside $\ker(C)$, which occurs whenever: (a) \texttt{fixed\_W} or active boundary zeros $W_{l,k}=0$ supply at least $K-1$ linearly independent zero rows per component (e.g., anchor elements, as in \texttt{carto\_fixed\_W}), (b) \texttt{fixed\_H} or active pure-pixel zeros $H_{k,r}=0$ supply anchor pixels for each component, or (c) spatial regularization $\lambda_L > 0$ breaks $E$-invariance on non-constant maps ($\cH_R$ acts strictly positively on $(0, -EH)$ via $\lambda_L \tr((EH)\Delta(EH)^T) > 0$).
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+Since $Y_{i,r} > 0$, $v \in \ker(\cI) \iff J v = 0 \iff G(\delta W H + W \delta H) = 0$. Because $\rank(G) = m$, this holds iff $\delta W H + W \delta H = 0$. Since $\rank(W) = \rank(H) = K$, writing $W^+ = (W^T W)^{-1} W^T$ and $H^+ = H^T (H H^T)^{-1}$ gives $\delta W = -W \delta H H^+$, so $\delta W = WE$ with $E = -\delta H H^+$. Substituting back gives $W(EH + \delta H) = 0 \implies \delta H = -EH$. The map $E \mapsto (WE, -EH)$ is injective since $WE = 0 \implies E = W^+ W E = 0$, proving $\dim\ker(\cI) = K^2$. Parts (2)--(4) follow directly by intersecting with $C(\delta W, \delta H) = 0$.
+\end{proof}
+
+\begin{remark}[Failure Mode When $\rank(G) < m$]
+If $G$ has collinear columns (e.g., duplicate elements or unresolved overlapping background basis vectors), then $\ker(G)$ adds $K \dim\ker(G)$ extra null directions $\delta W = Z$ with $GZ=0$; replacing $G$ by a well-conditioned basis or fixing redundant columns removes this singularity.
+\end{remark}
+
+\subsection{Exact \texorpdfstring{$\mathcal{O}(p)$}{O(p)} Schur-Complement Covariance for \texorpdfstring{$W$}{W} and \texorpdfstring{$H$}{H}}
+A naive inversion of the full $(N+c) \times (N+c)$ KKT matrix scales as $\mathcal{O}((Kp)^3)$, which is prohibitive for typical spectrum images ($p \sim 10^3\text{--}10^5$). Exploiting the pixel-wise block-diagonal structure of $\cI_{HH}$ (Proposition~\ref{prop:fim_blocks}) yields an exact $\mathcal{O}(p)$ reduction whenever the active constraints decouple between $W$ and pixel-wise $H_{\cdot, r}$ (which covers \texttt{simplex\_W}, \texttt{simplex\_H}, \texttt{fixed\_W}, and \texttt{fixed\_H}).
+
+\begin{theorem}[Exact Pixel-Decoupled Schur-Complement Covariance]
+\label{thm:schur}
+Suppose $D = GW$ has full column rank $K$ (or $D U_H$ has rank $K-1$ under \texttt{simplex\_H}), and constraints separate as $C_W w = d_W$ on $W$ (basis $U_W$ for $\ker(C_W)$) and pixel-wise $C_{H,r} h_{\cdot, r} = d_{H,r}$ on $H$ (basis $U_{H,r}$ for $\ker(C_{H,r})$, with $U_{H,r} = I_K$ if unconstrained on $H$, or $U_{H,r} = U_H$ spanning $\ker(\one_K^T)$ under \texttt{simplex\_H}). Define for each pixel $r = 1,\dots,p$:
+\begin{equation}
+\label{eq:pixel_schur_mats}
+\cI_{HH}^{(r),+} \coloneqq U_{H,r} \big(U_{H,r}^T \cI_{HH}^{(r)} U_{H,r}\big)^{-1} U_{H,r}^T \in \R^{K \times K}, \qquad
+A_r \coloneqq \cI_{WH}^{(r)} \cI_{HH}^{(r),+} \in \R^{mK \times K},
+\end{equation}
+and the $mK \times mK$ marginal Schur-complement Fisher matrix for $W$:
+\begin{equation}
+\label{eq:S_W}
+S_W \coloneqq \cI_{WW} - \sum_{r=1}^p A_r \big(\cI_{WH}^{(r)}\big)^T \in \R^{mK \times mK}.
+\end{equation}
+Then:
+\begin{enumerate}[leftmargin=1.5em]
+    \item Let $\Sigma_{WW} \coloneqq U_W \big(U_W^T S_W U_W\big)\pinv U_W^T \in \R^{mK \times mK}$. The block matrix
+    \begin{equation}
+    \label{eq:sigma_schur_full}
+    \Sigma_{\text{Schur}} \coloneqq \begin{pmatrix}
+    \Sigma_{WW} & -\Sigma_{WW} \cI_{WH} \cI_{HH}^+ \\
+    -\cI_{HH}^+ \cI_{HW} \Sigma_{WW} & \cI_{HH}^+ + \cI_{HH}^+ \cI_{HW} \Sigma_{WW} \cI_{WH} \cI_{HH}^+
+    \end{pmatrix}
+    \end{equation}
+    is a symmetric reflexive generalized inverse of the projected FIM $P_C \cI P_C$ (where $P_C = U U^T$, $U = \diag(U_W, \bigoplus_r U_{H,r})$), and equals $\Sigma_\theta = U (U^T \cI U)^{-1} U^T$ \emph{exact to equality} whenever $\ker(\cI)\cap\ker(C)=\{0\}$.
+    \item Explicitly, the marginal and cross-covariance blocks for $W$ and pixel abundances $H_{\cdot, r}, H_{\cdot, r'}$ are:
+    \begin{align}
+    \cov(w) &= \Sigma_{WW}, \label{eq:cov_w}\\
+    \cov(w,\, h_{\cdot, r}) &= -\Sigma_{WW} A_r, \label{eq:cov_wh}\\
+    \cov(h_{\cdot, r},\, h_{\cdot, r'}) &= \delta_{r,r'} \cI_{HH}^{(r),+} + A_r^T \Sigma_{WW} A_{r'}. \label{eq:cov_hh}
+    \end{align}
+    \item \textbf{Equivalence on gauge-invariant quantities:} For any functional $g(W,H) = \phi(WH)$ with gradient $v = \nabla_\theta g \perp \ker(\cI)\cap\ker(C)$, the variance $v^T \Sigma_{\text{Schur}} v = v^T U (U^T \cI U)\pinv U^T v$ is \emph{identically equal} to the full Moore--Penrose constrained CRB, even when $U_W^T S_W U_W$ is singular!
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+In the $U$-coordinates, write $M = \begin{pmatrix} A & B \\ B^T & C_0 \end{pmatrix}$ with $A = U_W^T \cI_{WW} U_W$, $B = U_W^T \cI_{WH} U_H^{\oplus}$, $C_0 = \bigoplus_r U_{H,r}^T \cI_{HH}^{(r)} U_{H,r} \succ 0$, and Schur complement $S = A - B C_0^{-1} B^T = U_W^T S_W U_W$. Factoring $M = L \diag(S, C_0) L^T$ with lower-triangular $L = \begin{pmatrix} I & B C_0^{-1} \\ 0 & I \end{pmatrix}$ (invertible, $L^{-1} = \begin{pmatrix} I & -B C_0^{-1} \\ 0 & I \end{pmatrix}$) and setting $G = L^{-T} \diag(S\pinv, C_0^{-1}) L^{-1}$ yields $M G M = L \diag(S S\pinv S, C_0) L^T = M$ and $G M G = G$. Expanding $U G U^T$ gives Eq.~\eqref{eq:sigma_schur_full} and Eqs.~\eqref{eq:cov_w}--\eqref{eq:cov_hh}. Finally, for any $v \in \range(P_C \cI P_C)$ (equivalently $U^T v \in \range(M)$), write $U^T v = M z$; then $(U^T v)^T G (U^T v) = z^T M G M z = z^T M z = z^T M M\pinv M z = (U^T v)^T M\pinv (U^T v)$, proving exact invariance regardless of whether $S$ is singular.
+\end{proof}
+
+\subsection{Interpreting \texorpdfstring{$W_{l,k}$}{W\_\{l,k\}} and \texorpdfstring{$H_{k,r}$}{H\_\{k,r\}} Uncertainties in Underdetermined vs.\ Identifiable Regimes}
+Theorem~\ref{thm:schur} provides a complete answer to the uncertainty of every coefficient $W_{l,k}$ and $H_{k,r}$ across all regimes:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Identifiable regime ($\ker(\cI)\cap\ker(C)=\{0\}$):} Every coefficient has a finite, unique CRB variance given directly by the diagonal of Eqs.~\eqref{eq:cov_w} and \eqref{eq:cov_hh}:
+    \begin{equation}
+    \Var_{\text{CRB}}(W_{l,k}) = (\Sigma_{WW})_{(l,k),(l,k)}, \qquad
+    \Var_{\text{CRB}}(H_{k,r}) = \big(\cI_{HH}^{(r),+}\big)_{k,k} + \big(A_r^T \Sigma_{WW} A_r\big)_{k,k}.
+    \end{equation}
+    Notice the transparent physical decomposition of $\Var(H_{k,r})$: the first term $(\cI_{HH}^{(r),+})_{k,k}$ is the \emph{conditional} per-pixel uncertainty assuming $W$ were known exactly, while the positive-semidefinite second term $(A_r^T \Sigma_{WW} A_r)_{k,k}$ is the propagated uncertainty from estimating $W$ jointly across the dataset.
+    \item \textbf{Underdetermined regime ($\dim(\ker(\cI)\cap\ker(C)) = d_{\text{gauge}} > 0$):} Because perturbations in $\cN_{\text{gauge}}\cap\ker(C)$ change $W_{l,k}$ and $H_{k,r}$ without changing the likelihood or constraints, the unconstrained variance of an individual coordinate $e_j^T \theta$ along $\cN_{\text{gauge}}\cap\ker(C)$ is formally $+\infty$ (unidentifiable from likelihood alone). Three rigorous finite diagnostics are available:
+    \begin{itemize}[leftmargin=1.2em]
+        \item \emph{Gauge-projected (Moore--Penrose) uncertainty} $U(U^T \cI U)\pinv U^T$ (or Schur projection $\Sigma_{\text{Schur}}$): measures the minimum-norm fluctuation \emph{orthogonal} to the unidentifiable mixing orbit $\cN_{\text{gauge}} \cap \ker(C)$. (Note: on non-gauge-invariant coordinates $W_{l,k}, H_{k,r}$, $U(U^T\cI U)\pinv U^T$ projects orthogonally in the joint $(w,h)$ metric, whereas $\Sigma_{\text{Schur}}$ projects orthogonally in the $w$-metric via $S_W\pinv$; both agree identically once $W$ and $H$ are combined into $M = WH$.)
+        \item \emph{Conditional uncertainties} (fixing the conjugate factor): fixing $H$ gives $\Sigma_{W|H} = U_W(U_W^T \cI_{WW} U_W)^{-1} U_W^T$ (always strictly invertible when $\rank(G)=m$ and $\rank(H)=K$); fixing $W$ gives $\Sigma_{H_{\cdot,r}|W} = \cI_{HH}^{(r),+}$. By positive semidefiniteness of the Schur complement difference $\cI_{WW} - S_W \succeq 0$, we always have $\Sigma_{W|H} \preceq \Sigma_{WW}$: conditional errors are strict lower bounds on joint errors.
+        \item \emph{Regularized sandwich covariance} (Theorem~\ref{thm:sandwich}): when $\lambda_L > 0$, spatial smoothness resolves the mixing gauge on non-constant maps, yielding finite variances $\cov(\hat{\theta}_{\text{reg}})$.
+    \end{itemize}
+\end{enumerate}
+
+%==============================================================================
+\section{Uncertainty of Pixel-Wise Quantification: \texorpdfstring{$Q_{l,r} = \frac{(WH)_{l,r}}{\sum_{l'\in\E} (WH)_{l',r}}$}{Q\_\{l,r\} = (WH)\_\{l,r\} / sum\_l (WH)\_\{l,r\}}}
+%==============================================================================
+
+In \texttt{espm} (\texttt{EDSespm.elemental\_mapping}), pixel-wise atomic quantification evaluates $M = WH \in \R^{m \times p}$ on the selected elemental indices $\E \subseteq \{1,\dots,m\}$ (excluding bremsstrahlung $\B$, \texttt{\_lo}, \texttt{\_ign}, and \texttt{skipped\_elements}) and normalizes each pixel column:
+\begin{equation}
+\label{eq:Q_def}
+M_{l,r} = (WH)_{l,r} = \sum_{k=1}^K W_{l,k} H_{k,r}, \qquad T_r \coloneqq \sum_{l' \in \E} M_{l', r}, \qquad Q_{l,r} \coloneqq \frac{M_{l,r}}{T_r} \quad (l \in \E).
+\end{equation}
+(Multiplying $Q_{l,r}$ by $100$ expresses it in at.\%, and scales its standard deviation by $100$.)
+
+\begin{theorem}[Gauge Invariance and Exact Covariance of Pixel-Wise Quantification]
+\label{thm:pixel_quant}
+Let $m_{\cdot, r} = W h_{\cdot, r} \in \R^m$ be column $r$ of $M = WH$, let $E_\E \in \R^{|\E| \times m}$ be the row-selection matrix extracting rows $l \in \E$, and let $q_{\cdot, r} = (Q_{l,r})_{l \in \E} \in \R^{|\E|}$.
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Exact Gauge Invariance:} Both $M_{l,r}$ and $Q_{l,r}$ are invariant under any gauge transformation $(W, H) \mapsto (WA, A^{-1}H)$, so $\nabla_\theta M_{l,r} \perp \cN_{\text{gauge}}$ and $\nabla_\theta Q_{l,r} \perp \cN_{\text{gauge}}$. Consequently, their constrained CRB variances are \textbf{strictly finite, unique, and identical} whether computed from Theorem~\ref{thm:box1_pinv} or Theorem~\ref{thm:schur}—even when $K \ge 2$ and $(W,H)$ are individually underdetermined.
+    \item \textbf{Exact $\mathcal{O}(p)$ Pixel Covariance of $M_{\cdot, r}$:} Using Eqs.~\eqref{eq:cov_w}--\eqref{eq:cov_hh}, define $F_r \coloneqq (h_{\cdot, r}^T \kron I_m) - W A_r^T \in \R^{m \times mK}$. Then the $m \times m$ covariance of $m_{\cdot, r}$ and the cross-covariance between pixels $r$ and $r'$ are
+    \begin{align}
+    \Sigma_M^{(r)} \coloneqq \cov(m_{\cdot, r}) &= F_r \, \Sigma_{WW} \, F_r^T + W \, \cI_{HH}^{(r),+} \, W^T, \label{eq:Sigma_M_r}\\
+    \Cov(m_{\cdot, r},\, m_{\cdot, r'}) &= F_r \, \Sigma_{WW} \, F_{r'}^T + \delta_{r,r'} W \, \cI_{HH}^{(r),+} \, W^T. \label{eq:Sigma_M_rr}
+    \end{align}
+    \item \textbf{Covariance and Per-Element Variance of $Q_{l,r}$:} By the multivariate delta method,
+    \begin{equation}
+    \label{eq:cov_Q_r}
+    \cov(q_{\cdot, r}) = J_{Q,r} \big(E_\E \, \Sigma_M^{(r)} \, E_\E^T\big) J_{Q,r}^T, \qquad J_{Q,r} \coloneqq \frac{1}{T_r} \Big( I_{|\E|} - q_{\cdot, r} \one_{|\E|}^T \Big) \in \R^{|\E| \times |\E|}.
+    \end{equation}
+    Component-wise, letting $\Sigma_{M,\E}^{(r)} = E_\E \Sigma_M^{(r)} E_\E^T$, the variance of element $l \in \E$ at pixel $r$ is
+    \begin{equation}
+    \label{eq:var_Q_lr}
+    \begin{aligned}
+    \Var(Q_{l,r}) = \frac{1}{T_r^2} \Bigg[
+    &(1 - Q_{l,r})^2 \Var(M_{l,r})
+    + Q_{l,r}^2 \sum_{\substack{l', l'' \in \E \\ l', l'' \neq l}} \Cov(M_{l', r}, M_{l'', r}) \\
+    &- 2 Q_{l,r}(1 - Q_{l,r}) \sum_{\substack{l' \in \E \\ l' \neq l}} \Cov(M_{l,r}, M_{l', r})
+    \Bigg],
+    \end{aligned}
+    \end{equation}
+    which also admits the compact relative-variance form
+    \begin{equation}
+    \label{eq:rel_var_Q_lr}
+    \begin{aligned}
+    \frac{\Var(Q_{l,r})}{Q_{l,r}^2} &= \frac{\Var(M_{l,r})}{M_{l,r}^2} + \frac{\Var(T_r)}{T_r^2} - 2 \frac{\Cov(M_{l,r}, T_r)}{M_{l,r} T_r}, \\
+    \Var(T_r) &= \one_\E^T \Sigma_{M,\E}^{(r)} \one_\E,\qquad \Cov(M_{l,r}, T_r) = \big(\Sigma_{M,\E}^{(r)} \one_\E\big)_l.
+    \end{aligned}
+    \end{equation}
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+Differentiating $m_{\cdot, r} = W h_{\cdot, r}$ gives $\delta m_{\cdot, r} = (\delta W) h_{\cdot, r} + W \delta h_{\cdot, r} = (h_{\cdot, r}^T \kron I_m)\delta w + W \delta h_{\cdot, r}$. For any gauge vector $(\delta w, \delta h) = (\vecop(WE), -\vecop(EH))$, $\delta m_{\cdot, r} = (WE)h_{\cdot, r} - W(E h_{\cdot, r}) = 0$, proving $\nabla_\theta m_{\cdot, r} \perp \cN_{\text{gauge}}$ and hence $\nabla_\theta Q_{l,r} \perp \cN_{\text{gauge}}$. Substituting the Schur covariance representation $\delta h_{\cdot, r} = -A_r^T \delta w + \eta_r$ (where $\cov(\eta_r) = \cI_{HH}^{(r),+}$, $\Cov(\eta_r, \eta_{r'}) = 0$ for $r \neq r'$, and $\Cov(\delta w, \eta_r) = 0$) into $\delta m_{\cdot, r}$ yields
+\[
+\delta m_{\cdot, r} = \big((h_{\cdot, r}^T \kron I_m) - W A_r^T\big) \delta w + W \eta_r = F_r \, \delta w + W \eta_r,
+\]
+whose covariance and cross-covariance immediately yield Eqs.~\eqref{eq:Sigma_M_r}--\eqref{eq:Sigma_M_rr}. For Eq.~\eqref{eq:cov_Q_r}, differentiating $Q_{l,r} = M_{l,r} / \sum_{l'\in\E} M_{l',r}$ gives
+\[
+\frac{\partial Q_{l,r}}{\partial M_{l',r}} = \frac{\delta_{l,l'} T_r - M_{l,r}}{T_r^2} = \frac{\delta_{l,l'} - Q_{l,r}}{T_r} \qquad (l, l' \in \E),
+\]
+i.e., $J_{Q,r} = \frac{1}{T_r}(I_{|\E|} - q_{\cdot, r}\one^T)$. Expanding $(J_{Q,r} \Sigma_{M,\E}^{(r)} J_{Q,r}^T)_{l,l}$ produces Eq.~\eqref{eq:var_Q_lr}, and factoring $Q_{l,r}^2 = M_{l,r}^2/T_r^2$ gives Eq.~\eqref{eq:rel_var_Q_lr}.
+\end{proof}
+
+\begin{remark}[Independence from Pure Gauge Constraints and Pooling Benefit of NMF]
+Notice two crucial properties of Eq.~\eqref{eq:Sigma_M_r}:
+\begin{enumerate}[leftmargin=1.5em]
+    \item Because \texttt{simplex\_W} only removes pure gauge degrees of freedom without restricting the rank-$K$ manifold of $M=WH$, $\cov(q_{\cdot, r})$ under \texttt{simplex\_W} is \emph{identically equal} to the unconstrained Moore--Penrose CRB of $q_{\cdot, r}$ (whereas \texttt{simplex\_H} enforces $\one_K^T h_{\cdot,r}=1$, which can further tighten $\cov(q_{\cdot, r})$ when valid).
+    \item Compared to independent pixel-by-pixel fitting ($\cov_{\text{1px}}(m_{\cdot, r}) = (G^T \diag(\Omega_{\cdot, r}) G)^{-1}$), the $K$-component NMF decomposition pools all $p$ pixels to learn $W$ (so the first term $F_r \Sigma_{WW} F_r^T$ scales as $\mathcal{O}(1/p)$), leaving predominantly the low-dimensional $K$-component projection variance $W \cI_{HH}^{(r),+} W^T$!
+\end{enumerate}
+\end{remark}
+
+%==============================================================================
+\section{Uncertainty of Component Composition: \texorpdfstring{$C_{l,k} = \frac{W_{l,k}}{\sum_{l'\in\E} W_{l',k}}$}{C\_\{l,k\} = W\_\{l,k\} / sum\_l W\_\{l,k\}}}
+%==============================================================================
+
+In \texttt{espm} (\texttt{EDSespm.concentration\_report}), the atomic composition of component (phase) $k \in \{1,\dots,K\}$ over a selected element set $\E \subseteq \E_{\text{full}}$ is
+\begin{equation}
+\label{eq:C_def}
+S_k \coloneqq \sum_{l' \in \E} W_{l', k}, \qquad C_{l,k} \coloneqq \frac{W_{l,k}}{S_k} \qquad (l \in \E).
+\end{equation}
+Let $c_{\cdot, k} = (C_{l,k})_{l \in \E} \in \R^{|\E|}$, and let $\Sigma_{W,\E}^{(k,k)} \coloneqq E_\E (\Sigma_{WW})_{k,k} E_\E^T \in \R^{|\E| \times |\E|}$ denote the $(k,k)$ diagonal block of $\Sigma_{WW}$ restricted to $\E$.
+
+\begin{proposition}[Covariance of Component Composition $C_{l,k}$]
+\label{prop:comp_comp}
+In any identifiable regime ($\ker(\cI)\cap\ker(C)=\{0\}$), or conditionally/gauge-projected as discussed in Section~3.4, the first-order covariance of $c_{\cdot, k}$ is
+\begin{equation}
+\label{eq:cov_C_k}
+\cov(c_{\cdot, k}) = J_{C,k} \, \Sigma_{W,\E}^{(k,k)} \, J_{C,k}^T, \qquad J_{C,k} \coloneqq \frac{1}{S_k} \Big( I_{|\E|} - c_{\cdot, k} \one_{|\E|}^T \Big) \in \R^{|\E| \times |\E|}.
+\end{equation}
+Specifically:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Full simplex case (\texttt{simplex\_W=True} and $\E = \cS$, \texttt{selected\_elts=[]}):} Since $\sum_{l\in\cS} W_{l,k} = 1$ identically, $S_k = 1$, $C_{l,k} = W_{l,k}$, and $\one_{|\E|}^T \delta w_{\E, k} = 0$ on $\ker(C)$. Consequently $J_{C,k} \Sigma_{W,\E}^{(k,k)} J_{C,k}^T = \Sigma_{W,\E}^{(k,k)}$, so
+    \begin{equation}
+    \label{eq:var_C_simplex}
+    \Var(C_{l,k}) = \Var(W_{l,k}) = (\Sigma_{WW})_{(l,k),(l,k)}.
+    \end{equation}
+    \item \textbf{Subset or non-simplex case ($\E \subset \cS$ or \texttt{simplex\_W=False}):} Expanding Eq.~\eqref{eq:cov_C_k} gives
+    \begin{equation}
+    \label{eq:var_C_general}
+    \begin{aligned}
+    \Var(C_{l,k}) = \frac{1}{S_k^2} \Bigg[
+    &(1 - C_{l,k})^2 \Var(W_{l,k})
+    + C_{l,k}^2 \sum_{\substack{l', l'' \in \E \\ l', l'' \neq l}} \Cov(W_{l', k}, W_{l'', k}) \\
+    &- 2 C_{l,k}(1 - C_{l,k}) \sum_{\substack{l' \in \E \\ l' \neq l}} \Cov(W_{l,k}, W_{l', k})
+    \Bigg].
+    \end{aligned}
+    \end{equation}
+\end{enumerate}
+\end{proposition}
+
+\subsection{Critique of \texttt{espm}'s Current \texorpdfstring{$100/\sqrt{N_{l,k}}$}{100/sqrt(N\_\{l,k\})} Heuristic}
+Currently, \texttt{EDSespm.concentration\_report} estimates component errors via \texttt{get\_explained\_intensity\_W}:
+\begin{equation}
+N_{l,k} = \left(\sum_{i=1}^n G_{i,l}\right) W_{l,k} \left(\sum_{r=1}^p H_{k,r}\right), \qquad \sigma_{\text{espm}}^{\text{rel}}(C_{l,k}) = \frac{100}{\sqrt{N_{l,k}}} \; [\%].
+\end{equation}
+Note that $N_{l,k}$ is the expected photon count attributed to column $l$ in component $k$. Assuming $N_{l,k}$ were an isolated, background-free Poisson count, $100/\sqrt{N_{l,k}}$ represents the relative standard deviation (in \%). Comparing against our exact CRB reveals four systematic discrepancies in $100/\sqrt{N_{l,k}}$:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Ignores peak overlap in $G$:} When characteristic X-ray lines of two elements overlap (e.g., Ti $K_\beta$ at $4.93\text{ keV}$ and V $K_\alpha$ at $4.95\text{ keV}$), off-diagonal entries of $G^T \diag(\Omega_{\cdot,r}) G$ induce strong negative correlation and inflate variance well above $1/N_{l,k}$.
+    \item \textbf{Ignores bremsstrahlung coupling:} Bremsstrahlung columns $\B$ overlap every characteristic peak, increasing uncertainty especially for low-concentration or low-energy lines.
+    \item \textbf{Ignores the simplex / normalization anti-correlation:} For a major element ($C_{l,k}$ large, e.g., $55\text{ at.}\%$), the constraint $\sum_{l'} C_{l',k} = 1$ couples $C_{l,k}$ negatively to the remaining elements, reducing relative variance roughly by a factor $(1 - C_{l,k})$ compared to unnormalized Poisson counting ($100/\sqrt{N_{l,k}}$ \emph{overestimates} majority-element error).
+    \item \textbf{Ignores multi-component spatial overlap ($H$) and joint $(W,H)$ uncertainty:} For $K \ge 2$, spatial co-localization of phases (off-diagonals of $H H^T$) and joint $W$--$H$ uncertainty ($\cI_{WH} \cI_{HH}^{-1} \cI_{HW}$) further inflate component variances.
+\end{enumerate}
+
+%==============================================================================
+\section{Element-Level Uncertainties Across the \texttt{espm} Decomposition}
+%==============================================================================
+
+To characterize the uncertainty of \emph{each element} $l \in \E_{\text{full}}$ (and background terms $l \in \B$) in a complete \texttt{espm} decomposition, four complementary element-level quantities arise naturally:
+
+\subsection{Split-Line Aggregation (\texttt{\_lo} and \texttt{\_hi}) and Bremsstrahlung Terms}
+When an element $l$ is split around an absorption edge into low- and high-energy columns $(l_{\text{lo}}, l_{\text{hi}})$ via \texttt{elements\_dict}, its total elemental weight in component $k$ is $W_{l,k}^{\text{tot}} = W_{l_{\text{lo}}, k} + W_{l_{\text{hi}}, k}$, with linear aggregation matrix $T_{\text{agg}} \in \{0,1\}^{|\E_{\text{elts}}| \times m}$ summing split columns. Its variance is immediately
+\begin{equation}
+\Var(W_{l,k}^{\text{tot}}) = \Var(W_{l_{\text{lo}}, k}) + \Var(W_{l_{\text{hi}}, k}) + 2\Cov(W_{l_{\text{lo}}, k}, W_{l_{\text{hi}}, k}),
+\end{equation}
+where the covariance term is automatically provided by $\Sigma_{WW}$. Likewise, bremsstrahlung uncertainties $\Var(W_{b,k}) = (\Sigma_{WW})_{(b,k),(b,k)}$ ($b \in \B$) are obtained from the same matrix $\Sigma_{WW}$.
+
+\subsection{Global and ROI-Integrated Elemental Quantification}
+Because individual components $W_{l,k}$ may be gauge-dependent for $K \ge 2$, a physically unambiguous measure of the abundance and uncertainty of each element $l \in \E$ over any spatial region of interest $\Omega \subseteq \{1,\dots,p\}$ (or the entire map $\Omega = \{1,\dots,p\}$) is the \textbf{ROI-integrated abundance} $\bar{M}_l(\Omega)$ and \textbf{ROI composition} $\bar{Q}_l(\Omega)$:
+\begin{equation}
+\label{eq:roi_def}
+\bar{M}_l(\Omega) \coloneqq \sum_{r \in \Omega} (WH)_{l,r} = (W h_\Omega)_l, \qquad h_\Omega \coloneqq \sum_{r \in \Omega} h_{\cdot, r} \in \R^K, \qquad \bar{Q}_l(\Omega) \coloneqq \frac{\bar{M}_l(\Omega)}{\sum_{l'\in\E} \bar{M}_{l'}(\Omega)}.
+\end{equation}
+Crucially, one cannot simply sum single-pixel variances $\sum_{r \in \Omega} \Sigma_M^{(r)}$, because different pixels $r \neq r'$ are positively/negatively correlated through the shared matrix $W$ (Eq.~\eqref{eq:Sigma_M_rr}). Using the $\mathcal{O}(p)$ Schur representation from Theorem~\ref{thm:pixel_quant} yields an exact closed form without any $\mathcal{O}(p^2)$ double sum:
+
+\begin{theorem}[Exact Covariance of ROI-Integrated Elemental Abundance and Composition]
+\label{thm:roi_element}
+For any subset $\Omega \subseteq \{1,\dots,p\}$, define $h_\Omega = \sum_{r \in \Omega} h_{\cdot, r}$, $\Phi_\Omega \coloneqq \sum_{r \in \Omega} A_r \in \R^{mK \times K}$, and $F_\Omega \coloneqq (h_\Omega^T \kron I_m) - W \Phi_\Omega^T \in \R^{m \times mK}$. Then $\bar{M}(\Omega)$ and $\bar{q}(\Omega) = (\bar{Q}_l(\Omega))_{l\in\E}$ are strictly gauge-invariant, with exact covariance matrices:
+\begin{align}
+\cov\!\big(\bar{M}(\Omega)\big) &= F_\Omega \, \Sigma_{WW} \, F_\Omega^T + W \left(\sum_{r \in \Omega} \cI_{HH}^{(r),+}\right) W^T, \label{eq:cov_M_omega}\\
+\cov\!\big(\bar{q}(\Omega)\big) &= J_{\bar{Q},\Omega} \Big(E_\E \, \cov\!\big(\bar{M}(\Omega)\big)\, E_\E^T\Big) J_{\bar{Q},\Omega}^T, \qquad J_{\bar{Q},\Omega} \coloneqq \frac{1}{\bar{T}_\Omega} \big(I_{|\E|} - \bar{q}(\Omega)\one_{|\E|}^T\big), \label{eq:cov_Q_omega}
+\end{align}
+where $\bar{T}_\Omega = \sum_{l' \in \E} \bar{M}_{l'}(\Omega)$.
+\end{theorem}
+
+\begin{proof}
+Summing $\delta m_{\cdot, r} = F_r \delta w + W \eta_r$ over $r \in \Omega$ gives $\delta \bar{M}(\Omega) = \big(\sum_{r\in\Omega} F_r\big)\delta w + W \sum_{r\in\Omega} \eta_r = F_\Omega \delta w + W \sum_{r\in\Omega} \eta_r$. Because $\delta w$ and $\{\eta_r\}_{r\in\Omega}$ are mutually uncorrelated with $\cov(\eta_r) = \cI_{HH}^{(r),+}$, taking covariances produces Eq.~\eqref{eq:cov_M_omega}, and the delta method with $\partial \bar{Q}_l / \partial \bar{M}_{l'} = (\delta_{l,l'} - \bar{Q}_l)/\bar{T}_\Omega$ yields Eq.~\eqref{eq:cov_Q_omega}.
+\end{proof}
+
+\subsection{Summary of Element-Wise Diagnostics}
+Table~\ref{tab:summary_diagnostics} summarizes all element-level uncertainty metrics derived in this work, their computability in $\mathcal{O}(p)$ time, and their gauge invariance status.
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of analytical element-level uncertainty formulas for \texttt{espm}.}
+\label{tab:summary_diagnostics}
+\footnotesize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Quantity} & \textbf{Definition} & \textbf{Gauge-Invariant?} & \textbf{Exact Variance / Covariance} \\
+\midrule
+Pixel elemental map & $M_{l,r} = (WH)_{l,r}$ & Yes (always finite) & Eq.~\eqref{eq:Sigma_M_r}: $F_r \Sigma_{WW} F_r^T + W \cI_{HH}^{(r),+} W^T$ \\
+Pixel quantification & $Q_{l,r} = M_{l,r} / \sum_{l'\in\E} M_{l',r}$ & Yes (always finite) & Eqs.~\eqref{eq:cov_Q_r}--\eqref{eq:var_Q_lr} \\
+ROI elemental abundance & $\bar{M}_l(\Omega) = \sum_{r\in\Omega} (WH)_{l,r}$ & Yes (always finite) & Eq.~\eqref{eq:cov_M_omega}: $F_\Omega \Sigma_{WW} F_\Omega^T + W (\sum_{r\in\Omega} \cI_{HH}^{(r),+}) W^T$ \\
+ROI quantification & $\bar{Q}_l(\Omega) = \bar{M}_l(\Omega) / \sum_{l'\in\E} \bar{M}_{l'}(\Omega)$ & Yes (always finite) & Eq.~\eqref{eq:cov_Q_omega} \\
+Component weight & $W_{l,k}$ & Only if $\ker(\cI)\cap\ker(C)=\{0\}$ & Eq.~\eqref{eq:cov_w}: $(\Sigma_{WW})_{(l,k),(l,k)}$ \\
+Component composition & $C_{l,k} = W_{l,k} / \sum_{l'\in\E} W_{l',k}$ & Only if $\ker(\cI)\cap\ker(C)=\{0\}$ & Eqs.~\eqref{eq:cov_C_k}--\eqref{eq:var_C_general} \\
+Phase map coefficient & $H_{k,r}$ & Only if $\ker(\cI)\cap\ker(C)=\{0\}$ & Eq.~\eqref{eq:cov_hh}: $(\cI_{HH}^{(r),+} + A_r^T \Sigma_{WW} A_r)_{k,k}$ \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+%==============================================================================
+\section{Algorithmic Implementation in \texttt{espm}}
+%==============================================================================
+
+Evaluating the full analytical covariance without forming the $Kp \times Kp$ matrix $\cI_{HH}$ requires only small $mK \times mK$ and $K \times K$ linear algebra. The algorithm box below summarizes the $\mathcal{O}(p K^3 + m^2 K^2 p)$ procedure ready for direct integration into \texttt{espm.datasets.eds\_spim} (replacing \texttt{100/np.sqrt(N)} in \texttt{concentration\_report} and augmenting \texttt{elemental\_mapping} with uncertainty maps).
+
+\begin{tcolorbox}[colback=gray!4!white,colframe=gray!60!black,title={Algorithm: Exact $\mathcal{O}(p)$ Uncertainty Evaluation for \texttt{espm}},breakable]
+\label{box:algo}
+\textbf{Inputs:} Raw (unnormalized) model counts $Y = GWH \in \R_{>0}^{n\times p}$ (clipped at $\epsilon_{\min} > 0$), $G \in \R^{n\times m}$, $W \in \R^{m\times K}$, $H \in \R^{K\times p}$, constraint rows $C_W$ (e.g., \texttt{simplex\_W}, \texttt{fixed\_W}, active zeros), optional \texttt{simplex\_H} flag, element index list $\E$.
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Precompute} $D = GW \in \R^{n \times K}$, $\Omega = 1 / Y \in \R^{n \times p}$, and $U_W = \operatorname{null}(C_W)$ (and $U_H = \operatorname{null}(\one_K^T)$ if \texttt{simplex\_H}).
+    \item \textbf{Assemble $\cI_{WW} \in \R^{mK \times mK}$:} For $1 \le k \le k' \le K$, compute weight vector $v_{k,k'} = \sum_{r=1}^p \Omega_{\cdot, r} H_{k,r} H_{k',r} \in \R^n$ and $(\cI_{WW})_{k,k'} = G^T \diag(v_{k,k'}) G$.
+    \item \textbf{Accumulate Schur complement $S_W$ (vectorized / batched over $r=1,\dots,p$):} Initialize $S_W \leftarrow \cI_{WW}$, $\Phi_{\text{tot}} \leftarrow 0$, $\mathcal{J}_H^{\text{tot}} \leftarrow 0$. For each pixel $r$:
+    \begin{itemize}[leftmargin=1.2em]
+        \item Compute $\cI_{HH}^{(r)} = D^T \diag(\Omega_{\cdot, r}) D \in \R^{K\times K}$ and $B^{(r)} = G^T \diag(\Omega_{\cdot, r}) D \in \R^{m \times K}$.
+        \item Invert the $K\times K$ matrix (projected by $U_H$ if \texttt{simplex\_H}) to get $\cI_{HH}^{(r),+}$.
+        \item Form $\cI_{WH}^{(r)} = h_{\cdot, r} \kron B^{(r)} \in \R^{mK \times K}$ and $A_r = \cI_{WH}^{(r)} \cI_{HH}^{(r),+}$.
+        \item Update $S_W \leftarrow S_W - A_r (\cI_{WH}^{(r)})^T$, $\Phi_{\text{tot}} \leftarrow \Phi_{\text{tot}} + A_r$, $\mathcal{J}_H^{\text{tot}} \leftarrow \mathcal{J}_H^{\text{tot}} + \cI_{HH}^{(r),+}$.
+    \end{itemize}
+    \item \textbf{Solve for $\Sigma_{WW}$:} Compute $\Sigma_{WW} = U_W (U_W^T S_W U_W)\pinv U_W^T$ (via SVD / eigendecomposition, checking numerical rank against $mK - \rank(C_W)$ to flag gauge degeneracy).
+    \item \textbf{Extract outputs:}
+    \begin{itemize}[leftmargin=1.2em]
+        \item \emph{Component compositions} $C_{l,k}$: evaluate Eq.~\eqref{eq:cov_C_k} (or Eq.~\eqref{eq:var_C_simplex}) for each $k$.
+        \item \emph{Pixel maps} $M_{l,r}, Q_{l,r}$: evaluate Eqs.~\eqref{eq:Sigma_M_r} and \eqref{eq:cov_Q_r} for each pixel $r$.
+        \item \emph{ROI / bulk elements} $\bar{M}_l(\Omega), \bar{Q}_l(\Omega)$: evaluate Eqs.~\eqref{eq:cov_M_omega}--\eqref{eq:cov_Q_omega}.
+    \end{itemize}
+\end{enumerate}
+\end{tcolorbox}
+
+\begin{remark}[Note on Absorption-Updated Bremsstrahlung \texttt{NMF\_update}]
+In \texttt{EDXS.NMF\_update(W)}, the bremsstrahlung columns $G_{\cdot, \B}(W)$ are recalculated every 3 iterations using the mean composition $\bar{w}(W)$. If this coupling is retained in the uncertainty propagation, $\delta Y$ acquires an extra term $(\partial G_{\cdot,\B}/\partial W)[\delta W] W_{\B,\cdot} H$, adding $(\partial G/\partial w)(W H)$ to $J_W$. In practice, bremsstrahlung absorption varies slowly with mean composition so the fixed-$G$ Jacobian~\eqref{eq:jacobian} captures the dominant statistical variance.
+\end{remark}
+
+%==============================================================================
+\section{Numerical Verification and \texttt{espm} Monte Carlo Validation}
+%==============================================================================
+
+We verified every analytical identity and validated our formulas against Poisson Monte Carlo simulations using \texttt{espm}'s \texttt{EDXS} physics model and \texttt{SmoothNMF} optimizer.
+
+\subsection{Machine-Precision Verification of Matrix Identities}
+On synthetic matrices ($n=30, m=5, K=2, p=6$, plus singular test cases $N=12, c=3$ with rank $6$), numerical checks confirmed:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Theorem~\ref{thm:box1_pinv} (Box I vs.\ pseudoinverse):} $\max|(K\pinv)_{1:N,1:N} - U(U^T \cI U)\pinv U^T| = 2.40 \times 10^{-14}$ and $\max|(K\pinv \diag(\cI,0)(K\pinv)^T)_{1:N,1:N} - U(U^T\cI U)\pinv U^T| = 2.27 \times 10^{-14}$.
+    \item \textbf{Proposition~\ref{prop:fim_blocks} (FIM blocks vs.\ finite-difference Jacobian):} $\max|J - J_{\text{FD}}| = 1.27 \times 10^{-8}$ and $\max|\cI_{\text{full}} - \cI_{\text{analytic}}| = 6.40 \times 10^{-14}$, with exact numerical nullity $K^2 = 4$.
+    \item \textbf{Theorems~\ref{thm:schur}--\ref{thm:roi_element} (Gauge invariance \& Schur reduction):} For pixel-wise quantification $Q_{l,r}$, $\max|\cov_{\text{Schur}}(q_{\cdot, r}) - \cov_{\text{Full, simplex\_W}}(q_{\cdot, r})| = 2.73 \times 10^{-15}$, and $\max|\cov_{\text{Full, simplex\_W}}(q_{\cdot, r}) - \cov_{\text{Unconstrained}}(q_{\cdot, r})| = 4.51 \times 10^{-16}$. For ROI-integrated $\bar{M}(\Omega)$, $\max|\cov_{\text{Schur}}(\bar{M}) - \cov_{\text{Full}}(\bar{M})| = 1.70 \times 10^{-14}$.
+\end{itemize}
+
+\subsection{Experiment 1: Single-Component EDXS with Overlapping Peaks (\texorpdfstring{$K=1$}{K=1})}
+We simulated a 200\,keV \texttt{EDXS} spectrum ($0.3\text{--}8.3\text{ keV}$, $n=800$ channels) containing O, Ti, V, Fe plus two bremsstrahlung columns ($m=6$) with true composition $(\text{O},\text{Ti},\text{V},\text{Fe}) = (55, 20, 5, 20)\text{ at.}\%$, bremsstrahlung weights $(0.08, 0.04)$, and scale $H = 2.0\times 10^4$. Crucially, Ti $K_\beta$ ($4.93\text{ keV}$) strongly overlaps V $K_\alpha$ ($4.95\text{ keV}$). Across $400$ independent Poisson noise realizations fitted with \texttt{SmoothNMF} (\texttt{simplex\_W=True} on $\cS = \texttt{NMF\_simplex()}$), Table~\ref{tab:exp1} and Figure~\ref{fig:exp1} compare the empirical Monte Carlo standard deviations with our exact constrained CRB and \texttt{espm}'s current $100/\sqrt{N_{l,k}}$ heuristic.
+
+\begin{table}[htbp]
+\centering
+\caption{Experiment 1 ($K=1$, $400$ Poisson trials with \texttt{SmoothNMF} and \texttt{EDXS}): comparison of empirical Monte Carlo (MC) standard deviations, exact constrained CRB (Theorem~\ref{thm:schur} / Proposition~\ref{prop:comp_comp}), and \texttt{espm}'s current $100/\sqrt{N_{l,k}}$ estimate.}
+\label{tab:exp1}
+\footnotesize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+\textbf{Element} & \textbf{True [at.\%]} & \textbf{MC Mean} & \textbf{MC Std [at.\%]} & \textbf{CRB Std [at.\%]} & \textbf{MC Rel.\ [\%]} & \textbf{CRB Rel.\ [\%]} & \textbf{\texttt{espm} $100/\sqrt{N}$ [\%]} \\
+\midrule
+O  & 55.00 & 54.984 & 0.552 & 0.562 & 1.003 & 1.021 & 1.704 \\
+Ti & 20.00 & 20.018 & 0.358 & 0.359 & 1.789 & 1.797 & 1.543 \\
+V  &  5.00 &  5.006 & 0.236 & 0.234 & 4.719 & 4.682 & 2.898 \\
+Fe & 20.00 & 19.993 & 0.300 & 0.305 & 1.500 & 1.527 & 1.315 \\
+\midrule
+$H_{1,1}$ & $2.00\times 10^4$ & $1.999\times 10^4$ & $217.66$ & $219.16$ & $1.088$ & $1.096$ & --- \\
+$b_0, b_1$ & $0.080, 0.040$ & --- & $0.00425, 0.00452$ & $0.00436, 0.00440$ & --- & --- & --- \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{/root/.gemini/antigravity-cli/brain/52b4c8ef-2275-4a77-a7c3-5a0c738a8031/scratch/fig1_k1_comparison.pdf}
+\caption{Experiment 1 ($K=1$ \texttt{EDXS} spectrum with overlapping Ti/V lines and bremsstrahlung). Exact constrained CRB matches 400-trial \texttt{SmoothNMF} Monte Carlo within sampling noise across all elements, whereas \texttt{espm}'s $100/\sqrt{N_{l,k}}$ overestimates O error (ignoring the simplex constraint) and underestimates V error by $\sim 38\%$ (ignoring Ti $K_\beta$/V $K_\alpha$ overlap and bremsstrahlung).}
+\label{fig:exp1}
+\end{figure}
+
+Table~\ref{tab:exp1} confirms agreement to within $1\text{--}2\%$ between Monte Carlo and our analytical CRB across every elemental composition, $H_{1,1}$, and bremsstrahlung coefficients $(b_0, b_1)$, while exposing both biases of $100/\sqrt{N}$: overestimating O ($1.704\%$ vs.\ $1.021\%$) and underestimating overlapping V ($2.898\%$ vs.\ $4.682\%$).
+
+\subsection{Experiment 2: Two-Phase Spectrum Image (\texorpdfstring{$K=2$}{K=2}) and Laplacian Regularization}
+We simulated a $4 \times 4$ ($p=16$) \texttt{EDXS} spectrum image ($0.3\text{--}9.3\text{ keV}$, $n=900$) mixing an oxide phase $(\text{O}=0.60, \text{Al}=0.40)$ and an alloy phase $(\text{Fe}=0.50, \text{Ni}=0.50)$ with spatially varying composition $t_r \in [0.15, 0.85]$ and thickness. We tested three regimes:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Free $(W,H)$ with \texttt{simplex\_W=True} (underdetermined $K(K-1)=2$ mixing gauge):} Across $200$ Poisson trials, the gauge-invariant pixel-wise quantification $Q_{l,r}$ matches our Schur-complement CRB (Theorem~\ref{thm:pixel_quant}) across all 16 pixels (Figure~\ref{fig:exp2}(a)), with pixel-averaged ratio $\text{std}_{\text{MC}}(Q_{l,r})/\text{std}_{\text{CRB}}(Q_{l,r}) = 0.955 \pm 0.068$ (and in a parallel $200$-trial run, ROI $\bar{Q}_l$ CRB vs.\ MC matched closely: O $0.155$ vs.\ $0.153$, Al $0.110$ vs.\ $0.105$, Fe $0.089$ vs.\ $0.087$, Ni $0.086$ vs.\ $0.079\text{ at.}\%$).
+    \item \textbf{Identifiable \texttt{fixed\_W} structural zeros ($W_{\text{Fe},0}=W_{\text{Ni},0}=W_{\text{O},1}=W_{\text{Al},1}=0$):} Individual component compositions become identifiable, yielding close agreement between 200-trial MC and CRB [at.\%]: Comp.\ 0 (O: $0.227$ vs.\ $0.210$, Al: $0.197$ vs.\ $0.210$); Comp.\ 1 (Fe: $0.143$ vs.\ $0.128$, Ni: $0.136$ vs.\ $0.128$).
+    \item \textbf{Laplacian-regularized \texttt{SmoothNMF} ($\lambda_L = 10^{-4}$):} Evaluated at the noiseless MAP point $\theta^*_{\text{reg}}$, the sandwich covariance of Theorem~\ref{thm:sandwich} matches $200$-trial Monte Carlo across all 16 pixels (Figure~\ref{fig:exp2}(b)), with pixel-averaged ratio $\text{std}_{\text{MC}}(Q_{l,r})/\text{std}_{\text{Sandwich}}(Q_{l,r}) = 1.010 \pm 0.049$ and pixel-7 abundance standard deviations $\text{std}(H_{k,7})$ of $[47.25, 35.67]$ (Sandwich) vs.\ $[49.75, 36.35]$ (MC).
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{/root/.gemini/antigravity-cli/brain/52b4c8ef-2275-4a77-a7c3-5a0c738a8031/scratch/fig2_k2_pixelwise.pdf}
+\caption{Experiment 2 ($K=2$, $4\times 4$ \texttt{EDXS} spectrum image). (a) Unregularized free $(W,H)$ decomposition: gauge-invariant pixel-wise quantification CRB (solid lines, Theorem~\ref{thm:pixel_quant}) matches Monte Carlo standard deviations (circles) even though $W$ and $H$ are individually underdetermined. (b) Laplacian-regularized \texttt{SmoothNMF}: sandwich covariance (Theorem~\ref{thm:sandwich}) vs.\ Monte Carlo.}
+\label{fig:exp2}
+\end{figure}
+
+%==============================================================================
+\section{Cross-Check with Teurtrie et al.\ (2023) and Teurtrie et al.\ (2024)}
+%==============================================================================
+
+We cross-check all assumptions, conventions, regularizers, and physical parameterizations in our derivation against the two foundational \texttt{espm} publications: Teurtrie et al.\ (\emph{Ultramicroscopy} 249, 2023, 113719; hereafter \textbf{T23}, \texttt{espm.pdf}) and Teurtrie et al.\ (\emph{Mach.\ Learn.: Sci.\ Technol.} 5, 2024, 045050; hereafter \textbf{T24}, \texttt{stem.pdf}).
+
+\subsection{Symbol and Equation Correspondence}
+Table~\ref{tab:crosscheck_symbols} maps the notation used in \textbf{T23}, \textbf{T24}, Jannis et al.\ (2025), and the \texttt{espm} Python implementation to the present document.
+
+\begin{table}[htbp]
+\centering
+\caption{Cross-reference of notation across \textbf{T23} (\texttt{espm.pdf}), \textbf{T24} (\texttt{stem.pdf}), Jannis et al.\ (2025), and this work.}
+\label{tab:crosscheck_symbols}
+\footnotesize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Concept} & \textbf{This Work} & \textbf{T23 (\texttt{espm.pdf})} & \textbf{T24 (\texttt{stem.pdf})} & \textbf{Jannis et al.\ (2025)} \\
+\midrule
+Energy channels $\times$ pixels & $n \times p$ & $L \times (P_x P_y)$ & $L \times P$ & $n$ bins ($1$ pixel) \\
+Dictionary cols / phases & $m$, $K$ ($M' = |\cS|$) & $-$, $K$ & $M$, $K$ ($M' = M-2$) & $N$ params ($c=1$ eq.) \\
+Measured counts & $X \in \R^{n\times p}$ & $\boldsymbol{Y}^{\text{nl}}$ (Poisson sample) & $\boldsymbol{Y} = (y_{\ell,p})$ & $g_i$ \\
+Expected model counts & $Y = GWH$ & $N \boldsymbol{D} \kron (\diag(\boldsymbol{d})\boldsymbol{A})$ & $\boldsymbol{\Phi} = (\phi_{\ell,p}) \approx \boldsymbol{G}\boldsymbol{W}\boldsymbol{H}$ & $f_i(p)$ \\
+Physical dictionary & $G = [K_{\text{ch}},\, B]$ & $\kappa_{k,Z}$, $b_i$ (Eqs.~(5)--(13)) & $\boldsymbol{G} = [\boldsymbol{K}\; \boldsymbol{B}]$ (Eqs.~(3)--(6)) & $\sigma_{A,k}\otimes Z,\, g_i\otimes Z,\, E^{-r_j}$ \\
+Phase weights / comp. & $W_{l,k}$ ($C_{l,k}$ on $\E$) & $c_Z^{(l)}, \boldsymbol{b}'^{(l)}$ (Eq.~(14)) & $\boldsymbol{W} = [\boldsymbol{C}^T,\, \boldsymbol{\Gamma}^T]^T$ (Eq.~(6)) & $a_k, b_{i,k}, c_j$ \\
+Spatial phase abundances & $H_{k,r}$ & $N d_k a_{k,j,k'}$ (Eqs.~(16)--(17)) & $\boldsymbol{H}_{k,p} = \xi_k \eta_{k,p}$ (Eq.~(6)) & --- \\
+Simplex on $W$ & $\sum_{l\in\cS} W_{l,k} = 1$ & $\sum_{k}\boldsymbol{D}_{\cdot,k}=1$ (unit spec.) & $\sum_{m\le M-2} w_{mk} = 1$ (Eq.~(7)) & --- \\
+Laplacian reg.\ param. & $\frac{\lambda_L}{2} \tr(H \Delta H^T)$ & --- & $r_\Delta = \frac{\lambda}{2}\tr(\boldsymbol{H}\boldsymbol{\Delta}\boldsymbol{H}^T)$ (Eq.~(14)) & --- \\
+Log sparsity reg. & $\mu \sum \ln(H_{k,r} + \epsilon_{\text{reg}})$ & --- & $r_{\log} = \mu \sum \log(h_{kp}+\alpha)$ (Eq.~(15)) & --- \\
+Positivity floor & $\epsilon = \texttt{log\_shift}$ & --- & $\epsilon$ (Eq.~(16)) & $a_k \ge 0$ (QP) \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Verification of Model Structure, Normalization, and Regularizers}
+Cross-checking our equations against \textbf{T23} and \textbf{T24} confirms full mathematical consistency and highlights four structural nuances:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Physical meaning of $(W,H)$ and pixel-wise quantification (\textbf{T24} Eqs.~(5)--(7)):} In \textbf{T24}, each phase $k$ carries an experimental prefactor $\xi_k = N_A N_e I_e \tau \Omega \rho_k^*$ containing the phase mass-thickness $\rho_k^*$. Under the simplex constraint $\sum_{m=1}^{M-2} w_{mk} = 1$, $W$ partitions cleanly into elemental atomic fractions $\boldsymbol{C}$ and scaled bremsstrahlung coefficients $\boldsymbol{\Gamma} = (\gamma_{0,k}/\xi_k,\, \gamma_{1,k}/\xi_k)$, while $H_{k,r} = \xi_k \eta_{k,r}$ absorbs $\xi_k$. Consequently, $(WH)_{l,r} = \sum_{k=1}^K c_{Z_l, k} \xi_k \eta_{k,r}$ for $l \in \E$ represents the local count-weighted atomic content of element $l$ at pixel $r$, and $\sum_{l\in\E} (WH)_{l,r} = \sum_{k=1}^K \xi_k \eta_{k,r}$ holds identically. Thus $Q_{l,r} = (WH)_{l,r}/\sum_{l'\in\E} (WH)_{l',r}$ in Section~4 is the exact local atomic fraction at pixel $r$ even when phases have distinct mass-thicknesses $\rho_k^*$, matching \textbf{T23} Eq.~(16) (density modifiers $d_k$).
+    \item \textbf{Column normalization of $G$ in \texttt{espm.models.edxs.EDXS}:} Whereas \textbf{T24} Eq.~(3) writes $\kappa_{\ell, Z}$ with unnormalized cross-sections $x_{ij}(Z)$, \texttt{EDXS.generate\_g\_matr} divides all elemental columns by a \emph{common} mean norm $\bar{\nu}_G$ and each bremsstrahlung column by its individual norm $\nu_{\text{brem}, b}$. Because a uniform scalar factor $\bar{\nu}_G$ across all $l \in \cS$ cancels in $c_{Z,k}$ (merely rescaling $\xi_k \mapsto \bar{\nu}_G \xi_k$ in $H_{k,r}$ and $\Gamma_{b,k} \mapsto (\nu_{\text{brem}, b}/\bar{\nu}_G)\Gamma_{b,k}$), all elemental ratios $C_{l,k}$, $Q_{l,r}$, and $\bar{Q}_l(\Omega)$ and their uncertainties remain invariant.
+    \item \textbf{Exact agreement on Poisson NMF loss and regularizer factors (\textbf{T24} Eqs.~(13)--(18) \& App.~B):} \textbf{T24} Eq.~(14) defines $r_\Delta = \frac{\lambda}{2}\tr(\boldsymbol{H}\boldsymbol{\Delta}\boldsymbol{H}^T) = \lambda \sum_k \sum_{(n,m)\in E}(h_{kn}-h_{km})^2$, whose gradient is $\nabla_H r_\Delta = \lambda H\Delta$ (\textbf{T24} App.~B), matching our Eq.~\eqref{eq:regularizer} and Hessian $\lambda_L(\Delta \kron I_K)$ in Theorem~\ref{thm:sandwich} identically. Note that the factor $8\lambda\max(H)$ appearing in \textbf{T24} Eq.~(18) (corresponding to \texttt{sigmaL=8} in \texttt{espm.conf}) is strictly an algorithmic majorization constant for the BSUM update and vanishes at any stationary point, so it does not enter $\cH_R$.
+    \item \textbf{Gauge scaling and \textbf{T24} experimental regimes:} In \textbf{T24} Sec.~5 (p.~9), outputs are rescaled via $\boldsymbol{D}^* = \boldsymbol{D}\boldsymbol{S}^{-1},\; \boldsymbol{H}^* = \boldsymbol{S}\boldsymbol{H}$ for diagonal $\boldsymbol{S}$, which is precisely the diagonal subgroup $A = \boldsymbol{S}^{-1}$ of our gauge group $WH = (WA)(A^{-1}H)$. Moreover, \textbf{T24}'s three test configurations map directly onto our regimes:
+    \begin{itemize}[leftmargin=1.2em]
+        \item \texttt{ESpM-NMF(0,0,0)}: unregularized Poisson MLE with \texttt{simplex\_W=True}, where \textbf{T24} Sec.~3 (p.~6) emphasizes that simplex + non-negativity induce boundary zeros ($W_{l,k}=\epsilon$) that partially or fully resolve mixing;
+        \item \texttt{ESpM-NMF(0,0,0) fW(0conc)} and the \texttt{FePt@Fe3O4} core--shell ratio constraint (\textbf{T24} Sec.~6, pp.~10, 14): linear equality constraints $W_{l,k}=0$ or $W_{\text{Fe},k} - \rho W_{\text{Pt},k} = 0$ incorporated directly into $C\theta = d$, yielding invertible $U^T \cI U$;
+        \item \texttt{ESpM-NMF($\mu,\lambda,\alpha$)} (e.g., $\mu=0.004, \lambda=1, \alpha=0.01$): penalized estimator governed by Theorem~\ref{thm:sandwich} (noting that $\mu$ enters negatively in $\cH_R$ via $-\mu(H_{k,r}+\alpha)^{-2}$ and relies on $\cH_{\text{KL}} + \lambda(\Delta \kron I_K)$ for second-order stability).
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Statistical Precision vs.\ Physical Model Bias and Low-SNR Limits}
+Finally, cross-checking with \textbf{T23} and \textbf{T24} clarifies two regimes where the CRB / sandwich variance must be interpreted carefully alongside systematic effects:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Systematic physical model errors (not captured by Poisson CRB):} Both \textbf{T23} (Sec.~2, 4) and \textbf{T24} (Sec.~2, p.~4; Sec.~6, p.~14) identify sources of \emph{bias}: the thin-foil uniform-mass-thickness absorption approximation (up to a few percent error around $\sim 100\text{ nm}$ thickness), spatial mass-thickness variations $\xi_{k,p}$ omitted to preserve linearity, the 2-parameter bremsstrahlung model (\textbf{T24} Eq.~(4), replacing \textbf{T23}'s 3-parameter Eq.~(5) for non-negativity, valid strictly above $1\text{ keV}$ and neglecting coherent bremsstrahlung), incomplete charge collection, multiple vacancies, and theoretical cross-section table inaccuracies. Our CRB quantifies purely the \emph{statistical precision} (variance floor under Poisson counting), consistent with the disclaimer printed by \texttt{print\_concentration\_report} in \texttt{EDSespm}.
+    \item \textbf{Ultra-low count regimes (\textbf{T24} Low-SNR, $N = 18$ counts/spectrum):} While the Poisson FIM $\cI(\theta) = J^T \diag(1/Y) J$ is exact for any $Y_{i,r} > 0$ (no Gaussian approximation is used to form $\cI$), the first-order implicit-function linearization (Eq.~\eqref{eq:ift}) and delta-method ratio propagation require moderate total counts. In a $128 \times 128$ datacube at $N=18$ counts/pixel, $W$ and $\bar{Q}_l(\Omega)$ pool $p N \approx 3 \times 10^5$ total counts, so their asymptotic covariances remain accurate; by contrast, single-pixel $Q_{l,r}$ without spatial regularization ($\lambda_L = 0$) can experience non-negligible nonlinear ratio bias and boundary clipping ($H_{k,r} = \epsilon$) at $N \sim 18$, which Laplacian smoothing mitigates by effectively pooling counts across neighboring pixels.
+\end{itemize}
+
+%==============================================================================
+\section{Conclusion}
+%==============================================================================
+
+By extending the constrained Poisson Cram\'er--Rao formalism of Jannis et al.\ (2025) to the bilinear factorization $Y = GWH$ and exploiting the pixel-wise block-diagonality of $\cI_{HH}$, we obtain an exact, $\mathcal{O}(p)$-scalable analytical framework for uncertainty quantification in \texttt{espm}. Even when the bilinear scaling/mixing ambiguity $WH = (WA)(A^{-1}H)$ leaves individual coefficients of $W$ and $H$ underdetermined, all physically observable elemental quantifications—pixel-wise $(WH)_{l,r}$ and $Q_{l,r}$, and ROI-integrated $\bar{M}_l(\Omega)$ and $\bar{Q}_l(\Omega)$—admit finite, unique, gauge-invariant covariances, while component compositions $C_{l,k}$ admit exact CRBs whenever identifiability constraints (\texttt{fixed\_W}/\texttt{fixed\_H}, active zeros, $K=1$, or spatial regularization) hold.
+
+\end{document}
